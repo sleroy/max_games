@@ -27,6 +27,7 @@ const FILES = {
     quiver: path.join(GAME_DIR, 'quiver.js'),
     especes: path.join(GAME_DIR, 'especes.js'),
     classement: path.join(GAME_DIR, 'classement.js'),
+    carnet: path.join(GAME_DIR, 'carnet.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -363,6 +364,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.quiver, path.join(tmpDir, 'quiver.js'));
     fs.copyFileSync(FILES.especes, path.join(tmpDir, 'especes.js'));
     fs.copyFileSync(FILES.classement, path.join(tmpDir, 'classement.js'));
+    fs.copyFileSync(FILES.carnet, path.join(tmpDir, 'carnet.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
     fs.writeFileSync(path.join(tmpDir, 'three-stub.mjs'), stub);

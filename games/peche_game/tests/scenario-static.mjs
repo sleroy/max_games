@@ -12,7 +12,7 @@ function read(name) {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'sound.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sol-herbe.jpg', 'assets/ecorce.jpg', 'assets/vase.jpg', 'assets/eau-normales.jpg'].forEach(name => {
@@ -220,6 +220,7 @@ export function run() {
     check('le mode quiver est dans un module dédié', script.includes("from './quiver.js'"));
     check('les données espèces sont dans un module dédié', script.includes("from './especes.js'"));
     check('le classement est dans un module dédié', script.includes("from './classement.js'"));
+    check('la persistance du carnet est dans un module dédié', script.includes("from './carnet.js'"));
     check('le lancer peut être tendu pendant le vol', script.includes('tendreLigneAuLancer'));
     check('un état « tangle » bloque la pêche', script.includes("floatState = 'tangle'"));
     check('le scion remplace le bouchon en quiver', script.includes('techniqueCourante === \'quiver\'')

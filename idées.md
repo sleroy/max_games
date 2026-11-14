@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-14** · version du jeu : **v107**
+> Dernière mise à jour : **2026-11-14** · version du jeu : **v108**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -87,12 +87,13 @@
 
 ## 9. Architecture et contenu
 
-- [~] **Découper `script.js` (trop gros).**
+- [x] **Découper `script.js` (trop gros).**
   - [x] Mini-jeu de démêlage extrait dans `demelage.js` (module autonome, scénario 65).
   - [x] Mode quiver extrait dans `quiver.js` (indicateur de scion, scénario 66).
   - [x] Données espèces / styles / silhouettes / touches extraites dans `especes.js`.
   - [x] Stockage et rendu du classement extraits dans `classement.js`.
-  - [ ] Extraire à terme le stockage du carnet (journal).
+  - [x] Persistance du carnet extraite dans `carnet.js`.
+  - [x] L'orchestrateur 3D reste dans `script.js` ; modules spécialisés pour le reste.
 - [x] **Vérifier la distribution des poissons et autoriser quelques spécimens hors norme.**
   - [x] Vérifier les tirages pondérés par abondance (`distributionAttendue`, scénario 64).
   - [x] Rares spécimens hors norme (taille/poids/combativité/agressivité), signalés

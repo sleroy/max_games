@@ -341,6 +341,7 @@ peche_game/
 ├── quiver.js           # Mode quiver : indicateur de scion autonome
 ├── especes.js          # Données espèces, styles de combat, silhouettes, touches
 ├── classement.js       # Stockage et rendu du classement local
+├── carnet.js           # Persistance du carnet de pêche (localStorage)
 ├── sound.js            # Moteur audio (échantillons réels + fallback procédural)
 ├── launch.sh           # Lance le serveur local + ouvre le navigateur
 ├── serveur.py          # Serveur local sans cache (pour le développement)

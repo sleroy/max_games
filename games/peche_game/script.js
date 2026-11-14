@@ -3,11 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=107';
+import { SoundEngine } from './sound.js?v=108';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
 import { creerClassement } from './classement.js';
+import { chargerCarnet, sauverCarnet } from './carnet.js';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -3011,66 +3012,21 @@ const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null
 const JOURNAL_KEY = 'peche_carnet_v1';
 
 function loadJournal() {
-    if (!journalStore) {
-        return;
-    }
-    try {
-        const raw = journalStore.getItem(JOURNAL_KEY);
-        if (!raw) {
-            return;
-        }
-        const data = JSON.parse(raw);
-        journal.total = data.total || 0;
-        journal.totalWeight = data.totalWeight || 0;
-        journal.best = data.best || 0;
-        // Migration : les anciennes prises étaient de simples nombres.
-        journal.last = Array.isArray(data.last)
-            ? data.last.map(entry => (typeof entry === 'number')
-                ? { kg: entry, espece: 'Poisson' }
-                : { kg: entry.kg || 0, espece: entry.espece || 'Poisson' })
-            : [];
-        journal.especes = {};
-        const brut = (data.especes && typeof data.especes === 'object') ? data.especes : {};
-        Object.keys(brut).forEach(nom => {
-            const valeur = brut[nom];
-            journal.especes[nom] = (typeof valeur === 'number')
-                ? { n: valeur, record: 0 }
-                : { n: valeur.n || 0, record: valeur.record || 0 };
-        });
-        if (typeof data.bouchon === 'string') {
-            flotteurChoix = data.bouchon;
-        }
-        // Expérience gagnée en pêchant, et bouchons achetés à la boutique.
-        journal.experience = Math.max(0, Math.floor(data.experience || 0));
-        journal.technique = data.technique === 'quiver' ? 'quiver' : 'bouchon';
-        journal.bouchons = BOUCHONS_DE_DEPART.slice();
-        const achetes = Array.isArray(data.bouchons) ? data.bouchons : [];
-        achetes.forEach(id => {
-            if (trouverFlotteur(id) && journal.bouchons.indexOf(id) < 0) {
-                journal.bouchons.push(id);
-            }
-        });
-        // Bouchon sauvegardé qui n'est plus possédé : on repasse au premier offert.
-        if (journal.bouchons.indexOf(flotteurChoix) < 0) {
-            flotteurChoix = BOUCHONS_DE_DEPART[0];
-        }
-    } catch (error) {
-        // Carnet illisible : on repart de zéro.
-    }
+    chargerCarnet({
+        store: journalStore,
+        key: JOURNAL_KEY,
+        data: journal,
+        bouchonsDepart: BOUCHONS_DE_DEPART,
+        trouverFlotteur: trouverFlotteur,
+        setFlotteur: function (id) { flotteurChoix = id; },
+        getFlotteur: function () { return flotteurChoix; }
+    });
 }
 
 function saveJournal() {
-    if (!journalStore) {
-        return;
-    }
-    try {
-        journalStore.setItem(JOURNAL_KEY, JSON.stringify(journal));
-    } catch (error) {
-        // Stockage indisponible : on continue sans sauvegarder.
-    }
+    sauverCarnet({ store: journalStore, key: JOURNAL_KEY, data: journal });
 }
 
-// Poids affiché : 2 décimales sous 1 kg (un gardon de 0,36 kg).
 function fmtPoids(value) {
     return (value < 1 ? value.toFixed(2) : value.toFixed(1)).replace('.', ',') + ' kg';
 }
