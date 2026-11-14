@@ -129,12 +129,20 @@ export function run() {
     check('la carte du carnet affiche le contour généré',
         script.includes('contour-etang'));
 
-    group('8) Choix libre de l’emplacement (carte vue de dessus)');
+    group('8) Choix libre de l’emplacement (carte 3D en relief)');
     check('la carte de placement est présente dans l’accueil',
         html.includes('id="cartePlacement"'));
     check('la carte est cliquable (pointer-events + touch-action)',
         /\.carte-placement\s*\{[^}]*pointer-events:\s*auto[^}]*touch-action:\s*none/.test(css));
-    check('la couronne de placement est dessinée',
+    check('le relief 3D est construit à partir d’un champ de hauteur',
+        script.includes('function hauteurCarte') && script.includes('carteTerrain'));
+    check('le plan d’eau fixe la hauteur du lac',
+        script.includes('CARTE_3D_EAU_Y = 0'));
+    check('le clic passe par un raycast sur le relief',
+        script.includes('intersectObject(carteTerrain)'));
+    check('la carte indique le nord et le soleil',
+        html.includes('carte-3d-nord') && html.includes('carte-3d-soleil'));
+    check('la couronne de placement est un ruban 3D',
         script.includes('zone-placement') && script.includes('PLACEMENT_MARGE_MIN'));
     check('le clic et le glisser sont branchés sur la carte',
         script.includes("addEventListener('pointerdown'")

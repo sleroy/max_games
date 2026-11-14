@@ -12,19 +12,14 @@ function distance2D(a, b) {
     return Math.hypot(a.x - b.x, a.z - b.z);
 }
 
-/** Coordonnées client pour viser (angle, distance) sur la carte 240×240. */
-function clientCarte(angle, distance) {
-    const carte = G().getPlacementMap();
-    return {
-        clientX: carte.centre.x + Math.cos(angle) * distance * carte.echelle,
-        clientY: carte.centre.y + Math.sin(angle) * distance * carte.echelle,
-        pointerId: 1
-    };
+/** Coordonnées client pour viser (angle, marge) sur la carte 3D. */
+function pointCarte(angle, marge) {
+    const p = G().projeterPlacement(angle, marge);
+    return { clientX: p.clientX, clientY: p.clientY, pointerId: 1 };
 }
 
-function cliquerCarte(angle, distance) {
-    const point = clientCarte(angle, distance);
-    fire('cartePlacement', 'pointerdown', point);
+function cliquerCarte(angle, marge) {
+    fire('cartePlacement', 'pointerdown', pointCarte(angle, marge));
     fire('cartePlacement', 'pointerup', { pointerId: 1 });
 }
 
@@ -38,28 +33,63 @@ function ecartAuBord() {
 }
 
 export function run() {
-    group('56) Choix libre de l’emplacement sur la carte vue de dessus');
+    group('56) Choix libre de l’emplacement sur la carte 3D en relief');
     G().recommencerPartie();
     resetToIdle();
     G().afficherAccueil();
 
     const carte = G().getPlacementMap();
-    checkEqual('la carte de placement est un carré de 240', carte.view, 240);
-    checkClose('l’échelle de la carte est cohérente', carte.echelle, 120 / 78, 1e-6);
+    checkEqual('la carte est un relief 3D', carte.troisD, true);
+    checkEqual('le plan d’eau est à une hauteur fixe (0)', carte.hauteurEau, 0);
+    checkEqual('la carte a une résolution de 320', carte.taille, 320);
     checkEqual('la bande commence à 1,4 unité de la berge', carte.margeMin, 1.4);
     checkEqual('la bande s’arrête à 6 unités de la berge', carte.margeMax, 6);
-
-    const html = el('cartePlacement').innerHTML;
-    check('la carte affiche le contour généré de l’étang',
-        html.indexOf('contour-etang') >= 0);
-    check('la carte affiche la couronne de placement',
-        html.indexOf('zone-placement') >= 0);
-    check('la carte affiche le repère du pêcheur',
-        html.indexOf('emplacement-marker') >= 0);
-    check('la carte indique le nord', html.indexOf('N ▲') >= 0);
-    check('la carte indique le soleil au sud-ouest', html.indexOf('☀️') >= 0);
+    check('le maillage de relief est dense', carte.terrain.sommets > 5000,
+        carte.terrain.sommets + ' sommets');
+    check('le fond du lac est sous le plan d’eau', carte.terrain.minY < -4,
+        carte.terrain.minY.toFixed(2) + ' unité');
+    check('la terre monte au-dessus du plan d’eau', carte.terrain.maxY > 2,
+        carte.terrain.maxY.toFixed(2) + ' unité');
+    check('des sommets sont sous l’eau (le lac)', carte.terrain.sousLEau > 100,
+        carte.terrain.sousLEau + ' sommets');
+    check('des sommets sont au-dessus (la berge)', carte.terrain.auDessus > 100,
+        carte.terrain.auDessus + ' sommets');
+    check('la couronne de placement est un ruban 3D', carte.bande.sommets > 100,
+        carte.bande.sommets + ' sommets');
+    const centreCarte = G().getPondCenter();
+    check('au centre, le terrain est sous l’eau',
+        G().getHauteurCarte(centreCarte.x, centreCarte.z) < -3,
+        G().getHauteurCarte(centreCarte.x, centreCarte.z).toFixed(2));
+    const angleBerge = 0.2;
+    const rayonBerge = G().getRayonEtang(angleBerge);
+    const xBerge = centreCarte.x + Math.cos(angleBerge) * (rayonBerge + 3);
+    const zBerge = centreCarte.z + Math.sin(angleBerge) * (rayonBerge + 3);
+    check('sur la berge, le terrain est au-dessus de l’eau',
+        G().getHauteurCarte(xBerge, zBerge) > 0.3,
+        G().getHauteurCarte(xBerge, zBerge).toFixed(2));
     check('la carte explique comment choisir sa place',
-        html.indexOf('bande claire') >= 0);
+        el('cartePlacementAide').textContent.indexOf('relief') >= 0,
+        el('cartePlacementAide').textContent);
+
+    // --- Toute la couronne doit être VISIBLE dans le cadre de la carte ---
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let i = 0; i < 32; i++) {
+        const angle = (i / 32) * Math.PI * 2;
+        [1.4, 3, 6].forEach(function (marge) {
+            const p = G().projeterPlacement(angle, marge);
+            minX = Math.min(minX, p.clientX);
+            maxX = Math.max(maxX, p.clientX);
+            minY = Math.min(minY, p.clientY);
+            maxY = Math.max(maxY, p.clientY);
+        });
+    }
+    check('toute la couronne est visible dans la carte',
+        minX >= 0 && maxX <= 320 && minY >= 0 && maxY <= 320,
+        'x ' + minX.toFixed(0) + '→' + maxX.toFixed(0)
+        + ' / y ' + minY.toFixed(0) + '→' + maxY.toFixed(0));
 
     // --- Au départ : poste sud, marge par défaut, marqueur présent ---
     const initial = G().getEmplacement();
@@ -68,42 +98,44 @@ export function run() {
     check('le repère est dans la bande', initial.marge >= 1.4 && initial.marge <= 6,
         initial.marge.toFixed(2));
 
-    // --- Clic libre : angle et distance choisis ---
+    // --- Clic libre sur le relief : angle et distance choisis ---
     const angleLibre = 0.2;
     const margeLibre = 3.4;
-    cliquerCarte(angleLibre, G().getRayonEtang(angleLibre) + margeLibre);
+    cliquerCarte(angleLibre, margeLibre);
     const libre = G().getEmplacement();
-    checkClose('le clic choisit l’angle', libre.angle, angleLibre, 1e-6);
-    checkClose('le clic choisit la distance à la berge', libre.marge, margeLibre, 0.02);
+    checkClose('le clic choisit l’angle', libre.angle, angleLibre, 0.05);
+    checkClose('le clic choisit la distance à la berge', libre.marge, margeLibre, 0.35);
     checkEqual('le poste devient « libre »', G().getPoste().id, 'libre');
     checkEqual('le poste libre n’est pas un raccourci', G().getPoste().libre, true);
     checkEqual('la direction est nommée (est)', libre.direction, 'est');
     check('la boussole affiche la direction libre',
         el('compass').textContent.indexOf('poste est') >= 0, el('compass').textContent);
     checkClose('le pêcheur est à la distance choisie de la berge',
-        ecartAuBord(), margeLibre, 0.02);
+        ecartAuBord(), libre.marge, 0.35);
     check('la carte affiche la nouvelle distance',
-        el('cartePlacement').innerHTML.indexOf('3,4') >= 0);
+        el('cartePlacementAide').textContent.indexOf(
+            libre.marge.toFixed(1).replace('.', ',')) >= 0,
+        el('cartePlacementAide').textContent);
 
     // --- Cliquer DANS l'eau : on est repoussé sur la berge (marge mini) ---
-    cliquerCarte(angleLibre, G().getRayonEtang(angleLibre) * 0.4);
+    cliquerCarte(angleLibre, -4);
     checkClose('un clic dans l’eau est ramené à la marge mini',
         G().getEmplacement().marge, 1.4, 0.01);
     check('le pêcheur reste hors de l’eau',
         ecartAuBord() >= 1.39, ecartAuBord().toFixed(2) + ' unités');
 
     // --- Cliquer LOIN : on est ramené à la marge maxi ---
-    cliquerCarte(angleLibre, 77);
+    cliquerCarte(angleLibre, 12);
     checkClose('un clic trop loin est ramené à la marge maxi',
         G().getEmplacement().marge, 6, 0.01);
 
-    // --- Glisser le long de la couronne ---
-    fire('cartePlacement', 'pointerdown', clientCarte(0.2, G().getRayonEtang(0.2) + 2.5));
-    fire('cartePlacement', 'pointermove', clientCarte(0.8, G().getRayonEtang(0.8) + 4));
+    // --- Glisser le long de la couronne de relief ---
+    fire('cartePlacement', 'pointerdown', pointCarte(0.2, 2.5));
+    fire('cartePlacement', 'pointermove', pointCarte(0.8, 4));
     fire('cartePlacement', 'pointerup', { pointerId: 1 });
     const glisse = G().getEmplacement();
-    checkClose('le glisser change l’angle', glisse.angle, 0.8, 0.01);
-    checkClose('le glisser change la distance', glisse.marge, 4, 0.05);
+    checkClose('le glisser change l’angle', glisse.angle, 0.8, 0.05);
+    checkClose('le glisser change la distance', glisse.marge, 4, 0.35);
 
     // --- Les raccourcis restent disponibles ---
     fire('posteNord', 'click');

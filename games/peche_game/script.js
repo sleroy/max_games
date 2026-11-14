@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=97';
+import { SoundEngine } from './sound.js?v=98';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -57,6 +57,7 @@ const posteEst = document.getElementById('posteEst');
 const posteNord = document.getElementById('posteNord');
 const posteOuest = document.getElementById('posteOuest');
 const cartePlacement = document.getElementById('cartePlacement');
+const cartePlacementAide = document.getElementById('cartePlacementAide');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -2496,9 +2497,246 @@ function choisirEmplacement(angle, marge) {
 // zone où l'on peut se placer (1,4 à 6 unités de la berge locale). Cliquer ou
 // glisser dans cette couronne choisit l'angle ET la distance à la berge.
 // ---------------------------------------------------------------------------
-const CARTE_PLACEMENT_VIEW = 240;
-const CARTE_PLACEMENT_MONDE = 78; // rayon du monde visible dans le carré
-const CARTE_PLACEMENT_ECHELLE = (CARTE_PLACEMENT_VIEW / 2) / CARTE_PLACEMENT_MONDE;
+const CARTE_3D_TAILLE = 320;        // résolution du canvas de la carte
+const CARTE_3D_MONDE = 170;         // largeur du terrain représenté (unités)
+const CARTE_3D_SEGMENTS = 96;       // résolution du maillage de relief
+const CARTE_3D_EAU_Y = 0;           // HAUTEUR DE L'EAU : dessous = le lac
+const CARTE_3D_BANDE_SEGMENTS = 128;
+
+// ---------------------------------------------------------------------------
+// HAUTEUR DU TERRAIN : un « champ de hauteur » (comme une image grayscale
+// 2D dont on fixe le niveau de l'eau). Ici la hauteur est calculée à partir
+// de la vraie profondeur de l'étang :
+//   - sous le bord de l'eau : y = -profondeurLocale (négatif, c'est le lac) ;
+//   - sur la berge : y remonte au-dessus de 0, avec des collines douces.
+// Le plan d'eau est à y = CARTE_3D_EAU_Y (0).
+// ---------------------------------------------------------------------------
+function hauteurCarte(x, z) {
+    const dx = x - POND_CENTER.x;
+    const dz = z - POND_CENTER.z;
+    const d = Math.hypot(dx, dz);
+    const angle = Math.atan2(dz, dx);
+    const rayon = rayonEtang(angle);
+    if (d <= rayon) {
+        return -profondeurLocale(x, z);   // fond du lac, sous le plan d'eau
+    }
+    // Berge qui remonte, puis collines (dénivelé visible autour de l'étang).
+    const t = d - rayon;
+    let y = RIVE_Y + Math.min(7, t * 0.14);
+    y += 0.35 * Math.sin(x * 0.07 + 0.8) * Math.cos(z * 0.06 - 0.4)
+        + 0.18 * Math.sin((x + z) * 0.11 + 2.1);
+    return Math.max(RIVE_Y + 0.05, y);
+}
+
+const CARTE_EAU_BAS = new THREE.Color(0x5a9aa8);
+const CARTE_EAU_PROFOND = new THREE.Color(0x0d2c3a);
+const CARTE_TERRE_BAS = new THREE.Color(0x3c3c3c);
+const CARTE_TERRE_HAUT = new THREE.Color(0xdedede);
+const _couleurCarte = new THREE.Color();
+
+// Couleur du relief : eau bleu-vert (foncée avec la profondeur), terre en
+// dégradé de gris (comme une heightmap) plus claire en altitude.
+function couleurCarte(y) {
+    if (y < CARTE_3D_EAU_Y) {
+        const t = Math.min(1, -y / 5.5);
+        return _couleurCarte.copy(CARTE_EAU_BAS).lerp(CARTE_EAU_PROFOND, t);
+    }
+    const t = Math.min(1, (y - RIVE_Y) / 7);
+    return _couleurCarte.copy(CARTE_TERRE_BAS).lerp(CARTE_TERRE_HAUT, t);
+}
+
+const carteScene = new THREE.Scene();
+carteScene.background = new THREE.Color(0x16242b);
+const carteCamera = new THREE.PerspectiveCamera(50, 1, 0.5, 600);
+carteCamera.position.set(POND_CENTER.x + 75, 100, POND_CENTER.z + 120);
+carteCamera.lookAt(POND_CENTER.x, -1, POND_CENTER.z);
+carteCamera.updateMatrixWorld();
+carteCamera.updateProjectionMatrix();
+
+carteScene.add(new THREE.AmbientLight(0xffffff, 0.65));
+const lumiereCarte = new THREE.DirectionalLight(0xffffff, 1.0);
+const azimutSoleilCarte = directionAzimut(SUN_AZIMUT);
+lumiereCarte.position.set(azimutSoleilCarte.x * 70, 90, azimutSoleilCarte.z * 70);
+carteScene.add(lumiereCarte);
+
+// --- Terrain : un maillage dont chaque sommet prend sa hauteur dans le champ. ---
+const carteGeometrie = new THREE.PlaneGeometry(
+    CARTE_3D_MONDE, CARTE_3D_MONDE, CARTE_3D_SEGMENTS, CARTE_3D_SEGMENTS);
+carteGeometrie.rotateX(-Math.PI / 2);
+const cartePositions = carteGeometrie.attributes.position;
+const carteCouleurs = [];
+let carteMinY = Infinity;
+let carteMaxY = -Infinity;
+let carteSousLEau = 0;
+for (let i = 0; i < cartePositions.count; i++) {
+    const x = cartePositions.getX(i) + POND_CENTER.x;
+    const z = cartePositions.getZ(i) + POND_CENTER.z;
+    const y = hauteurCarte(x, z);
+    cartePositions.setY(i, y);
+    const couleur = couleurCarte(y);
+    carteCouleurs.push(couleur.r, couleur.g, couleur.b);
+    carteMinY = Math.min(carteMinY, y);
+    carteMaxY = Math.max(carteMaxY, y);
+    if (y < CARTE_3D_EAU_Y) {
+        carteSousLEau += 1;
+    }
+}
+carteGeometrie.setAttribute('color', new THREE.Float32BufferAttribute(carteCouleurs, 3));
+carteGeometrie.computeVertexNormals();
+const carteTerrain = new THREE.Mesh(
+    carteGeometrie,
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 })
+);
+carteTerrain.name = 'terrain-etang';
+carteTerrain.position.set(POND_CENTER.x, 0, POND_CENTER.z);
+carteScene.add(carteTerrain);
+
+// --- Plan d'eau à hauteur fixe : tout ce qui est dessous est le lac. ---
+const carteEau = new THREE.Mesh(
+    new THREE.PlaneGeometry(CARTE_3D_MONDE, CARTE_3D_MONDE),
+    new THREE.MeshStandardMaterial({
+        color: 0x2b7ea1,
+        transparent: true,
+        opacity: 0.55,
+        roughness: 0.25,
+        metalness: 0.15,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    })
+);
+carteEau.name = 'eau-etang';
+carteEau.rotation.x = -Math.PI / 2;
+carteEau.position.set(POND_CENTER.x, CARTE_3D_EAU_Y, POND_CENTER.z);
+carteScene.add(carteEau);
+
+// Ligne de rivage (contour généré) juste au-dessus du plan d'eau.
+const cartePointsRive = [];
+for (let i = 0; i < 160; i++) {
+    const a = (i / 160) * Math.PI * 2;
+    const r = rayonEtang(a);
+    cartePointsRive.push(new THREE.Vector3(
+        POND_CENTER.x + Math.cos(a) * r,
+        CARTE_3D_EAU_Y + 0.06,
+        POND_CENTER.z + Math.sin(a) * r
+    ));
+}
+const carteLigneRive = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(cartePointsRive),
+    new THREE.LineBasicMaterial({ color: 0xdff3fb })
+);
+carteLigneRive.name = 'rivage-etang';
+carteScene.add(carteLigneRive);
+
+// --- Couronne de placement : un ruban posé sur le relief (1,4 → 6 unités). ---
+const carteBandePositions = [];
+const carteBandeIndices = [];
+for (let i = 0; i <= CARTE_3D_BANDE_SEGMENTS; i++) {
+    const a = (i / CARTE_3D_BANDE_SEGMENTS) * Math.PI * 2;
+    const ri = rayonEtang(a) + PLACEMENT_MARGE_MIN;
+    const ro = rayonEtang(a) + PLACEMENT_MARGE_MAX;
+    const xi = POND_CENTER.x + Math.cos(a) * ri;
+    const zi = POND_CENTER.z + Math.sin(a) * ri;
+    const xo = POND_CENTER.x + Math.cos(a) * ro;
+    const zo = POND_CENTER.z + Math.sin(a) * ro;
+    carteBandePositions.push(
+        xi, hauteurCarte(xi, zi) + 0.07, zi,
+        xo, hauteurCarte(xo, zo) + 0.07, zo
+    );
+}
+for (let i = 0; i < CARTE_3D_BANDE_SEGMENTS; i++) {
+    const a = i * 2;
+    carteBandeIndices.push(a, a + 1, a + 3, a, a + 3, a + 2);
+}
+const carteBandeGeometrie = new THREE.BufferGeometry();
+carteBandeGeometrie.setAttribute('position',
+    new THREE.Float32BufferAttribute(carteBandePositions, 3));
+carteBandeGeometrie.setIndex(carteBandeIndices);
+carteBandeGeometrie.computeVertexNormals();
+const carteBande = new THREE.Mesh(
+    carteBandeGeometrie,
+    new THREE.MeshBasicMaterial({
+        color: 0xffe780,
+        transparent: true,
+        opacity: 0.32,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    })
+);
+carteBande.name = 'zone-placement';
+carteScene.add(carteBande);
+
+// --- Repère 3D du pêcheur (mât + tête dorée) ---
+const carteMarqueur = new THREE.Group();
+carteMarqueur.name = 'emplacement-marker';
+const carteMarqueurTige = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15, 0.15, 2.4, 6),
+    new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.6 })
+);
+carteMarqueurTige.position.y = 1.2;
+carteMarqueur.add(carteMarqueurTige);
+const carteMarqueurTete = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0xfff0a8, roughness: 0.5 })
+);
+carteMarqueurTete.position.y = 2.7;
+carteMarqueur.add(carteMarqueurTete);
+carteScene.add(carteMarqueur);
+
+// --- Renderer dédié à la petite carte (contexte WebGL séparé, 320×320) ---
+let carteRenderer = null;
+try {
+    carteRenderer = new THREE.WebGLRenderer({
+        canvas: cartePlacement,
+        antialias: true,
+        alpha: false
+    });
+    carteRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    carteRenderer.setSize(CARTE_3D_TAILLE, CARTE_3D_TAILLE, false);
+    if (THREE.SRGBColorSpace) {
+        carteRenderer.outputColorSpace = THREE.SRGBColorSpace;
+    }
+} catch (erreur) {
+    carteRenderer = null;
+}
+
+const carteRaycaster = new THREE.Raycaster();
+const cartePlanEau = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+function majMarqueurCarte() {
+    const distance = rayonEtang(emplacementAngle) + emplacementMarge;
+    const x = POND_CENTER.x + Math.cos(emplacementAngle) * distance;
+    const z = POND_CENTER.z + Math.sin(emplacementAngle) * distance;
+    const y = hauteurCarte(x, z);
+    carteMarqueur.position.set(x, y, z);
+    carteMarqueur.visible = true;
+}
+
+// Projette un emplacement du monde vers les coordonnées client du canvas.
+// Sert aux tests (et pourrait servir à un survol) : on vise exactement le
+// point du relief, donc le raycast retrouve le bon angle et la bonne marge.
+function projeterPlacement(angle, marge) {
+    const distance = rayonEtang(angle)
+        + (typeof marge === 'number' ? marge : POSTE_MARGE);
+    const x = POND_CENTER.x + Math.cos(angle) * distance;
+    const z = POND_CENTER.z + Math.sin(angle) * distance;
+    const y = hauteurCarte(x, z);
+    carteCamera.updateMatrixWorld();
+    const point = new THREE.Vector3(x, y, z).project(carteCamera);
+    const rect = cartePlacement
+        ? cartePlacement.getBoundingClientRect()
+        : { left: 0, top: 0, width: CARTE_3D_TAILLE, height: CARTE_3D_TAILLE };
+    const clientX = rect.left + (point.x * 0.5 + 0.5) * rect.width;
+    const clientY = rect.top + (-point.y * 0.5 + 0.5) * rect.height;
+    return {
+        clientX: clientX,
+        clientY: clientY,
+        x: clientX,
+        y: clientY,
+        xMonde: x,
+        yMonde: y,
+        zMonde: z
+    };
+}
 
 // Chemin SVG d'un contour de l'étang.
 //   facteur : 1 = bord de l'eau, < 1 = isobathe ;
@@ -2519,67 +2757,25 @@ function cheminContourEtang(cx, cy, echelle, facteur, decalage) {
 }
 
 function renderCartePlacement() {
-    if (!cartePlacement) {
-        return;
+    majMarqueurCarte();
+    if (cartePlacementAide) {
+        cartePlacementAide.textContent = '📍 '
+            + (emplacementLibre
+                ? azimutPosteTexte(emplacementAngle)
+                : POSTES[posteActuel].nom.toLowerCase())
+            + ' · ' + emplacementMarge.toFixed(1).replace('.', ',')
+            + ' unité(s) de la berge — clique ou glisse sur le relief.';
     }
-    const vue = CARTE_PLACEMENT_VIEW;
-    const cx = vue / 2;
-    const cy = vue / 2;
-    const e = CARTE_PLACEMENT_ECHELLE;
-    const eau = cheminContourEtang(cx, cy, e, 1, 0);
-    const milieu = (PLACEMENT_MARGE_MIN + PLACEMENT_MARGE_MAX) / 2;
-    const zone = cheminContourEtang(cx, cy, e, 1, milieu);
-    const largeurBande = (PLACEMENT_MARGE_MAX - PLACEMENT_MARGE_MIN) * e;
-    const angle = emplacementAngle;
-    const distance = rayonEtang(angle) + emplacementMarge;
-    const px = cx + Math.cos(angle) * distance * e;
-    const py = cy + Math.sin(angle) * distance * e;
-    const soleil = directionAzimut(SUN_AZIMUT);
-    const rayonSoleil = CARTE_PLACEMENT_MONDE - 8;
-
-    let svg = '<svg viewBox="0 0 240 240" role="img" '
-        + 'aria-label="Carte vue de dessus : choisir sa place autour de l’étang">';
-    svg += '<rect x="0" y="0" width="240" height="240" fill="#2f6b3f"/>';
-    // L'eau et son contour généré.
-    svg += '<path class="contour-etang" d="' + eau
-        + '" fill="#2b7ea1" stroke="#dff3fb" stroke-width="1"/>';
-    // La COURONNE de placement (épaisseur = 1,4 → 6 unités).
-    svg += '<path class="zone-placement" d="' + zone
-        + '" fill="none" stroke="rgba(255, 231, 128, 0.5)" stroke-width="'
-        + largeurBande.toFixed(1) + '" stroke-linejoin="round"/>';
-    // Les deux bords de la couronne, en pointillés.
-    svg += '<path d="' + cheminContourEtang(cx, cy, e, 1, PLACEMENT_MARGE_MIN)
-        + '" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.7" stroke-dasharray="2 2"/>';
-    svg += '<path d="' + cheminContourEtang(cx, cy, e, 1, PLACEMENT_MARGE_MAX)
-        + '" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.7" stroke-dasharray="2 2"/>';
-    // Nord et soleil (orientation du monde).
-    svg += '<text x="' + cx + '" y="13" text-anchor="middle" font-size="10" '
-        + 'font-weight="bold" fill="#ffffff">N ▲</text>';
-    svg += '<text x="' + (cx + soleil.x * rayonSoleil * e).toFixed(1) + '" y="'
-        + (cy + soleil.z * rayonSoleil * e + 4).toFixed(1)
-        + '" text-anchor="middle" font-size="13">☀️</text>';
-    // Repère du pêcheur : un point + la direction de la canne vers le centre.
-    svg += '<line x1="' + px.toFixed(1) + '" y1="' + py.toFixed(1)
-        + '" x2="' + cx + '" y2="' + cy
-        + '" stroke="rgba(255,255,255,0.25)" stroke-width="0.8" stroke-dasharray="2 3"/>';
-    svg += '<g class="emplacement-marker">';
-    svg += '<line x1="' + px.toFixed(1) + '" y1="' + py.toFixed(1)
-        + '" x2="' + (px + (cx - px) * 0.12).toFixed(1)
-        + '" y2="' + (py + (cy - py) * 0.12).toFixed(1)
-        + '" stroke="#ffe9a8" stroke-width="1.5"/>';
-    svg += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1)
-        + '" r="4.2" fill="#ffd166" stroke="#5a3b00" stroke-width="1.5"/>';
-    svg += '</g>';
-    svg += '</svg>';
-    svg += '<div class="carte-placement-aide">📍 <b>'
-        + (emplacementLibre ? azimutPosteTexte(angle) : POSTES[posteActuel].nom.toLowerCase())
-        + '</b> · ' + emplacementMarge.toFixed(1).replace('.', ',')
-        + ' unité(s) de la berge<br>'
-        + 'Clique ou glisse dans la bande claire autour de l’étang.</div>';
-    cartePlacement.innerHTML = svg;
+    if (carteRenderer) {
+        carteCamera.updateMatrixWorld();
+        carteRenderer.render(carteScene, carteCamera);
+    }
 }
 
-// Convertit un clic sur la carte en (angle, marge) dans le monde.
+// Convertit un clic sur le RELIEF en (angle, marge) dans le monde.
+// On raycast le terrain : le point touché est un vrai point du relief, ce qui
+// rend le choix cohérent avec le dénivelé affiché. Si le rayon ne touche pas
+// le maillage (bord), on retombe sur le plan d'eau y = 0.
 function emplacementDepuisCarte(event) {
     if (!cartePlacement) {
         return null;
@@ -2588,13 +2784,25 @@ function emplacementDepuisCarte(event) {
     if (!rect || !rect.width || !rect.height) {
         return null;
     }
-    const vx = ((event.clientX - rect.left) / rect.width) * CARTE_PLACEMENT_VIEW;
-    const vy = ((event.clientY - rect.top) / rect.height) * CARTE_PLACEMENT_VIEW;
-    const demi = CARTE_PLACEMENT_VIEW / 2;
-    const wx = (vx - demi) / CARTE_PLACEMENT_ECHELLE;
-    const wz = (vy - demi) / CARTE_PLACEMENT_ECHELLE;
-    const angle = Math.atan2(wz, wx);
-    const distance = Math.hypot(wx, wz);
+    const ndc = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    carteCamera.updateMatrixWorld();
+    carteScene.updateMatrixWorld(true);
+    carteRaycaster.setFromCamera(ndc, carteCamera);
+    const hits = carteRaycaster.intersectObject(carteTerrain);
+    let point = hits.length ? hits[0].point : null;
+    if (!point) {
+        point = new THREE.Vector3();
+        if (!carteRaycaster.ray.intersectPlane(cartePlanEau, point)) {
+            return null;
+        }
+    }
+    const dx = point.x - POND_CENTER.x;
+    const dz = point.z - POND_CENTER.z;
+    const angle = Math.atan2(dz, dx);
+    const distance = Math.hypot(dx, dz);
     const marge = distance - rayonEtang(angle);
     return {
         angle: angle,
@@ -6986,13 +7194,46 @@ window.__game = {
     },
     getPlacementMap: function () {
         return {
-            view: CARTE_PLACEMENT_VIEW,
-            echelle: CARTE_PLACEMENT_ECHELLE,
+            troisD: true,
+            taille: CARTE_3D_TAILLE,
+            monde: CARTE_3D_MONDE,
+            segments: CARTE_3D_SEGMENTS,
+            hauteurEau: CARTE_3D_EAU_Y,
             margeMin: PLACEMENT_MARGE_MIN,
             margeMax: PLACEMENT_MARGE_MAX,
             angle: emplacementAngle,
             marge: emplacementMarge,
-            centre: { x: CARTE_PLACEMENT_VIEW / 2, y: CARTE_PLACEMENT_VIEW / 2 }
+            terrain: {
+                sommets: carteGeometrie.attributes.position.count,
+                minY: carteMinY,
+                maxY: carteMaxY,
+                sousLEau: carteSousLEau,
+                auDessus: carteGeometrie.attributes.position.count - carteSousLEau
+            },
+            bande: {
+                sommets: (CARTE_3D_BANDE_SEGMENTS + 1) * 2,
+                margeMin: PLACEMENT_MARGE_MIN,
+                margeMax: PLACEMENT_MARGE_MAX
+            },
+            marqueur: {
+                x: carteMarqueur.position.x,
+                y: carteMarqueur.position.y,
+                z: carteMarqueur.position.z
+            },
+            camera: {
+                x: carteCamera.position.x,
+                y: carteCamera.position.y,
+                z: carteCamera.position.z
+            }
+        };
+    },
+    getHauteurCarte: function (x, z) { return hauteurCarte(x, z); },
+    projeterPlacement: projeterPlacement,
+    getCarteMarqueur: function () {
+        return {
+            x: carteMarqueur.position.x,
+            y: carteMarqueur.position.y,
+            z: carteMarqueur.position.z
         };
     },
     choisirEmplacement: choisirEmplacement,

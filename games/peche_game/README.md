@@ -38,13 +38,14 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 
 ## Commandes
 
-- **Choix de la place** : au démarrage, une **carte vue de dessus** montre l'étang
-  et son vrai contour. **Clique ou glisse dans la couronne claire** autour de l'eau
-  (1,4 à 6 unités de la berge) pour choisir librement l'angle **et** la distance à
-  la berge. Les boutons **Sud / Est / Nord / Ouest** restent des raccourcis. Le
-  pêcheur, la canne, la bourriche et la caméra suivent ; le soleil reste au
-  sud-ouest (chaque poste a donc sa lumière). La boussole indique où est le
-  **nord à l'écran** (↑ ↓ ← →).
+- **Choix de la place** : au démarrage, une **carte 3D en relief** montre l'étang
+  comme un champ de hauteur : le plan d'eau est à une hauteur fixe (y = 0) et
+  **tout ce qui est dessous est le lac**, avec sa profondeur. **Clique ou glisse
+  sur le relief** autour de l'eau (1,4 à 6 unités de la berge) pour choisir
+  librement l'angle **et** la distance à la berge. Les boutons **Sud / Est / Nord /
+  Ouest** restent des raccourcis. Le pêcheur, la canne, la bourriche et la caméra
+  suivent ; le soleil reste au sud-ouest (chaque poste a donc sa lumière). La
+  boussole indique où est le **nord à l'écran** (↑ ↓ ← →).
 - **JOUER = partie neuve** : le score, la bourriche de la partie, les lignes et les
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
   l'eau). Le **carnet**, l'**XP**, les **bouchons achetés** et le **classement**
