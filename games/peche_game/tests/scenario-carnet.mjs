@@ -146,6 +146,28 @@ export function run() {
     G().showCatchMessage(1.0, 'Espèce test', false);
     check('une prise ordinaire retire le doré', !el('catchMessage').classList.contains('record'),
         el('catchMessage').className);
+
+    group('51) Non-regression du rendu de l eau (jamais blanche)');
+    const eau = G().getEauCouleurs();
+    const lum = function (hex) {
+        const r = ((hex >> 16) & 255) / 255;
+        const g = ((hex >> 8) & 255) / 255;
+        const b = (hex & 255) / 255;
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    check('l eau peu profonde est sombre (pas de blanc)', lum(eau.shallow) < 0.55,
+        'luminance ' + lum(eau.shallow).toFixed(2));
+    check('l eau profonde est tres sombre', lum(eau.deep) < 0.25, 'luminance ' + lum(eau.deep).toFixed(2));
+    check('l eau profonde est plus sombre que la surface', lum(eau.deep) < lum(eau.shallow));
+    check('le ciel reflechi n est pas blanc', lum(eau.sky) < 0.85, 'luminance ' + lum(eau.sky).toFixed(2));
+    [[0, 0], [0.5, 0.5], [1, 0.75], [0.2, 1], [1, 1]].forEach(function (cas) {
+        const c = G().couleurEau(cas[0], cas[1]);
+        const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+        check('eau prof=' + cas[0] + ' fresnel=' + cas[1] + ' : sombre et bleutee',
+            l < 0.6 && c.b >= c.r, 'lum ' + l.toFixed(2) + ' b/r ' + c.b.toFixed(2) + '/' + c.r.toFixed(2));
+    });
+    check('le fond de l etang est double face (visible depuis la berge)',
+        G().getFondDoubleFace() === true);
 }
 
 export default run;

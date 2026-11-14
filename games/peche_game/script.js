@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=83 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=84 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=83';
+import { SoundEngine } from './sound.js?v=84';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -759,7 +759,9 @@ function makeFondGeometry(radius, rings, segments) {
 
 const pondBottom = new THREE.Mesh(
     makeFondGeometry(POND_RADIUS + 2, 26, 96),
-    new THREE.MeshStandardMaterial({ color: 0x1a5a70, roughness: 1 })
+    // Double face : les faces du disque pointent vers le bas -> invisibles depuis
+    // la berge ; on voyait donc le ciel a travers l'eau (d'ou la nappe blanche).
+    new THREE.MeshStandardMaterial({ color: 0x246b7a, roughness: 1, side: THREE.DoubleSide })
 );
 // La hauteur est dans la géométrie : le maillage est simplement centré.
 pondBottom.position.set(POND_CENTER.x, 0, POND_CENTER.z);
@@ -914,6 +916,24 @@ function updateWaterReflection() {
     waterUniforms.uReflectOn.value = 1;   // le sampler est prêt
 }
 
+// Miroir JS de la composition de l'eau (memes regles que le fragment shader) :
+// sert aux TESTS DE NON-REGRESSION pour garantir une eau bleu-vert sombre et
+// jamais une nappe blanche.
+function couleurEau(prof, fres) {
+    const p = Math.max(0, Math.min(1, prof));
+    const f = Math.max(0, Math.min(1, fres));
+    const melange = function (a, b, t) {
+        return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t };
+    };
+    const shallow = waterUniforms.uShallow.value;
+    const deep = waterUniforms.uDeep.value;
+    const sky = waterUniforms.uSky.value;
+    let col = melange({ r: shallow.r, g: shallow.g, b: shallow.b },
+        { r: deep.r, g: deep.g, b: deep.b }, p);
+    col = melange(col, { r: sky.r, g: sky.g, b: sky.b }, f * 0.22);
+    return col;
+}
+
 // Eau transparente avec des vagues dont l'amplitude et la vitesse suivent le
 // vent. La normale est calculée à partir du gradient de la houle (éclairage).
 const waterMaterial = new THREE.ShaderMaterial({
@@ -1014,7 +1034,7 @@ const waterMaterial = new THREE.ShaderMaterial({
             col += vec3(spec);
             // Eau plus transparente : on voit la moitié inférieure du bouchon et
             // le bas de ligne sous la surface.
-            float alpha = clamp(0.30 + prof * 0.45 + fres * 0.12, 0.0, 0.95);
+            float alpha = clamp(0.45 + prof * 0.40 + fres * 0.10, 0.0, 0.96);
             gl_FragColor = vec4(col, alpha);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
@@ -5992,6 +6012,15 @@ window.__game = {
     setRagondinVolDans: function (sec) { if (ragondin) { ragondinVolTimer = sec; } },
     volerUnPoissonRagondin: volerUnPoissonRagondin,
     getScore: function () { return score; },
+    couleurEau: couleurEau,
+    getFondDoubleFace: function () { return pondBottom.material.side === THREE.DoubleSide; },
+    getEauCouleurs: function () {
+        return {
+            shallow: waterUniforms.uShallow.value.getHex(),
+            deep: waterUniforms.uDeep.value.getHex(),
+            sky: waterUniforms.uSky.value.getHex()
+        };
+    },
     annoncerRecord: annoncerRecord,
     addJournalEntry: addJournalEntry,
     showCatchMessage: showCatchMessage,
