@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=75 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=76 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=75';
+import { SoundEngine } from './sound.js?v=76';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -836,6 +836,7 @@ const waterUniforms = {
     uDeep: { value: new THREE.Color(0x103a4e) },
     uSky: { value: new THREE.Color(0xc4e2ee) },
     uNormals: { value: makeWaterNormalTexture() },
+    uNormalsOn: { value: 0 },
     uReflection: { value: null },
     uReflectOn: { value: 0 },
     uResolution: { value: new THREE.Vector2(1280, 720) }
@@ -938,7 +939,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         vec3 vRipple;
         void main() {
             // Deux nappes de normales qui défilent avec le vent : ridules par pixel.
-            if (true) {
+            if (uNormalsOn > 0.5) {
                 vec2 uv1 = vWorldPos.xz * 0.05 + vec2(uTime * 0.010, uTime * 0.006) * (0.5 + uWind);
                 vec2 uv2 = vWorldPos.xz * 0.11 - vec2(uTime * 0.016, -uTime * 0.012) * (0.4 + uWind);
                 vec3 t1 = texture2D(uNormals, uv1).rgb - vec3(0.5);
@@ -5343,6 +5344,7 @@ majEtiquetteProfondeur();
 coupePrete = true;
 majCoupeProfondeur();
 waterUniforms.uResolution.value.set(window.innerWidth || 1280, window.innerHeight || 720);
+waterUniforms.uNormalsOn.value = waterUniforms.uNormals.value ? 1 : 0;
 
 fishButton.addEventListener('click', () => {
     ensureSound();
