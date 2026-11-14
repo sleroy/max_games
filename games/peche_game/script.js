@@ -231,7 +231,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1
 // Rendu plus « photo » : tone mapping ACES (comme une caméra). Les shaders
 // maison (ciel, eau) incluent les chunks de tone mapping pour rester cohérents.
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.02;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -241,7 +241,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 // On rend la scène dans une cible, on isole les hautes lumières, on les floute
 // puis on recompose à l'écran. Désactivé par défaut sur mobile (performance).
 // ---------------------------------------------------------------------------
-const post = { enabled: !isMobileDevice, strength: 0.45, vignette: 0.30 };
+const post = { enabled: !isMobileDevice, strength: 0.22, vignette: 0.18 };
 const postSupported = !!(renderer.capabilities && renderer.setRenderTarget
     && renderer.getRenderTarget && renderer.setSize);
 
@@ -287,7 +287,7 @@ function resizePost(width, height) {
 const POST_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
 
 const brightMaterial = new THREE.ShaderMaterial({
-    uniforms: { tDiffuse: { value: null }, uThreshold: { value: 0.8 } },
+    uniforms: { tDiffuse: { value: null }, uThreshold: { value: 0.92 } },
     vertexShader: POST_VERTEX,
     fragmentShader: `
         uniform sampler2D tDiffuse;
@@ -704,7 +704,7 @@ const waterMaterial = new THREE.ShaderMaterial({
             vec3 viewDir = normalize(cameraPosition - vWorldPos);
             float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
             vec3 col = mix(uDeep, uShallow, clamp(n.y, 0.0, 1.0));
-            col = mix(col, uSky, fres * 0.6);
+            col = mix(col, uSky, fres * 0.45);
             // Reflets du décor (optionnels) : cube rendu de temps en temps.
             if (uReflect > 0.001) {
                 vec3 refl = reflect(-viewDir, n);
@@ -2149,6 +2149,43 @@ function updateAmbiante(dt, time) {
 }
 
 // ---------------------------------------------------------------------------
+// Bulles : le seul indice de la présence des poissons sous l'eau.
+// ---------------------------------------------------------------------------
+const bubbles = [];
+const bubbleGeo = new THREE.SphereGeometry(0.06, 6, 6);
+const bubbleMat = new THREE.MeshBasicMaterial({
+    color: 0xdff3ff, transparent: true, opacity: 0.65, depthWrite: false
+});
+
+function spawnBubbles(position, count) {
+    if (bubbles.length > 70) {
+        return;
+    }
+    for (let i = 0; i < count; i++) {
+        const bulle = new THREE.Mesh(bubbleGeo, bubbleMat);
+        bulle.position.set(
+            position.x + ((i * 7) % 3 - 1) * 0.16,
+            Math.max(-3.4, position.y),
+            position.z + ((i * 5) % 3 - 1) * 0.16);
+        bulle.userData.vy = 0.7 + (i % 3) * 0.25;
+        scene.add(bulle);
+        bubbles.push({ mesh: bulle, t: 0 });
+    }
+}
+
+function updateBubbles(dt) {
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+        const b = bubbles[i];
+        b.t += dt;
+        b.mesh.position.y += b.mesh.userData.vy * dt;
+        if (b.mesh.position.y > 0.05 || b.t > 2.4) {
+            scene.remove(b.mesh);
+            bubbles.splice(i, 1);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Poissons
 // ---------------------------------------------------------------------------
 const fishes = [];
@@ -2483,6 +2520,9 @@ function spawnFish() {
     fish.userData.weight = Math.round(poidsRealisteKilos(espece, longueurAffichee) * 1000) / 1000;
     fish.userData.losses = 0;
     fish.userData.hooked = false;
+    // Les poissons vivent cachés sous l'eau : seules leurs bulles et leurs
+    // sillages indiquent leur présence (ils ne deviennent visibles qu'au combat).
+    fish.visible = false;
     scene.add(fish);
     fishes.push(fish);
 }
@@ -2844,10 +2884,10 @@ function hookFish() {
         hideBiteView();
         startStruggle(fish);
     } else if (bitePhase === 'floating' || bitePhase === 'nibbling') {
-        // Trop tôt : le poisson est effrayé et s'enfuit (un seul essai).
+        // Trop tôt : le poisson est effrayé et retourne dans les profondeurs.
         if (biteFish) {
             biteFish.userData.biting = false;
-            biteFish.visible = true;
+            biteFish.visible = false;
             punishFish(biteFish);
             biteFish = null;
         }
@@ -2910,7 +2950,7 @@ function updateBiteView(dt) {
             setFloatOpacity(1);
             if (biteFish) {
                 biteFish.userData.biting = false;
-                biteFish.visible = true;
+                biteFish.visible = false;
                 punishFish(biteFish);
                 biteFish = null;
             }
@@ -2950,7 +2990,7 @@ function endStruggle(success, timedOut) {
         timeoutEscape = !!timedOut;
         if (hookedFish) {
             hookedFish.userData.hooked = false;
-            hookedFish.visible = true;
+            hookedFish.visible = false;   // il replonge et disparaît
             punishFish(hookedFish);
             hookedFish = null;
         }
@@ -3105,12 +3145,13 @@ function updateSnag(dt) {
 const ripples = [];
 
 function spawnRipple(position) {
-    const geo = new THREE.RingGeometry(0.25, 0.45, 32);
+    const geo = new THREE.RingGeometry(0.3, 0.42, 32);
     geo.rotateX(-Math.PI / 2);
     const mat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.32,
+        depthWrite: false,
         side: THREE.DoubleSide
     });
     const mesh = new THREE.Mesh(geo, mat);
@@ -3123,10 +3164,10 @@ function updateRipples(dt) {
     for (let i = ripples.length - 1; i >= 0; i--) {
         const r = ripples[i];
         r.t += dt;
-        const s = 1 + r.t * 9;
+        const s = 1 + r.t * 4.5;
         r.mesh.scale.set(s, s, s);
-        r.mesh.material.opacity = Math.max(0, 0.7 * (1 - r.t / 1.3));
-        if (r.t > 1.3) {
+        r.mesh.material.opacity = Math.max(0, 0.32 * (1 - r.t / 1.1));
+        if (r.t > 1.1) {
             scene.remove(r.mesh);
             r.mesh.geometry.dispose();
             r.mesh.material.dispose();
@@ -3236,13 +3277,27 @@ function updateFish(dt, time) {
         }
         if (data.hooked) {
             if (floatState === 'reeling') {
+                fish.visible = true;   // combat gagné : le poisson est bien visible
                 return; // position gérée par la remontée
             }
+            // Épreuve de force : le poisson remonte par intermittence puis
+            // replonge et redevient invisible (seules les bulles le trahissent).
+            data.surfacePhase = (data.surfacePhase || 0) + dt;
+            const houle = Math.sin(data.surfacePhase * 1.6);
+            const profondeur = -0.15 - (1 - houle) * 1.1;
+            fish.visible = profondeur > -0.85;
             fish.position.x = strugglePos.x + Math.sin(time * 30) * 0.15;
             fish.position.z = strugglePos.z + Math.cos(time * 25) * 0.15;
-            fish.position.y = -0.2 - data.topOffset + Math.sin(time * 20) * 0.1;
+            fish.position.y = profondeur - data.topOffset;
             fish.rotation.y = Math.sin(time * 15) * 0.5;
             data.tailPivot.rotation.y = Math.sin(time * 25) * 0.8;
+            if (!fish.visible) {
+                data.diveBubbleTimer = (data.diveBubbleTimer || 0) - dt;
+                if (data.diveBubbleTimer <= 0) {
+                    data.diveBubbleTimer = 0.6;
+                    spawnBubbles(fish.position, 2);
+                }
+            }
             return;
         }
         data.targeting = false;
@@ -3323,6 +3378,16 @@ function updateFish(dt, time) {
         // seuls les gros poissons montrent leur dorsale près de la surface.
         fish.position.y = data.depth - data.topOffset + Math.sin(time * 2 + data.phase) * 0.12;
         data.tailPivot.rotation.y = Math.sin(time * 9 + data.phase) * 0.5;
+        // Poisson caché sous l'eau : seules ses bulles et son sillage le trahissent.
+        fish.visible = false;
+        if (data.bubbleTimer === undefined) {
+            data.bubbleTimer = 1.5 + (data.phase % 4);
+        }
+        data.bubbleTimer -= dt;
+        if (data.bubbleTimer <= 0) {
+            data.bubbleTimer = 4 + ((data.phase * 5) % 5);
+            spawnBubbles(fish.position, 3);
+        }
         // Sillage : une petite ondulation quand le poisson nage près de la surface.
         if (data.wakeTimer === undefined) {
             data.wakeTimer = 1 + (data.phase % 2.5);
@@ -3330,7 +3395,7 @@ function updateFish(dt, time) {
         data.wakeTimer -= dt;
         if (data.wakeTimer <= 0) {
             data.wakeTimer = 2.5 + ((data.phase * 7) % 3);
-            if (data.depth > -1.8 && ripples.length < 12) {
+            if (data.depth > -1.8 && ripples.length < 10) {
                 spawnRipple(fish.position);
             }
         }
@@ -3687,6 +3752,7 @@ function animate() {
         updateAmbiante(dt, elapsed);
         updateReflections(dt);
         updateSplashes(dt);
+        updateBubbles(dt);
         updateFishThrow(dt);
         updateCast(dt);
         updateRipples(dt);
@@ -3834,6 +3900,8 @@ window.__game = {
     },
     getRainPoints: function () { return rainPoints; },
     getBirds: function () { return birds; },
+    getBubbleCount: function () { return bubbles.length; },
+    getRippleCount: function () { return ripples.length; },
     // Fiche des espèces, tutoriel et reflets — exposé pour les tests.
     getSpeciesCard: function () { return Object.assign({}, journal.especes); },
     openTutorial: openTutorial,
@@ -3896,6 +3964,7 @@ window.__game = {
         updateAmbiante(dt, testTime);
         updateReflections(dt);
         updateSplashes(dt);
+        updateBubbles(dt);
         updateFishThrow(dt);
         updateCast(dt);
         updateRipples(dt);

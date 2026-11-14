@@ -91,7 +91,7 @@ export function run() {
     check('le poisson effrayé devient plus agressif', earlyFish.userData.aggression > aggroBefore,
         aggroBefore.toFixed(2) + ' -> ' + earlyFish.userData.aggression.toFixed(2));
     checkEqual('l\'échec est comptabilisé pour ce poisson', earlyFish.userData.losses, lossesBefore + 1);
-    checkEqual('le poisson redevient visible', earlyFish.visible, true);
+    checkEqual('le poisson effrayé disparaît dans les profondeurs', earlyFish.visible, false);
     checkEqual('vue bouchon refermée', G().isBiteViewActive(), false);
     checkEqual('caméra revenue à la normale', G().getCameraMode(), 'normal');
     stepFor(0.5);
@@ -678,6 +678,45 @@ export function run() {
     checkEqual('du coup ils restent désactivés', reflets.enabled, false);
     G().setReflections(false);
     checkEqual('les reflets peuvent être coupés', G().getReflections().strength, 0);
+
+    group('32) Les poissons se cachent sous l’eau (bulles et sillages)');
+    resetToIdle();
+    stepFor(1.5);
+    check('les poissons sont invisibles dans l’étang',
+        G().fishes.every(f => !f.visible),
+        G().fishes.filter(f => f.visible).length + ' poisson(s) visible(s)');
+    check('bulles et sillages trahissent leur présence',
+        G().getBubbleCount() > 0 || G().getRippleCount() > 0,
+        G().getBubbleCount() + ' bulles, ' + G().getRippleCount() + ' sillages');
+
+    // Pendant l'épreuve de force : apparitions intermittentes, puis plongées.
+    const cachePoisson = startFight(0, -20);
+    let imagesVisibles = 0;
+    let imagesCachees = 0;
+    for (let i = 0; i < 200; i++) {
+        step(0.05);
+        if (state() !== 'struggle') {
+            break;
+        }
+        if (cachePoisson.visible) {
+            imagesVisibles += 1;
+        } else {
+            imagesCachees += 1;
+        }
+    }
+    check('le poisson apparaît par intermittence pendant le combat',
+        imagesVisibles > 0 && imagesCachees > 0,
+        imagesVisibles + ' images visible / ' + imagesCachees + ' caché');
+
+    // Combat gagné : le poisson reste visible.
+    guard = 0;
+    while (state() === 'struggle' && guard++ < 4000) {
+        crankTurns(3);
+        step(1 / 60);
+    }
+    stepFor(0.3);
+    checkEqual('une fois le combat gagné, le poisson est visible', cachePoisson.visible, true);
+    resetToIdle();
 }
 
 export default run;

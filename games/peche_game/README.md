@@ -58,6 +58,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - Pêcheur 3D avec canne, ligne courbe et bouchon muni d'un hameçon.
 - 20 poissons de 4 formes différentes, avec taille, force, agressivité et poids variables.
 - **Vent** aléatoire : déplace le bouchon, décale le lancer, fait bouger les nuages, indiqué par une **girouette 3D** et une **jauge**.
+- **Poissons discrets** : ils **ne se voient pas** dans l'étang (comme dans la vraie vie !).
+  Seuls leurs **bulles** et leurs **sillages** trahissent leur présence. Pendant l'épreuve de
+  force, le poisson **apparaît par intermittence** quand il remonte près de la surface, puis
+  **replonge et disparaît** ; une fois le combat **gagné**, il reste **visible**.
 - **Eau transparente et vivante** : surface animée par une houle dont l'amplitude et la vitesse suivent le vent, bouchon qui flotte sur les vagues, poissons nageant à des profondeurs différentes et remontant vers l'hameçon pour mordre.
 - **Mode bouchon** : vue rapprochée, enfoncement sous l'eau, fenêtre de ferrage à un seul essai.
 - **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
