@@ -746,7 +746,9 @@ const waterMaterial = new THREE.ShaderMaterial({
             vec3 halfDir = normalize(viewDir + sunDir);
             float spec = pow(max(dot(n, halfDir), 0.0), 60.0) * (0.35 + uWind * 0.8) * uLight;
             col += vec3(spec);
-            float alpha = 0.52 + fres * 0.3;
+            // Eau plus transparente : on voit la moitié inférieure du bouchon et
+            // le bas de ligne sous la surface.
+            float alpha = 0.36 + fres * 0.26;
             gl_FragColor = vec4(col, alpha);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
@@ -1127,17 +1129,18 @@ floatGroup.add(floatStick);
 
 // Ligne + hameçon sous le bouchon
 const hookLine = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.012, 0.012, 0.7, 4),
+    // Long bas de ligne : environ 1,3 m sous le bouchon (2 unités ≈ 1 m).
+    new THREE.CylinderGeometry(0.012, 0.012, 3.0, 4),
     new THREE.MeshStandardMaterial({ color: 0xdddddd, transparent: true })
 );
-hookLine.position.y = -0.44;   // × (l'échelle du bouchon : voir plus bas)
+hookLine.position.y = -1.8;    // du bas du bouchon jusqu'à l'hameçon
 floatGroup.add(hookLine);
 
 const hook = new THREE.Mesh(
     new THREE.TorusGeometry(0.09, 0.022, 6, 14, Math.PI * 1.5),
     new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3, transparent: true })
 );
-hook.position.y = -0.76;       // × (l'échelle du bouchon : voir plus bas)
+hook.position.y = -3.25;       // tout au fond du bas de ligne
 hook.rotation.z = Math.PI;
 floatGroup.add(hook);
 
@@ -1149,10 +1152,10 @@ function setFloatOpacity(opacity) {
 }
 const floatIdle = new THREE.Vector3(rodTip.x, rodTip.y - 0.6, rodTip.z);
 floatGroup.position.copy(floatIdle);
-// Le bouchon est un peu AGRANDI : dans la vue réaliste (sans zoom), il faut
-// pouvoir suivre ses moindres mouvements depuis la berge. La ligne et l'hameçon
-// ont été rapprochés d'autant pour rester à la bonne profondeur (HOOK_DEPTH).
-const FLOTTEUR_ECHELLE = 1.25;
+// Le bouchon est un peu plus petit que dans la réalité d'un jeu vidéo : il doit
+// rester crédible. (Les mouvements de touche sont bien plus grands que sa taille,
+// donc il reste très lisible de loin.)
+const FLOTTEUR_ECHELLE = 0.8;
 floatGroup.scale.setScalar(FLOTTEUR_ECHELLE);
 scene.add(floatGroup);
 
@@ -1929,8 +1932,9 @@ function startHoldingFish(fish) {
     fish.userData.biting = false;
     fish.visible = true;
     fish.scale.setScalar(fish.userData.size * 0.75);
-    fish.rotation.set(0, Math.PI, Math.PI / 2);
-    fish.position.set(angler.position.x + 1.1, 2.4, angler.position.z - 0.9);
+    // Bien visible depuis la berge : levé au-dessus de l'épaule, côté caméra.
+    fish.rotation.set(0, Math.PI * 0.75, 0);
+    fish.position.set(angler.position.x + 1.5, 3.6, angler.position.z + 1.1);
     floatState = 'holding';
     floatGroup.position.copy(floatIdle);
     fishThrowState = 'idle';
@@ -1938,6 +1942,7 @@ function startHoldingFish(fish) {
     fishButton.disabled = true;
     fishButton.textContent = 'Lance le poisson !';
     const espece = fish.userData.espece ? fish.userData.espece + ' ' : '';
+    spawnFloatingText((fish.userData.espece || 'Poisson') + ' au bord !', fish.position, '#9ef0c0');
     statusDisplay.textContent = espece + 'au bord ! Lance-le dans la bourriche 🧺 (appuie, maintiens, relâche au bon moment).';
 }
 
@@ -3130,7 +3135,7 @@ const MAX_WAIT = 5;
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
 // du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
 // sur la distance RÉELLE en 3D à l'hameçon, pas seulement à l'aplomb du bouchon.
-const HOOK_DEPTH = -0.85;          // profondeur de l'hameçon sous le bouchon
+const HOOK_DEPTH = -2.6;           // profondeur de l'hameçon sous le bouchon
 const BITE_INTEREST_RADIUS = 7;    // à cette distance, le poisson s'intéresse au bouchon
 const BITE_RADIUS = 0.9;           // distance 3D en dessous de laquelle il mord
 const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
