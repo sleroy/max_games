@@ -302,6 +302,25 @@ button:disabled {
     transform: translate(-50%, 0);
 }
 
+/* NOUVEAU RECORD : le message devient doré et pulse doucement. */
+.catch-message.record {
+    background: rgba(122, 84, 8, 0.95);
+    border-color: #ffd166;
+    color: #ffe9a8;
+    font-size: 1.5em;
+    box-shadow: 0 0 14px rgba(255, 209, 102, 0.6);
+    animation: record-glow 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes record-glow {
+    from {
+        box-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+    }
+    to {
+        box-shadow: 0 0 28px rgba(255, 209, 102, 0.95);
+    }
+}
+
 .crank {
     position: absolute;
     right: 34px;

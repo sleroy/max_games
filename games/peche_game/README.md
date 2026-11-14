@@ -182,6 +182,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
   **combativité**. Le poids est calculé avec la formule des pêcheurs
   (`poids ≈ K × longueur³ / 100 000`), et le **carnet note l'espèce** de chaque prise.
+- **Records d'espèce** : quand un poisson range dans la bourriche est plus lourd que le
+  record du carnet, le message de prise passe en **doré** (« 🏆 RECORD — Carpe ! 2,4 kg 🎣 »)
+  et le statut rappelle l'ancien record. Le premier poisson d'une espèce établit son record.
 - **Chaque espèce mord et se bat à SA façon** : 6 styles de combat — **Nerveux** (ablette,
   gardon : il tapote), **Teigneux** (goujon, perche : petits coups secs), **Aspirateur**
   (tanche, brème : le bouchon MONTE), **Fonceur** (brochet, truite, chevesne, black-bass :

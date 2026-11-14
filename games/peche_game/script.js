@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=65 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=66 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=65';
+import { SoundEngine } from './sound.js?v=66';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1930,12 +1930,17 @@ function addJournalEntry(weight, espece) {
     }
     journal.especes[nom] = journal.especes[nom] || { n: 0, record: 0 };
     const fiche = journal.especes[nom];
+    const ancienRecord = fiche.record || 0;
     fiche.n += 1;
-    if (weight > fiche.record) {
+    // Un record est BATTU si le poisson est plus lourd que le précédent (le
+    // tout premier poisson d'une espèce établit son record).
+    const nouveauRecord = weight > ancienRecord;
+    if (nouveauRecord) {
         fiche.record = Math.round(weight * 100) / 100;
     }
     saveJournal();
     renderJournal();
+    return { nouveauRecord: nouveauRecord, ancienRecord: ancienRecord };
 }
 
 // ---------------------------------------------------------------------------
@@ -2450,12 +2455,18 @@ function storeHeldFish() {
     caughtWeight = weight;
     score++;
     scoreDisplay.textContent = score;
-    showCatchMessage(weight, fish.userData.espece);
-    addJournalEntry(weight, fish.userData.espece);
+    recordBattu = null;
+    // On enregistre d'abord : le carnet nous dit si c'est un NOUVEAU RECORD.
+    const entree = addJournalEntry(weight, fish.userData.espece);
+    showCatchMessage(weight, fish.userData.espece, entree.nouveauRecord);
     const gainXp = gagnerExperience(weight);
     sound.catchFish();
     spawnRipple(BOURRICHE_POS);
     spawnSplash(BOURRICHE_POS);
+    if (entree.nouveauRecord) {
+        annoncerRecord(weight, fish.userData.espece, entree.ancienRecord);
+        return;
+    }
     statusDisplay.textContent = 'Dans la bourriche ! ' + fish.userData.espece + ' — '
         + fmtPoids(weight) + ' (+1 · +' + gainXp + ' XP) 🧺';
 }
@@ -3838,9 +3849,10 @@ function updateStruggleTimer() {
 
 let catchMessageTimer = null;
 
-function showCatchMessage(weight, espece) {
-    catchMessage.textContent = (espece ? espece + ' ! ' : 'Poisson attrapé ! ')
-        + fmtPoids(weight) + ' 🎣';
+function showCatchMessage(weight, espece, record) {
+    catchMessage.textContent = (record ? '🏆 RECORD — ' : '')
+        + (espece ? espece + ' ! ' : 'Poisson attrapé ! ') + fmtPoids(weight) + ' 🎣';
+    catchMessage.classList.toggle('record', !!record);
     catchMessage.classList.add('show');
     if (catchMessageTimer) {
         clearTimeout(catchMessageTimer);
@@ -3848,6 +3860,24 @@ function showCatchMessage(weight, espece) {
     catchMessageTimer = setTimeout(function () {
         catchMessage.classList.remove('show');
     }, 2500);
+}
+
+// Dernier record battu (affiché à l'écran, exposé aux tests).
+let recordBattu = null;
+
+// Annonce un NOUVEAU RECORD pour une espèce : message doré + statut détaillé.
+function annoncerRecord(weight, espece, ancienRecord) {
+    const nom = espece || 'Poisson';
+    recordBattu = {
+        espece: nom,
+        kg: Math.round(weight * 100) / 100,
+        ancien: Math.round((ancienRecord || 0) * 100) / 100
+    };
+    catchMessage.textContent = '🏆 RECORD — ' + nom + ' ! ' + fmtPoids(weight) + ' 🎣';
+    catchMessage.classList.add('record', 'show');
+    spawnFloatingText('🏆 RECORD !', BOURRICHE_POS, '#ffd166');
+    statusDisplay.textContent = '🏆 NOUVEAU RECORD de ' + nom + ' : ' + fmtPoids(weight)
+        + (ancienRecord > 0 ? ' (ancien record : ' + fmtPoids(ancienRecord) + ')' : '') + ' !';
 }
 
 const struggleAnchor = new THREE.Vector3(rodTip.x, 0, rodTip.z);
@@ -5302,6 +5332,10 @@ window.__game = {
     getStylesCombat: function () { return STYLES_COMBAT; },
     styleEspece: styleEspece,
     getStruggleStyle: function () { return struggle ? struggle.styleNom : ''; },
+    getRecordBattu: function () { return recordBattu ? Object.assign({}, recordBattu) : null; },
+    annoncerRecord: annoncerRecord,
+    addJournalEntry: addJournalEntry,
+    showCatchMessage: showCatchMessage,
     majCoupeProfondeur: majCoupeProfondeur,
     choisirTouche: choisirTouche,
     mouvementDeTouche: mouvementDeTouche,

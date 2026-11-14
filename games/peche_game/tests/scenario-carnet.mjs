@@ -115,6 +115,37 @@ export function run() {
         'échelle ' + G().floatGroup.scale.x);
     check('l’hameçon est bien bas sous le bouchon', G().getHookDepth() <= -2,
         'hameçon à ' + G().getHookDepth() + ' unité');
+
+    group('46) Nouveau record d’espèce');
+    // La logique : le carnet dit si le record est battu.
+    const e1 = G().addJournalEntry(2.5, 'Espèce test');
+    check('le premier poisson d’une espèce établit son record',
+        e1.nouveauRecord === true && e1.ancienRecord === 0, JSON.stringify(e1));
+    const e2 = G().addJournalEntry(1.2, 'Espèce test');
+    check('un poisson plus léger ne bat pas le record', e2.nouveauRecord === false,
+        JSON.stringify(e2));
+    const e3 = G().addJournalEntry(3.4, 'Espèce test');
+    check('un poisson plus lourd bat le record',
+        e3.nouveauRecord === true && Math.abs(e3.ancienRecord - 2.5) < 1e-9, JSON.stringify(e3));
+    check('le record est enregistré dans le carnet',
+        G().getSpeciesCard()['Espèce test'].record === 3.4,
+        String(G().getSpeciesCard()['Espèce test'].record));
+    // L'annonce à l'écran.
+    G().annoncerRecord(3.4, 'Espèce test', 2.5);
+    const msgRecord = el('catchMessage');
+    check('le message de prise passe en doré', msgRecord.classList.contains('record'),
+        msgRecord.className);
+    check('le message annonce le record', msgRecord.textContent.indexOf('RECORD') >= 0,
+        msgRecord.textContent);
+    check('le statut rappelle l’ancien record',
+        el('status').textContent.indexOf('ancien record') >= 0, el('status').textContent);
+    const rb = G().getRecordBattu();
+    check('le record battu est mémorisé', !!rb && rb.espece === 'Espèce test'
+        && Math.abs(rb.kg - 3.4) < 1e-9 && Math.abs(rb.ancien - 2.5) < 1e-9, JSON.stringify(rb));
+    // Une prise ordinaire enlève le doré.
+    G().showCatchMessage(1.0, 'Espèce test', false);
+    check('une prise ordinaire retire le doré', !el('catchMessage').classList.contains('record'),
+        el('catchMessage').className);
 }
 
 export default run;
