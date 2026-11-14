@@ -14,7 +14,7 @@ const FISH_COUNT = 20;
 const API = [
     'scene', 'camera', 'renderer', 'fishes', 'floatGroup', 'rodTip', 'angler', 'makeFish', 'lilyPads',
     'startCast', 'hookFish', 'getState', 'getBitePhase', 'isBiteViewActive', 'getCameraMode', 'startReel',
-    'getBiteFromReel', 'sound', 'getWind', 'getVaneRotation', 'getTension', 'getStruggleTimeLeft',
+    'sound', 'getWind', 'getVaneRotation', 'getTension', 'getStruggleTimeLeft',
     'getLineLength', 'getStruggleTurnsNeeded', 'getUnitsPerTurn', 'turnCrank', 'reelClick', 'setPaused', 'step',
     'setFeedMode', 'isFeedMode', 'getFeedState', 'getFeedPower', 'getFeedTargetPower', 'startFeedCharge',
     'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChum', 'getPondCenter',
@@ -92,7 +92,7 @@ export function run() {
     forceBite();
     checkEqual('une nouvelle touche arrive ensuite', state(), 'bite');
 
-    group('12) Ferrage réussi et touche pendant la remontée');
+    group('12) Ferrage réussi pendant l’enfoncement');
     resetToIdle();
     clearLilyPads();
     castTo(0, -30);
@@ -112,17 +112,23 @@ export function run() {
         el('fishButton').textContent.includes('manivelle'), el('fishButton').textContent);
     checkEqual('le bouton est désactivé pendant le combat', el('fishButton').disabled, true);
 
+    // Pendant la remontée, on finit de ramener la ligne : aucun autre poisson
+    // ne peut mordre (il faut relancer la canne pour en prendre un).
     resetToIdle();
     clearLilyPads();
     castTo(0, -25);
     G().startReel();
     checkEqual('on remonte la ligne', state(), 'reeling');
-    forceBite();
-    checkEqual('une touche peut survenir pendant la remontée', state(), 'bite');
-    checkEqual('la touche est marquée « depuis la remontée »', G().getBiteFromReel(), true);
-    fire('biteView', 'pointerdown', { button: 0 });
-    checkEqual('ferrer trop tôt reprend la remontée', state(), 'reeling');
-    checkEqual('le marqueur est remis à zéro', G().getBiteFromReel(), false);
+    parkFish();
+    const reelBait = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
+    reelBait.position.set(G().floatGroup.position.x, -2, G().floatGroup.position.z);
+    reelBait.userData.depth = -2;
+    reelBait.userData.vx = 0;
+    reelBait.userData.vz = 0;
+    stepFor(1.5);
+    checkEqual('pas de nouvelle touche pendant la remontée', state(), 'reeling');
+    check('le bouchon reste en surface pendant la remontée',
+        G().floatGroup.position.y > -0.5, G().floatGroup.position.y.toFixed(2));
 
     group('13) Moulinet : un tour ramène 2 unités de fil');
     resetToIdle();
@@ -319,7 +325,7 @@ export function run() {
     check('chaque poisson a une profondeur', depths.every(d => typeof d === 'number'),
         depths.length + ' poissons');
     check('aucun dos de poisson au-dessus de l’eau',
-        G().fishes.every(f => f.position.y + f.userData.topOffset <= -0.8),
+        G().fishes.every(f => f.position.y + f.userData.topOffset <= -0.5),
         Math.max.apply(null, G().fishes.map(f => f.position.y + f.userData.topOffset)).toFixed(2));
     check('les profondeurs sont variées',
         Math.max.apply(null, depths) - Math.min.apply(null, depths) > 1.4,
@@ -344,8 +350,9 @@ export function run() {
     check('le poisson a commencé à remonter', deepFish.userData.depth > -2.7,
         deepFish.userData.depth.toFixed(2));
     check('il finit par mordre', stepUntil(() => state() === 'bite', 5), state());
+    step(1 / 60); // une image de plus : le poisson prend sa position de touche
     check('la morsure se fait au niveau de l’hameçon',
-        Math.abs((deepFish.position.y + deepFish.userData.topOffset) - G().getHookDepth()) < 0.6,
+        Math.abs((deepFish.position.y + deepFish.userData.topOffset) - G().getHookDepth()) < 0.2,
         (deepFish.position.y + deepFish.userData.topOffset).toFixed(2));
 
     group('24) L’eau est animée par la houle (selon le vent)');

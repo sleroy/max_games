@@ -327,11 +327,12 @@ button:disabled {
     to { transform: translateX(-50%) scale(1.12); }
 }
 
-/* Bouton « Nourrir » (amorçage) */
+/* Bouton « Nourrir » (amorçage) — placé à côté du pêcheur par le script */
 .feed-button {
     position: absolute;
-    top: 92px;
-    left: 18px;
+    top: 70%;
+    left: 26%;
+    transform: translate(-50%, -50%);
     pointer-events: auto;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.4);

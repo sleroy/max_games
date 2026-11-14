@@ -36,6 +36,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Un seul clic** pour ferrer : clique au bon moment (pendant l'enfoncement). Trop tôt → le poisson s'enfuit.
 - **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson — cliquer ne sert plus à rien pendant le combat.**
 - **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
+- **Pas de nouveau poisson pendant la remontée** : tant que la ligne revient vers le bord, aucun autre poisson ne peut mordre — il faut rembobiner puis relancer la canne.
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
 - **Bouton 🥣 Nourrir (amorçage)** : clique une fois sur le bouton pour armer le mode,
   puis **clique et maintiens** sur l'eau pour viser (une jauge de puissance s'affiche et

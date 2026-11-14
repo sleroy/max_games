@@ -43,7 +43,6 @@ let crankAngle = 0;
 let crankLastAngle = 0;
 let crankRotationDelta = 0;
 let crankSoundAccum = 0;
-let biteFromReel = false;
 
 // ---------------------------------------------------------------------------
 // Moulinet : conversion « tours de manivelle ↔ longueur de fil »
@@ -902,6 +901,19 @@ function updateArm(dt) {
     arm.position.y = 2.1 + armSwing * 0.4;
 }
 
+// Place le bouton « Nourrir » juste à côté du pêcheur, à l'écran.
+const feedButtonAnchor = new THREE.Vector3();
+
+function updateFeedButtonPosition() {
+    feedButtonAnchor.set(angler.position.x - 2.0, 2.6, angler.position.z + 0.4);
+    camera.updateMatrixWorld();
+    feedButtonAnchor.project(camera);
+    const x = (feedButtonAnchor.x * 0.5 + 0.5) * 100;
+    const y = (-feedButtonAnchor.y * 0.5 + 0.5) * 100;
+    feedButton.style.left = x.toFixed(2) + '%';
+    feedButton.style.top = y.toFixed(2) + '%';
+}
+
 // ---------------------------------------------------------------------------
 // Poissons
 // ---------------------------------------------------------------------------
@@ -1331,7 +1343,6 @@ function startStruggle(fish) {
     hookedFish = fish;
     fish.userData.hooked = true;
     fish.userData.biting = false;
-    biteFromReel = false;
     floatState = 'struggle';
     strugglePanel.classList.add('active');
     struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg';
@@ -1342,9 +1353,8 @@ function startStruggle(fish) {
     statusDisplay.textContent = 'Poisson ferré ! Tourne la manivelle pour le ramener !';
 }
 
-function showBiteView(fish, fromReel) {
+function showBiteView(fish) {
     biteFish = fish;
-    biteFromReel = !!fromReel;
     fish.userData.biting = true;
     fish.visible = false;
     biteViewActive = true;
@@ -1392,13 +1402,8 @@ function hookFish() {
             biteFish = null;
         }
         biteCooldown = 1.0;
-        if (biteFromReel) {
-            biteFromReel = false;
-            floatState = 'reeling';
-        } else {
-            floatState = 'inWater';
-            waitTimer = 0;
-        }
+        floatState = 'inWater';
+        waitTimer = 0;
         statusDisplay.textContent = 'Trop tôt ! Le poisson s’est enfui.';
         hideBiteView();
     }
@@ -1437,13 +1442,8 @@ function updateBiteView(dt) {
                 biteFish = null;
             }
             biteCooldown = 1.0;
-            if (biteFromReel) {
-                biteFromReel = false;
-                floatState = 'reeling';
-            } else {
-                floatState = 'inWater';
-                waitTimer = 0;
-            }
+            floatState = 'inWater';
+            waitTimer = 0;
             statusDisplay.textContent = 'Trop tard ! Le poisson a recraché l’hameçon.';
             setTimeout(hideBiteView, 800);
         }
@@ -1735,7 +1735,7 @@ function updateFish(dt, time) {
         }
         // Un poisson qui passe près du bouchon vient renifler l'hameçon : il s'en
         // approche et remonte vers la surface. C'est ce qui rend la touche visible.
-        if (!fishCaught && (floatState === 'inWater' || floatState === 'reeling')) {
+        if (!fishCaught && floatState === 'inWater') {
             const bx = floatGroup.position.x - fish.position.x;
             const bz = floatGroup.position.z - fish.position.z;
             const bd = Math.hypot(bx, bz);
@@ -1859,14 +1859,8 @@ function updateFloat(dt, time) {
                 hookedFish.position.y = -0.3 - (hookedFish.userData.topOffset || 0);
                 hookedFish.rotation.y = Math.atan2(-dz, dx);
             }
-            // Une touche peut survenir pendant la remontée.
-            if (!fishCaught) {
-                const fish = findBitingFish();
-                if (fish) {
-                    showBiteView(fish, true);
-                    return;
-                }
-            }
+            // Pendant la remontée, on finit de ramener la ligne : aucun autre
+            // poisson ne peut mordre (il faut relancer pour en prendre un).
         } else {
             if (hookedFish) {
                 scene.remove(hookedFish);
@@ -2057,6 +2051,9 @@ function animate() {
     }
     camera.lookAt(cameraTarget);
     renderer.render(scene, camera);
+    if (cameraMode === 'normal') {
+        updateFeedButtonPosition();
+    }
 }
 
 animate();
@@ -2082,7 +2079,6 @@ window.__game = {
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
     startReel: startReel,
-    getBiteFromReel: function () { return biteFromReel; },
     sound: sound,
     getWind: function () { return { dir: wind.dir, strength: wind.strength }; },
     getVaneRotation: function () { return vaneArrow.rotation.y; },
