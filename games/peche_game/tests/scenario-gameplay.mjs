@@ -787,6 +787,23 @@ export function run() {
     stepFor(0.3);
     checkEqual('une fois le combat gagné, le poisson est visible', gagne.visible, true);
     resetToIdle();
+    group('47) Mesures réalistes (1 unité du monde = 50 cm)');
+    const mes = G().getEchelles();
+    check('le bouchon mesure 15 à 40 cm', mes.bouchonCm >= 15 && mes.bouchonCm <= 40,
+        mes.bouchonCm + ' cm (tige ' + mes.bouchonTigeCm + ' cm)');
+    check('l’hameçon mesure moins de 4 cm', mes.hameconCm <= 4, mes.hameconCm + ' cm');
+    check('un nénuphar fait 10 à 40 cm de rayon', mes.nenupharCm >= 10 && mes.nenupharCm <= 40,
+        mes.nenupharCm + ' cm');
+    check('la canne mesure 4 à 6 m', mes.canneM >= 4 && mes.canneM <= 6, mes.canneM + ' m');
+    check('le pêcheur mesure 1,6 à 1,9 m', mes.pecheurM >= 1.6 && mes.pecheurM <= 1.9,
+        mes.pecheurM + ' m');
+    check('l’étang mesure 40 à 70 m de large', mes.etangM >= 40 && mes.etangM <= 70,
+        mes.etangM + ' m');
+    check('l’étang est profond de 1 à 4 m', mes.fondM >= 1 && mes.fondM <= 4, mes.fondM + ' m');
+    check('la taille 3D d’un poisson = sa longueur réelle',
+        Math.abs(mes.poisson3DCm - mes.poissonReelCm) <= 1,
+        mes.poisson3DCm + ' cm en 3D pour ' + mes.poissonReelCm + ' cm annoncés');
+
     group('44) Résistance du poisson : il se défend vraiment');
     resetToIdle();
     clearLilyPads();

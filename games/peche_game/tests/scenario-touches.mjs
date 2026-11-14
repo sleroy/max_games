@@ -67,14 +67,14 @@ export function run() {
             maxRot = Math.max(maxRot, Math.abs(m.rot || 0));
             maxLat = Math.max(maxLat, Math.hypot(m.dx || 0, m.dz || 0));
         }
-        if (maxY < 0.3 && maxRot < 0.5 && maxLat < 0.4) {
+        if (maxY < 0.12 && maxRot < 0.5 && maxLat < 0.4) {
             invisibles.push(t.nom);
         }
         const fin = G().mouvementDeTouche(t, 1, false);
         if (!t.vrai && (Math.abs(fin.y || 0) > 0.12 || Math.abs(fin.rot || 0) > 0.12)) {
             faussesQuiNeReviennentPas.push(t.nom);   // une fausse touche doit « revenir »
         }
-        if (t.vrai && Math.abs(fin.y || 0) < 0.3 && Math.abs(fin.rot || 0) < 1) {
+        if (t.vrai && Math.abs(fin.y || 0) < 0.12 && Math.abs(fin.rot || 0) < 1) {
             vraiesQuiNeTiennentPas.push(t.nom);      // une vraie touche reste enfoncée/sortie
         }
     });
@@ -100,7 +100,7 @@ export function run() {
     check('un bouchon court se couche sur une remontée', court.rot > 1,
         'inclinaison ' + court.rot.toFixed(2) + ' rad');
     const long = G().mouvementDeTouche(montee, 1, false);
-    check('une longue tige ressort vraiment', long.y > 1, long.y.toFixed(2) + ' unité');
+    check('une longue tige ressort vraiment', long.y > 0.4, long.y.toFixed(2) + ' unité');
 
     // --- Des touches RAPIDES, et un dessin BIEN À ELLE pour chacune ---
     check('la vitesse globale est rapide', G().getVitesseTouches() <= 0.6,

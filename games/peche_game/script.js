@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=66 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=67 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=66';
+import { SoundEngine } from './sound.js?v=67';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -986,7 +986,7 @@ foliageInst.instanceMatrix.needsUpdate = true;
 const lilyPads = [];
 const lilyMat = new THREE.MeshStandardMaterial({ color: 0x3f7d4a, roughness: 0.8, side: THREE.DoubleSide });
 for (let i = 0; i < 14; i++) {
-    const radius = 1.2 + rand() * 1.6;
+    const radius = 0.25 + rand() * 0.45;   // 12 à 35 cm de rayon
     const pad = new THREE.Mesh(new THREE.CircleGeometry(radius, 16), lilyMat);
     pad.rotation.x = -Math.PI / 2;
     const angle = rand() * Math.PI * 2;
@@ -999,7 +999,7 @@ for (let i = 0; i < 14; i++) {
 // Roseaux (instanciés : un seul appel de dessin). Pivot à la base pour
 // qu'ils puissent se balancer au vent.
 const reedMat = new THREE.MeshStandardMaterial({ color: 0x2f6b3f, roughness: 0.9 });
-const reedGeo = new THREE.CylinderGeometry(0.05, 0.09, 1, 5);
+const reedGeo = new THREE.CylinderGeometry(0.02, 0.035, 1, 5);
 reedGeo.translate(0, 0.5, 0);
 const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, 40);
 let reedCount = 0;
@@ -1197,13 +1197,13 @@ function makeBobberTexture() {
 
 const floatGroup = new THREE.Group();
 const floatBody = new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 24, 16),
+    new THREE.SphereGeometry(0.05, 16, 12),
     new THREE.MeshStandardMaterial({ map: makeBobberTexture(), roughness: 0.4, transparent: true })
 );
 floatBody.castShadow = true;
 floatGroup.add(floatBody);
 const floatStick = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8),
+    new THREE.CylinderGeometry(0.018, 0.012, 0.5, 6),
     new THREE.MeshStandardMaterial({ color: 0xc93030, transparent: true })
 );
 floatStick.position.y = 0.5;
@@ -1212,14 +1212,14 @@ floatGroup.add(floatStick);
 // Ligne + hameçon sous le bouchon
 const hookLine = new THREE.Mesh(
     // Long bas de ligne : environ 1,3 m sous le bouchon (2 unités ≈ 1 m).
-    new THREE.CylinderGeometry(0.012, 0.012, 3.0, 4),
+    new THREE.CylinderGeometry(0.005, 0.005, 3.0, 4),
     new THREE.MeshStandardMaterial({ color: 0xdddddd, transparent: true })
 );
 hookLine.position.y = -1.8;    // du bas du bouchon jusqu'à l'hameçon
 floatGroup.add(hookLine);
 
 const hook = new THREE.Mesh(
-    new THREE.TorusGeometry(0.09, 0.022, 6, 14, Math.PI * 1.5),
+    new THREE.TorusGeometry(0.016, 0.005, 6, 12, Math.PI * 1.5),
     new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3, transparent: true })
 );
 hook.position.y = -3.25;       // tout au fond du bas de ligne
@@ -1245,7 +1245,7 @@ function bornesProfondeur(f) {
 
 // Met à jour le dessin du bas de ligne et de l'hameçon (plus ou moins loin).
 function appliquerProfondeurVisuelle() {
-    const bas = 0.3;                                        // bas du bouchon (local)
+    const bas = 0.06;   // bas du bouchon (local) — le fil part du corps                                        // bas du bouchon (local)
     const prof = profondeurLigne / FLOTTEUR_ECHELLE;        // en local
     const longueur = Math.max(0.3, prof - bas);
     hookLine.scale.y = longueur / 3.0;                      // géométrie de 3.0
@@ -1364,32 +1364,32 @@ const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, vo
 const BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
 
 const FLOTTEURS = [
-    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 4.0], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
+    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 4.0], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 0.45,
       couleur: 0xff5a3c, corps: 0xf4f4f4,
       desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
-    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 3.6], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
+    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 3.6], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 0.35,
       couleur: 0xffd24d, corps: 0xf4f4f4,
       desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
-    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 6.4], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
+    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 6.4], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 0.5,
       couleur: 0xd0552a, corps: 0xf4f4f4,
       desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
-    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 5.6], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
+    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 5.6], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 0.8,
       couleur: 0xe04a2a, corps: 0xffe066,
       desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' },
     // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
-    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 4.0], prix: 40, remontee: 'couche', longueur: 2.0,
+    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 4.0], prix: 40, remontee: 'couche', longueur: 0.4,
       couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
       capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
       desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
-    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 4.2], prix: 70, remontee: 'couche', longueur: 1.8,
+    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 4.2], prix: 70, remontee: 'couche', longueur: 0.38,
       couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
       capacite: { fausses: 0.55 }, sensibilite: 1.2,
       desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
-    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 5.8], prix: 110, remontee: 'couche', longueur: 1.9,
+    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 5.8], prix: 110, remontee: 'couche', longueur: 0.4,
       couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
       capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
       desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
-    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 6.2], prix: 200, remontee: 'demi-tige', longueur: 2.8,
+    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 6.2], prix: 200, remontee: 'demi-tige', longueur: 0.55,
       couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
       capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
       sensibilite: 1.25,
@@ -1409,7 +1409,7 @@ function flotteurCourant() {
 function appliquerFlotteurVisuel(f) {
     // La tige s'allonge selon le modèle (elle ressort plus ou moins de l'eau).
     floatStick.scale.y = f.longueur / 0.5;
-    floatStick.position.y = 0.2 + f.longueur / 2;
+    floatStick.position.y = 0.04 + f.longueur / 2;
     floatStick.material.color.set(f.couleur);
     floatBody.material.color.set(f.corps);
     floatStick.userData.longueur = f.longueur;
@@ -1781,7 +1781,7 @@ const FISH_THROW_OSC = 1.6;        // vitesse d'oscillation de la jauge
 // La bourriche 3D : un anneau (la gueule) et un filet qui pend dans l'eau.
 const bourriche = new THREE.Group();
 const bourricheRing = new THREE.Mesh(
-    new THREE.TorusGeometry(BOURRICHE_RADIUS, 0.09, 8, 24),
+    new THREE.TorusGeometry(0.72, 0.05, 8, 24),   // gueule de 36 cm de rayon (réelle)
     new THREE.MeshStandardMaterial({ color: 0x9a7b46, roughness: 0.8 })
 );
 bourricheRing.rotation.x = Math.PI / 2;
@@ -1789,7 +1789,7 @@ bourricheRing.position.y = 0.12;
 bourricheRing.castShadow = true;
 bourriche.add(bourricheRing);
 const bourricheNet = new THREE.Mesh(
-    new THREE.CylinderGeometry(BOURRICHE_RADIUS - 0.1, 0.8, 2.6, 16, 1, true),
+    new THREE.CylinderGeometry(0.66, 0.4, 1.3, 16, 1, true),
     new THREE.MeshStandardMaterial({
         // Bourriche = panier d'osier : OPAQUE. Un filet translucide donnait
         // l'impression d'un objet « sous un voile ».
@@ -3501,59 +3501,59 @@ const BITE_VIEW_LINGER = 0.7;
 //   qui    : quels poissons font ça ('tous' | 'petit' | 'gros' | 'vif')
 const TOUCHES = [
     // ---------- FAUSSES TOUCHES : le bouchon bouge, mais ce n'est PAS le moment
-    { id: 'frisson', nom: 'Frémissement', forme: 'frisson', coups: 4, a: 0.6, duree: 1.4,
+    { id: 'frisson', nom: 'Frémissement', forme: 'frisson', coups: 4, a: 0.21, duree: 1.4,
       vrai: false, famille: 'fausse', qui: 'tous',
       desc: 'Le bouchon vibre sur place sans s’enfoncer : un poisson a frôlé la ligne.' },
-    { id: 'tapote', nom: 'Tapotement', forme: 'pulse', coups: 3, a: 0.7, rot: 0.3, duree: 1.5,
+    { id: 'tapote', nom: 'Tapotement', forme: 'pulse', coups: 3, a: 0.24, rot: 0.3, duree: 1.5,
       vrai: false, famille: 'fausse', qui: 'petit',
       desc: 'Deux ou trois petits coups secs vers le bas : il goûte l’esche et la recrache.' },
-    { id: 'danse', nom: 'Danse du bouchon', forme: 'pulse', coups: 4, a: 0.6, rot: 0.28, duree: 1.8,
+    { id: 'danse', nom: 'Danse du bouchon', forme: 'pulse', coups: 4, a: 0.21, rot: 0.28, duree: 1.8,
       vrai: false, famille: 'fausse', qui: 'petit',
       desc: 'Il sautille vite et sans s’enfoncer : les ablettes attaquent l’esche.' },
-    { id: 'enfonce_partiel', nom: 'Enfoncement partiel', forme: 'sinus', a: 1.0, duree: 1.7,
+    { id: 'enfonce_partiel', nom: 'Enfoncement partiel', forme: 'sinus', a: 0.35, duree: 1.7,
       vrai: false, famille: 'enfoncement', qui: 'tous',
       desc: 'Il plonge à moitié, puis remonte tout seul : le poisson a lâché l’esche.' },
-    { id: 'fausse_remontee', nom: 'Fausse remontée', forme: 'montee_retour', a: 0.8, duree: 1.6,
+    { id: 'fausse_remontee', nom: 'Fausse remontée', forme: 'montee_retour', a: 0.28, duree: 1.6,
       vrai: false, famille: 'remontee', qui: 'tous',
       desc: 'Il monte un peu puis se repose : l’appât a été soulevé puis relâché.' },
-    { id: 'couchage_manque', nom: 'Couchage manqué', forme: 'couchage_retour', rot: 1.2, a: 0.3, duree: 1.6,
+    { id: 'couchage_manque', nom: 'Couchage manqué', forme: 'couchage_retour', rot: 1.2, a: 0.1, duree: 1.6,
       vrai: false, famille: 'couchage', qui: 'tous',
       desc: 'Il s’allonge un instant sur l’eau puis se redresse : la ligne s’est détendue.' },
-    { id: 'derive', nom: 'Dérive', forme: 'derive', a: 0.45, derive: 1.1, rot: 0.18, duree: 2.2,
+    { id: 'derive', nom: 'Dérive', forme: 'derive', a: 0.16, derive: 1.1, rot: 0.18, duree: 2.2,
       vrai: false, famille: 'derive', qui: 'tous',
       desc: 'Il s’en va doucement de côté sans s’enfoncer : le courant pousse la ligne.' },
-    { id: 'double_coup', nom: 'Deux coups', forme: 'double', a: 0.9, rot: 0.2, duree: 1.9,
+    { id: 'double_coup', nom: 'Deux coups', forme: 'double', a: 0.32, rot: 0.2, duree: 1.9,
       vrai: false, famille: 'enfoncement', qui: 'gros',
       desc: 'Il plonge deux fois à la même profondeur : un poisson méfiant qui essaie l’esche.' },
-    { id: 'hesitation', nom: 'Touche hésitante', forme: 'hesitation', a: 1.0, rot: 0.18, duree: 2.1,
+    { id: 'hesitation', nom: 'Touche hésitante', forme: 'hesitation', a: 0.35, rot: 0.18, duree: 2.1,
       vrai: false, famille: 'enfoncement', qui: 'gros',
       desc: 'Il descend par petits à-coups, hésite, puis remonte : le poisson n’est pas décidé.' },
-    { id: 'tourne_sur_place', nom: 'Il tourne sur place', forme: 'tourner', a: 0.45, derive: 0.85, rot: 0.2, duree: 2.0,
+    { id: 'tourne_sur_place', nom: 'Il tourne sur place', forme: 'tourner', a: 0.16, derive: 0.85, rot: 0.2, duree: 2.0,
       vrai: false, famille: 'derive', qui: 'gros',
       desc: 'Le bouchon décrit un petit cercle : un poisson tourne autour de l’esche.' },
     // ---------- VRAIES TOUCHES : c'est MAINTENANT qu'il faut ferrer
-    { id: 'coulee_franche', nom: 'Coulée franche', forme: 'descente', a: 2.2, rot: 0.3, duree: 0.45,
+    { id: 'coulee_franche', nom: 'Coulée franche', forme: 'descente', a: 0.77, rot: 0.3, duree: 0.45,
       vrai: true, famille: 'enfoncement', qui: 'tous',
       desc: 'Il s’enfonce d’un coup et RESTE sous l’eau : la touche classique, à ferrer !' },
-    { id: 'ascenseur', nom: 'Ascenseur (remontée)', forme: 'montee', a: 1.8, duree: 0.52,
+    { id: 'ascenseur', nom: 'Ascenseur (remontée)', forme: 'montee', a: 0.63, duree: 0.52,
       vrai: true, famille: 'remontee', qui: 'tous',
       desc: 'Il MONTE franchement (brème, tanche) : le poisson a soulevé les plombs. Ferrer !' },
-    { id: 'coulee_lente', nom: 'Coulée lente et lourde', forme: 'descente_lente', a: 2.2, rot: 0.15, duree: 0.8,
+    { id: 'coulee_lente', nom: 'Coulée lente et lourde', forme: 'descente_lente', a: 0.77, rot: 0.15, duree: 0.8,
       vrai: true, famille: 'enfoncement', qui: 'gros',
       desc: 'Il descend lentement, sans s’arrêter : le gros poisson part avec l’esche.' },
-    { id: 'file_sous_leau', nom: 'Il file sous l’eau', forme: 'file', a: 2.0, derive: 0.9, rot: 0.5, duree: 0.52,
+    { id: 'file_sous_leau', nom: 'Il file sous l’eau', forme: 'file', a: 0.7, derive: 0.9, rot: 0.5, duree: 0.52,
       vrai: true, famille: 'derive', qui: 'vif',
       desc: 'Il coule ET part de côté (perche, brochet) : le poisson détale. Ferrer vite !' },
-    { id: 'couchage_franc', nom: 'Il se couche franchement', forme: 'couchage', rot: 1.35, a: 0.35, duree: 0.52,
+    { id: 'couchage_franc', nom: 'Il se couche franchement', forme: 'couchage', rot: 1.35, a: 0.12, duree: 0.52,
       vrai: true, famille: 'couchage', qui: 'tous',
       desc: 'Il s’allonge complètement sur le côté : le poisson part au ras de l’eau. Ferrer !' },
-    { id: 'enfoncement_sec', nom: 'Enfoncement sec', forme: 'descente', a: 2.5, rot: 0.12, duree: 0.45,
+    { id: 'enfoncement_sec', nom: 'Enfoncement sec', forme: 'descente', a: 0.88, rot: 0.12, duree: 0.45,
       vrai: true, famille: 'enfoncement', qui: 'vif',
       desc: 'Il disparaît d’un coup, très vite : un poisson vif a emporté l’esche.' },
-    { id: 'remontee_seche', nom: 'Remontée sèche', forme: 'montee', a: 2.0, rot: 0.12, duree: 0.4,
+    { id: 'remontee_seche', nom: 'Remontée sèche', forme: 'montee', a: 0.7, rot: 0.12, duree: 0.4,
       vrai: true, famille: 'remontee', qui: 'vif',
       desc: 'Il ressort d’un coup, très haut : les plombs ont été soulevés d’un seul geste.' },
-    { id: 'a_la_volee', nom: 'Touche à la volée', forme: 'descente', a: 2.0, duree: 0.4,
+    { id: 'a_la_volee', nom: 'Touche à la volée', forme: 'descente', a: 0.7, duree: 0.4,
       vrai: true, famille: 'enfoncement', qui: 'tous', explicite: true,
       desc: 'L’esche est prise PENDANT la descente : le bouchon ne se pose même pas. Ferrer tout de suite !' }
 ];
@@ -5332,6 +5332,35 @@ window.__game = {
     getStylesCombat: function () { return STYLES_COMBAT; },
     styleEspece: styleEspece,
     getStruggleStyle: function () { return struggle ? struggle.styleNom : ''; },
+    // ÉCHELLE DU MONDE : 1 unité = 50 cm. Renvoie les mesures réelles des
+    // objets (pour vérifier qu'elles restent réalistes) et la taille 3D d'un
+    // poisson comparée à sa longueur réelle.
+    getEchelles: function () {
+        const f = flotteurCourant();
+        const u = 2;                         // unités par mètre
+        const cm = function (unites) { return Math.round(unites * (100 / u)); };
+        const poisson = fishes[0];
+        let poisson3DCm = 0;
+        if (poisson) {
+            const ref = (FORMES[poisson.userData.type] || FORMES.fusiforme).longueurRef;
+            poisson3DCm = cm(ref * poisson.scale.x);
+        }
+        return {
+            unitesParMetre: u,
+            bouchonCm: cm((f.longueur + 0.1) * FLOTTEUR_ECHELLE),
+            bouchonTigeCm: cm(f.longueur * FLOTTEUR_ECHELLE),
+            hameconCm: cm(0.016 * 2 * FLOTTEUR_ECHELLE),
+            nenupharCm: cm(0.7),
+            roseauCm: cm(0.035 * 2),
+            bourricheCm: cm(0.72 * 2),
+            canneM: Math.round(rodTip.distanceTo(rodBase) / u * 10) / 10,
+            pecheurM: Math.round(3.5 / u * 100) / 100,
+            etangM: Math.round(POND_RADIUS * 2 / u),
+            fondM: Math.round(FOND_CENTRE / u * 10) / 10,
+            poisson3DCm: poisson3DCm,
+            poissonReelCm: poisson ? poisson.userData.longueurCm : 0
+        };
+    },
     getRecordBattu: function () { return recordBattu ? Object.assign({}, recordBattu) : null; },
     annoncerRecord: annoncerRecord,
     addJournalEntry: addJournalEntry,

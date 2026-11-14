@@ -182,6 +182,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
   **combativité**. Le poids est calculé avec la formule des pêcheurs
   (`poids ≈ K × longueur³ / 100 000`), et le **carnet note l'espèce** de chaque prise.
+- **Des mesures réelles partout** (1 unité du monde = 50 cm) : un bouchon mesure **18 à 40 cm**
+  selon le modèle, son hameçon **1,3 cm**, un nénuphar **12 à 35 cm** de rayon, les roseaux
+  **2 à 4 cm** de tige, la canne **5,2 m**, le pêcheur **1,75 m**, l'étang **55 m** de large et
+  **2,5 m** de fond (3,3 m dans les fosses) ; chaque poisson a **exactement sa taille réelle**
+  (un gardon de 28 cm fait 28 cm à l'écran) et le bouchon ne s'enfonce que de quelques
+  dizaines de centimètres, comme un vrai.
 - **Records d'espèce** : quand un poisson range dans la bourriche est plus lourd que le
   record du carnet, le message de prise passe en **doré** (« 🏆 RECORD — Carpe ! 2,4 kg 🎣 »)
   et le statut rappelle l'ancien record. Le premier poisson d'une espèce établit son record.
