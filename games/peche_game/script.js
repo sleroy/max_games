@@ -15,8 +15,6 @@ const struggleInfo = document.getElementById('struggleInfo');
 const struggleHint = document.getElementById('struggleHint');
 const struggleTimer = document.getElementById('struggleTimer');
 const catchMessage = document.getElementById('catchMessage');
-const biteView = document.getElementById('biteView');
-const biteHint = document.getElementById('biteHint');
 const windFill = document.getElementById('windFill');
 const windArrow = document.getElementById('windArrow');
 const soundToggle = document.getElementById('soundToggle');
@@ -408,8 +406,8 @@ const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerH
 const NORMAL_CAM_POS = new THREE.Vector3(0, 8, 34);
 const NORMAL_CAM_TARGET = new THREE.Vector3(0, 0, -15);
 const cameraTarget = NORMAL_CAM_TARGET.clone();
-const biteCamPos = new THREE.Vector3();
-const biteCamTarget = new THREE.Vector3();
+// Vue RÉALISTE unique : plus aucun zoom sur le bouchon (le joueur le surveille
+// de loin). On garde la variable pour l'API de test.
 let cameraMode = 'normal';
 camera.position.copy(NORMAL_CAM_POS);
 camera.lookAt(cameraTarget);
@@ -1116,14 +1114,14 @@ const hookLine = new THREE.Mesh(
     new THREE.CylinderGeometry(0.012, 0.012, 0.7, 4),
     new THREE.MeshStandardMaterial({ color: 0xdddddd, transparent: true })
 );
-hookLine.position.y = -0.55;
+hookLine.position.y = -0.44;   // × (l'échelle du bouchon : voir plus bas)
 floatGroup.add(hookLine);
 
 const hook = new THREE.Mesh(
     new THREE.TorusGeometry(0.09, 0.022, 6, 14, Math.PI * 1.5),
     new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3, transparent: true })
 );
-hook.position.y = -0.95;
+hook.position.y = -0.76;       // × (l'échelle du bouchon : voir plus bas)
 hook.rotation.z = Math.PI;
 floatGroup.add(hook);
 
@@ -1135,6 +1133,11 @@ function setFloatOpacity(opacity) {
 }
 const floatIdle = new THREE.Vector3(rodTip.x, rodTip.y - 0.6, rodTip.z);
 floatGroup.position.copy(floatIdle);
+// Le bouchon est un peu AGRANDI : dans la vue réaliste (sans zoom), il faut
+// pouvoir suivre ses moindres mouvements depuis la berge. La ligne et l'hameçon
+// ont été rapprochés d'autant pour rester à la bonne profondeur (HOOK_DEPTH).
+const FLOTTEUR_ECHELLE = 1.25;
+floatGroup.scale.setScalar(FLOTTEUR_ECHELLE);
 scene.add(floatGroup);
 
 // ---------------------------------------------------------------------------
@@ -3167,23 +3170,19 @@ function showBiteView(fish) {
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     strikeQuality = '';
     fightAdvantage = 1;
-    biteHint.textContent = 'Le bouchon est posé… il peut rester calme longtemps : sois patient et guette la VRAIE touche !';
-    biteView.classList.add('active');
-    biteHint.classList.remove('urgent');
     floatGroup.position.y = 0.1;
     floatGroup.rotation.z = 0;
     spawnRipple(floatGroup.position);
     sound.bite();
-    cameraMode = 'bite';
-    biteCamPos.set(floatGroup.position.x, floatGroup.position.y + 1.6, floatGroup.position.z + 3.2);
-    biteCamTarget.set(floatGroup.position.x, floatGroup.position.y + 0.1, floatGroup.position.z);
+    // Vue RÉALISTE : aucun zoom. Un petit message flottant aide simplement à
+    // repérer que quelque chose se passe autour du bouchon.
+    spawnFloatingText('Un poisson s’approche…', floatGroup.position, '#dff1ff');
     floatState = 'bite';
-    statusDisplay.textContent = 'Un poisson s’approche du bouchon…';
+    statusDisplay.textContent = 'Un poisson s’approche du bouchon… surveille-le !';
 }
 
 function hideBiteView() {
     biteViewActive = false;
-    biteView.classList.remove('active');
     cameraMode = 'normal';
     setFloatOpacity(1);
     floatGroup.rotation.z = 0;
@@ -3207,6 +3206,7 @@ function hookFish() {
             hideBiteView();
             startStruggle(fish, fightAdvantage);
         }
+        spawnFloatingText('FERRÉ !', floatGroup.position, '#7ed957');
         statusDisplay.textContent = 'Ferrage parfait ! Tu démarres avec l’avantage.';
         return;
     }
@@ -3222,6 +3222,8 @@ function hookFish() {
             hideBiteView();
             startStruggle(fish, fightAdvantage);
         }
+        spawnFloatingText(strikeQuality === 'tot' ? 'Trop tôt !' : 'Trop tard !',
+            floatGroup.position, '#ffb347');
         statusDisplay.textContent = (strikeQuality === 'tot')
             ? 'Trop tôt ! Le poisson a pris de l’avance…'
             : 'Trop tard, mais ferré : le poisson a beaucoup d’avance !';
@@ -3237,6 +3239,7 @@ function hookFish() {
     biteCooldown = 1.0;
     floatState = 'inWater';
     waitTimer = 0;
+    spawnFloatingText('Rien ne bougeait…', floatGroup.position, '#cfd8e3');
     statusDisplay.textContent = 'Trop tôt ! Rien ne bougeait encore…';
     hideBiteView();
 }
@@ -3272,17 +3275,15 @@ function updateBiteView(dt) {
                 biteSignalTimer = 0;
                 biteSignalDuree = 0.9 + rand() * 0.9;
                 biteFauxType = ['partiel', 'remontee', 'couche', 'tremblement'][Math.floor(rand() * 4)];
-                biteHint.textContent = 'Ça bouge… attention, ce n’est peut-être pas la vraie touche !';
-                biteHint.classList.remove('urgent');
+                spawnFloatingText('Ça bouge…', floatGroup.position, '#ffe14d');
                 spawnRipple(floatGroup.position);
             } else {
                 // LA vraie touche : c'est maintenant qu'il faut ferrer.
                 bitePhase = 'touche';
                 biteSignalTimer = 0;
-                biteHint.textContent = (biteToucheType === 'enfoncement')
-                    ? 'MAINTENANT ! Il l’enfonce !'
-                    : 'MAINTENANT ! Il remonte !';
-                biteHint.classList.add('urgent');
+                // LA vraie touche : le bouchon coule (ou se couche) franchement.
+                // Un « ploc » et des ronds sur l'eau : c'est au joueur de VOIR.
+                sound.splash();
                 spawnRipple(floatGroup.position);
             }
         }
@@ -3333,8 +3334,7 @@ function updateBiteView(dt) {
             // La fenêtre de ferrage est passée : dernière chance de cliquer.
             bitePhase = 'ratee';
             biteSignalTimer = 0;
-            biteHint.textContent = 'Trop tard… clique encore pour tenter !';
-            biteHint.classList.remove('urgent');
+            statusDisplay.textContent = 'Trop tard… clique encore pour tenter !';
         }
     } else if (bitePhase === 'ratee') {
         biteSignalTimer += dt;
@@ -3355,6 +3355,10 @@ function updateBiteView(dt) {
             floatState = 'inWater';
             waitTimer = 0;
             statusDisplay.textContent = 'Trop tard ! Le poisson a recraché l’hameçon.';
+            // TOUCHE RATÉE : un message flottant + des ronds rouges qui s'écartent
+            // du bouchon (bien visibles depuis la vue réaliste).
+            spawnFloatingText('Raté ! Il a recraché…', floatGroup.position, '#ff6b6b');
+            signalerToucheRatee(floatGroup.position);
             biteViewHideTimer = BITE_VIEW_LINGER;
         }
     }
@@ -3571,6 +3575,111 @@ function updateRipples(dt) {
             ripples.splice(i, 1);
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Messages flottants (dans la scène 3D) et anneaux de touche ratée
+// ---------------------------------------------------------------------------
+// Sans « vue bouchon », le joueur surveille son bouchon de LOIN. Ces messages
+// flottants et ces ronds rouges lui disent tout de suite ce qui vient de se
+// passer : touche ratée, ferrage trop tôt, ferrage parfait…
+const floatingTexts = [];
+
+function makeTextTexture(texte, couleur) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const g = canvas.getContext('2d');
+    if (!g) {
+        return null;
+    }
+    g.font = 'bold 64px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineWidth = 12;
+    g.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    if (typeof g.strokeText === 'function') {
+        g.strokeText(texte, 256, 64);
+    }
+    g.fillStyle = couleur || '#ffffff';
+    if (typeof g.fillText === 'function') {
+        g.fillText(texte, 256, 64);
+    }
+    return new THREE.CanvasTexture(canvas);
+}
+
+function spawnFloatingText(texte, position, couleur) {
+    const texture = makeTextTexture(texte, couleur);
+    if (!texture) {
+        return;
+    }
+    const material = new THREE.SpriteMaterial({
+        map: texture, transparent: true, depthWrite: false, depthTest: false
+    });
+    const sprite = new THREE.Sprite(material);
+    sprite.position.set(position.x, position.y + 1.4, position.z);
+    sprite.scale.set(7, 1.75, 1);
+    scene.add(sprite);
+    floatingTexts.push({ sprite: sprite, texte: texte, t: 0, duree: 2.4 });
+}
+
+function updateFloatingTexts(dt) {
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const item = floatingTexts[i];
+        item.t += dt;
+        const k = item.t / item.duree;
+        item.sprite.position.y += dt * 0.8;               // il s'élève doucement
+        item.sprite.material.opacity = Math.max(0, 1 - k * k);
+        const grossit = 1 + Math.min(0.2, k * 0.5);       // un peu plus gros au début
+        item.sprite.scale.set(7 * grossit, 1.75 * grossit, 1);
+        if (item.t >= item.duree) {
+            scene.remove(item.sprite);
+            if (item.sprite.material.map) {
+                item.sprite.material.map.dispose();
+            }
+            item.sprite.material.dispose();
+            floatingTexts.splice(i, 1);
+        }
+    }
+}
+
+// Anneaux ROUGES : ils s'écartent du bouchon quand la touche est ratée.
+const missRings = [];
+
+function spawnMissRing(position, rayon) {
+    const r = rayon || 0.32;
+    const geo = new THREE.RingGeometry(r, r + 0.16, 40);
+    geo.rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({
+        color: 0xff2d2d, transparent: true, opacity: 0.85,
+        depthWrite: false, side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(position.x, 0.09, position.z);
+    scene.add(mesh);
+    missRings.push({ mesh: mesh, t: 0 });
+}
+
+function updateMissRings(dt) {
+    for (let i = missRings.length - 1; i >= 0; i--) {
+        const r = missRings[i];
+        r.t += dt;
+        const s = 1 + r.t * 2.4;                          // il s'écarte doucement
+        r.mesh.scale.set(s, s, s);
+        r.mesh.material.opacity = Math.max(0, 0.85 * (1 - r.t / 1.9));
+        if (r.t > 1.9) {
+            scene.remove(r.mesh);
+            r.mesh.geometry.dispose();
+            r.mesh.material.dispose();
+            missRings.splice(i, 1);
+        }
+    }
+}
+
+// Une touche ratée : deux ronds rouges concentriques autour du bouchon.
+function signalerToucheRatee(position) {
+    spawnMissRing(position, 0.3);
+    spawnMissRing(position, 0.62);
 }
 
 // ---------------------------------------------------------------------------
@@ -4057,8 +4166,6 @@ feedButton.addEventListener('click', () => {
     setFeedMode(!feedMode);
 });
 
-biteView.addEventListener('pointerdown', hookFish);
-
 fishButton.addEventListener('click', () => {
     ensureSound();
     if (castState === 'charging') {
@@ -4163,16 +4270,14 @@ function animate() {
         updateFishThrow(dt);
         updateCast(dt);
         updateRipples(dt);
+        updateMissRings(dt);
+        updateFloatingTexts(dt);
         updateLine();
     }
     crank.classList.toggle('active', floatState === 'reeling' || floatState === 'struggle');
-    if (cameraMode === 'bite') {
-        camera.position.lerp(biteCamPos, 1 - Math.pow(0.0001, dt));
-        cameraTarget.lerp(biteCamTarget, 1 - Math.pow(0.0001, dt));
-    } else {
-        camera.position.lerp(NORMAL_CAM_POS, 1 - Math.pow(0.0001, dt));
-        cameraTarget.lerp(NORMAL_CAM_TARGET, 1 - Math.pow(0.0001, dt));
-    }
+    // Vue RÉALISTE unique : la caméra reste toujours à distance, jamais de zoom.
+    camera.position.lerp(NORMAL_CAM_POS, 1 - Math.pow(0.0001, dt));
+    cameraTarget.lerp(NORMAL_CAM_TARGET, 1 - Math.pow(0.0001, dt));
     if (shake > 0) {
         shake = Math.max(0, shake - dt * 1.5);
         camera.position.x += Math.sin(elapsed * 60) * shake;
@@ -4246,6 +4351,10 @@ window.__game = {
     getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
+    getFloatingTexts: function () {
+        return floatingTexts.map(function (item) { return item.texte; });
+    },
+    getMissRings: function () { return missRings.length; },
     startReel: startReel,
     sound: sound,
     getWind: function () { return { dir: wind.dir, strength: wind.strength }; },
@@ -4405,6 +4514,8 @@ window.__game = {
         updateFishThrow(dt);
         updateCast(dt);
         updateRipples(dt);
+        updateMissRings(dt);
+        updateFloatingTexts(dt);
         updateLine();
     }
 };
