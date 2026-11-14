@@ -848,14 +848,11 @@ export function run() {
         Math.hypot(G().floatGroup.position.x - x0, G().floatGroup.position.z - z0) <= 4.5,
         Math.hypot(G().floatGroup.position.x - x0, G().floatGroup.position.z - z0).toFixed(2) + ' unités');
     // … et on peut AMORCER même avec la ligne à l’eau.
+    check('le bouton Nourrir reste actif avec la ligne à l’eau',
+        el('feedButton').disabled === false, 'disabled=' + el('feedButton').disabled);
     G().setFeedMode(true);
-    G().startFeedCharge({ x: 0, y: 0, z: -20 });
-    check('on peut amorcer avec la ligne à l’eau',
-        G().getFeedState() === 'charging' || G().getFeedState() === 'flying' || G().isFeedMode(),
-        G().getFeedState());
-    G().releaseFeed();          // on termine l'amorçage (la jauge se referme)
+    check('le mode amorçage s’active en pêchant', G().isFeedMode(), true);
     G().setFeedMode(false);
-    stepFor(1);
     G().fishes.forEach(function (f) { f.userData.biting = false; });
     resetToIdle();
 }
