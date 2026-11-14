@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=50 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=51 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=50';
+import { SoundEngine } from './sound.js?v=51';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -264,13 +264,28 @@ let brightTarget = null;
 let blurTargetA = null;
 let blurTargetB = null;
 
-function makePostTarget(w, h) {
-    return new THREE.WebGLRenderTarget(Math.max(2, w), Math.max(2, h), {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        depthBuffer: false,
-        stencilBuffer: false
-    });
+// Options des cibles de rendu.
+// ⚠️ La cible de la SCÈNE doit GARDER un tampon de profondeur : sans lui, le tri
+// des objets est perdu et l'eau (transparente), dessinée en dernier, passe
+// PAR-DESSUS le pêcheur et la bourriche pourtant DEVANT elle. C'est exactement
+// ce qui leur donnait cet aspect « sous un voile blanc ».
+const SCENE_TARGET_OPTIONS = {
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+    depthBuffer: true,
+    stencilBuffer: false
+};
+// Les cibles du bloom sont de simples quads plein écran : pas besoin de profondeur.
+const BLOOM_TARGET_OPTIONS = {
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+    depthBuffer: false,
+    stencilBuffer: false
+};
+
+function makePostTarget(w, h, options) {
+    return new THREE.WebGLRenderTarget(Math.max(2, w), Math.max(2, h),
+        options || BLOOM_TARGET_OPTIONS);
 }
 
 function resizePost(width, height) {
@@ -286,7 +301,7 @@ function resizePost(width, height) {
     if (brightTarget) brightTarget.dispose();
     if (blurTargetA) blurTargetA.dispose();
     if (blurTargetB) blurTargetB.dispose();
-    sceneTarget = makePostTarget(fullW, fullH);
+    sceneTarget = makePostTarget(fullW, fullH, SCENE_TARGET_OPTIONS);
     brightTarget = makePostTarget(halfW, halfH);
     blurTargetA = makePostTarget(halfW, halfH);
     blurTargetB = makePostTarget(halfW, halfH);
@@ -1581,10 +1596,9 @@ bourriche.add(bourricheRing);
 const bourricheNet = new THREE.Mesh(
     new THREE.CylinderGeometry(BOURRICHE_RADIUS - 0.1, 0.8, 2.6, 16, 1, true),
     new THREE.MeshStandardMaterial({
-        // Filet translucide : il NE s'écrit PAS dans le tampon de profondeur,
-        // sinon il masque l'eau et prend un aspect de seau opaque.
-        color: 0x33543c, roughness: 0.95, transparent: true, opacity: 0.72,
-        side: THREE.DoubleSide, depthWrite: false
+        // Bourriche = panier d'osier : OPAQUE. Un filet translucide donnait
+        // l'impression d'un objet « sous un voile ».
+        color: 0x3f5540, roughness: 0.95, side: THREE.DoubleSide
     })
 );
 bourricheNet.position.y = -1.2;
@@ -4601,7 +4615,9 @@ window.__game = {
     getFeedLanding: function () { return { x: feedLanding.x, z: feedLanding.z }; },
     getFeedRange: function () { return { min: FEED_MIN_RANGE, max: FEED_MAX_RANGE }; },
     getPondCenter: function () { return { x: POND_CENTER.x, z: POND_CENTER.z }; },
+    getPondRadius: function () { return POND_RADIUS; },
     water: water,
+    bourriche: bourriche,
     getWaterHeightAt: function (x, z) { return waterWaveHeightAt(x, z, testTime); },
     getBaitInterest: function () { return baitInterest; },
     getHookDepth: function () { return HOOK_DEPTH; },
@@ -4695,6 +4711,18 @@ window.__game = {
             enabled: post.enabled, supported: postSupported,
             bloom: post.strength, vignette: post.vignette
         };
+    },
+    // Configuration des cibles de rendu — exposé pour les tests (« voile blanc »).
+    getPostConfig: function () {
+        return {
+            sceneDepthBuffer: SCENE_TARGET_OPTIONS.depthBuffer,
+            bloomDepthBuffer: BLOOM_TARGET_OPTIONS.depthBuffer,
+            bloom: post.strength,
+            vignette: post.vignette
+        };
+    },
+    makeSceneTarget: function (w, h) {
+        return makePostTarget(w, h, SCENE_TARGET_OPTIONS);
     },
     getChum: function () {
         return chum ? {
