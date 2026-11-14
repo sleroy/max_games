@@ -1387,6 +1387,33 @@ body.calm .struggle-marker {
     justify-content: center;
 }
 
+/* Carte de placement vue de dessus : l'étang + la couronne cliquable. */
+.carte-placement {
+    position: relative;
+    width: min(100%, 320px);
+    min-height: 240px;
+    aspect-ratio: 1 / 1;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #2f6b3f;
+    cursor: crosshair;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.carte-placement svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.carte-placement-aide {
+    font-size: 0.75rem;
+    line-height: 1.3;
+    opacity: 0.85;
+}
+
 .poste-btn {
     pointer-events: auto;
     background: rgba(0, 0, 0, 0.45);

@@ -129,6 +129,17 @@ export function run() {
     check('la carte du carnet affiche le contour généré',
         script.includes('contour-etang'));
 
+    group('8) Choix libre de l’emplacement (carte vue de dessus)');
+    check('la carte de placement est présente dans l’accueil',
+        html.includes('id="cartePlacement"'));
+    check('la carte est cliquable (pointer-events + touch-action)',
+        /\.carte-placement\s*\{[^}]*pointer-events:\s*auto[^}]*touch-action:\s*none/.test(css));
+    check('la couronne de placement est dessinée',
+        script.includes('zone-placement') && script.includes('PLACEMENT_MARGE_MIN'));
+    check('le clic et le glisser sont branchés sur la carte',
+        script.includes("addEventListener('pointerdown'")
+        && script.includes('emplacementDepuisCarte'));
+
 }
 
 export default run;

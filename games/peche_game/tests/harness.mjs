@@ -110,7 +110,8 @@ function fakeSetTimeout(fn, delay = 0) {
 // ---------------------------------------------------------------------------
 const RECTS = {
     gameCanvas: { left: 0, top: 0, width: 1280, height: 720 },
-    crank: { left: 1000, top: 560, width: 120, height: 120 }
+    crank: { left: 1000, top: 560, width: 120, height: 120 },
+    cartePlacement: { left: 0, top: 0, width: 240, height: 240 }
 };
 
 /** @type {Map<string, object>} */

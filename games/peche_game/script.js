@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=92';
+import { SoundEngine } from './sound.js?v=93';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -56,6 +56,7 @@ const posteSud = document.getElementById('posteSud');
 const posteEst = document.getElementById('posteEst');
 const posteNord = document.getElementById('posteNord');
 const posteOuest = document.getElementById('posteOuest');
+const cartePlacement = document.getElementById('cartePlacement');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -2225,20 +2226,18 @@ const POSTES = [
     { id: 'nord', nom: 'Nord', delta: Math.PI, exposition: 0.90 },
     { id: 'ouest', nom: 'Ouest', delta: -Math.PI / 2, exposition: 1.04 }
 ];
-let posteActuel = 0;
+let posteActuel = 0;          // preset le plus proche (pour la lumière et les boutons)
+let emplacementLibre = false; // true = choisi à la main sur la carte
+let boutonPosteActif = 0;     // -1 = aucun raccourci actif
 
-// Distance entre le pêcheur et le bord LOCAL de l'eau. Comme le contour est
-// irrégulier, le poste est reculé ou avancé radialement pour rester sur la berge.
+// Distance entre le pêcheur et le bord LOCAL de l'eau. Le joueur peut choisir
+// n'importe quel angle et une distance dans cette bande (carte vue de dessus).
 const POSTE_MARGE = 2.2;
-
-// Exposition lumineuse du poste demandé (par défaut : le poste courant).
-function expositionPoste(index) {
-    const poste = POSTES[(typeof index === 'number') ? index : posteActuel];
-    return poste ? poste.exposition : 1;
-}
+const PLACEMENT_MARGE_MIN = 1.4;
+const PLACEMENT_MARGE_MAX = 6.0;
 
 // Positions de référence du poste SUD (les valeurs historiques du jeu). On les
-// fait tourner autour de l'étang pour obtenir les trois autres postes.
+// fait tourner autour de l'étang pour obtenir n'importe quel emplacement.
 const POSTE_ANGLER = angler.position.clone();
 const POSTE_ROD_BASE = rodBase.clone();
 const POSTE_ROD_TIP = rodTip.clone();
@@ -2246,6 +2245,17 @@ const POSTE_BOURRICHE = BOURRICHE_POS.clone();
 const POSTE_GIROUETTE = vaneGroup.position.clone();
 const POSTE_CAM_POS = NORMAL_CAM_POS.clone();
 const POSTE_CAM_TARGET = NORMAL_CAM_TARGET.clone();
+// Angle (x = cos, z = sin) du poste sud historique.
+const ANGLE_BASE = Math.atan2(
+    POSTE_ANGLER.z - POND_CENTER.z, POSTE_ANGLER.x - POND_CENTER.x);
+let emplacementAngle = ANGLE_BASE;
+let emplacementMarge = POSTE_MARGE;
+
+// Exposition lumineuse du poste demandé (par défaut : le plus proche).
+function expositionPoste(index) {
+    const poste = POSTES[(typeof index === 'number') ? index : posteActuel];
+    return poste ? poste.exposition : 1;
+}
 
 // Fait tourner `base` autour du centre de l'étang et écrit le résultat dans
 // `cible` (on réutilise les Vector3 existants : aucun objet recréé).
@@ -2258,6 +2268,43 @@ function tournerAutourEtang(base, delta, cible) {
     cible.x = POND_CENTER.x + dx * cos + dz * sin;
     cible.z = POND_CENTER.z - dx * sin + dz * cos;
     return cible;
+}
+
+// Écart angulaire le plus court entre deux angles (radians).
+function ecartAngulaire(a, b) {
+    const deuxPi = Math.PI * 2;
+    let d = Math.abs(a - b) % deuxPi;
+    return Math.min(d, deuxPi - d);
+}
+
+// Preset (sud / est / nord / ouest) le plus proche d'un angle libre.
+function plusProchePresetIndex(angle) {
+    let meilleur = 0;
+    let meilleurEcart = Infinity;
+    POSTES.forEach(function (poste, index) {
+        const cible = ANGLE_BASE - poste.delta;
+        const ecart = ecartAngulaire(angle, cible);
+        if (ecart < meilleurEcart) {
+            meilleurEcart = ecart;
+            meilleur = index;
+        }
+    });
+    return meilleur;
+}
+
+// Nom de la direction (8 secteurs) pour un angle de position autour de l'étang.
+// Convention boussole : 0° = nord, 90° = est, 180° = sud, 270° = ouest.
+function azimutPosteTexte(angle) {
+    const degres = (((angle * 180) / Math.PI) + 90 + 360) % 360;
+    const secteurs = ['nord', 'nord-est', 'est', 'sud-est',
+        'sud', 'sud-ouest', 'ouest', 'nord-ouest'];
+    return secteurs[Math.round(degres / 45) % 8];
+}
+
+function nomEmplacementCourant() {
+    return emplacementLibre
+        ? azimutPosteTexte(emplacementAngle)
+        : POSTES[posteActuel].nom.toLowerCase();
 }
 
 // Où est le NORD à l'écran ? Comme le poste fait le tour de l'étang, la caméra
@@ -2283,10 +2330,9 @@ function majEtiquettePoste() {
     if (!compassDisplay) {
         return;
     }
-    const poste = POSTES[posteActuel];
     compassDisplay.textContent = '🧭 Nord ' + flecheNordEcran()
         + ' · ☀️ soleil au ' + azimutTexte(SUN_AZIMUT)
-        + ' · 📍 poste ' + poste.nom.toLowerCase();
+        + ' · 📍 poste ' + nomEmplacementCourant();
 }
 
 const posteBoutons = [
@@ -2301,7 +2347,7 @@ function majBoutonsPoste() {
         if (!bouton.element) {
             return;
         }
-        const actif = bouton.index === posteActuel;
+        const actif = bouton.index === boutonPosteActif;
         bouton.element.classList.toggle('actif', actif);
         if (typeof bouton.element.setAttribute === 'function') {
             bouton.element.setAttribute('aria-pressed', actif ? 'true' : 'false');
@@ -2309,15 +2355,25 @@ function majBoutonsPoste() {
     });
 }
 
-// Place tout le matériel du pêcheur au poste `index`. Refusé si une ligne est
-// en l'air ou à l'eau : on ne se téléporte pas en pleine partie.
-function placerAuPoste(index) {
-    const poste = POSTES[index];
-    if (!poste || floatState !== 'idle') {
+// Place tout le matériel du pêcheur à un ANGLE et une MARGE (distance au bord
+// local) donnés. Refusé si une ligne est en l'air ou à l'eau.
+//   presetIndex : index du raccourci (0-3) ou -1 pour un choix libre.
+function placerALAngle(angle, marge, presetIndex, libre) {
+    if (floatState !== 'idle' || !Number.isFinite(angle)) {
         return false;
     }
-    posteActuel = index;
-    const delta = poste.delta;
+    const margeVoulue = Math.max(PLACEMENT_MARGE_MIN,
+        Math.min(PLACEMENT_MARGE_MAX,
+            Number.isFinite(marge) ? marge : POSTE_MARGE));
+    emplacementAngle = angle;
+    emplacementMarge = margeVoulue;
+    emplacementLibre = !!libre;
+    posteActuel = (typeof presetIndex === 'number' && presetIndex >= 0)
+        ? presetIndex : plusProchePresetIndex(angle);
+    boutonPosteActif = emplacementLibre ? -1 : posteActuel;
+
+    // Rotation qui amène le poste sud historique sur l'angle demandé.
+    const delta = ANGLE_BASE - angle;
 
     // 1) Rotation RIGIDE du matériel autour du centre : le poste fait le tour.
     tournerAutourEtang(POSTE_ANGLER, delta, angler.position);
@@ -2330,14 +2386,14 @@ function placerAuPoste(index) {
     tournerAutourEtang(POSTE_CAM_TARGET, delta, NORMAL_CAM_TARGET);
 
     // 2) L'ÉTANG N'EST PAS UN CERCLE : on recale TOUT le matériel dans l'axe
-    //    radial pour que le pêcheur soit à POSTE_MARGE du bord LOCAL. Le
-    //    décalage est le même pour la canne, la bourriche, la girouette et la
-    //    caméra : le matériel reste rigide et le cadrage identique.
+    //    radial pour que le pêcheur soit à `marge` du bord LOCAL. Le décalage
+    //    est le même pour la canne, la bourriche, la girouette et la caméra :
+    //    le matériel reste rigide et le cadrage identique.
     const dxAngler = angler.position.x - POND_CENTER.x;
     const dzAngler = angler.position.z - POND_CENTER.z;
     const distanceAngler = Math.hypot(dxAngler, dzAngler) || 1;
     const anglePoste = Math.atan2(dzAngler, dxAngler);
-    const distanceVoulue = rayonEtang(anglePoste) + POSTE_MARGE;
+    const distanceVoulue = rayonEtang(anglePoste) + emplacementMarge;
     const decalage = distanceVoulue - distanceAngler;
     const decalX = (dxAngler / distanceAngler) * decalage;
     const decalZ = (dzAngler / distanceAngler) * decalage;
@@ -2379,7 +2435,170 @@ function placerAuPoste(index) {
     majCoupeProfondeur();
     majEtiquettePoste();
     majBoutonsPoste();
+    renderCartePlacement();
     return true;
+}
+
+// Raccourci : les 4 boutons de l'accueil (sud / est / nord / ouest).
+function placerAuPoste(index) {
+    const poste = POSTES[index];
+    if (!poste) {
+        return false;
+    }
+    return placerALAngle(ANGLE_BASE - poste.delta, POSTE_MARGE, index, false);
+}
+
+// Choix libre depuis la carte vue de dessus : un angle + une distance à la
+// berge. Si le clic est très proche d'un raccourci, on le rattache à ce poste.
+function choisirEmplacement(angle, marge) {
+    const preset = plusProchePresetIndex(angle);
+    const cible = ANGLE_BASE - POSTES[preset].delta;
+    const libre = ecartAngulaire(angle, cible) > (2 * Math.PI / 180);
+    return placerALAngle(angle, marge, libre ? -1 : preset, libre);
+}
+
+// ---------------------------------------------------------------------------
+// CARTE DE PLACEMENT VUE DE DESSUS (écran d'accueil)
+// On voit l'étang de dessus ; la COURONNE claire autour de l'eau représente la
+// zone où l'on peut se placer (1,4 à 6 unités de la berge locale). Cliquer ou
+// glisser dans cette couronne choisit l'angle ET la distance à la berge.
+// ---------------------------------------------------------------------------
+const CARTE_PLACEMENT_VIEW = 240;
+const CARTE_PLACEMENT_MONDE = 78; // rayon du monde visible dans le carré
+const CARTE_PLACEMENT_ECHELLE = (CARTE_PLACEMENT_VIEW / 2) / CARTE_PLACEMENT_MONDE;
+
+// Chemin SVG d'un contour de l'étang.
+//   facteur : 1 = bord de l'eau, < 1 = isobathe ;
+//   decalage : marge radiale en unités du monde (couronne de placement).
+function cheminContourEtang(cx, cy, echelle, facteur, decalage) {
+    const n = 96;
+    const f = (typeof facteur === 'number') ? facteur : 1;
+    const dec = (typeof decalage === 'number') ? decalage : 0;
+    let d = '';
+    for (let i = 0; i <= n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        const rr = (rayonEtang(a) * f + dec) * echelle;
+        const x = cx + Math.cos(a) * rr;
+        const y = cy + Math.sin(a) * rr;
+        d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    return d + 'Z';
+}
+
+function renderCartePlacement() {
+    if (!cartePlacement) {
+        return;
+    }
+    const vue = CARTE_PLACEMENT_VIEW;
+    const cx = vue / 2;
+    const cy = vue / 2;
+    const e = CARTE_PLACEMENT_ECHELLE;
+    const eau = cheminContourEtang(cx, cy, e, 1, 0);
+    const milieu = (PLACEMENT_MARGE_MIN + PLACEMENT_MARGE_MAX) / 2;
+    const zone = cheminContourEtang(cx, cy, e, 1, milieu);
+    const largeurBande = (PLACEMENT_MARGE_MAX - PLACEMENT_MARGE_MIN) * e;
+    const angle = emplacementAngle;
+    const distance = rayonEtang(angle) + emplacementMarge;
+    const px = cx + Math.cos(angle) * distance * e;
+    const py = cy + Math.sin(angle) * distance * e;
+    const soleil = directionAzimut(SUN_AZIMUT);
+    const rayonSoleil = CARTE_PLACEMENT_MONDE - 8;
+
+    let svg = '<svg viewBox="0 0 240 240" role="img" '
+        + 'aria-label="Carte vue de dessus : choisir sa place autour de l’étang">';
+    svg += '<rect x="0" y="0" width="240" height="240" fill="#2f6b3f"/>';
+    // L'eau et son contour généré.
+    svg += '<path class="contour-etang" d="' + eau
+        + '" fill="#2b7ea1" stroke="#dff3fb" stroke-width="1"/>';
+    // La COURONNE de placement (épaisseur = 1,4 → 6 unités).
+    svg += '<path class="zone-placement" d="' + zone
+        + '" fill="none" stroke="rgba(255, 231, 128, 0.5)" stroke-width="'
+        + largeurBande.toFixed(1) + '" stroke-linejoin="round"/>';
+    // Les deux bords de la couronne, en pointillés.
+    svg += '<path d="' + cheminContourEtang(cx, cy, e, 1, PLACEMENT_MARGE_MIN)
+        + '" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.7" stroke-dasharray="2 2"/>';
+    svg += '<path d="' + cheminContourEtang(cx, cy, e, 1, PLACEMENT_MARGE_MAX)
+        + '" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.7" stroke-dasharray="2 2"/>';
+    // Nord et soleil (orientation du monde).
+    svg += '<text x="' + cx + '" y="13" text-anchor="middle" font-size="10" '
+        + 'font-weight="bold" fill="#ffffff">N ▲</text>';
+    svg += '<text x="' + (cx + soleil.x * rayonSoleil * e).toFixed(1) + '" y="'
+        + (cy + soleil.z * rayonSoleil * e + 4).toFixed(1)
+        + '" text-anchor="middle" font-size="13">☀️</text>';
+    // Repère du pêcheur : un point + la direction de la canne vers le centre.
+    svg += '<line x1="' + px.toFixed(1) + '" y1="' + py.toFixed(1)
+        + '" x2="' + cx + '" y2="' + cy
+        + '" stroke="rgba(255,255,255,0.25)" stroke-width="0.8" stroke-dasharray="2 3"/>';
+    svg += '<g class="emplacement-marker">';
+    svg += '<line x1="' + px.toFixed(1) + '" y1="' + py.toFixed(1)
+        + '" x2="' + (px + (cx - px) * 0.12).toFixed(1)
+        + '" y2="' + (py + (cy - py) * 0.12).toFixed(1)
+        + '" stroke="#ffe9a8" stroke-width="1.5"/>';
+    svg += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1)
+        + '" r="4.2" fill="#ffd166" stroke="#5a3b00" stroke-width="1.5"/>';
+    svg += '</g>';
+    svg += '</svg>';
+    svg += '<div class="carte-placement-aide">📍 <b>'
+        + (emplacementLibre ? azimutPosteTexte(angle) : POSTES[posteActuel].nom.toLowerCase())
+        + '</b> · ' + emplacementMarge.toFixed(1).replace('.', ',')
+        + ' unité(s) de la berge<br>'
+        + 'Clique ou glisse dans la bande claire autour de l’étang.</div>';
+    cartePlacement.innerHTML = svg;
+}
+
+// Convertit un clic sur la carte en (angle, marge) dans le monde.
+function emplacementDepuisCarte(event) {
+    if (!cartePlacement) {
+        return null;
+    }
+    const rect = cartePlacement.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) {
+        return null;
+    }
+    const vx = ((event.clientX - rect.left) / rect.width) * CARTE_PLACEMENT_VIEW;
+    const vy = ((event.clientY - rect.top) / rect.height) * CARTE_PLACEMENT_VIEW;
+    const demi = CARTE_PLACEMENT_VIEW / 2;
+    const wx = (vx - demi) / CARTE_PLACEMENT_ECHELLE;
+    const wz = (vy - demi) / CARTE_PLACEMENT_ECHELLE;
+    const angle = Math.atan2(wz, wx);
+    const distance = Math.hypot(wx, wz);
+    const marge = distance - rayonEtang(angle);
+    return {
+        angle: angle,
+        marge: Math.max(PLACEMENT_MARGE_MIN,
+            Math.min(PLACEMENT_MARGE_MAX, marge))
+    };
+}
+
+let cartePlacementPressee = false;
+if (cartePlacement) {
+    cartePlacement.addEventListener('pointerdown', function (event) {
+        cartePlacementPressee = true;
+        ensureSound();
+        const point = emplacementDepuisCarte(event);
+        if (point) {
+            choisirEmplacement(point.angle, point.marge);
+        }
+        if (cartePlacement.setPointerCapture && event && event.pointerId !== undefined) {
+            cartePlacement.setPointerCapture(event.pointerId);
+        }
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
+    });
+    cartePlacement.addEventListener('pointermove', function (event) {
+        if (!cartePlacementPressee) {
+            return;
+        }
+        const point = emplacementDepuisCarte(event);
+        if (point) {
+            choisirEmplacement(point.angle, point.marge);
+        }
+    });
+    const relacherCarte = function () { cartePlacementPressee = false; };
+    cartePlacement.addEventListener('pointerup', relacherCarte);
+    cartePlacement.addEventListener('pointercancel', relacherCarte);
+    cartePlacement.addEventListener('pointerleave', relacherCarte);
 }
 
 posteBoutons.forEach(function (bouton) {
@@ -2734,16 +2953,7 @@ function rendreCarteEtang() {
     const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
     // Chemin SVG du contour GÉNÉRÉ (facteur 1 = bord de l'eau, < 1 = isobathe).
     const cheminContour = function (facteur) {
-        const n = 96;
-        let d = '';
-        for (let i = 0; i <= n; i++) {
-            const a = (i / n) * Math.PI * 2;
-            const rr = rayonEtang(a) * facteur * ech;
-            const x = cx + Math.cos(a) * rr;
-            const y = cy + Math.sin(a) * rr;
-            d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
-        }
-        return d + 'Z';
+        return cheminContourEtang(cx, cy, ech, facteur, 0);
     };
     let svg = '<svg viewBox="0 0 200 120" role="img" aria-label="Carte de l’étang">';
     svg += '<rect x="0" y="0" width="200" height="120" rx="10" fill="#2f6b3f"/>';
@@ -6383,13 +6593,49 @@ window.__game = {
     // Emplacements autour de l'étang (idee 1) — exposés pour les tests.
     getPoste: function () {
         const poste = POSTES[posteActuel];
-        return { index: posteActuel, id: poste.id, nom: poste.nom, delta: poste.delta };
+        return {
+            index: posteActuel,
+            id: emplacementLibre ? 'libre' : poste.id,
+            nom: emplacementLibre ? azimutPosteTexte(emplacementAngle) : poste.nom,
+            delta: poste.delta,
+            libre: emplacementLibre,
+            angle: emplacementAngle,
+            marge: emplacementMarge
+        };
     },
     getPostes: function () {
         return POSTES.map(function (poste) {
             return { id: poste.id, nom: poste.nom, delta: poste.delta };
         });
     },
+    // Choix libre (carte vue de dessus) : angle + distance à la berge.
+    getEmplacement: function () {
+        const dx = angler.position.x - POND_CENTER.x;
+        const dz = angler.position.z - POND_CENTER.z;
+        const distance = Math.hypot(dx, dz);
+        return {
+            angle: emplacementAngle,
+            marge: emplacementMarge,
+            distance: distance,
+            rayonLocal: rayonEtang(emplacementAngle),
+            x: angler.position.x,
+            z: angler.position.z,
+            direction: azimutPosteTexte(emplacementAngle),
+            libre: emplacementLibre
+        };
+    },
+    getPlacementMap: function () {
+        return {
+            view: CARTE_PLACEMENT_VIEW,
+            echelle: CARTE_PLACEMENT_ECHELLE,
+            margeMin: PLACEMENT_MARGE_MIN,
+            margeMax: PLACEMENT_MARGE_MAX,
+            angle: emplacementAngle,
+            marge: emplacementMarge,
+            centre: { x: CARTE_PLACEMENT_VIEW / 2, y: CARTE_PLACEMENT_VIEW / 2 }
+        };
+    },
+    choisirEmplacement: choisirEmplacement,
     placerAuPoste: placerAuPoste,
     getRodBase: function () { return { x: rodBase.x, y: rodBase.y, z: rodBase.z }; },
     getCameraTarget: function () { return { x: cameraTarget.x, y: cameraTarget.y, z: cameraTarget.z }; },

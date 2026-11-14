@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=92">
+    <link rel="stylesheet" href="style.css?v=93">
 </head>
 <body>
     <div class="game-wrap">
@@ -59,7 +59,8 @@
                 <p class="overlay-text">Attrape les poissons du bord de l’eau : règle ta profondeur,<br>
                     amorce, lance et ferre au bon moment !</p>
                 <div class="poste-choix">
-                    <span class="poste-choix-label">📍 Se placer autour de l’étang :</span>
+                    <span class="poste-choix-label">📍 Choisis ta place autour de l’étang :</span>
+                    <div class="carte-placement" id="cartePlacement"></div>
                     <div class="poste-boutons">
                         <button class="poste-btn actif" id="posteSud" data-poste="0"
                             aria-pressed="true" aria-label="Se placer au sud">Sud</button>
@@ -70,7 +71,8 @@
                         <button class="poste-btn" id="posteOuest" data-poste="3"
                             aria-pressed="false" aria-label="Se placer à l’ouest">Ouest</button>
                     </div>
-                    <span class="poste-choix-hint">Le soleil reste au sud-ouest : chaque poste a sa lumière.</span>
+                    <span class="poste-choix-hint">Clique ou glisse dans la bande claire
+                        (1,4 à 6 unités de la berge). Les boutons sont des raccourcis.</span>
                 </div>
                 <button class="feed-button" id="playButton">▶ Jouer</button>
                 <button class="journal-button" id="accueilClassement">🏆 Classement</button>
@@ -249,6 +251,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=92"></script>
+    <script type="module" src="script.js?v=93"></script>
 </body>
 </html>
