@@ -242,23 +242,133 @@ const pondBottom = new THREE.Mesh(
     new THREE.MeshStandardMaterial({ color: 0x1a5a70, roughness: 1 })
 );
 pondBottom.rotation.x = -Math.PI / 2;
-pondBottom.position.set(POND_CENTER.x, -4, POND_CENTER.z);
+pondBottom.position.set(POND_CENTER.x, -6, POND_CENTER.z);
 scene.add(pondBottom);
 
-const water = new THREE.Mesh(
-    new THREE.CircleGeometry(POND_RADIUS, 96),
-    new THREE.MeshStandardMaterial({
-        color: 0x3f9fc0,
-        transparent: true,
-        opacity: 0.45,
-        roughness: 0.15,
-        metalness: 0.25,
-        side: THREE.DoubleSide
-    })
-);
-water.rotation.x = -Math.PI / 2;
+// Eau : disque « polaire » (anneaux + rayons) pour permettre au shader de
+// déformer finement la surface en vagues.
+function makeWaterGeometry(radius, rings, segments) {
+    const positions = [0, 0, 0];
+    const indices = [];
+    for (let r = 1; r <= rings; r++) {
+        const rr = radius * (r / rings);
+        for (let s = 0; s < segments; s++) {
+            const a = (s / segments) * Math.PI * 2;
+            positions.push(Math.cos(a) * rr, 0, Math.sin(a) * rr);
+        }
+    }
+    // Éventail du centre vers le premier anneau.
+    for (let s = 0; s < segments; s++) {
+        indices.push(0, 1 + s, 1 + ((s + 1) % segments));
+    }
+    // Quadrangles entre anneaux voisins.
+    for (let r = 1; r < rings; r++) {
+        const base = 1 + (r - 1) * segments;
+        const next = 1 + r * segments;
+        for (let s = 0; s < segments; s++) {
+            const s1 = (s + 1) % segments;
+            indices.push(base + s, next + s, next + s1);
+            indices.push(base + s, next + s1, base + s1);
+        }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
+}
+
+// Uniforms de l'eau (partagés avec la houle calculée côté JavaScript).
+const waterUniforms = {
+    uTime: { value: 0 },
+    uWindDir: { value: new THREE.Vector2(1, 0) },
+    uWind: { value: 0 },
+    uShallow: { value: new THREE.Color(0x6fc0dd) },
+    uDeep: { value: new THREE.Color(0x1f6f8b) },
+    uSky: { value: new THREE.Color(0xd6edf6) }
+};
+
+// Eau transparente avec des vagues dont l'amplitude et la vitesse suivent le
+// vent. La normale est calculée à partir du gradient de la houle (éclairage).
+const waterMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    side: THREE.DoubleSide,
+    uniforms: waterUniforms,
+    vertexShader: `
+        uniform float uTime;
+        uniform vec2 uWindDir;
+        uniform float uWind;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+        // Hauteur de la houle + son gradient (pour la normale).
+        float waveHeight(vec2 p, float t, out vec2 grad) {
+            float amp = 0.11 * (0.5 + uWind * 1.8);
+            vec2 d = normalize(uWindDir + vec2(0.0001, 0.0));
+            vec2 perp = vec2(-d.y, d.x);
+            float a = dot(p, d) * 0.30 - t * (1.1 + uWind * 2.6);
+            float b = dot(p, perp) * 0.45 + t * 1.6;
+            float c = (p.x * 0.22 + p.y * 0.18) - t * 2.0;
+            float h = sin(a) * amp + sin(b) * amp * 0.55 + sin(c) * amp * 0.35;
+            grad = d * (cos(a) * amp * 0.30)
+                 + perp * (cos(b) * amp * 0.55 * 0.45)
+                 + vec2(0.22, 0.18) * (cos(c) * amp * 0.35);
+            return h;
+        }
+        void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vec2 grad;
+            wp.y += waveHeight(wp.xz, uTime, grad);
+            vWorldPos = wp.xyz;
+            vNormal = normalize(vec3(-grad.x, 1.0, -grad.y));
+            gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+    `,
+    fragmentShader: `
+        uniform vec3 uShallow;
+        uniform vec3 uDeep;
+        uniform vec3 uSky;
+        uniform float uWind;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+        void main() {
+            vec3 n = normalize(vNormal);
+            vec3 viewDir = normalize(cameraPosition - vWorldPos);
+            float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
+            vec3 col = mix(uDeep, uShallow, clamp(n.y, 0.0, 1.0));
+            col = mix(col, uSky, fres * 0.6);
+            vec3 sunDir = normalize(vec3(0.4, 1.0, -0.6));
+            vec3 halfDir = normalize(viewDir + sunDir);
+            float spec = pow(max(dot(n, halfDir), 0.0), 60.0) * (0.35 + uWind * 0.8);
+            col += vec3(spec);
+            float alpha = 0.52 + fres * 0.3;
+            gl_FragColor = vec4(col, alpha);
+        }
+    `
+});
+
+const water = new THREE.Mesh(makeWaterGeometry(POND_RADIUS, 22, 64), waterMaterial);
 water.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(water);
+
+// Même houle que le shader, côté JavaScript : servez-vous en pour faire flotter
+// le bouchon sur les vagues.
+function waterWaveHeightAt(x, z, t) {
+    const amp = 0.11 * (0.5 + wind.strength * 1.8);
+    const dx = Math.cos(wind.dir);
+    const dz = Math.sin(wind.dir);
+    const px = -dz;
+    const pz = dx;
+    const a = (x * dx + z * dz) * 0.30 - t * (1.1 + wind.strength * 2.6);
+    const b = (x * px + z * pz) * 0.45 + t * 1.6;
+    const c = (x * 0.22 + z * 0.18) - t * 2.0;
+    return Math.sin(a) * amp + Math.sin(b) * amp * 0.55 + Math.sin(c) * amp * 0.35;
+}
+
+function updateWater(t) {
+    waterUniforms.uTime.value = t;
+    waterUniforms.uWindDir.value.set(Math.cos(wind.dir), Math.sin(wind.dir));
+    waterUniforms.uWind.value = wind.strength;
+}
 
 const shore = new THREE.Mesh(
     new THREE.RingGeometry(POND_RADIUS, 220, 96),
@@ -878,6 +988,8 @@ function makeFish(size, power, aggression, type) {
 
     group.userData.tailPivot = tailPivot;
     group.userData.bodyMat = bodyMat;
+    // Hauteur du poisson au-dessus de son centre : sert à le garder sous l'eau.
+    group.userData.topOffset = (0.6 * bodyY + 0.3 * finScale + finHeight / 2) * size;
     group.scale.setScalar(size);
     group.userData.size = size;
     return group;
@@ -910,6 +1022,11 @@ function spawnFish() {
     fish.userData.vx = v.vx;
     fish.userData.vz = v.vz;
     fish.userData.phase = Math.random() * Math.PI * 2;
+    // Profondeur du DOS du poisson (déduite de la phase : aucun tirage aléatoire
+    // en plus, pour ne pas décaler le monde reproductible des tests) : le dos
+    // reste toujours sous la surface, entre -0,9 et -3,4.
+    fish.userData.depth = -0.9 - ((Math.sin(fish.userData.phase) + 1) / 2) * 2.5;
+    fish.position.y = fish.userData.depth - fish.userData.topOffset;
     fish.userData.power = power;
     fish.userData.aggression = aggression;
     fish.userData.type = type;
@@ -983,6 +1100,8 @@ let hookedFish = null;
 let escaped = false;
 let timeoutEscape = false;
 let shake = 0;
+let baitInterest = false;   // un poisson renifle-t-il l'hameçon (retour visuel) ?
+let nibbleRippleTimer = 0;  // petites ondulations quand un poisson est tout près
 let caughtWeight = 0;
 let lineBrokenTimer = 0;
 let snagFreed = false;
@@ -990,6 +1109,14 @@ const castStart = new THREE.Vector3();
 const castTarget = new THREE.Vector3();
 const CAST_DURATION = 0.8;
 const MAX_WAIT = 5;
+
+// Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
+// du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
+// sur la distance RÉELLE en 3D à l'hameçon, pas seulement à l'aplomb du bouchon.
+const HOOK_DEPTH = -0.85;          // profondeur de l'hameçon sous le bouchon
+const BITE_INTEREST_RADIUS = 7;    // à cette distance, le poisson s'intéresse au bouchon
+const BITE_RADIUS = 0.9;           // distance 3D en dessous de laquelle il mord
+const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
 
 const raycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2(0, 0);
@@ -1034,22 +1161,30 @@ function startReel() {
     }
 }
 
+// Un poisson mord quand il est réellement arrivé sur l'hameçon (distance 3D) :
+// il a donc dû s'approcher du bouchon ET remonter vers la surface (voir updateFish).
 function findBitingFish() {
     if (fishCaught) {
         return null;
     }
+    let best = null;
+    let bestDist = BITE_RADIUS * BITE_RADIUS;
     for (let i = 0; i < fishes.length; i++) {
         const fish = fishes[i];
-        if (fish.userData.hooked) {
+        const data = fish.userData;
+        if (data.hooked || data.biting) {
             continue;
         }
         const dx = fish.position.x - floatGroup.position.x;
+        const dy = (fish.position.y + data.topOffset) - HOOK_DEPTH;
         const dz = fish.position.z - floatGroup.position.z;
-        if (dx * dx + dz * dz < 2.4 * 2.4) {
-            return fish;
+        const d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < bestDist) {
+            bestDist = d2;
+            best = fish;
         }
     }
-    return null;
+    return best;
 }
 
 function endCast() {
@@ -1182,9 +1317,7 @@ function startStruggle(fish) {
         pullSpeed: Math.min(2.0, (0.4 + size * 0.6) * power * DIFFICULTY),
         burstDistance: (0.3 + size * 0.4) * power * DIFFICULTY,
         burstInterval: interval,
-        burstTimer: interval,
-        // Un clic = un petit coup de poignet, bien plus faible qu'un tour.
-        clickDistance: 1.2
+        burstTimer: interval
     };
     tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
     // Temps limite : assez large pour jouer à la souris, mais il faut vraiment
@@ -1204,8 +1337,8 @@ function startStruggle(fish) {
     struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg';
     struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
     updateStruggleBar();
-    fishButton.disabled = false;
-    fishButton.textContent = 'Ramener !';
+    fishButton.disabled = true;
+    fishButton.textContent = 'Tourne la manivelle !';
     statusDisplay.textContent = 'Poisson ferré ! Tourne la manivelle pour le ramener !';
 }
 
@@ -1317,16 +1450,10 @@ function updateBiteView(dt) {
     }
 }
 
+// Le clic ne sert plus qu'à dégager la ligne des nénuphars : pendant l'épreuve
+// de force, seul le moulinet (la manivelle) fait revenir le poisson.
 function reelClick() {
-    if (floatState === 'struggle' && struggle) {
-        // Coup de poignet : gagne juste un peu de fil. La manivelle reste le
-        // vrai moulinet (et son apport est proportionnel à la distance).
-        struggle.lineLength = Math.max(struggle.minLength, struggle.lineLength - struggle.clickDistance);
-        tension = Math.max(0, lineLengthToTension(struggle.lineLength));
-        shake = 0.06;
-        sound.reel();
-        updateStruggleBar();
-    } else if (floatState === 'snag' && snag) {
+    if (floatState === 'snag' && snag) {
         tension = Math.max(0, tension - snag.clickPower);
         shake = 0.06;
         sound.reel();
@@ -1336,6 +1463,7 @@ function reelClick() {
 
 function endStruggle(success, timedOut) {
     strugglePanel.classList.remove('active');
+    fishButton.disabled = false;
     fishButton.textContent = 'Lancer la canne';
     struggle = null;
     if (success) {
@@ -1560,12 +1688,13 @@ function updateClouds(dt) {
 }
 
 function updateFish(dt, time) {
+    baitInterest = false;
     fishes.forEach(fish => {
         const data = fish.userData;
         if (data.biting) {
             fish.position.x = floatGroup.position.x + Math.sin(time * 20) * 0.12;
             fish.position.z = floatGroup.position.z + Math.cos(time * 18) * 0.12;
-            fish.position.y = -0.4;
+            fish.position.y = HOOK_DEPTH - data.topOffset + Math.sin(time * 20) * 0.05;
             fish.rotation.y = Math.sin(time * 18) * 0.4;
             data.tailPivot.rotation.y = Math.sin(time * 22) * 0.7;
             return;
@@ -1576,7 +1705,7 @@ function updateFish(dt, time) {
             }
             fish.position.x = strugglePos.x + Math.sin(time * 30) * 0.15;
             fish.position.z = strugglePos.z + Math.cos(time * 25) * 0.15;
-            fish.position.y = -0.5 + Math.sin(time * 20) * 0.1;
+            fish.position.y = -0.2 - data.topOffset + Math.sin(time * 20) * 0.1;
             fish.rotation.y = Math.sin(time * 15) * 0.5;
             data.tailPivot.rotation.y = Math.sin(time * 25) * 0.8;
             return;
@@ -1604,6 +1733,22 @@ function updateFish(dt, time) {
                 }
             }
         }
+        // Un poisson qui passe près du bouchon vient renifler l'hameçon : il s'en
+        // approche et remonte vers la surface. C'est ce qui rend la touche visible.
+        if (!fishCaught && (floatState === 'inWater' || floatState === 'reeling')) {
+            const bx = floatGroup.position.x - fish.position.x;
+            const bz = floatGroup.position.z - fish.position.z;
+            const bd = Math.hypot(bx, bz);
+            if (bd < BITE_INTEREST_RADIUS) {
+                baitInterest = true;
+                const inv = bd > 0.001 ? 1 / bd : 0;
+                const wanted = Math.min(BITE_APPROACH_ACCEL, bd * 2.2);
+                const k = Math.min(1, dt * 4);
+                data.vx += (bx * inv * wanted - data.vx) * k;
+                data.vz += (bz * inv * wanted - data.vz) * k;
+                data.depth += (HOOK_DEPTH - data.depth) * Math.min(1, dt * 2.5);
+            }
+        }
         fish.position.x += data.vx * dt;
         fish.position.z += data.vz * dt;
 
@@ -1622,7 +1767,9 @@ function updateFish(dt, time) {
         }
 
         fish.rotation.y = Math.atan2(-data.vz, data.vx);
-        fish.position.y = -2.0 + Math.sin(time * 2 + data.phase) * 0.15;
+        // position.y = profondeur du dos − hauteur du poisson : il reste sous l'eau,
+        // seuls les gros poissons montrent leur dorsale près de la surface.
+        fish.position.y = data.depth - data.topOffset + Math.sin(time * 2 + data.phase) * 0.12;
         data.tailPivot.rotation.y = Math.sin(time * 9 + data.phase) * 0.5;
     });
 }
@@ -1649,9 +1796,20 @@ function updateFloat(dt, time) {
             floatGroup.position.set(x, y, z);
         }
     } else if (floatState === 'inWater') {
-        floatGroup.position.y = 0.1 + Math.sin(time * 3) * 0.06;
+        // Le bouchon flotte sur la houle (la même que la surface de l'eau).
         floatGroup.position.x += Math.cos(wind.dir) * wind.strength * 0.6 * dt;
         floatGroup.position.z += Math.sin(wind.dir) * wind.strength * 0.6 * dt;
+        const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
+        // Un poisson qui renifle fait plonger un peu le bouchon (retour visuel).
+        const nibble = baitInterest ? -0.08 + Math.sin(time * 9) * 0.05 : 0;
+        floatGroup.position.y = 0.1 + houle + Math.sin(time * 3) * 0.05 + nibble;
+        if (baitInterest) {
+            nibbleRippleTimer -= dt;
+            if (nibbleRippleTimer <= 0) {
+                nibbleRippleTimer = 0.7;
+                spawnRipple(floatGroup.position);
+            }
+        }
         waitTimer += dt;
         if (biteCooldown > 0) {
             biteCooldown -= dt;
@@ -1698,7 +1856,7 @@ function updateFloat(dt, time) {
             if (hookedFish) {
                 hookedFish.position.x = floatGroup.position.x;
                 hookedFish.position.z = floatGroup.position.z;
-                hookedFish.position.y = -0.3;
+                hookedFish.position.y = -0.3 - (hookedFish.userData.topOffset || 0);
                 hookedFish.rotation.y = Math.atan2(-dz, dx);
             }
             // Une touche peut survenir pendant la remontée.
@@ -1875,6 +2033,7 @@ function animate() {
         updateStruggle(dt);
         updateSnag(dt);
         updateBiteView(dt);
+        updateWater(elapsed);
         updateFish(dt, elapsed);
         updateFloat(dt, elapsed);
         updateFeed(dt);
@@ -1952,6 +2111,10 @@ window.__game = {
     getFeedLanding: function () { return { x: feedLanding.x, z: feedLanding.z }; },
     getFeedRange: function () { return { min: FEED_MIN_RANGE, max: FEED_MAX_RANGE }; },
     getPondCenter: function () { return { x: POND_CENTER.x, z: POND_CENTER.z }; },
+    water: water,
+    getWaterHeightAt: function (x, z) { return waterWaveHeightAt(x, z, testTime); },
+    getBaitInterest: function () { return baitInterest; },
+    getHookDepth: function () { return HOOK_DEPTH; },
     getChum: function () {
         return chum ? {
             x: chum.position.x,
@@ -1970,6 +2133,7 @@ window.__game = {
         updateStruggle(dt);
         updateSnag(dt);
         updateBiteView(dt);
+        updateWater(testTime);
         updateFish(dt, testTime);
         updateFloat(dt, testTime);
         updateFeed(dt);

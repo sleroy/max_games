@@ -32,9 +32,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 ## Commandes
 
 - **Clic gauche sur l'eau** : lancer la ligne (le vent peut la décaler).
-- **Attendre qu'un poisson morde** : une vue rapprochée du bouchon s'affiche, puis il s'enfonce soudainement.
+- **Attendre qu'un poisson morde** : un poisson s'approche du bouchon, le fait plonger un peu (petites ondulations), puis la vue se rapproche et le bouchon s'enfonce soudainement.
 - **Un seul clic** pour ferrer : clique au bon moment (pendant l'enfoncement). Trop tôt → le poisson s'enfuit.
-- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. Un clic ne donne qu'un petit coup de poignet.
+- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson — cliquer ne sert plus à rien pendant le combat.**
 - **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
 - **Bouton 🥣 Nourrir (amorçage)** : clique une fois sur le bouton pour armer le mode,
@@ -49,6 +49,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - Pêcheur 3D avec canne, ligne courbe et bouchon muni d'un hameçon.
 - 20 poissons de 4 formes différentes, avec taille, force, agressivité et poids variables.
 - **Vent** aléatoire : déplace le bouchon, décale le lancer, fait bouger les nuages, indiqué par une **girouette 3D** et une **jauge**.
+- **Eau transparente et vivante** : surface animée par une houle dont l'amplitude et la vitesse suivent le vent, bouchon qui flotte sur les vagues, poissons nageant à des profondeurs différentes et remontant vers l'hameçon pour mordre.
 - **Mode bouchon** : vue rapprochée, enfoncement sous l'eau, fenêtre de ferrage à un seul essai.
 - **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
 - **Accrochage dans les nénuphars** avec risque de casser la ligne.

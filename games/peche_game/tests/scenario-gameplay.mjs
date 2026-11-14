@@ -17,7 +17,8 @@ const API = [
     'getBiteFromReel', 'sound', 'getWind', 'getVaneRotation', 'getTension', 'getStruggleTimeLeft',
     'getLineLength', 'getStruggleTurnsNeeded', 'getUnitsPerTurn', 'turnCrank', 'reelClick', 'setPaused', 'step',
     'setFeedMode', 'isFeedMode', 'getFeedState', 'getFeedPower', 'getFeedTargetPower', 'startFeedCharge',
-    'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChum', 'getPondCenter'
+    'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChum', 'getPondCenter',
+    'water', 'getWaterHeightAt', 'getBaitInterest', 'getHookDepth'
 ];
 
 /** Distance au sol entre le bouchon et le bout de la canne. */
@@ -49,14 +50,16 @@ export function run() {
     checkEqual('le bouchon tombe dans l\'eau (0,8 s)', state(), 'inWater');
     const distance = castDistance();
     check('distance de lancer plausible', distance > 1 && distance < 55, distance.toFixed(1) + ' unités');
-    checkClose('le bouchon flotte à la surface', G().floatGroup.position.y, 0.1, 0.12);
+    check('le bouchon flotte à la surface', Math.abs(G().floatGroup.position.y - 0.1) < 0.45,
+        G().floatGroup.position.y.toFixed(2));
     checkEqual('lancer ignoré si la ligne est déjà à l\'eau',
         (() => { G().startCast({ x: 0, y: 0, z: -40 }); return state(); })(), 'inWater');
     const drift = G().floatGroup.position.clone();
     stepFor(1);
     check('le vent déplace doucement le bouchon',
         Math.hypot(G().floatGroup.position.x - drift.x, G().floatGroup.position.z - drift.z) < 1.5);
-    check('le bouchon ne coule pas', G().floatGroup.position.y > -0.2);
+    check('le bouchon ne coule pas', G().floatGroup.position.y > -0.5,
+        G().floatGroup.position.y.toFixed(2));
 
     group('11) Touche du poisson et ferrage');
     resetToIdle();
@@ -105,7 +108,9 @@ export function run() {
         el('struggleInfo').textContent);
     check('le panneau indique le nombre de tours',
         el('struggleTimer').textContent.includes('de manivelle'), el('struggleTimer').textContent);
-    check('le bouton propose de ramener', el('fishButton').textContent === 'Ramener !');
+    check('le bouton invite à tourner la manivelle',
+        el('fishButton').textContent.includes('manivelle'), el('fishButton').textContent);
+    checkEqual('le bouton est désactivé pendant le combat', el('fishButton').disabled, true);
 
     resetToIdle();
     clearLilyPads();
@@ -171,13 +176,15 @@ export function run() {
         Math.hypot(pulled.position.x - G().floatGroup.position.x,
             pulled.position.z - G().floatGroup.position.z) < 0.5);
 
-    group('16) Le clic de la souris = petit coup de poignet');
+    group('16) Le clic ne remplace pas la manivelle');
     startFight(0, -25);
     const lineBeforeClick = G().getLineLength();
     const clicks = fire('fishButton', 'click');
-    check('le bouton réagit pendant le combat', clicks > 0);
-    checkClose('un clic ramène 1,2 unité', lineBeforeClick - G().getLineLength(), 1.2, 1e-9);
-    check('un clic rapporte moins qu\'un tour de manivelle', 1.2 < G().getUnitsPerTurn());
+    check('le bouton existe toujours (il sert à dégager la ligne)', clicks > 0);
+    checkClose('un clic ne ramène plus de fil pendant le combat',
+        G().getLineLength(), lineBeforeClick, 1e-9);
+    check('le bouton invite à tourner la manivelle',
+        el('fishButton').textContent.includes('manivelle'), el('fishButton').textContent);
 
     group('17) Gagner le combat en tournant la manivelle');
     startFight(0, -30);
@@ -304,6 +311,71 @@ export function run() {
     checkClose('la girouette suit toujours le vent', G().getVaneRotation(), -laterWind.dir, 1e-9);
     check('la force du vent reste bornée', laterWind.strength >= 0 && laterWind.strength < 1,
         laterWind.strength.toFixed(3));
+
+    group('22) Les poissons nagent à différentes profondeurs');
+    resetToIdle();
+    stepFor(0.6);
+    const depths = G().fishes.map(f => f.userData.depth);
+    check('chaque poisson a une profondeur', depths.every(d => typeof d === 'number'),
+        depths.length + ' poissons');
+    check('aucun dos de poisson au-dessus de l’eau',
+        G().fishes.every(f => f.position.y + f.userData.topOffset <= -0.8),
+        Math.max.apply(null, G().fishes.map(f => f.position.y + f.userData.topOffset)).toFixed(2));
+    check('les profondeurs sont variées',
+        Math.max.apply(null, depths) - Math.min.apply(null, depths) > 1.4,
+        Math.min.apply(null, depths).toFixed(2) + ' -> ' + Math.max.apply(null, depths).toFixed(2));
+    check('tous restent sous la surface en nageant',
+        G().fishes.every(f => f.position.y < -0.5),
+        Math.max.apply(null, G().fishes.map(f => f.position.y)).toFixed(2));
+
+    group('23) Le poisson remonte vers l’hameçon avant de mordre');
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    parkFish();
+    const deepFish = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
+    deepFish.position.set(G().floatGroup.position.x, -3, G().floatGroup.position.z);
+    deepFish.userData.depth = -3;
+    deepFish.userData.vx = 0;
+    deepFish.userData.vz = 0;
+    stepFor(0.2);
+    checkEqual('pas encore de touche (le poisson est trop profond)', state(), 'inWater');
+    check('le bouchon signale un poisson tout proche', G().getBaitInterest(), true);
+    check('le poisson a commencé à remonter', deepFish.userData.depth > -2.7,
+        deepFish.userData.depth.toFixed(2));
+    check('il finit par mordre', stepUntil(() => state() === 'bite', 5), state());
+    check('la morsure se fait au niveau de l’hameçon',
+        Math.abs((deepFish.position.y + deepFish.userData.topOffset) - G().getHookDepth()) < 0.6,
+        (deepFish.position.y + deepFish.userData.topOffset).toFixed(2));
+
+    group('24) L’eau est animée par la houle (selon le vent)');
+    resetToIdle();
+    const uniforms = G().water.material.uniforms;
+    const timeBefore = uniforms.uTime.value;
+    stepFor(0.5);
+    check('la houle avance dans le temps', uniforms.uTime.value > timeBefore,
+        uniforms.uTime.value.toFixed(2));
+    const windNow = G().getWind();
+    checkClose('la force de la houle suit le vent', uniforms.uWind.value, windNow.strength, 1e-6);
+    checkClose('la direction de la houle suit le vent (x)',
+        uniforms.uWindDir.value.x, Math.cos(windNow.dir), 1e-6);
+    checkClose('la direction de la houle suit le vent (z)',
+        uniforms.uWindDir.value.y, Math.sin(windNow.dir), 1e-6);
+    // Le bouchon flotte : il monte et descend avec la houle.
+    clearLilyPads();
+    castTo(0, -25);
+    let floatMinY = Infinity;
+    let floatMaxY = -Infinity;
+    for (let i = 0; i < 90; i++) {
+        stepFor(1 / 60);
+        floatMinY = Math.min(floatMinY, G().floatGroup.position.y);
+        floatMaxY = Math.max(floatMaxY, G().floatGroup.position.y);
+    }
+    check('le bouchon oscille avec la houle', floatMaxY - floatMinY > 0.03,
+        floatMinY.toFixed(2) + ' -> ' + floatMaxY.toFixed(2));
+    check('le bouchon reste près de la surface de l’eau',
+        floatMinY > -0.6 && floatMaxY < 0.6,
+        floatMinY.toFixed(2) + ' -> ' + floatMaxY.toFixed(2));
 }
 
 export default run;
