@@ -13,3 +13,6 @@ desktop.ini
 
 # Dépendances (si build plus tard)
 node_modules/
+
+# Artefacts de test locaux (les jeux vivent UNIQUEMENT dans games/)
+/peche_game/
