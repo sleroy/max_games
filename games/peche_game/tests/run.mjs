@@ -24,6 +24,7 @@ import scenarioPostes from './scenario-postes.mjs';
 import scenarioSoleil from './scenario-soleil.mjs';
 import scenarioEtang from './scenario-etang.mjs';
 import scenarioPlacement from './scenario-placement.mjs';
+import scenarioVase from './scenario-vase.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -48,6 +49,7 @@ try {
     scenarioSoleil();           // soleil fixe au sud-ouest + lumière par poste
     scenarioEtang();            // étang généré : contour, eau, fond, rive, carte
     scenarioPlacement();        // choix libre sur la carte vue de dessus
+    scenarioVase();             // la vase est tenace (rythme obligatoire)
 } catch (error) {
     crashed = error;
 } finally {

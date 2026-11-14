@@ -45,6 +45,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   pêcheur, la canne, la bourriche et la caméra suivent ; le soleil reste au
   sud-ouest (chaque poste a donc sa lumière). La boussole indique où est le
   **nord à l'écran** (↑ ↓ ← →).
+- **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
+  rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
+  Les nénuphars, eux, se dégagent plus facilement.
 - **Étang généré** : le contour n'est **pas un cercle**. Une somme d'harmoniques
   donne une forme allongée et lobée (rayon ≈ 43 à 63 unités autour d'un rayon
   nominal de 55). L'eau, le fond, la rive, la carte du carnet et les profondeurs

@@ -140,6 +140,14 @@ export function run() {
         script.includes("addEventListener('pointerdown'")
         && script.includes('emplacementDepuisCarte'));
 
+    group('9) La vase est tenace');
+    check('la vase impose un temps de récupération entre deux clics',
+        script.includes('clickCooldown: 0.32'));
+    check('les nénuphars restent sans temps de récupération',
+        script.includes('clickCooldown: 0'));
+    check('le bouton signale le temps de récupération',
+        css.includes('#fishButton.cooldown'));
+
 }
 
 export default run;

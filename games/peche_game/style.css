@@ -240,6 +240,12 @@ button:disabled {
     color: #fff3d0;
 }
 
+/* Vase : le clic n'est pas encore efficace, on doit laisser le fil se détendre. */
+#fishButton.cooldown {
+    opacity: 0.6;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
 /* Le frein patine : la barre indique qu'on est en sécurité. */
 .struggle.slipping .struggle-track {
     box-shadow: 0 0 10px rgba(255, 210, 77, 0.9);

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=93';
+import { SoundEngine } from './sound.js?v=94';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -5069,10 +5069,21 @@ function updateBiteView(dt) {
 // de force, seul le moulinet (la manivelle) fait revenir le poisson.
 function reelClick() {
     if (floatState === 'snag' && snag) {
-        tension = Math.max(0, tension - snag.clickPower);
+        snag.clics += 1;
+        // LA VASE EST TENACE : un clic n'est efficace qu'après un temps de
+        // récupération (la ligne doit se détendre). Les nénuphars, eux, n'ont
+        // pas de temps de récupération (clickCooldown = 0).
+        const pret = snag.clickCooldown <= 0
+            || (snag.elapsed - snag.lastClick) >= snag.clickCooldown;
+        if (pret) {
+            tension = Math.max(0, tension - snag.clickPower);
+            snag.lastClick = snag.elapsed;
+            snag.clicsUtiles += 1;
+        }
         shake = 0.06;
         sound.reel();
         updateStruggleBar();
+        majIndiceSnag();
     }
 }
 
@@ -5195,33 +5206,84 @@ function isSnagged(point) {
 
 function startSnag(mode) {
     floatState = 'snag';
-    tension = 0.5;
     const dansLaVase = mode === 'fond';
-    snag = {
+    tension = dansLaVase ? 0.55 : 0.5;
+    // Deux accrochages, deux difficultés :
+    //  - NÉNUPHARS : on clique vite, c'est facile (clickCooldown = 0).
+    //  - VASE : elle ASPIRE. Un clic n'est utile que toutes les 0,32 s ; il faut
+    //    tenir un rythme (~3 clics/s) pendant plusieurs secondes, sinon la
+    //    tension monte et la ligne casse.
+    snag = dansLaVase ? {
+        dansLaVase: true,
+        pullRate: 0.10,
+        burstStrength: 0.10,
+        burstInterval: 0.9,
+        burstTimer: 0.9,
+        clickPower: 0.10,
+        clickCooldown: 0.32,
+        elapsed: 0,
+        lastClick: -1,
+        clics: 0,
+        clicsUtiles: 0
+    } : {
+        dansLaVase: false,
         pullRate: 0.12,
         burstStrength: 0.10,
         burstInterval: 1.1,
         burstTimer: 1.1,
-        clickPower: 0.10
+        clickPower: 0.10,
+        clickCooldown: 0,
+        elapsed: 0,
+        lastClick: -1,
+        clics: 0,
+        clicsUtiles: 0
     };
+    snagIndicePret = null;
     strugglePanel.classList.add('active');
     sound.snag();
     struggleInfo.textContent = dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
     struggleTimer.textContent = '';
     struggleTimer.classList.remove('urgent');
-    struggleHint.textContent = 'Clique vite pour dégager la ligne !';
+    struggleHint.textContent = dansLaVase
+        ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
+        : 'Clique vite pour dégager la ligne !';
+    majIndiceSnag();
     updateStruggleBar();
     fishButton.disabled = false;
     fishButton.textContent = 'Dégager !';
     statusDisplay.textContent = dansLaVase
-        ? 'Ton hameçon s’est enfoncé dans la vase ! Clique pour le dégager, puis règle une ligne moins profonde.'
+        ? 'Ton hameçon s’est enfoncé dans la vase ! Tire en rythme (≈ 3 clics/s) pour le dégager, puis règle une ligne moins profonde.'
         : 'La ligne s’est accrochée aux nénuphars ! Clique pour la dégager.';
+}
+
+// Indique au joueur s'il peut cliquer (vase) ou s'il doit laisser le fil se
+// détendre. N'affiche rien pour les nénuphars (pas de temps de récupération).
+let snagIndicePret = null;
+function majIndiceSnag() {
+    if (!snag || !snag.dansLaVase) {
+        return;
+    }
+    const pret = (snag.elapsed - snag.lastClick) >= snag.clickCooldown;
+    if (pret === snagIndicePret) {
+        return;
+    }
+    snagIndicePret = pret;
+    struggleHint.textContent = pret
+        ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
+        : 'Trop tôt : laisse le fil se détendre…';
+    if (fishButton.classList) {
+        fishButton.classList.toggle('cooldown', !pret);
+    }
 }
 
 function endSnag(freed) {
     strugglePanel.classList.remove('active');
     fishButton.textContent = 'Lancer la canne';
+    if (fishButton.classList) {
+        fishButton.classList.remove('cooldown');
+    }
     snag = null;
+    snagIndicePret = null;
     if (freed) {
         snagFreed = true;
         statusDisplay.textContent = 'Ligne dégagée ! On la ramène.';
@@ -5247,6 +5309,7 @@ function updateSnag(dt) {
     if (floatState !== 'snag' || !snag) {
         return;
     }
+    snag.elapsed += dt;
     if (tension <= 0) {
         tension = 0;
         updateStruggleBar();
@@ -5266,6 +5329,7 @@ function updateSnag(dt) {
         endSnag(false);
         return;
     }
+    majIndiceSnag();
     updateStruggleBar();
 }
 
@@ -6711,6 +6775,24 @@ window.__game = {
     getWind: function () { return { dir: wind.dir, strength: wind.strength }; },
     getVaneRotation: function () { return vaneArrow.rotation.y; },
     getTension: function () { return tension; },
+    // Accrochage (vase / nénuphars) — exposé pour les tests de difficulté.
+    getSnag: function () {
+        if (!snag) {
+            return null;
+        }
+        return {
+            dansLaVase: !!snag.dansLaVase,
+            tension: tension,
+            clickPower: snag.clickPower,
+            clickCooldown: snag.clickCooldown,
+            elapsed: snag.elapsed,
+            lastClick: snag.lastClick,
+            pret: snag.clickCooldown <= 0
+                || (snag.elapsed - snag.lastClick) >= snag.clickCooldown,
+            clics: snag.clics,
+            clicsUtiles: snag.clicsUtiles
+        };
+    },
     getStruggleTimeLeft: function () { return struggleTimeLeft; },
     getLineLength: function () { return struggle ? struggle.lineLength : 0; },
     getStruggleTurnsNeeded: function () {
