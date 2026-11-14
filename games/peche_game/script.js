@@ -33,6 +33,9 @@ const calmToggle = document.getElementById('calmToggle');
 const effectsToggle = document.getElementById('effectsToggle');
 const bourricheLabel = document.getElementById('bourricheLabel');
 const xpLabel = document.getElementById('xpLabel');
+const depthLabel = document.getElementById('depthLabel');
+const depthMinus = document.getElementById('depthMinus');
+const depthPlus = document.getElementById('depthPlus');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -645,12 +648,76 @@ const POND_RADIUS = 55;
 // pêcheur donne alors l'impression de flotter, voire d'être dans l'eau.
 const RIVE_Y = 0.35;
 
+// ---------------------------------------------------------------------------
+// Relief de l'étang : le fond est un BASSIN (peu profond au bord, profond au
+// centre) avec deux FOSSES. Profondeurs en UNITÉS (2 unités ≈ 1 m).
+// ---------------------------------------------------------------------------
+const FOND_BORD = 1.4;            // profondeur au bord (≈ 0,7 m)
+const FOND_CENTRE = 5.0;          // profondeur au centre (≈ 2,5 m)
+const FOSSES = [
+    { x: -16, z: -56, rayon: 11, plus: 1.6 },
+    { x: 20, z: -26, rayon: 9, plus: 1.2 }
+];
+
+// Profondeur d'eau (positive) à un point de l'étang.
+function profondeurLocale(x, z) {
+    const dx = x - POND_CENTER.x;
+    const dz = z - POND_CENTER.z;
+    const d = Math.hypot(dx, dz);
+    const t = Math.min(1, d / POND_RADIUS);
+    let prof = FOND_BORD + (FOND_CENTRE - FOND_BORD) * (1 - t * t);   // cuvette
+    FOSSES.forEach(function (fosse) {
+        const fd = Math.hypot(x - fosse.x, z - fosse.z);
+        if (fd < fosse.rayon) {
+            prof += fosse.plus * (1 - (fd / fosse.rayon) * (fd / fosse.rayon));
+        }
+    });
+    return prof;
+}
+
+// Hauteur (y) du fond à un point donné.
+function fondY(x, z) {
+    return -profondeurLocale(x, z);
+}
+
+// Fond de l'étang : un disque dont les sommets suivent le relief.
+function makeFondGeometry(radius, rings, segments) {
+    const positions = [POND_CENTER.x, fondY(POND_CENTER.x, POND_CENTER.z), POND_CENTER.z];
+    const indices = [];
+    for (let r = 1; r <= rings; r++) {
+        const rr = radius * (r / rings);
+        for (let s = 0; s < segments; s++) {
+            const a = (s / segments) * Math.PI * 2;
+            const x = Math.cos(a) * rr;
+            const z = Math.sin(a) * rr;
+            positions.push(x, fondY(POND_CENTER.x + x, POND_CENTER.z + z), z);
+        }
+    }
+    for (let s = 0; s < segments; s++) {
+        indices.push(0, 1 + s, 1 + ((s + 1) % segments));
+    }
+    for (let r = 1; r < rings; r++) {
+        const base = 1 + (r - 1) * segments;
+        const next = 1 + r * segments;
+        for (let s = 0; s < segments; s++) {
+            const s1 = (s + 1) % segments;
+            indices.push(base + s, next + s, next + s1);
+            indices.push(base + s, next + s1, base + s1);
+        }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
+}
+
 const pondBottom = new THREE.Mesh(
-    new THREE.CircleGeometry(POND_RADIUS + 2, 96),
+    makeFondGeometry(POND_RADIUS + 2, 26, 96),
     new THREE.MeshStandardMaterial({ color: 0x1a5a70, roughness: 1 })
 );
-pondBottom.rotation.x = -Math.PI / 2;
-pondBottom.position.set(POND_CENTER.x, -6, POND_CENTER.z);
+// La hauteur est dans la géométrie : le maillage est simplement centré.
+pondBottom.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(pondBottom);
 
 // Eau : disque « polaire » (anneaux + rayons) pour permettre au shader de
@@ -1165,6 +1232,51 @@ function setFloatOpacity(opacity) {
     hookLine.material.opacity = opacity;
     hook.material.opacity = opacity;
 }
+// Profondeur de la LIGNE : distance entre le bouchon et l'hameçon, en UNITÉS
+// (2 unités ≈ 1 m). Le joueur la règle avec − / + ; elle est bornée par le type
+// de bouchon (une « pose à coulisse » descend bien plus profond).
+let profondeurLigne = 2.6;              // 1,3 m par défaut
+let HOOK_DEPTH = -profondeurLigne;      // hauteur (y) de l'hameçon
+
+function bornesProfondeur(f) {
+    const b = (f || flotteurCourant()).profondeur;
+    return Array.isArray(b) && b.length === 2 ? b : [0.6, 2.6];
+}
+
+// Met à jour le dessin du bas de ligne et de l'hameçon (plus ou moins loin).
+function appliquerProfondeurVisuelle() {
+    const bas = 0.3;                                        // bas du bouchon (local)
+    const prof = profondeurLigne / FLOTTEUR_ECHELLE;        // en local
+    const longueur = Math.max(0.3, prof - bas);
+    hookLine.scale.y = longueur / 3.0;                      // géométrie de 3.0
+    hookLine.position.y = -(bas + longueur / 2);
+    hook.position.y = -prof;
+}
+
+function majEtiquetteProfondeur() {
+    if (!depthLabel) {
+        return;
+    }
+    const bornes = bornesProfondeur();
+    depthLabel.textContent = '🌊 ' + (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m';
+    if (depthMinus) {
+        depthMinus.disabled = profondeurLigne <= bornes[0] + 0.01;
+    }
+    if (depthPlus) {
+        depthPlus.disabled = profondeurLigne >= bornes[1] - 0.01;
+    }
+}
+
+function setProfondeur(valeur) {
+    const bornes = bornesProfondeur();
+    // Pas de 0,5 unité (25 cm), borné par le bouchon équipé.
+    const arrondi = Math.round(valeur * 2) / 2;
+    profondeurLigne = Math.min(bornes[1], Math.max(bornes[0], arrondi));
+    HOOK_DEPTH = -profondeurLigne;
+    appliquerProfondeurVisuelle();
+    majEtiquetteProfondeur();
+}
+
 const floatIdle = new THREE.Vector3(rodTip.x, rodTip.y - 0.6, rodTip.z);
 floatGroup.position.copy(floatIdle);
 // Le bouchon est un peu plus petit que dans la réalité d'un jeu vidéo : il doit
@@ -1194,32 +1306,32 @@ const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, vo
 const BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
 
 const FLOTTEURS = [
-    { id: 'anglaise', nom: 'Anglaise', prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
+    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 2.6], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
       couleur: 0xff5a3c, corps: 0xf4f4f4,
       desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
-    { id: 'waggler', nom: 'Waggler', prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
+    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 2.2], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
       couleur: 0xffd24d, corps: 0xf4f4f4,
       desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
-    { id: 'coulisse', nom: 'Pose à coulisse', prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
+    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 5.0], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
       couleur: 0xd0552a, corps: 0xf4f4f4,
       desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
-    { id: 'bolognaise', nom: 'Bolognaise', prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
+    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 4.0], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
       couleur: 0xe04a2a, corps: 0xffe066,
       desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' },
     // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
-    { id: 'plume', nom: 'Plume d’oie lumineuse', prix: 40, remontee: 'couche', longueur: 2.0,
+    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 2.6], prix: 40, remontee: 'couche', longueur: 2.0,
       couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
       capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
       desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
-    { id: 'truque', nom: 'Bouchon truqué', prix: 70, remontee: 'couche', longueur: 1.8,
+    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 2.6], prix: 70, remontee: 'couche', longueur: 1.8,
       couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
       capacite: { fausses: 0.55 }, sensibilite: 1.2,
       desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
-    { id: 'plombee', nom: 'Waggler plombé', prix: 110, remontee: 'couche', longueur: 1.9,
+    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 4.2], prix: 110, remontee: 'couche', longueur: 1.9,
       couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
       capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
       desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
-    { id: 'maitre', nom: 'Bouchon du maître', prix: 200, remontee: 'demi-tige', longueur: 2.8,
+    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 4.6], prix: 200, remontee: 'demi-tige', longueur: 2.8,
       couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
       capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
       sensibilite: 1.25,
@@ -1253,6 +1365,8 @@ function appliquerFlotteurVisuel(f) {
         floatBody.material.emissive.set(lueur ? 0x335566 : 0x000000);
         floatBody.material.emissiveIntensity = lueur ? 0.45 : 0;
     }
+    // Le bas de ligne et l'hameçon suivent la profondeur réglée.
+    appliquerProfondeurVisuelle();
 }
 
 function setFloatType(id) {
@@ -1267,6 +1381,9 @@ function setFloatType(id) {
     }
     floatInfo.textContent = f.desc;
     appliquerFlotteurVisuel(f);
+    // La profondeur est bornée par le bouchon choisi (une pose à coulisse va
+    // beaucoup plus profond qu'une anglaise).
+    setProfondeur(profondeurLigne);
     journal.bouchon = f.id;
     saveJournal();
 }
@@ -1530,7 +1647,9 @@ function updateChum(dt) {
     const fadeIn = Math.min(1, chum.age / 1.2);
     const fadeOut = Math.min(1, Math.max(0, (chum.lifetime - chum.age) / 3));
     chum.strength = Math.min(fadeIn, fadeOut);
-    chum.group.position.set(chum.position.x, 0.4, chum.position.z);
+    // Le nuage COULE jusqu'à la profondeur de la ligne : on amorce là où on pêche.
+    chum.position.y += (HOOK_DEPTH - chum.position.y) * Math.min(1, dt * 0.7);
+    chum.group.position.set(chum.position.x, chum.position.y + 0.35, chum.position.z);
     chum.material.opacity = 0.55 * chum.strength;
     const pulse = 1 + Math.sin(chum.age * 1.5) * 0.06;
     chum.group.scale.set(pulse, pulse, pulse);
@@ -3057,7 +3176,12 @@ function spawnFish() {
     const plage = espece.profondeur || [-3.4, -0.9];
     const tProf = (Math.sin(fish.userData.phase) + 1) / 2;      // 0 → 1
     fish.userData.depth = plage[0] + tProf * (plage[1] - plage[0]);
+    // Le poisson ne peut pas nager DANS le fond : il reste au-dessus du relief.
+    fish.userData.depth = Math.max(fish.userData.depth,
+        fondY(fish.position.x, fish.position.z) + 0.35);
     fish.position.y = fish.userData.depth - fish.userData.topOffset;
+    // Sa tranche d'eau : il ne viendra à l'hameçon que si celui-ci y est.
+    fish.userData.profondeurZone = plage.slice();
     // Domaine vital : chaque poisson reste dans SON coin d'étang (il ne traverse
     // pas tout l'étang). Rayon déduit de la phase, sans tirage aléatoire en plus.
     fish.userData.homeX = fish.position.x;
@@ -3126,7 +3250,8 @@ let fishCaught = false;
 let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
 let castT = 0;
 let waitTimer = 0;
-let reelIdle = 0;              // secondes sans toucher la manivelle pendant la remontée
+let reelIdle = 0;                // secondes sans toucher la manivelle pendant la remontée
+let hameconDansLaVase = false;   // hameçon posé dans la vase (profondeur trop grande)
 let biteFish = null;
 let biteCooldown = 0;
 let biteViewActive = false;
@@ -3349,7 +3474,6 @@ const MAX_WAIT = 12;
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
 // du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
 // sur la distance RÉELLE en 3D à l'hameçon, pas seulement à l'aplomb du bouchon.
-const HOOK_DEPTH = -2.6;           // profondeur de l'hameçon sous le bouchon
 const BITE_INTEREST_RADIUS = 7;    // à cette distance, le poisson s'intéresse au bouchon
 const BITE_RADIUS = 0.9;           // distance 3D en dessous de laquelle il mord
 const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
@@ -3406,6 +3530,7 @@ function startReel() {
     if (floatState === 'inWater') {
         floatState = 'reeling';
         reelIdle = 0;
+        hameconDansLaVase = false;
         statusDisplay.textContent = 'On remonte la ligne… (le bouchon est toujours à l’eau : un poisson peut encore mordre !)';
     }
 }
@@ -3422,6 +3547,11 @@ function findBitingFish() {
         const fish = fishes[i];
         const data = fish.userData;
         if (data.hooked || data.biting) {
+            continue;
+        }
+        // Seuls les poissons dont la tranche d'eau contient l'hameçon peuvent mordre.
+        const zone = data.profondeurZone;
+        if (zone && (HOOK_DEPTH < zone[0] - 0.5 || HOOK_DEPTH > zone[1] + 0.5)) {
             continue;
         }
         const dx = fish.position.x - floatGroup.position.x;
@@ -4265,9 +4395,15 @@ function updateFish(dt, time) {
             const cz = chum.position.z - fish.position.z;
             const cd = Math.hypot(cx, cz);
             if (cd < chum.radius && cd > 0.001) {
+                // L'amorçage n'attire que les poissons de SA couche d'eau.
+                if (Math.abs(data.depth - chum.position.y) > 1.6) {
+                    return;
+                }
                 const accel = CHUM_ATTRACT_ACCEL * chum.strength * dt;
                 data.vx += (cx / cd) * accel;
                 data.vz += (cz / cd) * accel;
+                // Le poisson descend vers le nuage (même profondeur que l'esche).
+                data.depth += (chum.position.y - data.depth) * Math.min(1, dt * 1.5);
                 // Tout près du nuage, le poisson ralentit et tourne (il picore).
                 if (cd < 3.5) {
                     data.vx *= 0.94;
@@ -4293,7 +4429,12 @@ function updateFish(dt, time) {
             const bd = Math.hypot(bx, bz);
             // Sous la pluie, les poissons s'intéressent de plus loin.
             const rayonInteret = BITE_INTEREST_RADIUS * (1 + 0.25 * weatherPluie);
-            if (bd < rayonInteret) {
+            // Le poisson ne vient à l'hameçon que s'il est DANS SA tranche d'eau
+            // (un gardon de surface ne plonge pas à 2,5 m pour mordre).
+            const zoneEsp = data.profondeurZone;
+            const dansSaZone = !zoneEsp
+                || (HOOK_DEPTH >= zoneEsp[0] - 0.5 && HOOK_DEPTH <= zoneEsp[1] + 0.5);
+            if (bd < rayonInteret && dansSaZone) {
                 baitInterest = true;
                 data.targeting = true;
                 const inv = bd > 0.001 ? 1 / bd : 0;
@@ -4393,7 +4534,12 @@ function updateFloat(dt, time) {
             } else {
                 floatState = 'inWater';
                 waitTimer = 0;
-                statusDisplay.textContent = 'Le flotteur est dans l’eau… attends qu’un poisson morde (ou tourne la manivelle pour ramener la ligne).';
+                // Profondeur réglée > profondeur de l'eau à cet endroit : l'hameçon
+                // est DANS LA VASE (le bouchon se couche, rien ne mord).
+                hameconDansLaVase = profondeurLigne > profondeurLocale(castTarget.x, castTarget.z) - 0.25;
+                statusDisplay.textContent = hameconDansLaVase
+                    ? 'Ton hameçon est dans la vase ! Remonte la ligne (manivelle) et choisis moins profond.'
+                    : 'Le flotteur est dans l’eau… attends qu’un poisson morde (ou tourne la manivelle pour ramener la ligne).';
             }
         } else {
             const x = THREE.MathUtils.lerp(castStart.x, castTarget.x, castT);
@@ -4409,6 +4555,10 @@ function updateFloat(dt, time) {
         floatGroup.position.z += Math.sin(wind.dir) * wind.strength * 0.6 * dt;
         const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
         floatGroup.position.y = 0.1 + houle;
+        if (hameconDansLaVase) {
+            // L'hameçon est dans la vase : le bouchon se couche et rien ne mord.
+            floatGroup.rotation.z = 1.45;
+        }
         // Un poisson qui renifle l'appât fait « mordiller » le bouchon de temps en
         // temps seulement : un petit plongeon bref (environ une fois toutes les 4 s),
         // et pas une agitation continue. Le rythme suit le temps de jeu : aucun
@@ -4435,7 +4585,7 @@ function updateFloat(dt, time) {
         }
         if (biteCooldown > 0) {
             biteCooldown -= dt;
-        } else {
+        } else if (!hameconDansLaVase) {
             const fish = findBitingFish();
             if (fish) {
                 showBiteView(fish);
@@ -4656,6 +4806,21 @@ feedButton.addEventListener('click', () => {
     ensureSound();
     setFeedMode(!feedMode);
 });
+
+// Réglage de la profondeur de la ligne (− / +).
+if (depthMinus) {
+    depthMinus.addEventListener('click', function () {
+        ensureSound();
+        setProfondeur(profondeurLigne - 0.5);
+    });
+}
+if (depthPlus) {
+    depthPlus.addEventListener('click', function () {
+        ensureSound();
+        setProfondeur(profondeurLigne + 0.5);
+    });
+}
+majEtiquetteProfondeur();
 
 fishButton.addEventListener('click', () => {
     ensureSound();

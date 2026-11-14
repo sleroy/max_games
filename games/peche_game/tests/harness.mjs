@@ -461,6 +461,9 @@ export function forceBite() {
         throw new Error('aucun poisson disponible pour la touche');
     }
     fish.position.set(G().floatGroup.position.x, -2, G().floatGroup.position.z);
+    // Le poisson du test est placé dans la tranche d'eau de l'hameçon (sinon la
+    // règle « morsure par zone » l'empêcherait de mordre).
+    fish.userData.profondeurZone = [G().getHookDepth() - 0.2, G().getHookDepth() + 0.2];
     fish.userData.vx = 0;
     fish.userData.vz = 0;
     if (!stepUntil(() => state() === 'bite', 5)) {

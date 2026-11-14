@@ -876,6 +876,39 @@ button, .crank {
     flex: 0 0 auto;
 }
 
+/* Réglage de la profondeur de la ligne (dans la barre d'outils). */
+.depth-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.depth-label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #eaf6ff;
+    min-width: 64px;
+}
+
+.depth-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    font-family: inherit;
+    color: #08222f;
+    background: #7fd0ff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.depth-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 /* Onglet Espèces : une fiche par poisson, avec navigation. */
 .espece-nav {
     display: flex;
