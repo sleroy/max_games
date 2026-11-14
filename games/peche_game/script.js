@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=81 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=82 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=81';
+import { SoundEngine } from './sound.js?v=82';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -5320,6 +5320,11 @@ canvas.addEventListener('pointerdown', event => {
         return;
     }
     ensureSound();
+    // RAGONDIN : un clic SUR LUI le chasse (et ne ferre jamais un poisson).
+    if (ragondin && clicSurRagondin(event)) {
+        hitRagondin();
+        return;
+    }
     // Poisson en main : on dose la puissance du lancer vers la bourriche.
     if (floatState === 'holding') {
         startFishThrow();
@@ -5507,6 +5512,128 @@ const clock = new THREE.Clock();
 let elapsed = 0;
 let paused = false;
 
+// LE RAGONDIN VOLEUR — aléa rare : il sort de l'eau près de la bourriche pour
+// voler un poisson. 3 clics SUR LUI le font fuir ; ses clics passent AVANT le
+// ferrage, donc impossible de ferrer en le chassant.
+const RAGONDIN_CLICS = 3;
+let ragondin = null;
+let ragondinTimer = 80 + rand() * 70;
+let ragondinHits = 0;
+let ragondinVolTimer = 0;   // secondes restantes avant le vol
+
+function makeRagondin() {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x6b5138, roughness: 0.9 });
+    const corps = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), mat);
+    corps.scale.set(1.9, 0.95, 0.9);
+    corps.position.y = 0.2;
+    group.add(corps);
+    const tete = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), mat);
+    tete.position.set(0.44, 0.24, 0);
+    group.add(tete);
+    [-1, 1].forEach(function (cote) {
+        const oreille = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), mat);
+        oreille.position.set(0.37, 0.35, cote * 0.09);
+        group.add(oreille);
+    });
+    const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.05, 0.5, 6), mat);
+    queue.rotation.z = Math.PI / 2.4;
+    queue.position.set(-0.55, 0.24, 0);
+    group.add(queue);
+    return group;
+}
+
+function spawnRagondin() {
+    if (ragondin || partieTerminee) { return null; }
+    const modele = makeRagondin();
+    modele.position.set(BOURRICHE_POS.x + 4, 0, BOURRICHE_POS.z - 2);
+    modele.rotation.y = Math.PI;
+    scene.add(modele);
+    ragondinHits = 0;
+    ragondinVolTimer = 12;     // 12 s pour le chasser
+    ragondin = modele;
+    statusDisplay.textContent = '🐀 Un RAGONDIN rôde près de ta bourriche ! Clique 3 fois sur lui pour le chasser (sinon il vole un poisson).';
+    return modele;
+}
+
+function volerUnPoissonRagondin() {
+    if (!ragondin) { return false; }
+    if (score > 0) {
+        score -= 1;
+        scoreDisplay.textContent = score;
+    }
+    spawnFloatingText('🐀 Il a volé un poisson !', BOURRICHE_POS, '#ff6b57');
+    statusDisplay.textContent = '🐀 Trop tard : le ragondin a volé un poisson et s’est échappé !';
+    sound.escape();
+    effrayerRagondin();
+    return true;
+}
+
+function effrayerRagondin() {
+    if (!ragondin) { return; }
+    scene.remove(ragondin);
+    ragondin = null;
+    ragondinHits = 0;
+    ragondinTimer = 160 + rand() * 140;
+}
+
+function hitRagondin() {
+    if (!ragondin) { return false; }
+    ragondinHits += 1;
+    sound.splash();
+    ragondin.position.x += 1.2;
+    if (ragondinHits >= RAGONDIN_CLICS) {
+        spawnFloatingText('🐀 Il s’enfuit !', ragondin.position, '#ffd166');
+        effrayerRagondin();
+        statusDisplay.textContent = '🐀 Le ragondin a fui ! Tes poissons sont saufs.';
+        return true;
+    }
+    spawnFloatingText('🐀 Il détale !', ragondin.position, '#ffd166');
+    statusDisplay.textContent = '🐀 Touché ! Encore ' + (RAGONDIN_CLICS - ragondinHits) + ' clic(s) pour le chasser.';
+    return false;
+}
+
+function clicSurRagondin(event) {
+    if (!ragondin) { return false; }
+    const rect = canvas.getBoundingClientRect();
+    pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointerNdc, camera);
+    return raycaster.intersectObject(ragondin, true).length > 0;
+}
+
+function updateRagondin(dt) {
+    if (!ragondin) {
+        ragondinTimer -= dt;
+        if (ragondinTimer <= 0) {
+            ragondinTimer = 160 + rand() * 140;
+            if (score > 0 && floatState !== 'struggle' && floatState !== 'bite') { spawnRagondin(); }
+        }
+        return;
+    }
+    const dx = BOURRICHE_POS.x - ragondin.position.x;
+    const dz = BOURRICHE_POS.z - ragondin.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d > 0.7) {
+        ragondin.position.x += (dx / d) * 1.1 * dt;
+        ragondin.position.z += (dz / d) * 1.1 * dt;
+        ragondin.rotation.y = Math.atan2(-dz, dx);
+    }
+    ragondin.position.y = Math.abs(Math.sin(elapsed * 6)) * 0.04;
+    ragondinVolTimer -= dt;
+    if (ragondinVolTimer <= 0) {
+        volerUnPoissonRagondin();
+        return;
+    }
+    if (false) {
+        if (score > 0) { score -= 1; scoreDisplay.textContent = score; }
+        spawnFloatingText('🐀 Il a volé un poisson !', BOURRICHE_POS, '#ff6b57');
+        statusDisplay.textContent = '🐀 Trop tard : le ragondin a volé un poisson et s’est échappé !';
+        sound.escape();
+        effrayerRagondin();
+    }
+}
+
 function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -5527,6 +5654,7 @@ function animate() {
         }
         updateFeed(dt);
         updateChum(dt);
+        updateRagondin(dt);
         updateArm(dt);
         updateRod(dt);
         updateDayNight(dt);
@@ -5856,6 +5984,18 @@ window.__game = {
         };
     },
     getRecordBattu: function () { return recordBattu ? Object.assign({}, recordBattu) : null; },
+    spawnRagondin: spawnRagondin,
+    hitRagondin: hitRagondin,
+    effrayerRagondin: effrayerRagondin,
+    isRagondinActive: function () { return !!ragondin; },
+    getRagondin: function () {
+        return ragondin ? { x: ragondin.position.x, z: ragondin.position.z, hits: ragondinHits } : null;
+    },
+    getRagondinTimer: function () { return ragondinTimer; },
+    setRagondinTimer: function (v) { ragondinTimer = v; },
+    setRagondinVolDans: function (sec) { if (ragondin) { ragondinVolTimer = sec; } },
+    volerUnPoissonRagondin: volerUnPoissonRagondin,
+    getScore: function () { return score; },
     annoncerRecord: annoncerRecord,
     addJournalEntry: addJournalEntry,
     showCatchMessage: showCatchMessage,
