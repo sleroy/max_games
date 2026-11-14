@@ -399,6 +399,33 @@ button:disabled {
     display: flex;
 }
 
+/* Pages en DEUX colonnes sur grand écran (le carnet utilise toute la largeur). */
+.tabpage.duo {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 18px;
+}
+
+.tabpage.duo.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 10px 20px;
+    align-items: start;
+}
+
+.tabpage.duo > .col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+@media (max-width: 760px) {
+    .tabpage.duo.active {
+        grid-template-columns: 1fr;
+    }
+}
+
 .map-legende {
     display: flex;
     flex-direction: column;
@@ -423,10 +450,10 @@ button:disabled {
 
 /* Fiche « reconnaître les touches » (dans le carnet) */
 .journal-touches {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 32vh;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 4px 10px;
+    max-height: 42vh;
     overflow-y: auto;
 }
 
@@ -764,7 +791,7 @@ button, .crank {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: min(90vw, 420px);
+    width: min(94vw, 880px);
     max-height: 84vh;
     overflow-y: auto;
     display: none;
@@ -851,8 +878,8 @@ button, .crank {
 }
 
 .shop-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 8px;
 }
 

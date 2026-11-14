@@ -47,6 +47,16 @@ export function run() {
         checkEqual('même version pour sound.js et index.html', soundImport[1], jsVersion[1]);
     }
 
+    group('3c) Interface du carnet (onglets + largeur)');
+    check('le panneau du carnet est assez LARGE', /\.panel\s*\{[^}]*width:\s*min\(94vw,\s*880px\)/.test(css),
+        (css.match(/\.panel\s*\{[^}]*width:\s*min\(([^)]*)\)/) || [])[1] || '?');
+    check('les onglets masquent les pages inactives',
+        /\.tabpage\s*\{\s*display:\s*none/.test(css));
+    check('la page « duo » passe en deux colonnes', css.includes('.tabpage.duo.active'));
+    check('la boutique s’affiche en grille', /\.shop-list\s*\{[^}]*grid-template-columns/.test(css));
+    check('la fiche des touches s’affiche en grille',
+        /\.journal-touches\s*\{[^}]*grid-template-columns/.test(css));
+
     group('4) Chargement de three.js');
     check('importmap déclaré', html.includes('type="importmap"'));
     check('« three » -> ./assets/three.module.js', html.includes('"./assets/three.module.js"'));

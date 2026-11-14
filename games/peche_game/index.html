@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=54">
+    <link rel="stylesheet" href="style.css?v=55">
 </head>
 <body>
     <div class="game-wrap">
@@ -39,7 +39,8 @@
                     <button class="tab" data-tab="touches">🎣 Touches</button>
                     <button class="tab" data-tab="options">⚙️ Options</button>
                 </div>
-                <div class="tabpage active" id="tabPrises">
+                <div class="tabpage active duo" id="tabPrises">
+                <div class="col">
                 <div class="journal-stats" id="journalStats">Aucune prise pour l’instant…</div>
                 <div class="journal-help">
                     🎣 Clique sur l’eau pour lancer la ligne.<br>
@@ -49,10 +50,13 @@
                     🥣 « Nourrir » : maintiens sur l’eau, relâche pour doser.
                 </div>
                 <div class="journal-list" id="journalList"></div>
+                </div>
+                <div class="col">
                 <div class="panel-subtitle">Fiche des espèces</div>
                 <div class="journal-especes" id="journalEspeces">Attrape ton premier poisson pour remplir la fiche !</div>
                 <div class="panel-subtitle">Où les trouver ?</div>
                 <div class="pond-map" id="pondMap"></div>
+                </div>
                 </div>
                 <div class="tabpage" id="tabBoutique">
                 <div class="panel-row">
@@ -169,6 +173,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=54"></script>
+    <script type="module" src="script.js?v=55"></script>
 </body>
 </html>

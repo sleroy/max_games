@@ -28,6 +28,13 @@ export function run() {
     el('journalTabs').emit('click', { target: { dataset: { tab: 'prises' } } });
     checkEqual('on peut revenir aux prises',
         el('tabPrises').classList.contains('active'), true);
+    // Les pages inactives sont RÉELLEMENT masquées (style en ligne, indépendant du
+    // CSS : c'est ce qui garantit qu'on ne voit pas deux onglets à la fois).
+    checkEqual('la page « Boutique » est masquée', el('tabBoutique').style.display, 'none');
+    el('journalTabs').emit('click', { target: { dataset: { tab: 'touches' } } });
+    checkEqual('la page « Prises » est masquée', el('tabPrises').style.display, 'none');
+    checkEqual('la page « Touches » est affichée', el('tabTouches').style.display, '');
+    el('journalTabs').emit('click', { target: { dataset: { tab: 'prises' } } });
 
     // --- La carte est celle du VRAI étang ---
     G().lilyPads.push({ x: 6, z: -30, radius: 2 });
