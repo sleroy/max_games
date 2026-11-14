@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=61 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=62 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=61';
+import { SoundEngine } from './sound.js?v=62';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2197,11 +2197,19 @@ function renderEspece() {
     const e = liste[especeIndex];
     const fiche = journal.especes[e.nom] || { n: 0, record: 0 };
     const p = e.profondeur || [-3.4, -0.9];
+    // Style propre à l'espèce : ses touches et sa façon de se battre.
+    const style = styleEspece(e.id);
+    const nomsTouches = style.touchesVraies.map(function (id) {
+        const t = TOUCHES_PAR_ID[id];
+        return t ? t.nom : id;
+    }).join(' · ');
     const infos = ligneEspece('Taille réelle', e.cm[0] + ' à ' + e.cm[1] + ' cm')
         + ligneEspece('Poids', fmtPoids(poidsRealisteKilos(e, e.cm[0])) + ' à '
             + fmtPoids(poidsRealisteKilos(e, e.cm[1])))
         + ligneEspece('Où ?', zoneDeProfondeur((p[0] + p[1]) / 2))
         + ligneEspece('Comportement', comportementLabel(e.agressivite))
+        + ligneEspece('Touches', nomsTouches || '—')
+        + ligneEspece('Combat', style.nom + ' : ' + style.resume)
         + ligneEspece('Abondance', abondanceLabel(e.abondance))
         + ligneEspece('Silhouette', e.form);
     especeFiche.innerHTML = silhouetteEspece(e)
@@ -2894,38 +2902,112 @@ const FISH_COUNT = 20;
 // ---------------------------------------------------------------------------
 const SPECIES = [
     { id: 'gardon', nom: 'Gardon', form: 'fusiforme', cm: [12, 32], k: 1.1, abondance: 12,
-      profondeur: [-1.6, -0.7], combativite: [0.5, 0.8], agressivite: [0.55, 0.85], couleur: 0xbfcbd0, motif: 'argent' },
+      profondeur: [-1.6, -0.7], combativite: [0.5, 0.8], agressivite: [0.55, 0.85], style: 'nerveux', couleur: 0xbfcbd0, motif: 'argent' },
     { id: 'rotengle', nom: 'Rotengle', form: 'fusiforme', cm: [15, 35], k: 1.1, abondance: 8,
-      profondeur: [-1.6, -0.7], combativite: [0.5, 0.85], agressivite: [0.6, 0.9], couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
+      profondeur: [-1.6, -0.7], combativite: [0.5, 0.85], agressivite: [0.6, 0.9], style: 'nerveux', couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
     { id: 'ablette', nom: 'Ablette', form: 'petit', cm: [8, 18], k: 0.9, abondance: 9,
-      profondeur: [-1.3, -0.7], combativite: [0.4, 0.65], agressivite: [0.6, 0.95], couleur: 0xd2dcdf, motif: 'argent' },
+      profondeur: [-1.3, -0.7], combativite: [0.4, 0.65], agressivite: [0.6, 0.95], style: 'nerveux', couleur: 0xd2dcdf, motif: 'argent' },
     { id: 'goujon', nom: 'Goujon', form: 'petit', cm: [10, 22], k: 1.3, abondance: 7,
-      profondeur: [-3.0, -2.0], combativite: [0.4, 0.7], agressivite: [0.5, 0.8], couleur: 0xc2a878, motif: 'taches' },
+      profondeur: [-3.0, -2.0], combativite: [0.4, 0.7], agressivite: [0.5, 0.8], style: 'teigneux', couleur: 0xc2a878, motif: 'taches' },
     { id: 'breme', nom: 'Brème', form: 'plat', cm: [25, 60], k: 1.8, abondance: 6,
-      profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], couleur: 0x9d8f63, motif: 'ecailles' },
+      profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], style: 'aspirateur', couleur: 0x9d8f63, motif: 'ecailles' },
     { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [25, 55], k: 1.7, abondance: 5,
-      profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
+      profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
     { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [35, 95], k: 2.3, abondance: 6,
-      profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], couleur: 0xa8853f, motif: 'ecailles' },
+      profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], style: 'lourd', couleur: 0xa8853f, motif: 'ecailles' },
     { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [18, 40], k: 2.2, abondance: 5,
-      profondeur: [-2.8, -1.9], combativite: [0.6, 0.9], agressivite: [0.6, 0.95], couleur: 0xb08b3a, motif: 'ecailles' },
+      profondeur: [-2.8, -1.9], combativite: [0.6, 0.9], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0xb08b3a, motif: 'ecailles' },
     { id: 'perche', nom: 'Perche', form: 'bossu', cm: [15, 45], k: 1.4, abondance: 7,
-      profondeur: [-2.6, -1.5], combativite: [0.7, 1.05], agressivite: [0.9, 1.25], couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
+      profondeur: [-2.6, -1.5], combativite: [0.7, 1.05], agressivite: [0.9, 1.25], style: 'teigneux', couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
     { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [25, 60], k: 1.2, abondance: 5,
-      profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], couleur: 0x9aa39c, motif: 'argent' },
+      profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], style: 'fonceur', couleur: 0x9aa39c, motif: 'argent' },
     { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [40, 120], k: 0.9, abondance: 3,
-      profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], couleur: 0x4c5c33, motif: 'tachesClaires' },
+      profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], style: 'fonceur', couleur: 0x4c5c33, motif: 'tachesClaires' },
     { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [35, 90], k: 0.8, abondance: 2,
-      profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], couleur: 0x8f9a83, motif: 'barres' },
+      profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], style: 'glisseur', couleur: 0x8f9a83, motif: 'barres' },
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [25, 55], k: 1.6, abondance: 2,
-      profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], couleur: 0x556a3f, motif: 'bandeLaterale' },
+      profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], style: 'fonceur', couleur: 0x556a3f, motif: 'bandeLaterale' },
     { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [20, 55], k: 1.2, abondance: 2,
-      profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], couleur: 0x7d6a4a, motif: 'pointsRouges' },
+      profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], style: 'fonceur', couleur: 0x7d6a4a, motif: 'pointsRouges' },
     { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [40, 110], k: 0.2, abondance: 2,
-      profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], couleur: 0x3f4a30, motif: 'aucun' },
+      profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], style: 'glisseur', couleur: 0x3f4a30, motif: 'aucun' },
     { id: 'silure', nom: 'Silure', form: 'barbu', cm: [80, 200], k: 1.0, abondance: 1,
-      profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], couleur: 0x474b42, motif: 'marbrures' }
+      profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd', couleur: 0x474b42, motif: 'marbrures' }
 ];
+
+// ---------------------------------------------------------------------------
+// STYLES DE COMBAT — chaque espèce a SA façon de se battre… et SES touches.
+// Une carpe ne se joue pas comme un brochet : l'une pèse de tout son poids au
+// fond, l'autre part en trombe de côté. Un gardon tapote l'esche, une tanche la
+// soulève, un chevesne l'emporte d'un coup sec.
+//
+//   touchesVraies / touchesFausses : dessins du bouchon propres à l'espèce
+//   traction   : multiplicateur de la force de traction (le poisson « pèse »)
+//   coups      : multiplicateur des tirades brusques
+//   intervalle : multiplicateur du temps entre deux tirades (> 1 = plus calme)
+//   endurance  : durée (s) avant que le poisson ne soit épuisé (fatigue)
+//   derive     : écart latéral pendant les tirades (0 = il tire droit)
+// ---------------------------------------------------------------------------
+const STYLES_COMBAT = {
+    nerveux: {
+        nom: 'Nerveux',
+        resume: 'tapote et sautille, puis vole l’esche d’un coup sec : bref mais électrique.',
+        touchesVraies: ['coulee_franche', 'enfoncement_sec'],
+        touchesFausses: ['tapote', 'danse', 'frisson', 'double_coup'],
+        traction: 0.9, coups: 1.2, intervalle: 0.75, endurance: 4, derive: 0.9
+    },
+    teigneux: {
+        nom: 'Teigneux',
+        resume: 'se débat sur place par petits coups secs et répétés : ça ne dure pas, mais ça secoue.',
+        touchesVraies: ['coulee_franche', 'file_sous_leau', 'couchage_franc'],
+        touchesFausses: ['tapote', 'double_coup', 'hesitation', 'couchage_manque'],
+        traction: 1.0, coups: 1.3, intervalle: 0.95, endurance: 7, derive: 0.6
+    },
+    aspirateur: {
+        nom: 'Aspirateur',
+        resume: 'soulève l’appât : le bouchon MONTE, puis il pèse de tout son poids vers le fond.',
+        touchesVraies: ['ascenseur', 'remontee_seche'],
+        touchesFausses: ['fausse_remontee', 'couchage_manque', 'frisson'],
+        traction: 1.05, coups: 0.9, intervalle: 1.2, endurance: 9, derive: 0.4
+    },
+    fonceur: {
+        nom: 'Fonceur',
+        resume: 'part d’un coup et file DE CÔTÉ : tirades latérales violentes, mais il s’épuise vite.',
+        touchesVraies: ['file_sous_leau', 'enfoncement_sec', 'remontee_seche'],
+        touchesFausses: ['double_coup', 'derive', 'frisson'],
+        traction: 1.15, coups: 1.4, intervalle: 0.9, endurance: 6, derive: 1.4
+    },
+    glisseur: {
+        nom: 'Glisseur',
+        resume: 's’enroule et tire par à-coups irréguliers : imprévisible, et il fatigue lentement.',
+        touchesVraies: ['coulee_franche', 'file_sous_leau'],
+        touchesFausses: ['derive', 'tourne_sur_place', 'hesitation'],
+        traction: 1.2, coups: 1.1, intervalle: 1.05, endurance: 12, derive: 0.7
+    },
+    lourd: {
+        nom: 'Lourd',
+        resume: 'une ancre : traction énorme et régulière, peu de tirades… et il ne se fatigue presque pas.',
+        touchesVraies: ['coulee_lente', 'ascenseur'],
+        touchesFausses: ['enfonce_partiel', 'hesitation', 'couchage_manque'],
+        traction: 1.35, coups: 0.8, intervalle: 1.35, endurance: 14, derive: 0.3
+    }
+};
+
+const STYLE_DEFAUT = {
+    nom: 'Ordinaire', resume: 'un poisson ordinaire.',
+    touchesVraies: [], touchesFausses: [],
+    traction: 1, coups: 1, intervalle: 1, endurance: 7, derive: 0.5
+};
+
+// Style de combat d'une espèce (d'après son identifiant).
+function styleEspece(especeId) {
+    for (let i = 0; i < SPECIES.length; i++) {
+        if (SPECIES[i].id === especeId) {
+            return STYLES_COMBAT[SPECIES[i].style] || STYLE_DEFAUT;
+        }
+    }
+    return STYLE_DEFAUT;
+}
 
 // Silhouettes 3D : dimensions du corps + longueur totale de référence.
 const FORMES = {
@@ -3294,6 +3376,7 @@ let biteViewHideTimer = -1;         // fermeture différée de la touche (après
 let biteNibbleTimer = 0;
 let biteTouche = null;              // la VRAIE touche en cours (objet du catalogue)
 let biteFauxTouche = null;          // la fausse touche en cours
+let biteStyle = null;               // style de combat du poisson qui a mordu
 const biteOrigine = new THREE.Vector3();  // position du bouchon au début du mouvement
 let biteRetourY = 0.1;              // hauteur du bouchon quand la fenêtre se referme
 let biteRetourRot = 0;              // inclinaison à ce moment-là
@@ -3487,7 +3570,22 @@ function profilPoisson(taille, agressivite) {
 }
 
 // Tire une touche du catalogue : vraie ou fausse, selon le poisson.
-function choisirTouche(vrai, taille, agressivite) {
+function choisirTouche(vrai, taille, agressivite, style) {
+    // 1) Les touches PROPRES À L'ESPÈCE : un brochet emporte l'esche d'un coup,
+    //    une tanche la soulève, une ablette la tapote, une carpe la coule
+    //    lentement… C'est ce qui rend chaque poisson reconnaissable.
+    if (style) {
+        const ids = vrai ? style.touchesVraies : style.touchesFausses;
+        const poolEspece = ids.map(function (id) {
+            return TOUCHES_PAR_ID[id];
+        }).filter(function (t) {
+            return t && t.vrai === vrai;
+        });
+        if (poolEspece.length) {
+            return poolEspece[Math.floor(rand() * poolEspece.length)];
+        }
+    }
+    // 2) Sinon, le profil générique de taille / agressivité.
     const profil = profilPoisson(taille, agressivite);
     let pool = TOUCHES.filter(function (t) {
         // « explicite » : cette touche n'est jouée que dans son cas particulier
@@ -3708,6 +3806,12 @@ function computeStrugglePos() {
     const dist = struggle.lineLength;
     let x = struggleAnchor.x + struggleDir.x * dist;
     let z = struggleAnchor.z + struggleDir.z * dist;
+    // Écart latéral des tirades : le poisson (et le bouchon) partent de côté.
+    const lat = struggle.lateral || 0;
+    if (lat) {
+        x += -struggleDir.z * lat;
+        z += struggleDir.x * lat;
+    }
     const dx = x - POND_CENTER.x;
     const dz = z - POND_CENTER.z;
     const d = Math.hypot(dx, dz);
@@ -3728,8 +3832,11 @@ function startStruggle(fish, facteurAvantage) {
     const size = fish.userData.size;
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
+    // Chaque espèce se bat à SA façon (traction, tirades, endurance, écarts).
+    const style = styleEspece(fish.userData.especeId);
     // Plus la difficulté est haute, plus les coups brusques sont rapprochés.
-    const interval = Math.max(1.1, (1.4 - size * 0.25) / aggression / DIFFICULTY);
+    const interval = Math.max(0.6,
+        (1.4 - size * 0.25) / aggression / DIFFICULTY * style.intervalle);
     // Longueur de fil de référence : la distance du lancer.
     const baseLength = Math.max(4, struggleBaseLength());
     // Fil déjà rentré pendant la remontée (touche en cours de récupération) :
@@ -3748,13 +3855,19 @@ function startStruggle(fish, facteurAvantage) {
         // du moulinet ». Il tire sur la ligne en continu, et donne des coups
         // brusques (une petite ablette secoue le bouchon aussi fort qu'une carpe !).
         // `power` = combativité de l'espèce, `aggression` = son ardeur.
-        pullSpeed: Math.min(3.2, Math.max(0.7,
-            (0.9 + size * 0.9) * power * (0.8 + aggression * 0.3) * DIFFICULTY)),
-        burstDistance: (0.35 + size * 0.45) * power * (0.8 + aggression * 0.3) * DIFFICULTY,
+        pullSpeed: Math.min(3.8, Math.max(0.7,
+            (0.9 + size * 0.9) * power * (0.8 + aggression * 0.3) * DIFFICULTY * style.traction)),
+        burstDistance: (0.35 + size * 0.45) * power * (0.8 + aggression * 0.3) * DIFFICULTY * style.coups,
         burstInterval: interval,
         burstTimer: interval,
         // Le poisson se fatigue : ses tirades faiblissent peu à peu (sinon les
-        // très gros poissons seraient impossibles à sortir).
+        // très gros poissons seraient impossibles à sortir). L'endurance dépend
+        // de l'espèce : une carpe tient 14 s, un brochet est cuit en 5 s.
+        endurance: style.endurance,
+        // Écart latéral des tirades (les fonceurs partent de côté).
+        derive: style.derive,
+        lateral: 0,
+        styleNom: style.nom,
         elapsed: 0,
         fatigueShown: false
     };
@@ -3774,6 +3887,7 @@ function startStruggle(fish, facteurAvantage) {
     setDragLoosened(false);
     strugglePanel.classList.add('active');
     struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg'
+        + ' · ' + style.nom
         + (avantage < 0.99 ? ' · avantage pour toi !' : (avantage > 1.01 ? ' · avantage au poisson' : ''));
     struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
     updateStruggleBar();
@@ -3800,13 +3914,16 @@ function showBiteView(fish) {
         ? signauxBase
         : Math.max(1, Math.round(signauxBase * cap.fausses));
     // Le poisson a ses habitudes : quelle « touche » aura-t-on cette fois ?
+    // Chaque ESPÈCE a ses dessins de bouchon (un brochet emporte l'esche, une
+    // tanche la soulève, une ablette la tapote…).
+    biteStyle = styleEspece(fish.userData.especeId);
     // Juste après le lancer et à faible profondeur, l'esche peut être prise
     // « à la volée » (le bouchon ne se pose même pas).
     if (depuisLancement < 0.9 && profondeurLigne < 1.6) {
         biteTouche = TOUCHES_PAR_ID.a_la_volee;
         spawnFloatingText('À la volée !', floatGroup.position, '#ffe14d');
     } else {
-        biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression);
+        biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression, biteStyle);
     }
     biteSinkAt = 3 + rand() * 5;       // longue attente possible (3 à 8 s) avant le 1er signal
     biteSignalTimer = 0;
@@ -3919,7 +4036,7 @@ function updateBiteView(dt) {
                 biteSignalTimer = 0;
                 // Quelle fausse touche ? (elle change à chaque fois)
                 const profil = biteFish ? biteFish.userData : { size: 0.5, aggression: 1 };
-                biteFauxTouche = choisirTouche(false, profil.size, profil.aggression);
+                biteFauxTouche = choisirTouche(false, profil.size, profil.aggression, biteStyle);
                 biteSignalDuree = dureeTouche(biteFauxTouche);
                 biteOrigine.copy(floatGroup.position);
                 spawnFloatingText('Ça bouge…', floatGroup.position, '#ffe14d');
@@ -4057,15 +4174,20 @@ function updateStruggle(dt) {
     //    recule. Il donne aussi des coups brusques de temps en temps.
     //    MAIS il se fatigue : ses tirades faiblissent jusqu'à 40 % après ~7 s.
     struggle.elapsed += dt;
-    const essouffle = 1 - 0.6 * Math.min(1, struggle.elapsed / 7);
+    const endurance = struggle.endurance || 7;
+    const essouffle = 1 - 0.6 * Math.min(1, struggle.elapsed / endurance);
     struggle.lineLength += struggle.pullSpeed * essouffle * dt;
     struggle.burstTimer -= dt;
     if (struggle.burstTimer <= 0) {
         struggle.lineLength += struggle.burstDistance * essouffle;
         struggle.burstTimer = struggle.burstInterval * (0.7 + rand() * 0.6);
+        // Les « fonceurs » partent de côté, les poissons lourds tirent droit.
+        struggle.lateral = (struggle.derive || 0) * (rand() * 2 - 1) * essouffle;
         shake = 0.14;
     }
-    if (!struggle.fatigueShown && struggle.elapsed > 2.5) {
+    // L'écart latéral revient doucement sur l'axe de la ligne.
+    struggle.lateral = (struggle.lateral || 0) * Math.max(0, 1 - dt * 1.6);
+    if (!struggle.fatigueShown && struggle.elapsed > Math.min(2.5, endurance * 0.35)) {
         struggle.fatigueShown = true;
         statusDisplay.textContent = 'Le poisson se fatigue… c’est le moment de tourner plus vite !';
     }
@@ -5067,6 +5189,10 @@ window.__game = {
     getTouches: function () {
         return TOUCHES.map(function (t) { return Object.assign({}, t); });
     },
+    // Styles de combat par espèce (touches + comportement) — tests et carnet.
+    getStylesCombat: function () { return STYLES_COMBAT; },
+    styleEspece: styleEspece,
+    getStruggleStyle: function () { return struggle ? struggle.styleNom : ''; },
     choisirTouche: choisirTouche,
     mouvementDeTouche: mouvementDeTouche,
     dureeTouche: dureeTouche,
@@ -5174,7 +5300,7 @@ window.__game = {
     getSpecies: function () {
         return SPECIES.map(function (s) {
             return {
-                id: s.id, nom: s.nom, form: s.form,
+                id: s.id, nom: s.nom, form: s.form, style: s.style,
                 minCm: s.cm[0], maxCm: s.cm[1], k: s.k,
                 minKg: Math.round(s.k * Math.pow(s.cm[0], 3) / 100000 * 1000) / 1000,
                 maxKg: Math.round(s.k * Math.pow(s.cm[1], 3) / 100000 * 1000) / 1000,

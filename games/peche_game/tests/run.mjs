@@ -17,6 +17,7 @@ import scenarioTouches from './scenario-touches.mjs';
 import scenarioRendu from './scenario-rendu.mjs';
 import scenarioCarnet from './scenario-carnet.mjs';
 import scenarioProfondeur from './scenario-profondeur.mjs';
+import scenarioStyles from './scenario-styles.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -34,6 +35,7 @@ try {
     scenarioRendu();           // rendu : tampon de profondeur et « voile blanc »
     scenarioCarnet();          // carnet : onglets, carte de l’étang, zones des poissons
     scenarioProfondeur();      // profondeur de la ligne, relief, vase, amorçage
+    scenarioStyles();          // un style de touches et de combat par espèce
 } catch (error) {
     crashed = error;
 } finally {

@@ -172,6 +172,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
   **combativité**. Le poids est calculé avec la formule des pêcheurs
   (`poids ≈ K × longueur³ / 100 000`), et le **carnet note l'espèce** de chaque prise.
+- **Chaque espèce mord et se bat à SA façon** : 6 styles de combat — **Nerveux** (ablette,
+  gardon : il tapote), **Teigneux** (goujon, perche : petits coups secs), **Aspirateur**
+  (tanche, brème : le bouchon MONTE), **Fonceur** (brochet, truite, chevesne, black-bass :
+  il part de côté et s'épuise vite), **Glisseur** (sandre, anguille : tirades irrégulières)
+  et **Lourd** (carpe, silure : traction énorme, il ne se fatigue presque pas). Ces styles
+  changent les **touches du bouchon**, la **traction**, les **tirades**, l'**endurance** et
+  les **écarts latéraux** — et le carnet les décrit pour chaque poisson.
 - **Lancer au dosage** : le lancer de la canne se fait comme l'amorçage (viser, maintenir,
   relâcher quand la jauge passe sur le repère) — un vrai geste à réussir.
 - **Frein du moulinet** : bouton « 🔓 Lâcher du fil » pendant le combat (le poisson
