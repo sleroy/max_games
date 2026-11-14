@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=44 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=45 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=44';
+import { SoundEngine } from './sound.js?v=45';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -607,6 +607,11 @@ for (let i = 0; i < 8; i++) {
 // ---------------------------------------------------------------------------
 const POND_CENTER = new THREE.Vector3(0, 0, -40);
 const POND_RADIUS = 55;
+// Hauteur de la rive. La rive est légèrement PLUS HAUTE que l'eau : celle-ci
+// reste « dans son bol ». Sans cela, la surface de l'eau arrive exactement au
+// niveau des pieds du pêcheur (et le dépasse même en cas de rafale) : le
+// pêcheur donne alors l'impression de flotter, voire d'être dans l'eau.
+const RIVE_Y = 0.35;
 
 const pondBottom = new THREE.Mesh(
     new THREE.CircleGeometry(POND_RADIUS + 2, 96),
@@ -676,7 +681,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         varying vec3 vNormal;
         // Hauteur de la houle + son gradient (pour la normale).
         float waveHeight(vec2 p, float t, out vec2 grad) {
-            float amp = 0.11 * (0.5 + uWind * 1.8);
+            float amp = 0.08 * (0.5 + uWind * 1.4);
             vec2 d = normalize(uWindDir + vec2(0.0001, 0.0));
             vec2 perp = vec2(-d.y, d.x);
             float a = dot(p, d) * 0.30 - t * (1.1 + uWind * 2.6);
@@ -786,7 +791,7 @@ function updateReflections(dt) {
 // Même houle que le shader, côté JavaScript : servez-vous en pour faire flotter
 // le bouchon sur les vagues.
 function waterWaveHeightAt(x, z, t) {
-    const amp = 0.11 * (0.5 + wind.strength * 1.8);
+    const amp = 0.08 * (0.5 + wind.strength * 1.4);
     const dx = Math.cos(wind.dir);
     const dz = Math.sin(wind.dir);
     const px = -dz;
@@ -808,7 +813,7 @@ const shore = new THREE.Mesh(
     new THREE.MeshStandardMaterial({ color: 0x4f8a55, roughness: 1 })
 );
 shore.rotation.x = -Math.PI / 2;
-shore.position.set(POND_CENTER.x, -0.4, POND_CENTER.z);
+shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
 shore.receiveShadow = true;
 scene.add(shore);
 
@@ -844,7 +849,7 @@ let foliageCount = 0;
 
 function addTree(x, z, scale) {
     // Tronc
-    _vec.set(x, 1.5 * scale - 0.4, z);
+    _vec.set(x, 1.5 * scale + RIVE_Y, z);
     _scl.set(scale, scale, scale);
     _quat.identity();
     _mat4.compose(_vec, _quat, _scl);
@@ -853,7 +858,7 @@ function addTree(x, z, scale) {
     for (let i = 0; i < 3; i++) {
         const r = (2.4 - i * 0.55) * scale;
         const h = (2.6 - i * 0.4) * scale;
-        _vec.set(x, (3 + i * 1.5) * scale - 0.4, z);
+        _vec.set(x, (3 + i * 1.5) * scale + RIVE_Y, z);
         _scl.set(r, h, r);
         _mat4.compose(_vec, _quat, _scl);
         foliageInst.setMatrixAt(foliageCount++, _mat4);
@@ -922,7 +927,7 @@ for (let i = 0; i < 12; i++) {
     const angle = rand() * Math.PI * 2;
     const r = POND_RADIUS + 3 + rand() * 12;
     const s = 0.6 + rand() * 1.3;
-    _vec.set(POND_CENTER.x + Math.cos(angle) * r, 0.2, POND_CENTER.z + Math.sin(angle) * r);
+    _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15, POND_CENTER.z + Math.sin(angle) * r);
     _euler.set(rand(), rand(), rand());
     _quat.setFromEuler(_euler);
     _scl.set(s, s, s);
@@ -976,7 +981,7 @@ arrowTail.position.x = -0.4;
 vaneArrow.add(arrowTail);
 vaneGroup.add(vaneArrow);
 
-vaneGroup.position.set(12, 0, 16);
+vaneGroup.position.set(12, RIVE_Y, 16);
 scene.add(vaneGroup);
 
 // ---------------------------------------------------------------------------
@@ -1010,14 +1015,15 @@ arm.rotation.z = -0.9;
 arm.rotation.x = 0.4;
 angler.add(arm);
 
-angler.position.set(-4, 0, 18);
+// Le pêcheur est posé SUR la rive (pieds au niveau du sol, pas au niveau de l'eau).
+angler.position.set(-4, RIVE_Y, 18);
 angler.rotation.y = Math.PI;
 scene.add(angler);
 
 // ---------------------------------------------------------------------------
 // Canne
 // ---------------------------------------------------------------------------
-const rodBase = new THREE.Vector3(-3, 2.2, 17);
+const rodBase = new THREE.Vector3(-3, 2.2 + RIVE_Y, 17);
 const rodTip = new THREE.Vector3(0, 7, 8);
 
 function cylinderBetween(start, end, radius, material) {
@@ -1481,7 +1487,10 @@ function updateToolDock() {
 // Après avoir ramené un poisson au bord, il faut le LANCER dans la bourriche,
 // comme l'amorce : on appuie, on maintient (la puissance oscille), on relâche
 // au bon moment. Le vent décale le lancer.
-const BOURRICHE_POS = new THREE.Vector3(-12, 0.1, 13);
+// La bourriche est un « garde-poisson » posé au bord de l'eau : la gueule
+// dépasse un peu de la surface et le filet pend dans l'eau. y = 0,32 la place
+// juste au-dessus des vagues (la rive, elle, est plus haute : RIVE_Y).
+const BOURRICHE_POS = new THREE.Vector3(-12, 0.32, 13);
 const BOURRICHE_RADIUS = 1.6;      // rayon de la gueule (tolérance d'entrée)
 const FISH_THROW_MIN = 2;          // portée mini du lancer du poisson
 const FISH_THROW_MAX = 14;         // portée maxi
@@ -1502,11 +1511,18 @@ bourriche.add(bourricheRing);
 const bourricheNet = new THREE.Mesh(
     new THREE.CylinderGeometry(BOURRICHE_RADIUS - 0.1, 0.8, 2.6, 16, 1, true),
     new THREE.MeshStandardMaterial({
-        color: 0x33543c, roughness: 0.95, transparent: true, opacity: 0.9, side: THREE.DoubleSide
+        // Filet translucide : il NE s'écrit PAS dans le tampon de profondeur,
+        // sinon il masque l'eau et prend un aspect de seau opaque.
+        color: 0x33543c, roughness: 0.95, transparent: true, opacity: 0.72,
+        side: THREE.DoubleSide, depthWrite: false
     })
 );
 bourricheNet.position.y = -1.2;
 bourriche.add(bourricheNet);
+// Taille RÉALISTE (environ 1 m de gueule) : sans cette mise à l'échelle, la
+// bourriche est presque aussi haute que le pêcheur et ressemble à un gros seau.
+// La tolérance de jeu (BOURRICHE_RADIUS) reste généreuse : elle ne change pas.
+bourriche.scale.setScalar(0.66);
 bourriche.position.copy(BOURRICHE_POS);
 scene.add(bourriche);
 
