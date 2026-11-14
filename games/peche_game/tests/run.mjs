@@ -30,6 +30,7 @@ import scenarioLancer from './scenario-lancer.mjs';
 import scenarioJouer from './scenario-jouer.mjs';
 import scenarioPetitEcran from './scenario-petit-ecran.mjs';
 import scenarioMessages from './scenario-messages.mjs';
+import scenarioCarnassier from './scenario-carnassier.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -60,6 +61,7 @@ try {
     scenarioJouer();            // JOUER = partie neuve (score, bourriche, lignes)
     scenarioPetitEcran();       // petit écran : dock repliable + FOV
     scenarioMessages();         // messages de touche : « Ça bouge » interdit
+    scenarioCarnassier();       // attaque de carnassier pendant la remontée
 } catch (error) {
     crashed = error;
 } finally {

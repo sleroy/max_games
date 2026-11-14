@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=102';
+import { SoundEngine } from './sound.js?v=103';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -4230,6 +4230,17 @@ const SPECIES = [
 ];
 
 // ---------------------------------------------------------------------------
+// ATTAQUE DE CARNASSIER pendant la remontée (idee « petits poissons »).
+// Quand on ramène une PETITE PROIE (une de ces espèces), un carnassier qui
+// passe près de la ligne peut l'attaquer, la remplacer sur l'hameçon et
+// repartir avec un avantage (combat plus long, chrono plus court).
+// ---------------------------------------------------------------------------
+const PROIES_CARNASSIERS = ['gardon', 'rotengle', 'ablette', 'goujon', 'carassin'];
+const CARNASSIERS = ['brochet', 'sandre', 'perche', 'black-bass'];
+const PREDATOR_ATTACK_RADIUS = 9;        // unités autour du bouchon
+const PREDATOR_ATTACK_ADVANTAGE = 1.35;  // > 1 : avantage au carnassier
+
+// ---------------------------------------------------------------------------
 // STYLES DE COMBAT — chaque espèce a SA façon de se battre… et SES touches.
 // Une carpe ne se joue pas comme un brochet : l'une pèse de tout son poids au
 // fond, l'autre part en trombe de côté. Un gardon tapote l'esche, une tanche la
@@ -5235,6 +5246,91 @@ function startStruggle(fish, facteurAvantage) {
     fishButton.disabled = true;
     fishButton.textContent = 'Tourne la manivelle !';
     statusDisplay.textContent = 'Poisson ferré ! Tourne la manivelle pour le ramener !';
+}
+
+// Cherche un carnassier libre assez proche du bouchon pendant la remontée.
+function attaquePredateurProche(proie) {
+    if (!proie || !proie.userData) {
+        return null;
+    }
+    if (PROIES_CARNASSIERS.indexOf(proie.userData.especeId) < 0) {
+        return null;
+    }
+    const px = floatGroup.position.x;
+    const pz = floatGroup.position.z;
+    let meilleur = null;
+    let meilleureDistance = PREDATOR_ATTACK_RADIUS;
+    fishes.forEach(function (fish) {
+        if (fish === proie || fish === heldFish) {
+            return;
+        }
+        const data = fish.userData;
+        if (!data || data.hooked || data.biting) {
+            return;
+        }
+        if (CARNASSIERS.indexOf(data.especeId) < 0) {
+            return;
+        }
+        const d = Math.hypot(fish.position.x - px, fish.position.z - pz);
+        if (d < meilleureDistance) {
+            meilleureDistance = d;
+            meilleur = fish;
+        }
+    });
+    return meilleur;
+}
+
+// Un carnassier croise la ligne : il attaque, la petite proie s'échappe, et
+// c'est LUI qu'on ramène désormais — avec un avantage au poisson.
+function tenterAttaquePredateur() {
+    if (!hookedFish) {
+        return false;
+    }
+    const predateur = attaquePredateurProche(hookedFish);
+    if (!predateur) {
+        return false;
+    }
+    const proie = hookedFish;
+    const proieNom = proie.userData.espece || 'poisson';
+    const predNom = predateur.userData.espece || 'carnassier';
+    const predNomMin = predNom.charAt(0).toLowerCase() + predNom.slice(1);
+    const proieNomMin = proieNom.charAt(0).toLowerCase() + proieNom.slice(1);
+    // 1) La petite proie est libérée et détale.
+    proie.userData.hooked = false;
+    proie.userData.biting = false;
+    proie.userData.targeting = false;
+    proie.visible = true;
+    const fuiteX = proie.position.x - predateur.position.x;
+    const fuiteZ = proie.position.z - predateur.position.z;
+    const fuite = Math.hypot(fuiteX, fuiteZ) || 1;
+    proie.userData.vx = (fuiteX / fuite) * 3;
+    proie.userData.vz = (fuiteZ / fuite) * 3;
+    // 2) Le carnassier prend sa place sur la ligne.
+    predateur.userData.biting = false;
+    predateur.userData.targeting = false;
+    predateur.visible = true;
+    predateur.position.set(
+        floatGroup.position.x + 0.6,
+        -1.2,
+        floatGroup.position.z + 0.2
+    );
+    predateur.rotation.y = Math.atan2(
+        floatGroup.position.x - predateur.position.x,
+        floatGroup.position.z - predateur.position.z
+    );
+    // 3) Nouveau combat, plus difficile : avantage au carnassier.
+    startStruggle(predateur, PREDATOR_ATTACK_ADVANTAGE);
+    statusDisplay.textContent = '🐟 Un ' + predNomMin + ' a attaqué ta ligne et remplacé le '
+        + proieNomMin + ' ! Combat plus difficile (avantage au poisson).';
+    // POPUP 3D au bouchon : indispensable pour que le joueur comprenne
+    // immédiatement pourquoi le combat vient de changer de poisson.
+    spawnFloatingText('🐟 ' + predNom + ' attaque !', floatGroup.position, '#ff6b57');
+    spawnSplash(floatGroup.position);
+    spawnRipple(floatGroup.position);
+    spawnRipple(floatGroup.position);
+    sound.splash();
+    shake = 0.18;
+    return true;
 }
 
 function showBiteView(fish) {
@@ -6301,6 +6397,10 @@ function updateFloat(dt, time) {
                 }
             }
         }
+        // Un carnassier peut intercepter la petite proie qu'on ramène.
+        if (hookedFish && tenterAttaquePredateur()) {
+            return;
+        }
         // Le fil se rembobine en tournant la manivelle : un tour complet ramène
         // REEL_PER_TURN unités (≈ 1 m).
         const tours = consumeCrankTurns();
@@ -7155,6 +7255,11 @@ window.__game = {
     startCast: startCast,
     hookFish: hookFish,
     getState: function () { return floatState; },
+    // Poisson actuellement sur l'hameçon (proie ou carnassier) — pour les tests.
+    getHookedFish: function () { return hookedFish; },
+    getHookedEspece: function () {
+        return hookedFish ? (hookedFish.userData.especeId || '') : '';
+    },
     getBitePhase: function () { return bitePhase; },
     getBiteSignaux: function () { return biteSignauxRestants; },
     getBiteTouchType: function () { return biteTouche ? biteTouche.famille : ''; },

@@ -57,6 +57,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Remontée trop rapide** : l'avertissement s'affiche en **popup 3D près du
   bouchon** (« ⚠️ Trop vite ! »), comme « FERRÉ ! » ou « Trop tôt ! », en plus du
   message de statut.
+- **Attaque de carnassier** : en ramenant un **petit poisson** (gardon, rotengle,
+  ablette, goujon, carassin), si un **brochet / sandre / perche / black-bass**
+  passe près de la ligne, il **attaque**, la petite proie s'échappe et le
+  carnassier prend sa place avec un **avantage** (combat plus dur, chrono plus court).
+  Un **popup 3D** (« 🐟 Brochet attaque ! ») s'affiche **près du bouchon**, en
+  plus du message de statut, pour prévenir immédiatement le joueur.
 - **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
   rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
   Les nénuphars, eux, se dégagent plus facilement.

@@ -206,6 +206,14 @@ export function run() {
     check('le seul message d’approche est « Un poisson s’approche »',
         script.includes('Un poisson s’approche'));
 
+    group('14) Attaque de carnassier');
+    check('les petites proies et les carnassiers sont définis',
+        script.includes('PROIES_CARNASSIERS') && script.includes('CARNASSIERS'));
+    check('un carnassier peut intercepter la proie pendant la remontée',
+        script.includes('tenterAttaquePredateur'));
+    check('le carnassier repart avec un avantage',
+        script.includes('PREDATOR_ATTACK_ADVANTAGE'));
+
 }
 
 export default run;
