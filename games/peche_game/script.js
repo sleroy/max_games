@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=73 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=74 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=73';
+import { SoundEngine } from './sound.js?v=74';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1508,32 +1508,32 @@ const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, vo
 const BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
 
 const FLOTTEURS = [
-    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 4.0], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 0.45,
+    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 7.0], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 0.45,
       couleur: 0xff5a3c, corps: 0xf4f4f4,
       desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
-    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 3.6], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 0.35,
+    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 7.0], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 0.35,
       couleur: 0xffd24d, corps: 0xf4f4f4,
       desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
-    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 6.4], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 0.5,
+    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 7.0], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 0.5,
       couleur: 0xd0552a, corps: 0xf4f4f4,
       desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
-    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 5.6], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 0.8,
+    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 7.0], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 0.8,
       couleur: 0xe04a2a, corps: 0xffe066,
       desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' },
     // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
-    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 4.0], prix: 40, remontee: 'couche', longueur: 0.4,
+    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 7.0], prix: 40, remontee: 'couche', longueur: 0.4,
       couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
       capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
       desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
-    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 4.2], prix: 70, remontee: 'couche', longueur: 0.38,
+    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 7.0], prix: 70, remontee: 'couche', longueur: 0.38,
       couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
       capacite: { fausses: 0.55 }, sensibilite: 1.2,
       desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
-    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 5.8], prix: 110, remontee: 'couche', longueur: 0.4,
+    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 7.0], prix: 110, remontee: 'couche', longueur: 0.4,
       couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
       capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
       desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
-    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 6.2], prix: 200, remontee: 'demi-tige', longueur: 0.55,
+    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 7.0], prix: 200, remontee: 'demi-tige', longueur: 0.55,
       couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
       capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
       sensibilite: 1.25,
@@ -5849,6 +5849,10 @@ window.__game = {
     setProfondeur: setProfondeur,
     getBornesProfondeur: function () { return bornesProfondeur().slice(); },
     profondeurLocale: profondeurLocale,
+    // Profondeur maximale de l'étang (fond de la fosse la plus profonde).
+    getProfondeurMaxEtang: function () {
+        return FOND_CENTRE + Math.max.apply(null, FOSSES.map(function (f) { return f.plus; }));
+    },
     fondY: fondY,
     isHameconDansLaVase: function () { return hameconDansLaVase; },
     getFloatOpacity: function () { return floatBody.material.opacity; },

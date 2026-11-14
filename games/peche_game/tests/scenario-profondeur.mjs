@@ -17,28 +17,46 @@ export function run() {
     checkEqual('profondeur par défaut', G().getProfondeur(), 2.5);
     checkEqual('l’hameçon est à la profondeur réglée', G().getHookDepth(), -2.5);
     const bornesAnglaise = G().getBornesProfondeur();
-    check('l’anglaise va jusqu’à 2 m', bornesAnglaise[1] === 4.0,
-        bornesAnglaise.join(' à '));
+    check('l’anglaise atteint le fond de l’étang', bornesAnglaise[1] >= 6.6,
+        bornesAnglaise.join(' à ') + ' unités');
     G().setProfondeur(10);
     checkEqual('la profondeur est bornée par le bouchon', G().getProfondeur(), bornesAnglaise[1]);
     G().setFloatType('coulisse');
-    check('la pose à coulisse va bien plus profond',
-        G().getBornesProfondeur()[1] > bornesAnglaise[1] + 1, G().getBornesProfondeur().join(' à '));
+    check('la pose à coulisse atteint aussi le fond de l’étang',
+        G().getBornesProfondeur()[1] >= 6.6, G().getBornesProfondeur().join(' à ') + ' unités');
     G().setProfondeur(4.5);
     checkClose('on peut descendre l’hameçon très bas', G().getHookDepth(), -4.5, 1e-9);
     G().setFloatType('coulisse');
-    check('la pose à coulisse permet de pêcher plus de 3 m',
+    check('la pose à coulisse permet de pêcher 3 m et plus',
         G().getBornesProfondeur()[1] >= 6.0, G().getBornesProfondeur().join(' à ') + ' unités');
     G().setFloatType('anglaise');
-    G().setProfondeur(4.0);
+    G().setProfondeur(7.0);
     check('le panneau affiche la plage du bouchon',
         el('depthRange').textContent.indexOf('Anglaise') >= 0
-        && el('depthRange').textContent.indexOf('2,0 m') >= 0, el('depthRange').textContent);
+        && el('depthRange').textContent.indexOf('3,5 m') >= 0, el('depthRange').textContent);
     check('le panneau signale qu’on est au maximum',
         el('depthRange').textContent.indexOf('maxi') >= 0, el('depthRange').textContent);
     G().setProfondeur(2.5);
     check('changer de bouchon ramène la profondeur dans ses bornes',
         G().getProfondeur() <= G().getBornesProfondeur()[1], G().getProfondeur());
+
+    // --- On doit TOUJOURS pouvoir pêcher le fond de l'étang ---
+    const profMaxEtang = G().getProfondeurMaxEtang();
+    check('le fond de l’étang fait plus de 3 m', profMaxEtang / 2 >= 3, (profMaxEtang / 2).toFixed(1) + ' m');
+    ['anglaise', 'waggler', 'coulisse', 'bolognaise', 'plume', 'truque', 'plombee', 'maitre']
+        .forEach(function (id) {
+            G().setFloatType(id);
+            check('« ' + id + ' » peut atteindre le fond de l’étang',
+                G().getBornesProfondeur()[1] >= profMaxEtang,
+                G().getBornesProfondeur()[1] + ' >= ' + profMaxEtang + ' unités');
+        });
+    G().setFloatType('coulisse');
+    G().setProfondeur(profMaxEtang);
+    check('le réglage atteint la profondeur maximale',
+        Math.abs(G().getHookDepth()) >= profMaxEtang - 0.25,
+        Math.abs(G().getHookDepth()) + ' >= ' + profMaxEtang);
+    G().setFloatType('anglaise');
+    G().setProfondeur(2.5);
 
     // --- Le relief : un bassin avec des fosses ---
     const centre = G().getPondCenter();
