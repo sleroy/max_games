@@ -17,7 +17,7 @@ export function run() {
     checkEqual('profondeur par défaut', G().getProfondeur(), 2.5);
     checkEqual('l’hameçon est à la profondeur réglée', G().getHookDepth(), -2.5);
     const bornesAnglaise = G().getBornesProfondeur();
-    check('l’anglaise ne descend pas très profond', bornesAnglaise[1] <= 2.6,
+    check('l’anglaise va jusqu’à 2 m', bornesAnglaise[1] === 4.0,
         bornesAnglaise.join(' à '));
     G().setProfondeur(10);
     checkEqual('la profondeur est bornée par le bouchon', G().getProfondeur(), bornesAnglaise[1]);
@@ -26,7 +26,17 @@ export function run() {
         G().getBornesProfondeur()[1] > bornesAnglaise[1] + 1, G().getBornesProfondeur().join(' à '));
     G().setProfondeur(4.5);
     checkClose('on peut descendre l’hameçon très bas', G().getHookDepth(), -4.5, 1e-9);
+    G().setFloatType('coulisse');
+    check('la pose à coulisse permet de pêcher plus de 3 m',
+        G().getBornesProfondeur()[1] >= 6.0, G().getBornesProfondeur().join(' à ') + ' unités');
     G().setFloatType('anglaise');
+    G().setProfondeur(4.0);
+    check('le panneau affiche la plage du bouchon',
+        el('depthRange').textContent.indexOf('Anglaise') >= 0
+        && el('depthRange').textContent.indexOf('2,0 m') >= 0, el('depthRange').textContent);
+    check('le panneau signale qu’on est au maximum',
+        el('depthRange').textContent.indexOf('maxi') >= 0, el('depthRange').textContent);
+    G().setProfondeur(2.5);
     check('changer de bouchon ramène la profondeur dans ses bornes',
         G().getProfondeur() <= G().getBornesProfondeur()[1], G().getProfondeur());
 
@@ -79,8 +89,11 @@ export function run() {
     checkEqual('la ligne est dans la vase', G().isHameconDansLaVase(), true);
     check('le jeu prévient', el('status').textContent.indexOf('vase') >= 0,
         el('status').textContent);
-    stepFor(1.5);
-    checkEqual('rien ne mord dans la vase', state(), 'inWater');
+    checkEqual('la vase ACCROCHE comme les nénuphars', state(), 'snag');
+    check('l’accrochage parle de la vase', el('struggleInfo').textContent.indexOf('vase') >= 0,
+        el('struggleInfo').textContent);
+    resetToIdle();
+    checkEqual('on peut dégager la ligne', G().isHameconDansLaVase(), true);
     resetToIdle();
     clearLilyPads();
     G().setProfondeur(1.0);
@@ -175,6 +188,11 @@ export function run() {
     check('la carte donne les profondeurs en mètres', /m<\/text>/.test(carte));
     check('la carte donne la profondeur sous le bouchon', carte.indexOf('Ici :') >= 0,
         'ligne « Ici » de la légende');
+    check('la carte écrit les courbes 1 m et 2 m',
+        carte.indexOf('>1 m<') >= 0 && carte.indexOf('>2 m<') >= 0, 'isobathes chiffrées');
+    check('la carte explique l’échelle de profondeur', carte.indexOf('Profondeur :') >= 0,
+        'bandeau de profondeur');
+    check('la carte repère les fosses', carte.indexOf('fosse ') >= 0, 'fosses annotées');
     G().hideJournal();
     resetToIdle();
 }

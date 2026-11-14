@@ -159,19 +159,22 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   et **reste dans son coin d'étang** (un sandre ne traverse pas tout l'étang).
 - **Profondeur réglable (⬆️ Moins profond / ⬇️ Plus profond)** : deux **gros boutons**
   illustrés (56 px de haut sur mobile/tablette, faciles à toucher pour les enfants) ; la
-  longueur de ligne va de 0,3 m à 2,5 m selon le
-  bouchon (la pose à coulisse descend le plus bas), au pas de **12,5 cm**. Une **coupe de
+  longueur de ligne va de 0,3 m à **3,2 m** selon le bouchon (la pose à coulisse descend
+  le plus bas, l'anglaise s'arrête à 2 m), au pas de **12,5 cm** : le panneau affiche en
+  clair la plage du bouchon équipé (« Anglaise : 0,3 m à 2,0 m ») pour comprendre la limite. Une **coupe de
   l'eau** en direct (en bas à gauche) montre le **bouchon en surface, le fil, l'hameçon à
   SA profondeur et le fond de l'étang** à l'endroit pêché : le point rouge = l'hameçon est
   dans la vase. Le bouchon 3D et son bas de ligne sont dessinés à la bonne distance, et
   **seuls les poissons dont la tranche d'eau contient l'hameçon mordent** : ligne courte
   pour les gardons, longue pour les carpes !
-- **Un vrai bassin** : le fond est modelé (0,7 m au bord, 2,5 m au centre, deux fosses plus
-  profondes) et la carte du carnet trace les **isobathes** avec la profondeur sous le
-  bouchon. Si la ligne est plus longue que l'eau, l'hameçon est **dans la vase** : le
-  bouchon se couche et rien ne mord ; s'il est **franchement enfoncé**, il **s'accroche au
-  fond** et il faut le dégager à la main ! Pêcher profond a un autre prix : le poisson est
-  dans son élément et **se débat un peu plus** (jusqu'à +12 %).
+- **Un vrai bassin + une carte qui aide** : le fond est modelé (0,7 m au bord, 2,5 m au
+  centre, deux fosses à 3,3 m). La **carte du carnet est teintée par la profondeur** (plus
+  c'est foncé, plus c'est profond), écrit les **courbes 1 m et 2 m**, repère les **fosses**
+  et donne la **profondeur sous le bouchon** (« Ici : 2,4 m d'eau · hameçon à 1,3 m »).
+  Si la ligne est plus longue que l'eau, l'hameçon **s'ACCROCHE dans la vase** — même
+  mini-jeu que les nénuphars (clic pour le dégager) : on réessaie plus court. Pêcher
+  profond a un autre prix : le poisson est dans son élément et **se débat un peu plus**
+  (jusqu'à +12 %).
 - **Amorçage à profondeur** : le nuage d'amorce **coule** jusqu'à la profondeur de la ligne
   et n'attire que les poissons de cette couche d'eau. À faible profondeur, l'esche peut
   même être prise **à la volée** (le bouchon ne se pose pas !).

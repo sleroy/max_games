@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=64 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=65 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=64';
+import { SoundEngine } from './sound.js?v=65';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1265,6 +1265,12 @@ function majEtiquetteProfondeur() {
     if (depthPlus) {
         depthPlus.disabled = profondeurLigne >= bornes[1] - 0.01;
     }
+    // La plage du bouchon équipé : c'est ELLE qui fixe la limite de profondeur.
+    if (depthRange) {
+        const f = flotteurCourant();
+        depthRange.textContent = f.nom + ' : ' + nombreMetres(bornes[0]) + ' à '
+            + nombreMetres(bornes[1]) + (profondeurLigne >= bornes[1] - 0.01 ? ' (maxi)' : '');
+    }
 }
 
 let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
@@ -1291,6 +1297,7 @@ const depthHookLine = document.getElementById('depthHookLine');
 const depthHookDot = document.getElementById('depthHook');
 const depthZoneLabel = document.getElementById('depthZoneLabel');
 const depthHint = document.getElementById('depthHint');
+const depthRange = document.getElementById('depthRange');
 let dernierCoupe = -1;
 let coupePrete = false;   // le schéma attend que le jeu soit entièrement initialisé
 
@@ -1357,32 +1364,32 @@ const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, vo
 const BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
 
 const FLOTTEURS = [
-    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 2.6], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
+    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 4.0], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
       couleur: 0xff5a3c, corps: 0xf4f4f4,
       desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
-    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 2.2], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
+    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 3.6], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
       couleur: 0xffd24d, corps: 0xf4f4f4,
       desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
-    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 5.0], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
+    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 6.4], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
       couleur: 0xd0552a, corps: 0xf4f4f4,
       desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
-    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 4.0], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
+    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 5.6], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
       couleur: 0xe04a2a, corps: 0xffe066,
       desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' },
     // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
-    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 2.6], prix: 40, remontee: 'couche', longueur: 2.0,
+    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 4.0], prix: 40, remontee: 'couche', longueur: 2.0,
       couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
       capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
       desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
-    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 2.6], prix: 70, remontee: 'couche', longueur: 1.8,
+    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 4.2], prix: 70, remontee: 'couche', longueur: 1.8,
       couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
       capacite: { fausses: 0.55 }, sensibilite: 1.2,
       desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
-    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 4.2], prix: 110, remontee: 'couche', longueur: 1.9,
+    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 5.8], prix: 110, remontee: 'couche', longueur: 1.9,
       couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
       capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
       desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
-    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 4.6], prix: 200, remontee: 'demi-tige', longueur: 2.8,
+    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 6.2], prix: 200, remontee: 'demi-tige', longueur: 2.8,
       couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
       capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
       sensibilite: 1.25,
@@ -2127,28 +2134,41 @@ function rendreCarteEtang() {
     const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
     let svg = '<svg viewBox="0 0 200 120" role="img" aria-label="Carte de l’étang">';
     svg += '<rect x="0" y="0" width="200" height="120" rx="10" fill="#2f6b3f"/>';
-    // L'eau : un vrai cercle, puis les fosses de plus en plus profondes.
-    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1) + '" fill="#4aa3c4"/>';
-    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech * 0.66).toFixed(1) + '" fill="#2e7f9c"/>';
-    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech * 0.34).toFixed(1) + '" fill="#1f5f7a"/>';
-    // ISOBATHES : les courbes de profondeur (le bassin), d'après le VRAI relief.
-    [1.6, 2.6, 3.6, 4.6].forEach(function (prof) {
+    // L'eau : des BANDES DE PROFONDEUR calculées avec le VRAI relief (plus c'est
+    // foncé, plus c'est profond) — la carte sert vraiment à choisir où lancer.
+    const TEINTES = ['#74c6e0', '#5cb4d2', '#48a2c4', '#3790b3', '#2b7ea1', '#216b8e', '#18597a', '#124a67'];
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1) + '" fill="' + TEINTES[0] + '"/>';
+    for (let i = 1; i < TEINTES.length; i++) {
+        const prof = FOND_BORD + (i / TEINTES.length) * (FOND_CENTRE - FOND_BORD);
         const frac = (prof - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
-        if (frac <= 0.02 || frac >= 0.98) {
+        if (frac <= 0.02 || frac >= 0.99) {
+            continue;
+        }
+        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="'
+            + (R * Math.sqrt(1 - frac) * ech).toFixed(1) + '" fill="' + TEINTES[i] + '"/>';
+    }
+    // ISOBATHES : les courbes de 1 m et 2 m (le 3 m n'existe que dans les fosses,
+    // annotées juste après), avec leur valeur écrite.
+    [2, 4].forEach(function (unites) {
+        const frac = (unites - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
+        if (frac <= 0.02 || frac >= 0.99) {
             return;
         }
         const rr = R * Math.sqrt(1 - frac) * ech;
         svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + rr.toFixed(1)
-            + '" fill="none" stroke="#cdeaf7" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.75"/>';
-        svg += '<text x="' + cx + '" y="' + (cy - rr - 1).toFixed(1)
-            + '" text-anchor="middle" font-size="5.5" fill="#eaf6ff">'
-            + (prof / 2).toFixed(1).replace('.', ',') + ' m</text>';
+            + '" fill="none" stroke="#eaf6ff" stroke-width="0.7" stroke-dasharray="2.5 1.5" opacity="0.9"/>';
+        svg += '<text x="' + (cx + rr * 0.7).toFixed(1) + '" y="' + (cy - rr * 0.7 + 2).toFixed(1)
+            + '" font-size="6.4" font-weight="bold" fill="#ffffff" stroke="#0d3348" stroke-width="0.5">'
+            + (unites / 2) + ' m</text>';
     });
-    // Les deux fosses.
+    // Les deux FOSSES : les points les plus profonds de l'étang.
     FOSSES.forEach(function (fosse) {
         svg += '<circle cx="' + mx(fosse.x).toFixed(1) + '" cy="' + mz(fosse.z).toFixed(1)
             + '" r="' + (fosse.rayon * ech).toFixed(1)
-            + '" fill="none" stroke="#9fd3ea" stroke-width="0.5" stroke-dasharray="1 2" opacity="0.6"/>';
+            + '" fill="rgba(6, 34, 52, 0.42)" stroke="#bfe6f5" stroke-width="0.5" stroke-dasharray="1.5 1.5"/>';
+        svg += '<text x="' + mx(fosse.x).toFixed(1) + '" y="' + (mz(fosse.z) + 2).toFixed(1)
+            + '" text-anchor="middle" font-size="4.8" fill="#ffffff">fosse '
+            + ((FOND_CENTRE + fosse.plus) / 2).toFixed(1).replace('.', ',') + ' m</text>';
     });
     // Les nénuphars, aux VRAIES positions (aléatoires à chaque partie).
     lilyPads.forEach(function (pad) {
@@ -2167,7 +2187,13 @@ function rendreCarteEtang() {
     }
     svg += '</svg>';
     // Légende : les espèces de chaque zone, d'après leurs profondeurs RÉELLES.
-    let legende = '<div class="map-legende">';
+    // Échelle de profondeur, en clair (c'est ce qui aide à choisir son poste).
+    const profMax = FOND_CENTRE + Math.max.apply(null, FOSSES.map(function (f) { return f.plus; }));
+    let legende = '<div class="map-profondeur">Profondeur : <b>'
+        + (FOND_BORD / 2).toFixed(1).replace('.', ',') + ' m</b> au bord → <b>'
+        + (FOND_CENTRE / 2).toFixed(1).replace('.', ',') + ' m</b> au centre → <b>'
+        + (profMax / 2).toFixed(1).replace('.', ',') + ' m</b> dans les fosses — plus c’est foncé, plus c’est profond.</div>';
+    legende += '<div class="map-legende">';
     ZONES_CARTE.forEach(function (zone) {
         const noms = SPECIES.filter(function (s) {
             const p = s.profondeur || [-3.4, -0.9];
@@ -3708,6 +3734,9 @@ function startCast(target) {
     }
     castT = 0;
     fishCaught = false;
+    // Un nouveau lancer = une nouvelle chance : le poisson peut prendre
+    // l'esche « à la volée » dès que le bouchon touche l'eau.
+    biteCooldown = 0;
     floatState = 'flying';
     fishButton.disabled = true;
     statusDisplay.textContent = 'Lancer…';
@@ -4802,8 +4831,14 @@ function updateFloat(dt, time) {
                     return;
                 }
                 // Profondeur réglée > profondeur de l'eau à cet endroit : l'hameçon
-                // est DANS LA VASE (le bouchon se couche, rien ne mord).
+                // est DANS LA VASE → il s'y ACCROCHE, exactement comme dans les
+                // nénuphars : il faut le dégager (même mini-jeu).
                 hameconDansLaVase = profondeurLigne > profLocale - 0.25;
+                if (hameconDansLaVase) {
+                    startSnag('fond');
+                    majCoupeProfondeur();
+                    return;
+                }
                 statusDisplay.textContent = hameconDansLaVase
                     ? 'Hameçon dans la vase (fond à ' + nombreMetres(profLocale) + ') : remonte la ligne et choisis moins profond !'
                     : 'Ligne à ' + nombreMetres(profondeurLigne) + ' dans ' + nombreMetres(profLocale) + ' d’eau : attends qu’un poisson morde !';

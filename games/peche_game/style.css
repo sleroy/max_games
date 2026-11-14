@@ -1017,6 +1017,16 @@ button, .crank {
     opacity: 1;
 }
 
+/* Plage de profondeur du bouchon équipé (« Anglaise : 0,3 à 2 m »). */
+.depth-range {
+    margin-top: 2px;
+    font-size: 0.66rem;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .depth-label {
     font-size: 1.02rem;
     font-weight: bold;
