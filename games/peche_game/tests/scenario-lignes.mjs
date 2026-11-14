@@ -29,6 +29,19 @@ export function run() {
         G().getAvertissements() + ' avertissement(s)');
     check('un avertissement s’affiche', el('status').textContent.indexOf('trop vite') >= 0,
         el('status').textContent);
+    const popupVitesse = G().getFloatingTextDetails().find(function (item) {
+        return item.texte.indexOf('Trop vite') >= 0;
+    });
+    check('l’avertissement est aussi une popup près du bouchon', !!popupVitesse,
+        G().getFloatingTexts().join(' / '));
+    if (popupVitesse) {
+        check('la popup de vitesse est au-dessus du bouchon',
+            Math.hypot(popupVitesse.x - G().floatGroup.position.x,
+                popupVitesse.z - G().floatGroup.position.z) < 1,
+            'popup ' + popupVitesse.x.toFixed(1) + '/' + popupVitesse.z.toFixed(1)
+            + ' · bouchon ' + G().floatGroup.position.x.toFixed(1) + '/'
+            + G().floatGroup.position.z.toFixed(1));
+    }
 
     // 3) Fin de partie, nom du pêcheur et classement local.
     G().addJournalEntry(1.7, 'Gardon');

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=100';
+import { SoundEngine } from './sound.js?v=101';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -6822,6 +6822,9 @@ function avertirVitesse() {
     if (maintenant - derniereAlerteVitesse < 1500) { return; }  // 1 alerte / 1,5 s
     derniereAlerteVitesse = maintenant;
     avertissementsVitesse += 1;
+    // POPUP 3D près du bouchon, comme « FERRÉ ! » ou « Trop tôt ! » : le joueur
+    // voit l'avertissement sans quitter l'eau des yeux.
+    spawnFloatingText('⚠️ Trop vite !', floatGroup.position, '#ffb347');
     if (avertissementsVitesse <= 3) {
         statusDisplay.textContent = '⚠️ Tu remontes trop vite ! La ligne souffre ('
             + avertissementsVitesse + ' avertissement' + (avertissementsVitesse > 1 ? 's' : '') + ').';
@@ -7411,6 +7414,18 @@ window.__game = {
     },
     getFloatingTexts: function () {
         return floatingTexts.map(function (item) { return item.texte; });
+    },
+    // Détails (texte + position monde) des messages flottants — pour vérifier
+    // notamment que l'avertissement de vitesse apparaît près du bouchon.
+    getFloatingTextDetails: function () {
+        return floatingTexts.map(function (item) {
+            return {
+                texte: item.texte,
+                x: item.sprite.position.x,
+                y: item.sprite.position.y,
+                z: item.sprite.position.z
+            };
+        });
     },
     getMissRings: function () { return missRings.length; },
     startReel: startReel,

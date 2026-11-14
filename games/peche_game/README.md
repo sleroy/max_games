@@ -54,6 +54,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   laisser la **bourriche** et la **girouette** visibles ; **Bourriche / XP / Lignes**
   restent affichés dans une barre de stats, et le **FOV s'élargit** automatiquement
   quand l'écran est étroit.
+- **Remontée trop rapide** : l'avertissement s'affiche en **popup 3D près du
+  bouchon** (« ⚠️ Trop vite ! »), comme « FERRÉ ! » ou « Trop tôt ! », en plus du
+  message de statut.
 - **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
   rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
   Les nénuphars, eux, se dégagent plus facilement.

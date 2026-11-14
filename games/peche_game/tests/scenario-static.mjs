@@ -199,6 +199,8 @@ export function run() {
         script.includes('function fovPourAspect') && script.includes('H_FOV_MIN'));
     check('la boussole ne chevauche plus la jauge de vent',
         /\.hud-compass\s*\{[^}]*top:\s*calc\(90px/.test(css));
+    check('l’avertissement de remontée trop rapide est une popup 3D',
+        script.includes('Trop vite !') && script.includes('spawnFloatingText'));
 
 }
 
