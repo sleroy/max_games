@@ -54,6 +54,37 @@ export function run() {
     check('le sandre est annoncé dans la zone du fond', carte.indexOf('Sandre') >= 0);
     G().lilyPads.length = 0;
 
+    // --- Onglet « Espèces » : une fiche par poisson ---
+    el('journalTabs').emit('click', { target: { dataset: { tab: 'especes' } } });
+    checkEqual('cliquer sur « Espèces » ouvre la fiche des poissons',
+        el('tabEspeces').classList.contains('active'), true);
+    checkEqual('la page « Prises » est masquée', el('tabPrises').style.display, 'none');
+    const fichePoisson = el('especeFiche').innerHTML;
+    check('la fiche du poisson est dessinée (silhouette SVG)',
+        fichePoisson.indexOf('<svg') >= 0 && fichePoisson.indexOf('espece-silhouette') >= 0,
+        fichePoisson.length + ' caractères');
+    check('la fiche indique la page courante', el('especePage').textContent.indexOf('1 /') >= 0,
+        el('especePage').textContent);
+    check('la fiche donne la taille et le poids',
+        fichePoisson.indexOf('cm') >= 0 && fichePoisson.indexOf('kg') >= 0);
+    check('la fiche donne la zone de profondeur',
+        fichePoisson.indexOf('Bord') >= 0 || fichePoisson.indexOf('Pleine eau') >= 0
+        || fichePoisson.indexOf('Le fond') >= 0);
+    check('la fiche indique les prises (ou « pas encore attrapé »)',
+        fichePoisson.indexOf('prise') >= 0 || fichePoisson.indexOf('Pas encore') >= 0);
+    const nomPremier = (fichePoisson.match(/espece-nom">([^<]+)</) || [])[1];
+    el('especeNext').emit('click', {});
+    check('« Suivant » passe au poisson suivant',
+        el('especePage').textContent.indexOf('2 /') >= 0, el('especePage').textContent);
+    const nomSecond = (el('especeFiche').innerHTML.match(/espece-nom">([^<]+)</) || [])[1];
+    check('on voit un autre poisson', nomPremier !== nomSecond, nomPremier + ' -> ' + nomSecond);
+    el('especePrev').emit('click', {});
+    el('especePrev').emit('click', {});        // depuis la page 1 : on boucle
+    check('la navigation boucle sur la dernière fiche',
+        el('especePage').textContent.indexOf(' / ' + G().getSpecies().length) >= 0,
+        el('especePage').textContent);
+    el('journalTabs').emit('click', { target: { dataset: { tab: 'prises' } } });
+
     // --- Les profondeurs des espèces sont réalistes ---
     const especes = G().getSpecies();
     check('chaque espèce a une zone de profondeur',

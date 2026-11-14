@@ -876,6 +876,65 @@ button, .crank {
     flex: 0 0 auto;
 }
 
+/* Onglet Espèces : une fiche par poisson, avec navigation. */
+.espece-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.espece-page {
+    font-weight: bold;
+    opacity: 0.9;
+}
+
+.espece-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(127, 208, 255, 0.35);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.espece-silhouette {
+    width: min(100%, 320px);
+    height: auto;
+}
+
+.espece-nom {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.espece-infos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 6px 16px;
+    width: 100%;
+    font-size: 0.84rem;
+}
+
+.espece-ligne {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.espece-ligne b {
+    color: #7fd0ff;
+}
+
+.espece-record {
+    font-size: 0.86rem;
+    color: #ffd76e;
+    text-align: center;
+}
+
 /* Boutique de bouchons (dans le carnet) */
 .shop-xp {
     float: right;

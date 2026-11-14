@@ -71,10 +71,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   moment, **même pendant la remontée de la ligne** ! Et si tu ne touches plus à la
   manivelle, la ligne **revient toute seule** après quelques secondes : tu ne restes
   jamais bloqué en mode « remontée ».
-- **📖 Carnet de pêche** (bouton à côté du pêcheur), en **4 onglets** : **🐟 Prises**
-  (prises, poids, record, fiche des espèces et **carte de l'étang**), **🧺 Boutique**
-  (bouchons à acheter/équiper), **🎣 Touches** (comment reconnaître les 17 mouvements du
-  bouchon) et **⚙️ Options** (difficulté, effets, reflets, gros texte, animations calmes).
+- **📖 Carnet de pêche** (bouton à côté du pêcheur), en **5 onglets** : **🐟 Prises**
+  (prises, poids, record, fiche des espèces et **carte de l'étang**), **🐟 Espèces**
+  (les **16 poissons un par un** : silhouette, taille et poids réels, zone de profondeur,
+  comportement, abondance et **tes records** — navigation « Précédent / Suivant »),
+  **🧺 Boutique** (bouchons à acheter/équiper), **🎣 Touches** (comment reconnaître les 17
+  mouvements du bouchon) et **⚙️ Options** (difficulté, effets, reflets, gros texte,
+  animations calmes).
   La **carte** est dessinée d'après le vrai étang : le lac, les fosses, les **nénuphars**
   (placés au hasard), le pêcheur, la bourriche et le bouchon, avec les espèces de chaque
   zone de profondeur.

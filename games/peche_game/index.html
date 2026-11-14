@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=56">
+    <link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
     <div class="game-wrap">
@@ -35,6 +35,7 @@
                 <h2 class="panel-title">📖 Carnet de pêche</h2>
                 <div class="tabs" id="journalTabs">
                     <button class="tab active" data-tab="prises">🐟 Prises</button>
+                    <button class="tab" data-tab="especes" id="tabBtnEspeces">🐟 Espèces</button>
                     <button class="tab" data-tab="boutique">🧺 Boutique</button>
                     <button class="tab" data-tab="touches">🎣 Touches</button>
                     <button class="tab" data-tab="options">⚙️ Options</button>
@@ -57,6 +58,14 @@
                 <div class="panel-subtitle">Où les trouver ?</div>
                 <div class="pond-map" id="pondMap"></div>
                 </div>
+                </div>
+                <div class="tabpage" id="tabEspeces">
+                    <div class="espece-nav">
+                        <button id="especePrev">‹ Précédent</button>
+                        <span class="espece-page" id="especePage">1 / 16</span>
+                        <button id="especeNext">Suivant ›</button>
+                    </div>
+                    <div class="espece-card" id="especeFiche"></div>
                 </div>
                 <div class="tabpage" id="tabBoutique">
                 <div class="panel-row">
@@ -173,6 +182,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=56"></script>
+    <script type="module" src="script.js?v=57"></script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=56 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=57 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=56';
+import { SoundEngine } from './sound.js?v=57';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -40,10 +40,17 @@ const journalTabs = document.getElementById('journalTabs');
 const pondMap = document.getElementById('pondMap');
 const tabPages = {
     prises: document.getElementById('tabPrises'),
+    especes: document.getElementById('tabEspeces'),
     boutique: document.getElementById('tabBoutique'),
     touches: document.getElementById('tabTouches'),
     options: document.getElementById('tabOptions')
 };
+const especePrev = document.getElementById('especePrev');
+const especeNext = document.getElementById('especeNext');
+const especePage = document.getElementById('especePage');
+const especeFiche = document.getElementById('especeFiche');
+const tabBtnEspeces = document.getElementById('tabBtnEspeces');
+let especeIndex = 0;             // poisson affiché dans l'onglet « Espèces »
 const toolDock = document.getElementById('toolDock');
 const dragButton = document.getElementById('dragButton');
 const journalEspeces = document.getElementById('journalEspeces');
@@ -1986,8 +1993,106 @@ function rendreCarteEtang() {
     pondMap.innerHTML = svg + legende;
 }
 
+// ---------------------------------------------------------------------------
+// Onglet « Espèces » : une fiche par poisson (Précédent / Suivant).
+// ---------------------------------------------------------------------------
+function zoneDeProfondeur(mid) {
+    if (mid >= ZONES_CARTE[0].min) {
+        return ZONES_CARTE[0].nom;
+    }
+    if (mid >= ZONES_CARTE[1].min) {
+        return ZONES_CARTE[1].nom;
+    }
+    return ZONES_CARTE[2].nom;
+}
+
+function abondanceLabel(a) {
+    if (a >= 9) return 'très commune';
+    if (a >= 6) return 'commune';
+    if (a >= 3) return 'peu commune';
+    return 'rare';
+}
+
+function comportementLabel(agressivite) {
+    const a = (agressivite[0] + agressivite[1]) / 2;
+    if (a >= 1.1) return 'vif et combatif';
+    if (a >= 0.85) return 'combatif';
+    return 'calme';
+}
+
+// Silhouette simple de l'espèce, d'après sa forme 3D et sa couleur.
+function silhouetteEspece(e) {
+    const forme = FORMES[e.form] || FORMES.fusiforme;
+    const couleur = '#' + ('000000' + (e.couleur || 0x99a0a5).toString(16)).slice(-6);
+    const bx = Math.min(44, 20 + forme.bodyX * 11);
+    const by = Math.min(28, 7 + forme.bodyY * 17);
+    const gauche = 64 - bx;
+    return '<svg class="espece-silhouette" viewBox="0 0 120 56" role="img" aria-label="' + e.nom + '">'
+        + '<polygon points="18,28 ' + (gauche + 8).toFixed(1) + ',12 '
+        + (gauche + 8).toFixed(1) + ',44" fill="' + couleur + '"/>'
+        + '<ellipse cx="64" cy="28" rx="' + bx.toFixed(1) + '" ry="' + by.toFixed(1)
+        + '" fill="' + couleur + '"/>'
+        + '<circle cx="' + (64 + bx * 0.62).toFixed(1) + '" cy="24" r="2.4" fill="#111"/>'
+        + '</svg>';
+}
+
+function ligneEspece(label, valeur) {
+    return '<div class="espece-ligne"><b>' + label + '</b><span>' + valeur + '</span></div>';
+}
+
+function renderEspece() {
+    if (!especeFiche) {
+        return;
+    }
+    const liste = SPECIES;
+    if (!liste.length) {
+        return;
+    }
+    especeIndex = ((especeIndex % liste.length) + liste.length) % liste.length;
+    const e = liste[especeIndex];
+    const fiche = journal.especes[e.nom] || { n: 0, record: 0 };
+    const p = e.profondeur || [-3.4, -0.9];
+    const infos = ligneEspece('Taille réelle', e.cm[0] + ' à ' + e.cm[1] + ' cm')
+        + ligneEspece('Poids', fmtPoids(poidsRealisteKilos(e, e.cm[0])) + ' à '
+            + fmtPoids(poidsRealisteKilos(e, e.cm[1])))
+        + ligneEspece('Où ?', zoneDeProfondeur((p[0] + p[1]) / 2))
+        + ligneEspece('Comportement', comportementLabel(e.agressivite))
+        + ligneEspece('Abondance', abondanceLabel(e.abondance))
+        + ligneEspece('Silhouette', e.form);
+    especeFiche.innerHTML = silhouetteEspece(e)
+        + '<h3 class="espece-nom">' + e.nom + '</h3>'
+        + '<div class="espece-infos">' + infos + '</div>'
+        + '<div class="espece-record">' + (fiche.n > 0
+            ? '🧺 ' + fiche.n + (fiche.n > 1 ? ' prises' : ' prise') + ' · record '
+                + fmtPoids(fiche.record || 0)
+            : 'Pas encore attrapé — à toi de jouer !')
+        + '</div>';
+    especePage.textContent = (especeIndex + 1) + ' / ' + liste.length;
+    // Le nom de l'onglet rappelle combien d'espèces ont été découvertes.
+    if (tabBtnEspeces) {
+        const decouvertes = liste.filter(function (s) {
+            return journal.especes[s.nom] && journal.especes[s.nom].n > 0;
+        }).length;
+        tabBtnEspeces.textContent = '🐟 Espèces (' + decouvertes + '/' + liste.length + ')';
+    }
+}
+
+if (especePrev) {
+    especePrev.addEventListener('click', function () {
+        especeIndex -= 1;
+        renderEspece();
+    });
+}
+if (especeNext) {
+    especeNext.addEventListener('click', function () {
+        especeIndex += 1;
+        renderEspece();
+    });
+}
+
 function showJournal() {
     renderJournal();
+    renderEspece();
     rendreCarteEtang();
     journalPanel.classList.add('open');
 }
@@ -4821,7 +4926,9 @@ window.__game = {
                 maxKg: Math.round(s.k * Math.pow(s.cm[1], 3) / 100000 * 1000) / 1000,
                 agressivite: s.agressivite.slice(),
                 abondance: s.abondance,
-                profondeur: s.profondeur ? s.profondeur.slice() : null
+                profondeur: s.profondeur ? s.profondeur.slice() : null,
+                couleur: s.couleur,
+                motif: s.motif
             };
         });
     },
