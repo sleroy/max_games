@@ -62,15 +62,19 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.
   Si tu laisses vraiment passer, il recrache l'hameçon.
 - **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
-- **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
+- **Manivelle** (en bas à droite **dès que la ligne est à l'eau**) : fais glisser la poignée en cercle pour ramener la ligne — pour relancer ailleurs, ou pendant l'épreuve de force et la remontée. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
   alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
   relâche quand la jauge passe sur le repère). Réussi → +1 point et la prise est notée
   dans le carnet ; raté → le poisson retombe à l'eau (aucun point).
 - **Pas de nouveau poisson pendant la remontée** : tant que la ligne revient vers le bord, aucun autre poisson ne peut mordre — il faut rembobiner puis relancer la canne.
-- **📖 Carnet de pêche** (bouton à côté du pêcheur) : nombre de prises, poids total, record
-  et dernières prises (sauvegardés dans le navigateur). C'est aussi là qu'on choisit la
-  **difficulté** et les options (gros texte, animations calmes).
+- **📖 Carnet de pêche** (bouton à côté du pêcheur), en **4 onglets** : **🐟 Prises**
+  (prises, poids, record, fiche des espèces et **carte de l'étang**), **🧺 Boutique**
+  (bouchons à acheter/équiper), **🎣 Touches** (comment reconnaître les 17 mouvements du
+  bouchon) et **⚙️ Options** (difficulté, effets, reflets, gros texte, animations calmes).
+  La **carte** est dessinée d'après le vrai étang : le lac, les fosses, les **nénuphars**
+  (placés au hasard), le pêcheur, la bourriche et le bouchon, avec les espèces de chaque
+  zone de profondeur.
 - **⭐ Expérience (XP) et 🎣 boutique de bouchons** : chaque poisson rangé dans la
   bourriche rapporte de l'**expérience** (plus le poisson est lourd, plus il rapporte).
   Dans le carnet, la **boutique** permet d'**acheter** des bouchons aux **capacités
@@ -137,6 +141,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   sillage près de la surface, **éclaboussures** au ferrage.
 - **Décor optimisé** : arbres, roseaux et rochers en *instancing* (un seul appel de
   dessin), ce qui laisse de la marge pour la végétation.
+- **Zones de profondeur réalistes** : chaque espèce nage dans SA tranche d'eau (ablette et
+  gardon près de la surface, carpe et tanche sur le fond, sandre et silure dans les fosses)
+  et **reste dans son coin d'étang** (un sandre ne traverse pas tout l'étang). L'hameçon est
+  posé **profond** (1,3 m sous le bouchon), donc on pêche près du fond, comme au bord de l'eau.
 - **Espèces réalistes** : 16 poissons d'eau douce d'Europe, chacun avec sa **silhouette
   3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
   **combativité**. Le poids est calculé avec la formule des pêcheurs
