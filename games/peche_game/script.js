@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=71 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=72 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=71';
+import { SoundEngine } from './sound.js?v=72';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -788,6 +788,42 @@ function makeWaterGeometry(radius, rings, segments) {
     return geo;
 }
 
+// Carte de normales d'eau GÉNÉRÉE (pas de fichier image à embarquer) : la
+// somme de vagues sinusoidales tileables, convertie en normales RGB. C'est la
+// couche 1 de la technique « eau réaliste » (normales de vague par pixel).
+function makeWaterNormalTexture() {
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    const g = c.getContext('2d');
+    if (!g || !g.createImageData) {
+        return null;
+    }
+    const hauteur = function (x, y) {
+        const u = (x / 128) * Math.PI * 2;
+        const v = (y / 128) * Math.PI * 2;
+        return Math.sin(u * 3) * 0.5 + Math.sin(v * 5 + 1.3) * 0.35 + Math.sin((u + v) * 7) * 0.2
+            + Math.sin(u * 11 - v * 4) * 0.12;
+    };
+    const img = g.createImageData(128, 128);
+    for (let y = 0; y < 128; y++) {
+        for (let x = 0; x < 128; x++) {
+            const dx = hauteur((x + 1) % 128, y) - hauteur((x + 127) % 128, y);
+            const dy = hauteur(x, (y + 1) % 128) - hauteur(x, (y + 127) % 128);
+            const i = (y * 128 + x) * 4;
+            img.data[i] = Math.max(0, Math.min(255, 128 + dx * 110));
+            img.data[i + 1] = Math.max(0, Math.min(255, 128 + dy * 110));
+            img.data[i + 2] = 255;
+            img.data[i + 3] = 255;
+        }
+    }
+    g.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+}
+
 // Uniforms de l'eau (partagés avec la houle calculée côté JavaScript).
 const waterUniforms = {
     uTime: { value: 0 },
@@ -798,7 +834,8 @@ const waterUniforms = {
     uReflect: { value: 0 },
     uShallow: { value: new THREE.Color(0x5aa7b8) },
     uDeep: { value: new THREE.Color(0x103a4e) },
-    uSky: { value: new THREE.Color(0xc4e2ee) }
+    uSky: { value: new THREE.Color(0xc4e2ee) },
+    uNormals: { value: makeWaterNormalTexture() }
 };
 
 // Eau transparente avec des vagues dont l'amplitude et la vitesse suivent le
@@ -851,6 +888,8 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform vec3 uShallow;
         uniform vec3 uDeep;
         uniform vec3 uSky;
+        uniform sampler2D uNormals;
+        uniform float uTime;
         uniform float uWind;
         uniform float uLight;
         uniform samplerCube uEnv;
@@ -858,8 +897,17 @@ const waterMaterial = new THREE.ShaderMaterial({
         varying vec3 vWorldPos;
         varying vec3 vNormal;
         varying float vDepth;
+        vec3 vRipple;
         void main() {
-            vec3 n = normalize(vNormal);
+            // Deux nappes de normales qui défilent avec le vent : ridules par pixel.
+            if (true) {
+                vec2 uv1 = vWorldPos.xz * 0.05 + vec2(uTime * 0.010, uTime * 0.006) * (0.5 + uWind);
+                vec2 uv2 = vWorldPos.xz * 0.11 - vec2(uTime * 0.016, -uTime * 0.012) * (0.4 + uWind);
+                vec3 t1 = texture2D(uNormals, uv1).rgb - vec3(0.5);
+                vec3 t2 = texture2D(uNormals, uv2).rgb - vec3(0.5);
+                vRipple = t1 + t2;
+            }
+            vec3 n = normalize(vNormal + vec3(vRipple.x, 0.0, vRipple.y) * 1.1);
             vec3 viewDir = normalize(cameraPosition - vWorldPos);
             float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
             // LA profondeur commande la couleur : claire au bord, sombre au fond.
