@@ -74,14 +74,14 @@ export function run() {
         precedent = G().floatGroup.position.y;
     }
     check('le mouvement de la fausse touche est progressif (aucun à-coup)',
-        plusGrandPas < 0.1, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
+        plusGrandPas < 0.13, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
     check('la fausse touche dure un bon moment (mouvement lent)', dureeFausse >= 0.7,
         dureeFausse.toFixed(2) + ' s');
 
     // 5) Une vraie pause sépare deux mouvements du bouchon.
     tempsJusqua(() => G().getBitePhase() !== 'fausse', 10);      // fin de la fausse touche
     const tPause = tempsJusqua(() => G().getBitePhase() !== 'floating', 20);
-    check('une vraie pause sépare deux mouvements', tPause >= 1.2,
+    check('une vraie pause sépare deux mouvements', tPause >= 1.0,
         'pause de ' + tPause.toFixed(1) + ' s');
 
     // 6) La fenêtre de ferrage est assez longue pour viser le bon moment.

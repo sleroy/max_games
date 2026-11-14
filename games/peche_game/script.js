@@ -3126,6 +3126,14 @@ const TOUCHES = [
 const TOUCHES_PAR_ID = {};
 TOUCHES.forEach(function (touche) { TOUCHES_PAR_ID[touche.id] = touche; });
 
+// Vitesse globale des touches : réglage unique qui accélère (ou ralentit) TOUS
+// les mouvements du bouchon. < 1 = plus rapide. Les dessins restent les mêmes.
+const VITESSE_TOUCHES = 0.8;
+
+function dureeTouche(touche) {
+    return Math.max(0.25, (touche.duree || 1) * VITESSE_TOUCHES);
+}
+
 // Dessine le mouvement d'une touche : `p` va de 0 (début) à 1 (fin).
 // Renvoie un déplacement { y, rot, dx, dz }. Tout est LISSE : aucun à-coup.
 //   lisse = 0 → 1 → 0 (le bouchon revient)   tenue = 0 → 1 (il reste)
@@ -3499,7 +3507,7 @@ function showBiteView(fish) {
         : Math.max(1, Math.round(signauxBase * cap.fausses));
     // Le poisson a ses habitudes : quelle « touche » aura-t-on cette fois ?
     biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression);
-    biteSinkAt = 2 + rand() * 3;       // le bouchon reste CALME plusieurs secondes
+    biteSinkAt = 2 + rand() * 2.5;     // le bouchon reste CALME quelques secondes
     biteSignalTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     strikeQuality = '';
@@ -3611,7 +3619,7 @@ function updateBiteView(dt) {
                 // Quelle fausse touche ? (elle change à chaque fois)
                 const profil = biteFish ? biteFish.userData : { size: 0.5, aggression: 1 };
                 biteFauxTouche = choisirTouche(false, profil.size, profil.aggression);
-                biteSignalDuree = biteFauxTouche.duree;
+                biteSignalDuree = dureeTouche(biteFauxTouche);
                 biteOrigine.copy(floatGroup.position);
                 spawnFloatingText('Ça bouge…', floatGroup.position, '#ffe14d');
                 spawnRipple(floatGroup.position);
@@ -3636,7 +3644,7 @@ function updateBiteView(dt) {
         if (biteSignalTimer >= biteSignalDuree) {
             bitePhase = 'floating';
             biteViewTimer = 0;
-            biteSinkAt = 1.5 + rand() * 2.5;   // vraie PAUSE avant le signal suivant
+            biteSinkAt = 1.2 + rand() * 2;     // vraie PAUSE avant le signal suivant
             floatGroup.rotation.z = 0;
             floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
         }
@@ -3645,7 +3653,7 @@ function updateBiteView(dt) {
         // LA vraie touche : son dessin vient aussi du catalogue (coulée franche,
         // ascenseur, il file sous l'eau, il se couche…).
         const toucheVraie = biteTouche || TOUCHES_PAR_ID.coulee_franche;
-        const p = Math.min(1, biteSignalTimer / toucheVraie.duree);
+        const p = Math.min(1, biteSignalTimer / dureeTouche(toucheVraie));
         const m = mouvementDeTouche(toucheVraie, p, flotteur.remontee === 'couche');
         appliquerMouvement(m);
         // Un bouchon qui coule franchement s'efface peu à peu : « il a disparu ».
@@ -4704,6 +4712,8 @@ window.__game = {
     },
     choisirTouche: choisirTouche,
     mouvementDeTouche: mouvementDeTouche,
+    dureeTouche: dureeTouche,
+    getVitesseTouches: function () { return VITESSE_TOUCHES; },
     getStrikeQuality: function () { return strikeQuality; },
     getFightAdvantage: function () { return fightAdvantage; },
     getFloats: function () {

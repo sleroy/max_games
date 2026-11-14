@@ -45,7 +45,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   plus la **fenêtre de ferrage** est longue… mais plus il montre de **fausses touches** !
   Les autres bouchons (à **capacités spéciales**) s'achètent avec l'**expérience**.
 - **Attendre qu'un poisson morde** : sois **patient** ! Le bouchon reste presque **immobile**
-  pendant plusieurs secondes (il suit seulement la houle), puis il bouge… et c'est **ce
+  pendant quelques secondes (il suit seulement la houle), puis il bouge… et c'est **ce
   mouvement qu'il faut lire**. Comme au bord de l'eau, le bouchon est plombé : un poisson
   qui **soulève** l'appât le fait **monter** (« ascenseur »), un poisson qui tire le fait
   **plonger** ou **partir de côté**. Il y a **17 touches au catalogue** — des **fausses**

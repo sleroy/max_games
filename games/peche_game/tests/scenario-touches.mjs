@@ -33,7 +33,7 @@ export function run() {
     const faussesQuiNeReviennentPas = [];
     const vraiesQuiNeTiennentPas = [];
     touches.forEach(t => {
-        const pas = (1 / 60) / t.duree;              // une image à 60 images/s
+        const pas = (1 / 60) / G().dureeTouche(t);    // une image à 60 images/s
         let yPrec = G().mouvementDeTouche(t, 0, false).y || 0;
         let yAvant = yPrec;
         let premiere = true;
