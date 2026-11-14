@@ -461,7 +461,7 @@ export function run() {
     check('des fausses touches se produisent avant la vraie',
         stepUntil(() => G().getBitePhase() === 'fausse', 15), G().getBitePhase());
     check('une vraie touche finit par arriver',
-        stepUntil(() => G().getBitePhase() === 'touche', 20), G().getBitePhase());
+        stepUntil(() => G().getBitePhase() === 'touche', 45), G().getBitePhase());
     check('la touche est un enfoncement ou une remontée',
         ['enfoncement', 'remontee'].indexOf(G().getBiteTouchType()) >= 0, G().getBiteTouchType());
     stepFor(0.08);
@@ -496,7 +496,7 @@ export function run() {
     clearLilyPads();
     castTo(0, -25);
     forceBite();
-    stepUntil(() => G().getBitePhase() === 'touche', 20);
+    stepUntil(() => G().getBitePhase() === 'touche', 45);
     check('la fenêtre se referme', stepUntil(() => G().getBitePhase() === 'ratee', 3), G().getBitePhase());
     fire('biteView', 'pointerdown', { button: 0 });
     checkEqual('ferrer trop tard ferre quand même (dernière chance)', state(), 'struggle');
@@ -511,7 +511,7 @@ export function run() {
     clearLilyPads();
     castTo(0, -25);
     forceBite();
-    stepUntil(() => G().getBitePhase() === 'touche', 20);
+    stepUntil(() => G().getBitePhase() === 'touche', 45);
     stepFor(0.6);
     check('le poisson finit par recracher', stepUntil(() => state() === 'inWater', 3), state());
     check('la vue bouchon se referme', stepUntil(() => G().isBiteViewActive() === false, 3),

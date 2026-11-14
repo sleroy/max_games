@@ -462,7 +462,7 @@ export function forceBite() {
 
 /** Ferre au bon moment (pendant la vraie touche). */
 export function strike() {
-    stepUntil(() => G().getBitePhase() === 'touche', 20);
+    stepUntil(() => G().getBitePhase() === 'touche', 45);
     fire('biteView', 'pointerdown', { button: 0 });
 }
 

@@ -44,10 +44,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **Pose à coulisse**, **Bolognaise** (gros, peu sensible). Plus le bouchon est sensible,
   plus la **fenêtre de ferrage** est longue… mais plus il montre de **fausses touches** !
   Les autres bouchons (à **capacités spéciales**) s'achètent avec l'**expérience**.
-- **Attendre qu'un poisson morde** : le bouchon fait d'abord des **fausses touches**
-  (il plonge à moitié, remonte un peu, se couche, frémit…), puis vient **LA vraie touche**,
-  de deux types : **enfoncement complet** ou **remontée** (l'anglaise sort la moitié de sa
-  tige ; un bouchon court se couche sur le côté).
+- **Attendre qu'un poisson morde** : sois **patient** ! Le bouchon reste presque **immobile**
+  pendant plusieurs secondes (il suit seulement la houle), puis il fait des **fausses
+  touches** **lentes et espacées** (il plonge à moitié, remonte un peu, se couche, frémit…),
+  toujours séparées par de vraies **pauses**. Il attend alors que tu guettes le bon moment
+  pour **LA vraie touche**, franche, de deux types : **enfoncement complet** ou **remontée**
+  (l'anglaise sort la moitié de sa tige ; un bouchon court se couche sur le côté).
 - **Ferrer au bon moment** : clique pile pendant la vraie touche → **tu démarres avec
   l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
   (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.

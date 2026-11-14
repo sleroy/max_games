@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=46 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=47 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=46';
+import { SoundEngine } from './sound.js?v=47';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -170,9 +170,9 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 //   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
 // ---------------------------------------------------------------------------
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 0.55 },
-    normal: { difficulty: 1.3, biteWindow: 0.4 },
-    dur: { difficulty: 1.6, biteWindow: 0.32 }
+    facile: { difficulty: 1.0, biteWindow: 0.85 },
+    normal: { difficulty: 1.3, biteWindow: 0.7 },
+    dur: { difficulty: 1.6, biteWindow: 0.55 }
 };
 let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
 
@@ -2879,7 +2879,7 @@ let strikeQuality = '';             // '' | 'parfait' | 'tot' | 'tard'
 let fightAdvantage = 1;             // < 1 = avantage au joueur, > 1 = au poisson
 // Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
 // poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
-let BITE_WINDOW = 0.4;
+let BITE_WINDOW = 0.7;
 // Le poisson mordille le bouchon avant de l'enfoncer : le joueur est prévenu.
 const BITE_NIBBLE_DURATION = 0.6;
 // Durée pendant laquelle on laisse « Trop tard ! » affiché après une touche
@@ -2896,6 +2896,7 @@ let timeoutEscape = false;
 let shake = 0;
 let baitInterest = false;   // un poisson renifle-t-il l'hameçon (retour visuel) ?
 let nibbleRippleTimer = 0;  // petites ondulations quand un poisson est tout près
+let nibblePhase = 0;        // avancement du « mordillement » en cours (0 = aucun)
 let caughtWeight = 0;
 let lineBrokenTimer = 0;
 let snagFreed = false;
@@ -3161,12 +3162,12 @@ function showBiteView(fish) {
         ? signauxBase
         : Math.max(1, Math.round(signauxBase * cap.fausses));
     biteToucheType = rand() < 0.5 ? 'enfoncement' : 'remontee';
-    biteSinkAt = 0.6 + rand() * 0.8;
+    biteSinkAt = 2 + rand() * 3;       // le bouchon reste CALME plusieurs secondes
     biteSignalTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     strikeQuality = '';
     fightAdvantage = 1;
-    biteHint.textContent = 'Surveille le bouchon… des fausses touches peuvent arriver !';
+    biteHint.textContent = 'Le bouchon est posé… il peut rester calme longtemps : sois patient et guette la VRAIE touche !';
     biteView.classList.add('active');
     biteHint.classList.remove('urgent');
     floatGroup.position.y = 0.1;
@@ -3258,9 +3259,10 @@ function updateBiteView(dt) {
     biteViewTimer += dt;
     const flotteur = flotteurCourant();
     if (bitePhase === 'floating') {
-        // Le bouchon flotte tranquillement.
+        // Le bouchon est posé sur l'eau : il ne gigote pas, il monte et descend à
+        // peine au rythme de la houle. C'est long, et c'est voulu : patience !
         floatGroup.rotation.z *= 0.9;
-        floatGroup.position.y = 0.1 + Math.sin(biteViewTimer * 4) * 0.06;
+        floatGroup.position.y = 0.1 + Math.sin(biteViewTimer * 1.6) * 0.02;
         setFloatOpacity(1);
         if (biteViewTimer >= biteSinkAt) {
             if (biteSignauxRestants > 0) {
@@ -3268,7 +3270,7 @@ function updateBiteView(dt) {
                 biteSignauxRestants -= 1;
                 bitePhase = 'fausse';
                 biteSignalTimer = 0;
-                biteSignalDuree = 0.35 + rand() * 0.35;
+                biteSignalDuree = 0.9 + rand() * 0.9;
                 biteFauxType = ['partiel', 'remontee', 'couche', 'tremblement'][Math.floor(rand() * 4)];
                 biteHint.textContent = 'Ça bouge… attention, ce n’est peut-être pas la vraie touche !';
                 biteHint.classList.remove('urgent');
@@ -3287,29 +3289,32 @@ function updateBiteView(dt) {
     } else if (bitePhase === 'fausse') {
         biteSignalTimer += dt;
         const t = biteSignalTimer;
+        // Mouvement LENT et naturel : le bouchon s'enfonce (ou remonte, ou se couche)
+        // doucement, puis revient à sa place. Aucun à-coup.
+        const k = Math.sin(Math.min(1, t / biteSignalDuree) * Math.PI);
         if (biteFauxType === 'partiel') {
             // Enfoncement incomplet : le bouchon plonge à moitié puis remonte.
-            floatGroup.position.y = 0.1 - Math.min(0.45, t * 1.8);
+            floatGroup.position.y = 0.1 - 0.38 * k;
         } else if (biteFauxType === 'remontee') {
-            floatGroup.position.y = 0.1 + Math.min(0.3, t * 1.4);
+            floatGroup.position.y = 0.1 + 0.26 * k;
         } else if (biteFauxType === 'couche') {
-            floatGroup.rotation.z = Math.min(1.2, t * 2.6);
-            floatGroup.position.y = 0.1 + Math.min(0.15, t * 0.7);
+            floatGroup.rotation.z = 1.15 * k;
+            floatGroup.position.y = 0.1 + 0.1 * k;
         } else {
-            // Tremblement (le bouchon frémit sur place).
-            floatGroup.position.y = 0.1 + Math.sin(t * 24) * 0.09;
+            // Tremblement : le bouchon frémit doucement sur place.
+            floatGroup.position.y = 0.1 + Math.sin(t * 12) * 0.04 * k;
         }
         setFloatOpacity(1);
         if (t >= biteSignalDuree) {
             bitePhase = 'floating';
             biteViewTimer = 0;
-            biteSinkAt = 0.35 + rand() * 0.5;
+            biteSinkAt = 1.5 + rand() * 2.5;   // vraie PAUSE avant le signal suivant
             floatGroup.rotation.z = 0;
             floatGroup.position.y = 0.1;
         }
     } else if (bitePhase === 'touche') {
         biteSignalTimer += dt;
-        const progress = Math.min(1, biteSignalTimer / 0.22);
+        const progress = Math.min(1, biteSignalTimer / 0.5);
         if (biteToucheType === 'enfoncement') {
             // Touche en enfoncement : le bouchon coule franchement.
             floatGroup.position.y = 0.1 - 1.6 * progress;
@@ -3334,7 +3339,7 @@ function updateBiteView(dt) {
     } else if (bitePhase === 'ratee') {
         biteSignalTimer += dt;
         floatGroup.rotation.z *= 0.92;
-        floatGroup.position.y = 0.1 + Math.sin(biteSignalTimer * 6) * 0.05;
+        floatGroup.position.y = 0.1 + Math.sin(biteSignalTimer * 3) * 0.02;
         setFloatOpacity(1);
         if (biteSignalTimer >= 0.45) {
             // Le poisson recrache l'hameçon : la ligne revient. On passe dans une
@@ -3820,19 +3825,29 @@ function updateFloat(dt, time) {
             floatGroup.position.set(x, y, z);
         }
     } else if (floatState === 'inWater') {
-        // Le bouchon flotte sur la houle (la même que la surface de l'eau).
+        // Le bouchon flotte sur la houle (la même que la surface de l'eau) : il ne
+        // bouge PAS tout seul. Comme en vrai, il reste presque immobile et il faut
+        // de la patience avant qu'un poisson s'intéresse à l'appât.
         floatGroup.position.x += Math.cos(wind.dir) * wind.strength * 0.6 * dt;
         floatGroup.position.z += Math.sin(wind.dir) * wind.strength * 0.6 * dt;
         const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
-        // Un poisson qui renifle fait plonger un peu le bouchon (retour visuel).
-        const nibble = baitInterest ? -0.08 + Math.sin(time * 9) * 0.05 : 0;
-        floatGroup.position.y = 0.1 + houle + Math.sin(time * 3) * 0.05 + nibble;
+        floatGroup.position.y = 0.1 + houle;
+        // Un poisson qui renifle l'appât fait « mordiller » le bouchon de temps en
+        // temps seulement : un petit plongeon bref (environ une fois toutes les 4 s),
+        // et pas une agitation continue. Le rythme suit le temps de jeu : aucun
+        // tirage aléatoire, donc le monde des tests reste reproductible.
         if (baitInterest) {
+            const cycle = time % 4;
+            nibblePhase = cycle < 0.9 ? Math.sin((cycle / 0.9) * Math.PI) : 0;
+            floatGroup.position.y -= 0.06 * nibblePhase;
             nibbleRippleTimer -= dt;
             if (nibbleRippleTimer <= 0) {
-                nibbleRippleTimer = 0.7;
+                nibbleRippleTimer = 1.8;
                 spawnRipple(floatGroup.position);
             }
+        } else {
+            nibblePhase = 0;
+            nibbleRippleTimer = 0;
         }
         waitTimer += dt;
         if (biteCooldown > 0) {

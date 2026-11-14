@@ -12,6 +12,7 @@ import scenarioSound from './scenario-sound.mjs';
 import scenarioGameplay from './scenario-gameplay.mjs';
 import scenarioFeed from './scenario-feed.mjs';
 import scenarioBoutique from './scenario-boutique.mjs';
+import scenarioRythme from './scenario-rythme.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -24,6 +25,7 @@ try {
     scenarioGameplay();        // lancer, bouchon, moulinet, remontée, nénuphars, vent
     scenarioFeed();            // amorçage : boule de nourriture, jauge, attraction
     scenarioBoutique();        // expérience (XP) et boutique de bouchons
+    scenarioRythme();          // rythme des touches : patience et bouchon calme
 } catch (error) {
     crashed = error;
 } finally {
