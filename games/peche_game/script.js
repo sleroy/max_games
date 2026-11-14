@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=60 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=61 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=60';
+import { SoundEngine } from './sound.js?v=61';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -3729,7 +3729,7 @@ function startStruggle(fish, facteurAvantage) {
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
     // Plus la difficulté est haute, plus les coups brusques sont rapprochés.
-    const interval = (1.8 - size * 0.4) / aggression / DIFFICULTY;
+    const interval = Math.max(1.1, (1.4 - size * 0.25) / aggression / DIFFICULTY);
     // Longueur de fil de référence : la distance du lancer.
     const baseLength = Math.max(4, struggleBaseLength());
     // Fil déjà rentré pendant la remontée (touche en cours de récupération) :
@@ -3744,18 +3744,24 @@ function startStruggle(fish, facteurAvantage) {
         lineLength: startLength,
         minLength: baseLength * STRUGGLE_MIN_FACTOR,
         maxLength: baseLength * STRUGGLE_MAX_FACTOR,
-        // Le poisson reprend du fil (la ligne et la distance reculent) : une
-        // vitesse de fond, plus des « coups » brusques de temps en temps.
-        // La difficulté rend le poisson plus combatif : il tire plus fort.
-        pullSpeed: Math.min(2.0, Math.max(0.35, (0.4 + size * 0.6) * power * DIFFICULTY)),
-        burstDistance: (0.3 + size * 0.4) * power * DIFFICULTY,
+        // Le poisson se DÉFEND, même petit : on ne le ramène pas « à la vitesse
+        // du moulinet ». Il tire sur la ligne en continu, et donne des coups
+        // brusques (une petite ablette secoue le bouchon aussi fort qu'une carpe !).
+        // `power` = combativité de l'espèce, `aggression` = son ardeur.
+        pullSpeed: Math.min(3.2, Math.max(0.7,
+            (0.9 + size * 0.9) * power * (0.8 + aggression * 0.3) * DIFFICULTY)),
+        burstDistance: (0.35 + size * 0.45) * power * (0.8 + aggression * 0.3) * DIFFICULTY,
         burstInterval: interval,
-        burstTimer: interval
+        burstTimer: interval,
+        // Le poisson se fatigue : ses tirades faiblissent peu à peu (sinon les
+        // très gros poissons seraient impossibles à sortir).
+        elapsed: 0,
+        fatigueShown: false
     };
     tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
-    // Temps limite : assez large pour jouer à la souris, mais il faut vraiment
-    // ramener le poisson — et le chrono se resserre quand DIFFICULTY augmente.
-    struggleTimeLeft = Math.min(22, Math.max(6, (baseLength * 0.65) / DIFFICULTY)) * (2 - avantage) * cap.temps;
+    // Temps limite : il faut VRAIMENT ramener le poisson (et le chrono se
+    // resserre quand la difficulté monte ou quand on a ferré trop tard).
+    struggleTimeLeft = Math.min(20, Math.max(6, (baseLength * 0.65) / DIFFICULTY)) * (2 - avantage) * cap.temps;
     updateStruggleTimer();
     computeStrugglePos();
     floatGroup.position.copy(strugglePos);
@@ -4016,6 +4022,11 @@ function endStruggle(success, timedOut) {
     if (success) {
         fishCaught = true;
         caughtWeight = hookedFish ? hookedFish.userData.weight : 0;
+        // Le poisson est sorti de l'eau : il redevient toujours visible, même
+        // s'il était en train de « plonger » au moment où on l'a ramené.
+        if (hookedFish) {
+            hookedFish.visible = true;
+        }
         statusDisplay.textContent = 'Poisson ferré ! On le ramène…';
     } else {
         fishCaught = false;
@@ -4044,12 +4055,19 @@ function updateStruggle(dt) {
     }
     // 2) Le poisson tire : il reprend du fil, la ligne (et donc la distance)
     //    recule. Il donne aussi des coups brusques de temps en temps.
-    struggle.lineLength += struggle.pullSpeed * dt;
+    //    MAIS il se fatigue : ses tirades faiblissent jusqu'à 40 % après ~7 s.
+    struggle.elapsed += dt;
+    const essouffle = 1 - 0.6 * Math.min(1, struggle.elapsed / 7);
+    struggle.lineLength += struggle.pullSpeed * essouffle * dt;
     struggle.burstTimer -= dt;
     if (struggle.burstTimer <= 0) {
-        struggle.lineLength += struggle.burstDistance;
+        struggle.lineLength += struggle.burstDistance * essouffle;
         struggle.burstTimer = struggle.burstInterval * (0.7 + rand() * 0.6);
         shake = 0.14;
+    }
+    if (!struggle.fatigueShown && struggle.elapsed > 2.5) {
+        struggle.fatigueShown = true;
+        statusDisplay.textContent = 'Le poisson se fatigue… c’est le moment de tourner plus vite !';
     }
     // 3) La barre et la position du poisson suivent la longueur de fil sortie.
     // 3) Frein : si on lâche du fil, le poisson reprend de la distance mais la

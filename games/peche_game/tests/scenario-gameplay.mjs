@@ -776,14 +776,45 @@ export function run() {
         imagesVisibles > 0 && imagesCachees > 0,
         imagesVisibles + ' images visible / ' + imagesCachees + ' caché');
 
-    // Combat gagné : le poisson reste visible.
+    // Combat gagné : le poisson reste visible (on refait un combat propre : le
+    // poisson tire désormais assez fort pour casser la ligne si on ne fait rien).
+    const gagne = startFight(0, -20);
     guard = 0;
     while (state() === 'struggle' && guard++ < 4000) {
         crankTurns(3);
         step(1 / 60);
     }
     stepFor(0.3);
-    checkEqual('une fois le combat gagné, le poisson est visible', cachePoisson.visible, true);
+    checkEqual('une fois le combat gagné, le poisson est visible', gagne.visible, true);
+    resetToIdle();
+    group('44) Résistance du poisson : il se défend vraiment');
+    resetToIdle();
+    clearLilyPads();
+    startFight(0, -20);
+    const ligne0 = G().getLineLength();
+    stepFor(1);
+    const croissance = G().getLineLength() - ligne0;
+    check('même un petit poisson reprend du fil', croissance > 0.5,
+        'ligne +' + croissance.toFixed(2) + ' unités en 1 s (plancher de traction : 0,7 u/s)');
+    // Fatigue : après ~7 s, ses tirades faiblissent nettement.
+    stepFor(7);
+    const ligneFatigue = G().getLineLength();
+    stepFor(1);
+    const croissanceFatigue = G().getLineLength() - ligneFatigue;
+    check('le poisson se fatigue (il tire beaucoup moins)', croissanceFatigue < croissance * 0.7,
+        croissanceFatigue.toFixed(2) + ' après 8 s contre ' + croissance.toFixed(2) + ' au début');
+    resetToIdle();
+    // Et un combat ne se gagne pas en un instant, même à la manivelle.
+    clearLilyPads();
+    startFight(0, -25);
+    let tempsCombat = 0;
+    while (state() === 'struggle' && tempsCombat < 30) {
+        crankTurns(2 / 60);
+        step(1 / 60);
+        tempsCombat += 1 / 60;
+    }
+    check('à 2 tours/s, le combat dure plus d’une seconde', tempsCombat > 1,
+        tempsCombat.toFixed(2) + ' s');
     resetToIdle();
 }
 

@@ -68,7 +68,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
   (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.
   Si tu laisses vraiment passer, il recrache l'hameçon.
-- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
+- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). **Le poisson se défend pour de bon** : même un gardon tire en continu et donne des coups brusques — un combat dure **3 à 15 s** selon le poisson et ta vitesse de manivelle (trop lent = la ligne casse ou le temps file). Il **se fatigue** au bout de quelques secondes (ses tirades faiblissent de 60 %) : c'est le moment d'accélérer. Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
 - **Manivelle** (en bas à droite **dès que la ligne est à l'eau**) : fais glisser la poignée en cercle pour ramener la ligne — pour relancer ailleurs, ou pendant l'épreuve de force et la remontée. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
   alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
@@ -127,7 +127,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   (« Un poisson s'approche… », « Ça bouge… », « FERRÉ ! », « Trop tôt ! ») et, quand une
   touche est **ratée**, des **ronds rouges concentriques** s'écartent du bouchon. Le bouchon
   a été un peu **agrandi** (et ses mouvements amplifiés) pour rester lisible de la berge.
-- **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
+- **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire — la résistance suit sa taille, sa combativité et son agressivité, et il finit par se fatiguer ; temps limite proportionnel à la distance du lancer.
 - **Accrochage dans les nénuphars** : la ligne peut casser… et le **bouchon part avec
   elle** ! Un bouchon **acheté** est alors perdu (il faudra le racheter), et on repêche
   avec un bouchon de départ.
