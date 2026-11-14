@@ -35,6 +35,49 @@ soundToggle.addEventListener('click', () => {
     soundToggle.textContent = sound.enabled ? '🔊' : '🔇';
 });
 
+// Bouton plein écran (très pratique sur téléphone : masque la barre du navigateur).
+const fullscreenButton = document.getElementById('fullscreenButton');
+
+function fullscreenElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+function toggleFullscreen() {
+    const root = document.documentElement;
+    if (!root) {
+        return;
+    }
+    if (fullscreenElement()) {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) {
+            const result = exit.call(document);
+            if (result && result.catch) {
+                result.catch(() => {});
+            }
+        }
+    } else {
+        const request = root.requestFullscreen || root.webkitRequestFullscreen;
+        if (request) {
+            const result = request.call(root);
+            if (result && result.catch) {
+                result.catch(() => {});
+            }
+        }
+    }
+}
+
+fullscreenButton.addEventListener('click', () => {
+    ensureSound();
+    toggleFullscreen();
+});
+
+// Si le navigateur ne gère pas le plein écran, on masque le bouton.
+if (document.documentElement
+        && !document.documentElement.requestFullscreen
+        && !document.documentElement.webkitRequestFullscreen) {
+    fullscreenButton.style.display = 'none';
+}
+
 // Manivelle : on la fait tourner pour ramener la ligne.
 const crank = document.getElementById('crank');
 const crankRotor = document.getElementById('crankRotor');
@@ -127,8 +170,14 @@ crank.addEventListener('pointercancel', () => {
 // ---------------------------------------------------------------------------
 // Rendu / scène / caméra
 // ---------------------------------------------------------------------------
+// Sur téléphone : on limite la résolution et la taille des ombres (performance).
+// Même critère que la CSS : pointeur « grossier » ou écran étroit.
+const isMobileDevice = typeof window.matchMedia === 'function'
+    && (window.matchMedia('(pointer: coarse)').matches
+        || window.matchMedia('(max-width: 820px)').matches);
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -169,6 +218,13 @@ function resize() {
     camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
+// Le navigateur mobile met parfois un instant à recalculer la taille : on insiste.
+window.addEventListener('orientationchange', () => setTimeout(resize, 250));
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resize);
+}
+// iOS : le viewport ne suffit pas toujours à empêcher le zoom par pincement.
+document.addEventListener('gesturestart', event => event.preventDefault());
 resize();
 
 // ---------------------------------------------------------------------------
@@ -179,7 +235,7 @@ scene.add(new THREE.AmbientLight(0xffffff, 0.65));
 const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.2);
 sunLight.position.set(40, 60, 20);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(1024, 1024);
+sunLight.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
 sunLight.shadow.camera.left = -70;
 sunLight.shadow.camera.right = 70;
 sunLight.shadow.camera.top = 70;
@@ -1950,6 +2006,11 @@ canvas.addEventListener('pointerdown', event => {
         if (feedState === 'idle') {
             const p = waterPointFromEvent(event);
             if (p) {
+                // On capture le pointeur : le relâchement est bien reçu même si
+                // le doigt sort du canvas (important sur téléphone).
+                if (canvas.setPointerCapture && event.pointerId !== undefined) {
+                    canvas.setPointerCapture(event.pointerId);
+                }
                 startFeedCharge(p);
             }
         }
@@ -1974,15 +2035,32 @@ canvas.addEventListener('pointerdown', event => {
 });
 
 // Relâcher = on dose la puissance et la boule part.
-canvas.addEventListener('pointerup', () => {
+canvas.addEventListener('pointerup', event => {
+    if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
+        canvas.releasePointerCapture(event.pointerId);
+    }
     if (feedState === 'charging') {
         releaseFeed();
     }
 });
 
-canvas.addEventListener('pointercancel', () => {
+canvas.addEventListener('pointercancel', event => {
+    if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
+        canvas.releasePointerCapture(event.pointerId);
+    }
     cancelFeed();
 });
+
+// Filet de sécurité (téléphone) : si le relâchement n'arrive pas au canvas,
+// on le rattrape au niveau de la fenêtre.
+window.addEventListener('pointerup', () => {
+    if (feedState === 'charging') {
+        releaseFeed();
+    }
+});
+
+// Au doigt, l'appui long ne doit pas ouvrir le menu contextuel du navigateur.
+canvas.addEventListener('contextmenu', event => event.preventDefault());
 
 feedButton.addEventListener('click', () => {
     ensureSound();

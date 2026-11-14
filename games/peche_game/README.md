@@ -61,6 +61,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   influencé par le vent, puis nuage de miettes qui attire les poissons — avec une animation
   d'épaule du pêcheur.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
+- **Jouable sur téléphone et tablette** : commandes tactiles (appui/relâchement pour
+  l'amorçage, manivelle au doigt), invite à passer en paysage, interface qui respecte les
+  encoches (zones sûres) et bouton plein écran ⛶.
 - **Difficulté réglable** : une seule constante, `DIFFICULTY` en haut de `script.js`
   (1 = facile, plus grand = plus dur), rend le poisson plus combatif et resserre le
   chrono du combat. La fenêtre de ferrage se règle à part avec `BITE_WINDOW`.

@@ -19,6 +19,7 @@ export function run() {
 
     const html = read('index.html');
     const script = read('script.js');
+    const css = read('style.css');
 
     group('2) Cohérence entre index.html et script.js');
     const demanded = [...new Set(
@@ -43,6 +44,30 @@ export function run() {
     check('« three » -> ./assets/three.module.js', html.includes('"./assets/three.module.js"'));
     check("script.js importe 'three'", script.includes("from 'three'"));
     check('script.js est un module', html.includes('type="module"'));
+
+    group('4b) Compatible mobile / tactile');
+    check('viewport adapté au mobile (largeur + pas de zoom)',
+        html.includes('width=device-width') && html.includes('user-scalable=no'),
+        'meta viewport');
+    check('prise en charge des encoches (viewport-fit=cover)',
+        html.includes('viewport-fit=cover'));
+    check('couleur de la barre du navigateur (theme-color)',
+        html.includes('theme-color'));
+    check('bouton plein écran présent', html.includes('id="fullscreenButton"'));
+    check('invite à passer en paysage', html.includes('id="rotateHint"'));
+    check("l'interface respecte les zones sûres (safe-area)",
+        css.includes('env(safe-area-inset'));
+    check('pas de défilement / zoom accidentel au doigt',
+        css.includes('touch-action: none') && css.includes('overscroll-behavior: none'));
+    check('boutons adaptés au doigt (media query tactile)',
+        css.includes('(pointer: coarse)'));
+    check('invite affichée en portrait', css.includes('orientation: portrait'));
+    check('pas de menu contextuel sur appui long (tactile)',
+        script.includes("addEventListener('contextmenu'"));
+    check('capture du pointeur pour un relâchement fiable',
+        script.includes('setPointerCapture') && script.includes('releasePointerCapture'));
+    check('adaptation du rendu au mobile (résolution limitée)',
+        script.includes('isMobileDevice'));
 }
 
 export default run;
