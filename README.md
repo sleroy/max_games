@@ -46,4 +46,8 @@ Les autres jeux fonctionnent aussi en ouvrant simplement leur fichier `index.htm
 ## Déploiement (GitHub Pages)
 
 Le site est publié directement depuis la branche `main` (racine du dépôt) :
-chaque dossier est accessible à l'URL `https://<utilisateur>.github.io/<depot>/<dossier>/`.
+chaque dossier est accessible à l'URL `https://sleroy.github.io/max_games/<dossier>/`.
+
+- 🏠 Accueil : <https://sleroy.github.io/max_games/>
+- 💻 Code : <https://github.com/sleroy/max_games>
+- 🎣 Exemple : <https://sleroy.github.io/max_games/peche_game/>

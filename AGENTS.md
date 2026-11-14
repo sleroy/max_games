@@ -23,11 +23,11 @@ git push origin main
 
 | Élément | Valeur |
 |---|---|
-| Dépôt GitHub | `max_games` (public) |
+| Dépôt GitHub | [`sleroy/max_games`](https://github.com/sleroy/max_games) (public) |
 | Branche principale | `main` |
-| Remote | `origin` |
+| Remote | `origin` → `https://github.com/sleroy/max_games.git` |
 | Hébergement | GitHub Pages (déploiement depuis la branche `main`, dossier `/`) |
-| URL du site | `https://<utilisateur>.github.io/max_games/` |
+| URL du site | `https://sleroy.github.io/max_games/` |
 
 ### Push automatique (filet de sécurité actif)
 
