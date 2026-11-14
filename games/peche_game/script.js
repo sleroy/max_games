@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=96';
+import { SoundEngine } from './sound.js?v=97';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2660,6 +2660,9 @@ const fishThrowOrigin = new THREE.Vector3();
 // Carnet de pêche (conservé dans le navigateur quand c'est possible)
 // ---------------------------------------------------------------------------
 const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, bouchons: BOUCHONS_DE_DEPART.slice() };
+// Compteur de la PARTIE en cours (la bourriche), distinct du carnet persistant
+// (`journal.total` = total de toutes les parties).
+let bourricheCount = 0;
 const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null;
 const JOURNAL_KEY = 'peche_carnet_v1';
 
@@ -2750,7 +2753,7 @@ function renderJournal() {
                 + ' · record ' + fmtPoids(fiche.record || 0);
         }).join('\n')
         : 'Attrape ton premier poisson pour remplir la fiche !';
-    bourricheLabel.textContent = '🧺 Bourriche : ' + journal.total;
+    bourricheLabel.textContent = '🧺 Bourriche : ' + bourricheCount;
     xpLabel.textContent = '⭐ ' + journal.experience + ' XP';
     shopXp.textContent = '⭐ ' + journal.experience + ' XP';
     // Le carnet a changé (XP, prises…) : la boutique doit se rafraîchir aussi,
@@ -3308,6 +3311,7 @@ function storeHeldFish() {
     spawnFish();
     caughtWeight = weight;
     score++;
+    bourricheCount += 1;
     scoreDisplay.textContent = score;
     recordBattu = null;
     // On enregistre d'abord : le carnet nous dit si c'est un NOUVEAU RECORD.
@@ -6669,13 +6673,154 @@ function terminerPartie() {
     gameOver.classList.add('active');
 }
 
-function recommencerPartie() {
+// Remet la PARTIE à zéro : score, bourriche de la partie, lignes, statistiques
+// et état de pêche. Le carnet (`journal`), l'XP, les bouchons achetés et le
+// classement sont PERSISTANTS : on ne les efface pas ici.
+function reinitialiserPartie() {
+    // --- État de pêche / animations ---
+    if (castState === 'charging') { cancelCast(); }
+    if (feedState === 'charging') { cancelFeed(); }
+    if (hookedFish) { hookedFish.userData.hooked = false; }
+    if (biteFish) { biteFish.userData.biting = false; }
+    // Poisson en main : on le remet à l'eau (et dans le tableau s'il en sortait).
+    if (heldFish) {
+        const poisson = heldFish;
+        heldFish = null;
+        poisson.scale.setScalar(poisson.userData.size);
+        poisson.rotation.set(0, 0, 0);
+        poisson.position.copy(randomFishPosition());
+        poisson.visible = true;
+        poisson.userData.vx = 0;
+        poisson.userData.vz = 0;
+        if (fishes.indexOf(poisson) < 0) { fishes.push(poisson); }
+    }
+    fishes.forEach(function (poisson) {
+        poisson.userData.hooked = false;
+        poisson.userData.biting = false;
+        poisson.userData.targeting = false;
+        poisson.visible = true;
+        poisson.scale.setScalar(poisson.userData.size);
+        poisson.rotation.set(0, 0, 0);
+        poisson.userData.vx = 0;
+        poisson.userData.vz = 0;
+    });
+    hookedFish = null;
+    biteFish = null;
+    biteViewActive = false;
+    hideBiteView();
+    struggle = null;
+    snag = null;
+    strugglePanel.classList.remove('active');
+    setDragLoosened(false);
+    tension = 0;
+    hameconDansLaVase = false;
+    snagFreed = false;
+    lineBrokenTimer = 0;
+    fishCaught = false;
+    escaped = false;
+    timeoutEscape = false;
+    caughtWeight = 0;
+    recordBattu = null;
+    waitTimer = 0;
+    depuisLancement = 0;
+    biteCooldown = 0;
+    biteSignauxRestants = 1;
+    baitInterest = false;
+    nibbleInteretAvant = false;
+    nibbleDebut = -1;
+    nibbleSuivant = 0;
+    nibblePhase = 0;
+
+    // --- Bouchon, canne et bras au repos ---
+    floatState = 'idle';
+    floatGroup.visible = true;
+    floatGroup.position.copy(floatIdle);
+    floatGroup.rotation.z = 0;
+    setFloatOpacity(1);
+    castState = 'idle';
+    setCastPower(0);
+    castTargetPower = 0;
+    castPhase = 0;
+    castT = 0;
+    castTarget.copy(castAim);
+    castSwing = 0;
+    castSwingDepart = 0;
+    castYawAngler = 0;
+    castYawRod = 0;
+    rodBend = 0;
+    rodGroup.rotation.x = 0;
+    rodTipVisual.copy(rodTip);
+    angler.rotation.y = anglerYawBase;
+    rodPivot.rotation.y = rodYawBase;
+    feedGauge.classList.remove('active');
+    feedState = 'idle';
+    setFeedMode(false);
+    feedBall.visible = false;
+    feedPower = 0;
+    feedTargetPower = 0;
+    feedFlyT = 0;
+    fishThrowState = 'idle';
+    fishThrowPower = 0;
+    fishThrowTarget = 0;
+    fishThrowPhase = 0;
+    fishThrowT = 0;
+
+    // --- Effets visuels de la partie précédente ---
+    floatingTexts.forEach(function (item) {
+        scene.remove(item.sprite);
+        if (item.sprite.material.map) { item.sprite.material.map.dispose(); }
+        item.sprite.material.dispose();
+    });
+    floatingTexts.length = 0;
+    missRings.forEach(function (item) {
+        scene.remove(item.mesh);
+        item.mesh.geometry.dispose();
+        item.mesh.material.dispose();
+    });
+    missRings.length = 0;
+    ripples.forEach(function (item) {
+        scene.remove(item.mesh);
+        item.mesh.geometry.dispose();
+        item.mesh.material.dispose();
+    });
+    ripples.length = 0;
+    if (chum) { scene.remove(chum.group); chum = null; }
+    if (ragondin) { effrayerRagondin(); }
+    ragondinHits = 0;
+    ragondinVolTimer = 0;
+    ragondinTimer = Math.max(ragondinTimer, 120);
+
+    // --- Compteurs de la PARTIE (le carnet/XP persistants ne bougent pas) ---
+    score = 0;
+    scoreDisplay.textContent = score;
+    bourricheCount = 0;
     lignesRestantes = MAX_LIGNES;
     avertissementsVitesse = 0;
-    partieTerminee = false;
     derniereAlerteVitesse = -10000;
+    partieTerminee = false;
     partieStats = { poissons: 0, poids: 0, records: {} };
+    crankRotationDelta = 0;
+
+    // --- Interface ---
+    if (gameOver) { gameOver.classList.remove('active'); }
+    if (classement) { classement.classList.remove('active'); }
+    feedButton.classList.remove('active');
+    crank.classList.remove('active');
+    fishButton.disabled = false;
+    fishButton.textContent = 'Lancer la canne';
+    fishButton.classList.remove('cooldown');
+    paused = false;
+    pauseButton.textContent = '⏸';
     majLignes();
+    renderJournal();      // bourriche de la partie + XP persistant
+    majCoupeProfondeur();
+    updateToolDock();
+    updateCrankVisibility();
+    updateLine();
+}
+
+function recommencerPartie() {
+    reinitialiserPartie();
     if (gameOver) { gameOver.classList.remove('active'); }
     fermerClassement();
     statusDisplay.textContent = 'Nouvelle partie : ' + MAX_LIGNES + ' lignes neuves. Bonne pêche !';
@@ -6704,6 +6849,9 @@ majLignes();
 
 // ÉCRAN D'ACCUEIL : on propose de JOUER ou de consulter le CLASSEMENT local.
 function demarrerJeu() {
+    // JOUER = une PARTIE NEUVE : score, bourriche, lignes, statistiques et état
+    // de pêche repartent de zéro (le carnet, l'XP et le classement restent).
+    recommencerPartie();
     if (accueil) { accueil.classList.remove('active'); }
     ensureSound();
     statusDisplay.textContent = 'Bonne pêche ! Clique sur l’eau, maintiens pour doser la puissance, puis relâche.';
@@ -6798,6 +6946,7 @@ window.__game = {
     setRagondinVolDans: function (sec) { if (ragondin) { ragondinVolTimer = sec; } },
     volerUnPoissonRagondin: volerUnPoissonRagondin,
     getScore: function () { return score; },
+    getBourricheCount: function () { return bourricheCount; },
     demarrerJeu: demarrerJeu,
     afficherAccueil: afficherAccueil,
     isAccueilVisible: function () { return !!accueil && accueil.classList.contains('active'); },

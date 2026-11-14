@@ -45,6 +45,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   pêcheur, la canne, la bourriche et la caméra suivent ; le soleil reste au
   sud-ouest (chaque poste a donc sa lumière). La boussole indique où est le
   **nord à l'écran** (↑ ↓ ← →).
+- **JOUER = partie neuve** : le score, la bourriche de la partie, les lignes et les
+  statistiques repartent de zéro (même avec un poisson en main ou une ligne à
+  l'eau). Le **carnet**, l'**XP**, les **bouchons achetés** et le **classement**
+  sont conservés.
 - **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
   rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
   Les nénuphars, eux, se dégagent plus facilement.

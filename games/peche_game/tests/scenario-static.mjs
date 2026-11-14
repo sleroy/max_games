@@ -166,6 +166,16 @@ export function run() {
     check('l’animation tourne avant le bras et la canne',
         script.includes('updateCastAnimation(dt);'));
 
+    group('12) JOUER réinitialise la partie');
+    check('JOUER déclenche une partie neuve',
+        script.includes('function reinitialiserPartie')
+        && script.includes('recommencerPartie();'));
+    check('score et bourriche de partie sont remis à zéro',
+        script.includes('score = 0') && script.includes('bourricheCount = 0'));
+    check('le carnet et l’XP ne sont pas effacés',
+        !script.includes('journal.total = 0')
+        && !script.includes('journal.experience = 0'));
+
 }
 
 export default run;

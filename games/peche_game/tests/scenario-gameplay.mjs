@@ -317,8 +317,8 @@ export function run() {
     checkEqual('le poisson rangé a quitté l’étang', G().fishes.indexOf(caught2), -1);
     checkEqual('un nouveau poisson le remplace', G().fishes.length, FISH_COUNT);
     check('le compteur de la bourriche se met à jour',
-        el('bourricheLabel').textContent.indexOf(String(G().getJournal().total)) >= 0,
-        el('bourricheLabel').textContent);
+        el('bourricheLabel').textContent,
+        '🧺 Bourriche : ' + G().getBourricheCount());
 
     group('19) Perdre le combat : le fil casse');
     const lostFish = startFight(0, -20);
