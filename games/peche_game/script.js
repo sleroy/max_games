@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=79 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=80 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=79';
+import { SoundEngine } from './sound.js?v=80';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1095,7 +1095,44 @@ scene.add(shore);
 //   sol-herbe.jpg     -> herbe (prêt pour le terrain) (ambientCG Grass004, CC0)
 //   vase.jpg          -> fond vaseux             (ambientCG Ground054, CC0)
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, map: chargerTexture('ecorce.jpg', 2, 1) });
-const foliageMat = new THREE.MeshStandardMaterial({ color: 0x3f7a4a, roughness: 1 });
+// Aiguilles de sapin GÉNÉRÉES (aucun fichier) : fond vert sombre + petits traits
+// d'aiguilles clairs/foncés, tuilés 3x sur les cônes. Si le canvas n'est pas
+// disponible (tests), on garde simplement le vert uni.
+function makeNeedlesTexture() {
+    try {
+        const c = document.createElement('canvas');
+        c.width = 128;
+        c.height = 128;
+        const g = c.getContext('2d');
+        if (!g) { return null; }
+        g.fillStyle = '#2c5738';
+        g.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 700; i++) {
+            const x = (i * 37) % 128;
+            const y = (i * 53) % 128;
+            const t = 45 + ((i * 17) % 45);
+            g.strokeStyle = 'rgb(' + Math.round(t * 0.55) + ',' + t + ',' + Math.round(t * 0.65) + ')';
+            g.beginPath();
+            g.moveTo(x, y);
+            g.lineTo(x + 3, y - 6);
+            g.stroke();
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(3, 3);
+        return tex;
+    } catch (erreur) {
+        return null;
+    }
+}
+
+const foliageMap = makeNeedlesTexture();
+const foliageMat = new THREE.MeshStandardMaterial({
+    color: foliageMap ? 0xffffff : 0x3f7a4a,
+    roughness: 1,
+    map: foliageMap
+});
 
 // Objets temporaires réutilisés pour composer les matrices d'instances
 // (aucune allocation dans les boucles).
