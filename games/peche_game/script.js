@@ -16,6 +16,10 @@ const biteHint = document.getElementById('biteHint');
 const windFill = document.getElementById('windFill');
 const windArrow = document.getElementById('windArrow');
 const soundToggle = document.getElementById('soundToggle');
+const feedButton = document.getElementById('feedButton');
+const feedGauge = document.getElementById('feedGauge');
+const feedGaugeFill = document.getElementById('feedGaugeFill');
+const feedGaugeTarget = document.getElementById('feedGaugeTarget');
 
 const sound = new SoundEngine();
 
@@ -513,6 +517,280 @@ function setFloatOpacity(opacity) {
 const floatIdle = new THREE.Vector3(rodTip.x, rodTip.y - 0.6, rodTip.z);
 floatGroup.position.copy(floatIdle);
 scene.add(floatGroup);
+
+// ---------------------------------------------------------------------------
+// Amorçage : lancer une boule de nourriture pour attirer les poissons
+// ---------------------------------------------------------------------------
+// Le joueur arme le mode avec le bouton « Nourrir », clique sur l'eau en
+// maintenant le doigt (ou la souris) pour viser, puis relâche : la puissance
+// dépend du moment du relâchement (la jauge oscille toute seule). La boule suit
+// un arc de cercle, poussée par le vent, et crée à l'atterrissage un nuage de
+// miettes qui attire les poissons — et dérive doucement au vent.
+const FEED_MIN_RANGE = 6;          // distance mini d'un lancer (unités)
+const FEED_MAX_RANGE = 46;         // distance maxi (jauge à fond)
+const FEED_FLIGHT_DURATION = 0.9;  // durée du vol de la boule (s)
+const FEED_OSC_SPEED = 1.5;        // vitesse de base de l'oscillation (tours/s)
+const FEED_WIND_FACTOR = 5;        // décalage dû au vent pendant le vol
+const CHUM_ATTRACT_RADIUS = 20;    // zone où les poissons sentent l'amorce
+const CHUM_ATTRACT_ACCEL = 6;      // force d'attirance (unités/s²)
+const CHUM_DRIFT = 0.25;           // dérive du nuage au vent
+const CHUM_LIFETIME = 16;          // durée de vie du nuage (s)
+
+let feedMode = false;              // le mode amorçage est-il armé ?
+let feedState = 'idle';            // 'idle' | 'charging' | 'flying'
+let feedPower = 0;                 // puissance courante (0..1), oscille
+let feedTargetPower = 0;           // puissance « idéale » pour atteindre la visée
+let feedPhase = 0;                 // phase de l'oscillation
+let feedChargeT = 0;               // temps de maintien
+let feedFlyT = 0;                  // avancement du vol (0..1)
+let chum = null;                   // nuage de miettes en cours
+let armSwing = 0;                  // bras : 0 = repos, 1 = armé (en arrière)
+let armThrow = 0;                  // bras : impulsion de lancer
+
+const feedAim = new THREE.Vector3(0, 0.1, -25);
+const feedLanding = new THREE.Vector3(0, 0.1, -25);
+const feedOrigin = new THREE.Vector3(-3.2, 3.0, 16.6);
+
+// La boule de nourriture : une petite boule beige.
+const feedBall = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xcdb56f, roughness: 0.95 })
+);
+feedBall.castShadow = true;
+feedBall.visible = false;
+scene.add(feedBall);
+
+// Texture douce d'une « bouffée » de miettes.
+function makeChumTexture() {
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(226,255,228,0.9)');
+    grad.addColorStop(0.5, 'rgba(184,236,196,0.45)');
+    grad.addColorStop(1, 'rgba(160,220,175,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+}
+
+// Distance de visée → puissance nécessaire pour tomber pile dessus.
+function feedPowerForDistance(distance) {
+    return Math.max(0, Math.min(1,
+        (distance - FEED_MIN_RANGE) / (FEED_MAX_RANGE - FEED_MIN_RANGE)));
+}
+
+function feedAimDistance() {
+    return Math.hypot(feedAim.x - angler.position.x, feedAim.z - angler.position.z);
+}
+
+function updateFeedGauge() {
+    feedGaugeFill.style.width = (feedPower * 100).toFixed(0) + '%';
+    feedGaugeTarget.style.left = (feedTargetPower * 100).toFixed(0) + '%';
+}
+
+function setFeedMode(on) {
+    if (on && floatState !== 'idle') {
+        statusDisplay.textContent = 'Ramène d’abord la ligne pour pouvoir amorcer.';
+        return;
+    }
+    feedMode = !!on && floatState === 'idle';
+    feedButton.classList.toggle('active', feedMode);
+    feedButton.textContent = feedMode ? '🥣 Nourrir (armé)' : '🥣 Nourrir';
+    if (feedMode) {
+        statusDisplay.textContent = 'Amorçage : clique et maintiens sur l’eau pour viser, puis relâche pour doser la puissance.';
+    } else if (feedState === 'idle') {
+        statusDisplay.textContent = 'Clique sur l’eau pour lancer la ligne.';
+    }
+}
+
+function startFeedCharge(point) {
+    if (feedState !== 'idle') {
+        return;
+    }
+    feedState = 'charging';
+    feedChargeT = 0;
+    feedPhase = 0;
+    feedPower = 0;
+    feedAim.set(point.x, 0.1, point.z);
+    feedTargetPower = feedPowerForDistance(feedAimDistance());
+    feedGauge.classList.add('active');
+    updateFeedGauge();
+    ensureSound();
+    statusDisplay.textContent = 'Vise… relâche quand la jauge passe sur le repère !';
+}
+
+function moveFeedAim(point) {
+    if (feedState !== 'charging') {
+        return;
+    }
+    feedAim.set(point.x, 0.1, point.z);
+    feedTargetPower = feedPowerForDistance(feedAimDistance());
+    updateFeedGauge();
+}
+
+function computeFeedLanding() {
+    let ax = feedAim.x - angler.position.x;
+    let az = feedAim.z - angler.position.z;
+    let d = Math.hypot(ax, az);
+    if (d < 0.01) {
+        // Visée collée au pêcheur : on tire vers le centre de l'étang.
+        ax = POND_CENTER.x - angler.position.x;
+        az = POND_CENTER.z - angler.position.z;
+        d = Math.hypot(ax, az) || 1;
+    }
+    const range = FEED_MIN_RANGE + feedPower * (FEED_MAX_RANGE - FEED_MIN_RANGE);
+    let lx = angler.position.x + (ax / d) * range;
+    let lz = angler.position.z + (az / d) * range;
+    // Le vent pousse la boule pendant le vol.
+    lx += Math.cos(wind.dir) * wind.strength * FEED_WIND_FACTOR;
+    lz += Math.sin(wind.dir) * wind.strength * FEED_WIND_FACTOR;
+    // La boule retombe dans l'étang.
+    const dx = lx - POND_CENTER.x;
+    const dz = lz - POND_CENTER.z;
+    const dd = Math.hypot(dx, dz);
+    const maxR = POND_RADIUS - 2;
+    if (dd > maxR) {
+        lx = POND_CENTER.x + (dx / dd) * maxR;
+        lz = POND_CENTER.z + (dz / dd) * maxR;
+    }
+    feedLanding.set(lx, 0.1, lz);
+}
+
+function releaseFeed() {
+    if (feedState !== 'charging') {
+        return;
+    }
+    feedState = 'flying';
+    feedFlyT = 0;
+    feedGauge.classList.remove('active');
+    computeFeedLanding();
+    feedBall.position.copy(feedOrigin);
+    feedBall.visible = true;
+    sound.cast();
+    statusDisplay.textContent = 'Lancer de l’amorce…';
+}
+
+// Crée le nuage de miettes qui attire les poissons.
+function spawnChum(position) {
+    if (chum) {
+        scene.remove(chum.group);
+        chum = null;
+    }
+    const group = new THREE.Group();
+    const material = new THREE.SpriteMaterial({
+        map: makeChumTexture(), transparent: true, depthWrite: false, opacity: 0
+    });
+    // Quelques « bouffées » disposées en cercle (positions fixes : aucun
+    // tirage aléatoire, pour garder les tests reproductibles).
+    for (let i = 0; i < 6; i++) {
+        const sprite = new THREE.Sprite(material);
+        const angle = (i / 6) * Math.PI * 2;
+        const r = 1.2 + (i % 3) * 1.4;
+        sprite.position.set(Math.cos(angle) * r, 0.4 + (i % 3) * 0.4, Math.sin(angle) * r);
+        const s = 4 + (i % 3) * 1.5;
+        sprite.scale.set(s, s * 0.7, 1);
+        group.add(sprite);
+    }
+    group.position.set(position.x, 0.4, position.z);
+    scene.add(group);
+    chum = {
+        group: group,
+        material: material,
+        position: new THREE.Vector3(position.x, 0.1, position.z),
+        age: 0,
+        lifetime: CHUM_LIFETIME,
+        radius: CHUM_ATTRACT_RADIUS,
+        strength: 0
+    };
+    spawnRipple(position);
+}
+
+function landFeed() {
+    feedState = 'idle';
+    feedBall.visible = false;
+    sound.splash();
+    spawnChum(feedLanding);
+    setFeedMode(false);
+    statusDisplay.textContent = 'Amorce lancée ! Les poissons s’approchent du nuage de miettes…';
+}
+
+function cancelFeed() {
+    if (feedState === 'charging') {
+        feedState = 'idle';
+        feedGauge.classList.remove('active');
+        setFeedMode(false);
+    }
+}
+
+function updateChum(dt) {
+    if (!chum) {
+        return;
+    }
+    chum.age += dt;
+    if (chum.age >= chum.lifetime) {
+        scene.remove(chum.group);
+        chum = null;
+        return;
+    }
+    // Le nuage dérive doucement avec le vent.
+    chum.position.x += Math.cos(wind.dir) * wind.strength * CHUM_DRIFT * dt;
+    chum.position.z += Math.sin(wind.dir) * wind.strength * CHUM_DRIFT * dt;
+    const dx = chum.position.x - POND_CENTER.x;
+    const dz = chum.position.z - POND_CENTER.z;
+    const dd = Math.hypot(dx, dz);
+    const maxR = POND_RADIUS - 6;
+    if (dd > maxR) {
+        chum.position.x = POND_CENTER.x + (dx / dd) * maxR;
+        chum.position.z = POND_CENTER.z + (dz / dd) * maxR;
+    }
+    // Apparition en douceur, puis disparition en fondu.
+    const fadeIn = Math.min(1, chum.age / 1.2);
+    const fadeOut = Math.min(1, Math.max(0, (chum.lifetime - chum.age) / 3));
+    chum.strength = Math.min(fadeIn, fadeOut);
+    chum.group.position.set(chum.position.x, 0.4, chum.position.z);
+    chum.material.opacity = 0.55 * chum.strength;
+    const pulse = 1 + Math.sin(chum.age * 1.5) * 0.06;
+    chum.group.scale.set(pulse, pulse, pulse);
+    chum.group.rotation.y += dt * 0.15;
+}
+
+function updateFeed(dt) {
+    if (feedState === 'charging') {
+        feedChargeT += dt;
+        // La jauge oscille de plus en plus vite : il faut choisir son moment.
+        const speed = FEED_OSC_SPEED + Math.min(0.6, feedChargeT * 0.15);
+        feedPhase += speed * dt;
+        const m = ((feedPhase % 2) + 2) % 2;
+        feedPower = m < 1 ? m : 2 - m;
+        updateFeedGauge();
+    } else if (feedState === 'flying') {
+        feedFlyT += dt / FEED_FLIGHT_DURATION;
+        const t = Math.min(1, feedFlyT);
+        const x = feedOrigin.x + (feedLanding.x - feedOrigin.x) * t;
+        const z = feedOrigin.z + (feedLanding.z - feedOrigin.z) * t;
+        const arc = 3 + feedPower * 5;
+        const y = feedOrigin.y + (feedLanding.y - feedOrigin.y) * t + Math.sin(Math.PI * t) * arc;
+        feedBall.position.set(x, y, z);
+        feedBall.rotation.x += dt * 8;
+        feedBall.rotation.z += dt * 6;
+        if (feedFlyT >= 1) {
+            landFeed();
+        }
+    }
+}
+
+// Animation du bras du pêcheur : repos → armé (visée) → lancer.
+function updateArm(dt) {
+    const targetSwing = feedState === 'charging' ? 1 : 0;
+    const targetThrow = feedState === 'flying' ? 1 : 0;
+    armSwing += (targetSwing - armSwing) * Math.min(1, dt * 8);
+    armThrow += (targetThrow - armThrow) * Math.min(1, dt * 12);
+    arm.rotation.z = -0.9 - armSwing * 0.9 + armThrow * 1.6;
+    arm.rotation.x = 0.4 - armSwing * 1.0 + armThrow * 0.8;
+    arm.position.y = 2.1 + armSwing * 0.4;
+}
 
 // ---------------------------------------------------------------------------
 // Poissons
@@ -1303,6 +1581,29 @@ function updateFish(dt, time) {
             data.tailPivot.rotation.y = Math.sin(time * 25) * 0.8;
             return;
         }
+        // L'amorce attire les poissons vers le nuage de miettes.
+        if (chum && chum.strength > 0) {
+            const cx = chum.position.x - fish.position.x;
+            const cz = chum.position.z - fish.position.z;
+            const cd = Math.hypot(cx, cz);
+            if (cd < chum.radius && cd > 0.001) {
+                const accel = CHUM_ATTRACT_ACCEL * chum.strength * dt;
+                data.vx += (cx / cd) * accel;
+                data.vz += (cz / cd) * accel;
+                // Tout près du nuage, le poisson ralentit et tourne (il picore).
+                if (cd < 3.5) {
+                    data.vx *= 0.94;
+                    data.vz *= 0.94;
+                }
+                // Vitesse bornée pour rester crédible.
+                const sp = Math.hypot(data.vx, data.vz);
+                const maxSp = 4.5;
+                if (sp > maxSp) {
+                    data.vx = (data.vx / sp) * maxSp;
+                    data.vz = (data.vz / sp) * maxSp;
+                }
+            }
+        }
         fish.position.x += data.vx * dt;
         fish.position.z += data.vz * dt;
 
@@ -1450,6 +1751,13 @@ canvas.addEventListener('pointermove', event => {
     const rect = canvas.getBoundingClientRect();
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    // Pendant la visée de l'amorce, on peut ajuster le point de chute.
+    if (feedState === 'charging') {
+        const p = waterPointFromEvent(event);
+        if (p) {
+            moveFeedAim(p);
+        }
+    }
 });
 
 canvas.addEventListener('pointerdown', event => {
@@ -1457,6 +1765,16 @@ canvas.addEventListener('pointerdown', event => {
         return;
     }
     ensureSound();
+    // Mode amorçage : un appui sur l'eau commence à charger la puissance.
+    if (feedMode && floatState === 'idle') {
+        if (feedState === 'idle') {
+            const p = waterPointFromEvent(event);
+            if (p) {
+                startFeedCharge(p);
+            }
+        }
+        return;
+    }
     if (floatState === 'bite') {
         hookFish();
         return;
@@ -1473,6 +1791,22 @@ canvas.addEventListener('pointerdown', event => {
     } else if (floatState === 'inWater') {
         startReel();
     }
+});
+
+// Relâcher = on dose la puissance et la boule part.
+canvas.addEventListener('pointerup', () => {
+    if (feedState === 'charging') {
+        releaseFeed();
+    }
+});
+
+canvas.addEventListener('pointercancel', () => {
+    cancelFeed();
+});
+
+feedButton.addEventListener('click', () => {
+    ensureSound();
+    setFeedMode(!feedMode);
 });
 
 biteView.addEventListener('pointerdown', hookFish);
@@ -1501,6 +1835,9 @@ fishButton.addEventListener('click', () => {
 window.addEventListener('keydown', event => {
     if (event.key === ' ' || event.key === 'Enter') {
         ensureSound();
+        if (feedMode) {
+            return; // en mode amorçage, on lance avec la souris sur l'eau
+        }
         if (floatState === 'bite') {
             hookFish();
             return;
@@ -1540,6 +1877,9 @@ function animate() {
         updateBiteView(dt);
         updateFish(dt, elapsed);
         updateFloat(dt, elapsed);
+        updateFeed(dt);
+        updateChum(dt);
+        updateArm(dt);
         updateRipples(dt);
         updateLine();
     }
@@ -1600,6 +1940,28 @@ window.__game = {
     // Simule les tours de manivelle (1 = un tour complet) pour les tests.
     turnCrank: function (turns) { crankRotationDelta += turns * TWO_PI; },
     reelClick: reelClick,
+    // Amorçage (boule de nourriture) — exposé pour les tests.
+    setFeedMode: setFeedMode,
+    isFeedMode: function () { return feedMode; },
+    getFeedState: function () { return feedState; },
+    getFeedPower: function () { return feedPower; },
+    getFeedTargetPower: function () { return feedTargetPower; },
+    startFeedCharge: startFeedCharge,
+    releaseFeed: releaseFeed,
+    getFeedBall: function () { return feedBall; },
+    getFeedLanding: function () { return { x: feedLanding.x, z: feedLanding.z }; },
+    getFeedRange: function () { return { min: FEED_MIN_RANGE, max: FEED_MAX_RANGE }; },
+    getPondCenter: function () { return { x: POND_CENTER.x, z: POND_CENTER.z }; },
+    getChum: function () {
+        return chum ? {
+            x: chum.position.x,
+            z: chum.position.z,
+            radius: chum.radius,
+            age: chum.age,
+            lifetime: chum.lifetime,
+            strength: chum.strength
+        } : null;
+    },
     setPaused: function (value) { paused = value; },
     step: function (dt) {
         testTime += dt;
@@ -1610,6 +1972,9 @@ window.__game = {
         updateBiteView(dt);
         updateFish(dt, testTime);
         updateFloat(dt, testTime);
+        updateFeed(dt);
+        updateChum(dt);
+        updateArm(dt);
         updateRipples(dt);
         updateLine();
     }

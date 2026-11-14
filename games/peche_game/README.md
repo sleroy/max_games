@@ -37,6 +37,11 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. Un clic ne donne qu'un petit coup de poignet.
 - **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
+- **Bouton 🥣 Nourrir (amorçage)** : clique une fois sur le bouton pour armer le mode,
+  puis **clique et maintiens** sur l'eau pour viser (une jauge de puissance s'affiche et
+  oscille), et **relâche** pour lancer la boule. Plus la puissance est forte, plus la boule
+  va loin ; le vent la décale. En tombant, elle crée un **nuage de miettes** qui attire les
+  poissons alentour (le nuage dérive un peu avec le vent).
 
 ## Fonctionnalités
 
@@ -49,6 +54,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Accrochage dans les nénuphars** avec risque de casser la ligne.
 - Les poissons perdus deviennent plus agressifs, plus rapides et plus rouges.
 - **Manivelle** (tours proportionnels à la distance) pendant l'épreuve de force et la remontée.
+- **Amorçage (boule de nourriture)** : bouton « Nourrir », visée au maintien de la souris
+  (ou du doigt), jauge de puissance oscillante avec un repère à atteindre, lancer en arc
+  influencé par le vent, puis nuage de miettes qui attire les poissons — avec une animation
+  d'épaule du pêcheur.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
 - **Difficulté réglable** : une seule constante, `DIFFICULTY` en haut de `script.js`
   (1 = facile, plus grand = plus dur), rend le poisson plus combatif et resserre le

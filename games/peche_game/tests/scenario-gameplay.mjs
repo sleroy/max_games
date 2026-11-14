@@ -15,7 +15,9 @@ const API = [
     'scene', 'camera', 'renderer', 'fishes', 'floatGroup', 'rodTip', 'angler', 'makeFish', 'lilyPads',
     'startCast', 'hookFish', 'getState', 'getBitePhase', 'isBiteViewActive', 'getCameraMode', 'startReel',
     'getBiteFromReel', 'sound', 'getWind', 'getVaneRotation', 'getTension', 'getStruggleTimeLeft',
-    'getLineLength', 'getStruggleTurnsNeeded', 'getUnitsPerTurn', 'turnCrank', 'reelClick', 'setPaused', 'step'
+    'getLineLength', 'getStruggleTurnsNeeded', 'getUnitsPerTurn', 'turnCrank', 'reelClick', 'setPaused', 'step',
+    'setFeedMode', 'isFeedMode', 'getFeedState', 'getFeedPower', 'getFeedTargetPower', 'startFeedCharge',
+    'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChum', 'getPondCenter'
 ];
 
 /** Distance au sol entre le bouchon et le bout de la canne. */

@@ -10,6 +10,7 @@ import { installEnvironment, loadGame, cleanup, report } from './harness.mjs';
 import scenarioStatic from './scenario-static.mjs';
 import scenarioSound from './scenario-sound.mjs';
 import scenarioGameplay from './scenario-gameplay.mjs';
+import scenarioFeed from './scenario-feed.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -20,6 +21,7 @@ try {
     await loadGame();
     scenarioSound();           // sound.js avec un faux AudioContext
     scenarioGameplay();        // lancer, bouchon, moulinet, remontée, nénuphars, vent
+    scenarioFeed();            // amorçage : boule de nourriture, jauge, attraction
 } catch (error) {
     crashed = error;
 } finally {
