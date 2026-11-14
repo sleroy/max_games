@@ -92,14 +92,15 @@ export function run() {
     check('le nuage disparaît après sa durée de vie',
         stepUntil(() => G().getChum() === null, 25), G().getChum());
 
-    group('35) On ne peut amorcer que quand la ligne est au repos');
+    group('35) On peut amorcer MÊME avec la ligne à l’eau');
     resetToIdle();
     clearLilyPads();
     checkEqual('la ligne est à l’eau', castTo(0, -25), 'inWater');
     G().setFeedMode(true);
-    checkEqual('amorçage refusé pendant la pêche', G().isFeedMode(), false);
-    check('un message explique pourquoi', el('status').textContent.includes('Ramène'),
+    checkEqual('amorçage possible pendant la pêche', G().isFeedMode(), true);
+    check('le jeu invite à viser', el('status').textContent.includes('Amorçage'),
         el('status').textContent);
+    G().setFeedMode(false);
     resetToIdle();
     checkEqual('retour au repos', state(), 'idle');
 }
