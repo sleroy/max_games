@@ -855,9 +855,9 @@ const waterUniforms = {
     uLight: { value: 1 },
     uEnv: { value: null },
     uReflect: { value: 0 },
-    uShallow: { value: new THREE.Color(0x5aa7b8) },
-    uDeep: { value: new THREE.Color(0x103a4e) },
-    uSky: { value: new THREE.Color(0xc4e2ee) },
+    uShallow: { value: new THREE.Color(0x3d7d92) },
+    uDeep: { value: new THREE.Color(0x0a2736) },
+    uSky: { value: new THREE.Color(0x9fc7d6) },
     uNormals: { value: chargerTexture('eau-normales.jpg', 1, 1, false) || makeWaterNormalTexture() },
     uNormalsOn: { value: 0 },
     uReflection: { value: null },
@@ -977,7 +977,7 @@ const waterMaterial = new THREE.ShaderMaterial({
             vec3 col = mix(uShallow, uDeep, prof);
             // Un peu de vaguelette : petites variations de teinte.
             col *= 0.94 + 0.06 * clamp(n.y, 0.0, 1.0);
-            col = mix(col, uSky, fres * 0.45);
+            col = mix(col, uSky, fres * 0.22);
             // REFLET du décor (couche 2) : distordu par les ridules.
             if (uReflectOn > 0.5) {
                 vec2 uvRef = gl_FragCoord.xy / uResolution + vRipple.xy * 0.035;
@@ -993,11 +993,11 @@ const waterMaterial = new THREE.ShaderMaterial({
             col *= mix(vec3(0.30, 0.36, 0.48), vec3(1.0), uLight);
             vec3 sunDir = normalize(vec3(0.4, 1.0, -0.6));
             vec3 halfDir = normalize(viewDir + sunDir);
-            float spec = pow(max(dot(n, halfDir), 0.0), 60.0) * (0.35 + uWind * 0.8) * uLight;
+            float spec = pow(max(dot(n, halfDir), 0.0), 90.0) * (0.10 + uWind * 0.30) * uLight;
             col += vec3(spec);
             // Eau plus transparente : on voit la moitié inférieure du bouchon et
             // le bas de ligne sous la surface.
-            float alpha = clamp(0.40 + prof * 0.45 + fres * 0.25, 0.0, 0.97);
+            float alpha = clamp(0.30 + prof * 0.45 + fres * 0.12, 0.0, 0.95);
             gl_FragColor = vec4(col, alpha);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
