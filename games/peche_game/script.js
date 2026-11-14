@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=85 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=86 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=85';
+import { SoundEngine } from './sound.js?v=86';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -48,6 +48,9 @@ const classement = document.getElementById('classement');
 const rankingTabs = document.getElementById('rankingTabs');
 const rankingList = document.getElementById('rankingList');
 const closeRanking = document.getElementById('closeRanking');
+const accueil = document.getElementById('accueil');
+const playButton = document.getElementById('playButton');
+const accueilClassement = document.getElementById('accueilClassement');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -5932,6 +5935,18 @@ if (rankingTabs) {
 
 majLignes();
 
+// ÉCRAN D'ACCUEIL : on propose de JOUER ou de consulter le CLASSEMENT local.
+function demarrerJeu() {
+    if (accueil) { accueil.classList.remove('active'); }
+    ensureSound();
+    statusDisplay.textContent = 'Bonne pêche ! Clique sur l’eau, maintiens pour doser la puissance, puis relâche.';
+}
+function afficherAccueil() {
+    if (accueil) { accueil.classList.add('active'); }
+}
+if (playButton) { playButton.addEventListener('click', demarrerJeu); }
+if (accueilClassement) { accueilClassement.addEventListener('click', ouvrirClassement); }
+
 window.__game = {
     scene: scene,
     camera: camera,
@@ -6016,6 +6031,9 @@ window.__game = {
     setRagondinVolDans: function (sec) { if (ragondin) { ragondinVolTimer = sec; } },
     volerUnPoissonRagondin: volerUnPoissonRagondin,
     getScore: function () { return score; },
+    demarrerJeu: demarrerJeu,
+    afficherAccueil: afficherAccueil,
+    isAccueilVisible: function () { return !!accueil && accueil.classList.contains('active'); },
     couleurEau: couleurEau,
     getFondDoubleFace: function () { return pondBottom.material.side === THREE.DoubleSide; },
     getEauCouleurs: function () {

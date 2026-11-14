@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Scénario 13 : les LIGNES (vies) — casse, fin de partie et classement local.
 // ---------------------------------------------------------------------------
-import { group, check, checkEqual, G, el, resetToIdle, stepFor } from './harness.mjs';
+import { group, check, checkEqual, G, el, fire, resetToIdle, stepFor } from './harness.mjs';
 
 export function run() {
     group('49) Lignes (vies) : lancer trop fort, remontée trop rapide');
@@ -63,6 +63,20 @@ export function run() {
     checkEqual('la partie est relancée', G().isPartieTerminee(), false);
     check('le panneau s’est refermé', !el('gameOver').classList.contains('active'));
     checkEqual('les statistiques repartent de zéro', G().getPartieStats().poissons, 0);
+
+    group('52) Ecran d accueil : Jouer ou Classement');
+    G().afficherAccueil();
+    checkEqual('l ecran d accueil s affiche au demarrage', G().isAccueilVisible(), true);
+    check('il propose de jouer (bouton présent)', !!el('playButton'), 'bouton Jouer');
+    check('il propose le classement', !!el('accueilClassement'));
+    fire('accueilClassement', 'click');
+    checkEqual('le classement s ouvre depuis l accueil', el('classement').classList.contains('active'), true);
+    fire('closeRanking', 'click');
+    fire('playButton', 'click');
+    checkEqual('Jouer ferme l accueil', G().isAccueilVisible(), false);
+    G().afficherAccueil();
+    checkEqual('on peut reafficher l accueil', G().isAccueilVisible(), true);
+    G().demarrerJeu();
 }
 
 export default run;

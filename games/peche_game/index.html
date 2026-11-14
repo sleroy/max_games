@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=85">
+    <link rel="stylesheet" href="style.css?v=86">
 </head>
 <body>
     <div class="game-wrap">
@@ -53,6 +53,15 @@
                 <div class="bourriche-label" id="bourricheLabel">🧺 Bourriche : 0</div>
                 <div class="bourriche-label" id="xpLabel">⭐ 0 XP</div>
                 <div class="bourriche-label" id="lignesLabel">🧵 Lignes : 5/5</div>
+            </div>
+            <div class="overlay-panel active" id="accueil">
+                <h2 class="overlay-title">🎣 L’étang du Bois Neuf</h2>
+                <p class="overlay-text">Attrape les poissons du bord de l’eau : règle ta profondeur,<br>
+                    amorce, lance et ferre au bon moment !</p>
+                <button class="feed-button" id="playButton">▶ Jouer</button>
+                <button class="journal-button" id="accueilClassement">🏆 Classement</button>
+                <p class="overlay-text" style="font-size:0.78rem;opacity:0.75">
+                    Ton nom est demandé en fin de partie.</p>
             </div>
             <div class="overlay-panel" id="gameOver">
                 <h2 class="overlay-title">💥 Plus de lignes !</h2>
@@ -225,6 +234,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=85"></script>
+    <script type="module" src="script.js?v=86"></script>
 </body>
 </html>
