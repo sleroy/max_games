@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=95';
+import { SoundEngine } from './sound.js?v=96';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1557,14 +1557,40 @@ const ROD_BEND_AXIS = new THREE.Vector3(1, 0, 0);
 const AXE_VERTICAL = new THREE.Vector3(0, 1, 0);
 let rodBend = 0;
 
+// ---------------------------------------------------------------------------
+// GESTE DE LANCER : la canne s'arme en arrière pendant la charge, puis fouette
+// vers l'avant au lâcher. Le pêcheur et la canne s'orientent vers la cible
+// réelle (point visé, puis bouchon). `castSwing` > 0 = armé, < 0 = fouetté.
+// ---------------------------------------------------------------------------
+let castSwing = 0;
+let castSwingDepart = 0;        // valeur de l'armé au moment du lâcher
+let castYawAngler = 0;          // écart de lacet du corps par rapport au poste
+let castYawRod = 0;             // écart de lacet de la canne par rapport au poste
+let anglerYawBase = Math.PI;    // lacet de repos du pêcheur (fixé au placement)
+let rodYawBase = 0;             // lacet de repos du pivot de canne
+const CAST_SWING_CHARGE = 0.55; // armé en arrière (~31°)
+const CAST_SWING_RELEASE = -0.78; // fouetté vers l'avant (~45°)
+const CAST_YAW_ANGLER_MAX = 0.8;  // le corps ne se tord pas au-delà de ~46°
+const CAST_YAW_ROD_MAX = 1.2;     // la canne peut viser plus loin (~69°)
+
+function angleNormalise(valeur) {
+    const deuxPi = Math.PI * 2;
+    let a = valeur % deuxPi;
+    if (a > Math.PI) { a -= deuxPi; }
+    if (a < -Math.PI) { a += deuxPi; }
+    return a;
+}
+
 function updateRod(dt) {
     const target = (floatState === 'struggle' || floatState === 'reeling') ? tension * 0.5
         : (floatState === 'bite' ? 0.10 : 0);
     rodBend += (target - rodBend) * Math.min(1, dt * 6);
-    rodGroup.rotation.x = -rodBend;
+    // Pliage du poisson + geste de lancer, autour du même axe local.
+    const pliage = -rodBend + castSwing;
+    rodGroup.rotation.x = pliage;
     // Pliage autour de l'axe LOCAL de la canne, puis orientation du poste :
     // c'est exactement la transformation de rodPivot -> rodGroup.
-    rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, -rodBend);
+    rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, pliage);
     if (rodPivot.rotation.y) {
         rodTipVisual.applyAxisAngle(AXE_VERTICAL, rodPivot.rotation.y);
     }
@@ -2147,9 +2173,11 @@ function updateArm(dt) {
     const targetThrow = feedState === 'flying' ? 1 : 0;
     armSwing += (targetSwing - armSwing) * Math.min(1, dt * 8);
     armThrow += (targetThrow - armThrow) * Math.min(1, dt * 12);
-    arm.rotation.z = -0.9 - armSwing * 0.9 + armThrow * 1.6;
-    arm.rotation.x = 0.4 - armSwing * 1.0 + armThrow * 0.8;
-    arm.position.y = 2.1 + armSwing * 0.4;
+    // Le geste de lancer (canne) entraîne aussi le bras : armé puis détendu.
+    const cast = castSwing;
+    arm.rotation.z = -0.9 - armSwing * 0.9 + armThrow * 1.6 + cast * 0.45;
+    arm.rotation.x = 0.4 - armSwing * 1.0 + armThrow * 0.8 - cast * 0.30;
+    arm.position.y = 2.1 + armSwing * 0.4 + Math.max(0, cast) * 0.15;
 }
 
 // La barre d'outils du pêcheur (Nourrir / Carnet / compteur) reste à un endroit
@@ -2377,7 +2405,9 @@ function placerALAngle(angle, marge, presetIndex, libre) {
 
     // 1) Rotation RIGIDE du matériel autour du centre : le poste fait le tour.
     tournerAutourEtang(POSTE_ANGLER, delta, angler.position);
-    angler.rotation.y = Math.PI + delta;
+    anglerYawBase = Math.PI + delta;
+    rodYawBase = delta;
+    angler.rotation.y = anglerYawBase;
     tournerAutourEtang(POSTE_ROD_BASE, delta, rodBase);
     tournerAutourEtang(POSTE_ROD_TIP, delta, rodTip);
     tournerAutourEtang(POSTE_BOURRICHE, delta, BOURRICHE_POS);
@@ -2405,8 +2435,11 @@ function placerALAngle(angle, marge, presetIndex, libre) {
 
     // Canne : pivot à la nouvelle base, orienté vers l'étang.
     rodPivot.position.copy(rodBase);
-    rodPivot.rotation.y = delta;
+    rodPivot.rotation.y = rodYawBase;
     rodBend = 0;
+    castSwing = 0;
+    castYawAngler = 0;
+    castYawRod = 0;
     rodGroup.rotation.x = 0;
     rodTipVisual.copy(rodTip);
 
@@ -3430,6 +3463,75 @@ function updateCast(dt) {
     castPhase += CAST_OSC * dt;
     const m = ((castPhase % 2) + 2) % 2;
     setCastPower(m < 1 ? m : 2 - m);
+}
+
+// ---------------------------------------------------------------------------
+// ANIMATION DU LANCER : orientation vers la cible + geste de canne.
+// Appelée à chaque image AVANT updateArm/updateRod.
+// ---------------------------------------------------------------------------
+function updateCastAnimation(dt) {
+    // 1) Cible à regarder : point visé pendant la charge, point de chute
+    //    pendant le vol, puis bouchon réel une fois à l'eau.
+    let cible = null;
+    let facteur = 0;
+    if (castState === 'charging') {
+        cible = castAim;
+        facteur = 0.9;
+    } else if (floatState === 'flying') {
+        cible = castTarget;
+        facteur = 1;
+    } else if (floatState === 'inWater' || floatState === 'bite'
+        || floatState === 'struggle' || floatState === 'reeling'
+        || floatState === 'snag') {
+        cible = floatGroup.position;
+        facteur = 0.8;
+    }
+    let yawAnglerVoulu = 0;
+    let yawRodVoulu = 0;
+    if (cible) {
+        const dx = cible.x - angler.position.x;
+        const dz = cible.z - angler.position.z;
+        if (Math.hypot(dx, dz) > 0.5) {
+            const thetaCible = Math.atan2(dz, dx);
+            // Pêcheur : son axe local +z donne theta = PI/2 - lacet.
+            yawAnglerVoulu = angleNormalise(
+                (Math.PI / 2 - thetaCible) - anglerYawBase) * facteur;
+            // Canne : son bout local a un angle qui dépend AUSSI du geste
+            // vertical (rotation X). On le recalcule avec le swing courant ;
+            // un lacet ψ diminue l'angle monde de ψ.
+            const zSwing = rodLocalTip.y * Math.sin(castSwing)
+                + rodLocalTip.z * Math.cos(castSwing);
+            const angleLocalCanne = Math.atan2(zSwing, rodLocalTip.x);
+            yawRodVoulu = angleNormalise(
+                (angleLocalCanne - thetaCible) - rodYawBase) * facteur;
+        }
+    }
+    yawAnglerVoulu = Math.max(-CAST_YAW_ANGLER_MAX,
+        Math.min(CAST_YAW_ANGLER_MAX, yawAnglerVoulu));
+    yawRodVoulu = Math.max(-CAST_YAW_ROD_MAX,
+        Math.min(CAST_YAW_ROD_MAX, yawRodVoulu));
+    const lissage = Math.min(1, dt * 7);
+    castYawAngler += (yawAnglerVoulu - castYawAngler) * lissage;
+    castYawRod += (yawRodVoulu - castYawRod) * lissage;
+    angler.rotation.y = anglerYawBase + castYawAngler;
+    rodPivot.rotation.y = rodYawBase + castYawRod;
+
+    // 2) Geste de canne : armé pendant la charge, fouetté au lâcher, puis repos.
+    if (castState === 'charging') {
+        castSwing += (CAST_SWING_CHARGE - castSwing) * Math.min(1, dt * 6);
+    } else if (floatState === 'flying') {
+        if (castT < 0.24) {
+            const t = Math.min(1, castT / 0.24);
+            const doux = t * t * (3 - 2 * t);
+            castSwing = castSwingDepart
+                + (CAST_SWING_RELEASE - castSwingDepart) * doux;
+        } else {
+            const t = Math.min(1, (castT - 0.24) / 0.56);
+            castSwing = CAST_SWING_RELEASE * (1 - t) * (1 - t);
+        }
+    } else {
+        castSwing += (0 - castSwing) * Math.min(1, dt * 8);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -4577,7 +4679,8 @@ function startCast(target) {
     if (floatState !== 'idle') {
         return;
     }
-    castStart.copy(rodTip);
+    castStart.copy(rodTipVisual);
+    castSwingDepart = castSwing;
     castTarget.copy(target);
     castTarget.x += Math.cos(wind.dir) * wind.strength * 2.5;
     castTarget.z += Math.sin(wind.dir) * wind.strength * 2.5;
@@ -6341,7 +6444,7 @@ function animate() {
         updateFeed(dt);
         updateChum(dt);
         updateRagondin(dt);
-        updateRagondin(dt);
+        updateCastAnimation(dt);
         updateArm(dt);
         updateRod(dt);
         updateDayNight(dt);
@@ -6746,6 +6849,39 @@ window.__game = {
     choisirEmplacement: choisirEmplacement,
     placerAuPoste: placerAuPoste,
     getRodBase: function () { return { x: rodBase.x, y: rodBase.y, z: rodBase.z }; },
+    // Geste de lancer / orientation du pêcheur et de la canne — pour les tests.
+    getCastAnimation: function () {
+        let cible;
+        if (castState === 'charging') {
+            cible = { x: castAim.x, z: castAim.z };
+        } else if (floatState === 'flying') {
+            cible = { x: castTarget.x, z: castTarget.z };
+        } else {
+            cible = { x: floatGroup.position.x, z: floatGroup.position.z };
+        }
+        return {
+            swing: castSwing,
+            baseAngler: anglerYawBase,
+            baseRod: rodYawBase,
+            yawAngler: angler.rotation.y,
+            yawRod: rodPivot.rotation.y,
+            offsetAngler: castYawAngler,
+            offsetRod: castYawRod,
+            cible: cible,
+            castState: castState,
+            floatState: floatState,
+            castT: castT
+        };
+    },
+    getRodTipVisual: function () {
+        return { x: rodTipVisual.x, y: rodTipVisual.y, z: rodTipVisual.z };
+    },
+    getArmPose: function () {
+        return {
+            x: arm.position.x, y: arm.position.y, z: arm.position.z,
+            rx: arm.rotation.x, ry: arm.rotation.y, rz: arm.rotation.z
+        };
+    },
     getCameraTarget: function () { return { x: cameraTarget.x, y: cameraTarget.y, z: cameraTarget.z }; },
     getGirouette: function () { return { x: vaneGroup.position.x, z: vaneGroup.position.z }; },
     // Soleil directionnel et lumière du poste (idee 2) — exposés pour les tests.
@@ -7041,6 +7177,7 @@ window.__game = {
         updateFloat(dt, testTime);
         updateFeed(dt);
         updateChum(dt);
+        updateCastAnimation(dt);
         updateArm(dt);
         updateRod(dt);
         updateDayNight(dt);

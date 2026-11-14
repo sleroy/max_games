@@ -52,6 +52,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   vagues et plongées se produisent à des **intervalles aléatoires** (durée et
   amplitude variables, parfois deux coups rapprochés). Impossible de chronométrer
   le clic : seule la **vraie touche** compte.
+- **Geste de lancer** : pendant la charge, le pêcheur s'oriente vers le point visé
+  et la canne s'arme en arrière ; au lâcher, elle **fouette vers l'avant**, le bras
+  suit, puis tout revient au repos en restant pointé vers le bouchon.
 - **Étang généré** : le contour n'est **pas un cercle**. Une somme d'harmoniques
   donne une forme allongée et lobée (rayon ≈ 43 à 63 unités autour d'un rayon
   nominal de 55). L'eau, le fond, la rive, la carte du carnet et les profondeurs

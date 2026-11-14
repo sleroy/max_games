@@ -156,6 +156,16 @@ export function run() {
     check('plus de rond toutes les 1,8 s',
         !script.includes('nibbleRippleTimer = 1.8'));
 
+    group('11) Geste de lancer');
+    check('le geste de lancer a une animation dédiée',
+        script.includes('function updateCastAnimation'));
+    check('la canne s’arme puis fouette',
+        script.includes('CAST_SWING_CHARGE') && script.includes('CAST_SWING_RELEASE'));
+    check('le pêcheur et la canne visent la cible',
+        script.includes('angleLocalCanne') && script.includes('castYawRod'));
+    check('l’animation tourne avant le bras et la canne',
+        script.includes('updateCastAnimation(dt);'));
+
 }
 
 export default run;
