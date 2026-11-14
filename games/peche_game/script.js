@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=77 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=78 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=77';
+import { SoundEngine } from './sound.js?v=78';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -825,7 +825,7 @@ function makeWaterNormalTexture() {
 }
 
 const textureLoader = (typeof THREE.TextureLoader === 'function') ? new THREE.TextureLoader() : null;
-function chargerTexture(nom, rx, ry) {
+function chargerTexture(nom, rx, ry, srgb) {
     if (!textureLoader) {
         return null;
     }
@@ -839,7 +839,8 @@ function chargerTexture(nom, rx, ry) {
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
         tex.repeat.set(rx || 1, ry || 1);
-        if (THREE.SRGBColorSpace) {
+        // Une NORMAL map reste LINÉAIRE (sRGB la déformerait).
+        if (srgb !== false && THREE.SRGBColorSpace) {
             tex.colorSpace = THREE.SRGBColorSpace;
         }
     }
@@ -857,7 +858,7 @@ const waterUniforms = {
     uShallow: { value: new THREE.Color(0x5aa7b8) },
     uDeep: { value: new THREE.Color(0x103a4e) },
     uSky: { value: new THREE.Color(0xc4e2ee) },
-    uNormals: { value: chargerTexture('eau-normales.jpg', 1, 1) || makeWaterNormalTexture() },
+    uNormals: { value: chargerTexture('eau-normales.jpg', 1, 1, false) || makeWaterNormalTexture() },
     uNormalsOn: { value: 0 },
     uReflection: { value: null },
     uReflectOn: { value: 0 },
@@ -964,11 +965,11 @@ const waterMaterial = new THREE.ShaderMaterial({
             if (uNormalsOn > 0.5) {
                 vec2 uv1 = vWorldPos.xz * 0.05 + vec2(uTime * 0.010, uTime * 0.006) * (0.5 + uWind);
                 vec2 uv2 = vWorldPos.xz * 0.11 - vec2(uTime * 0.016, -uTime * 0.012) * (0.4 + uWind);
-                vec3 t1 = texture2D(uNormals, uv1).rgb - vec3(0.5);
-                vec3 t2 = texture2D(uNormals, uv2).rgb - vec3(0.5);
-                vRipple = t1 + t2;
+                vec3 t1 = texture2D(uNormals, uv1).rgb * 2.0 - vec3(1.0);
+                vec3 t2 = texture2D(uNormals, uv2).rgb * 2.0 - vec3(1.0);
+                vRipple = (t1 + t2) * 0.5;
             }
-            vec3 n = normalize(vNormal + vec3(vRipple.x, 0.0, vRipple.y) * 1.1);
+            vec3 n = normalize(vNormal + vec3(vRipple.x, 0.0, vRipple.y) * 0.8);
             vec3 viewDir = normalize(cameraPosition - vWorldPos);
             float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
             // LA profondeur commande la couleur : claire au bord, sombre au fond.
@@ -1077,7 +1078,7 @@ function updateWater(t) {
 
 const shore = new THREE.Mesh(
     new THREE.RingGeometry(POND_RADIUS, 220, 96),
-    new THREE.MeshStandardMaterial({ color: 0x4f8a55, roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, map: chargerTexture('sol-herbe.jpg', 180, 180) })
 );
 shore.rotation.x = -Math.PI / 2;
 shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
