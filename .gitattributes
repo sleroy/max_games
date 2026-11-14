@@ -1,0 +1,15 @@
+# Normalise les fins de ligne (les scripts doivent rester en LF pour fonctionner)
+* text=auto
+
+*.sh    text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+
+# Fichiers binaires (pas de conversion)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
