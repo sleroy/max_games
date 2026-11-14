@@ -882,7 +882,8 @@ function startStruggle(fish) {
     const size = fish.userData.size;
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
-    const interval = (1.8 - size * 0.4) / aggression;
+    // Plus la difficulté est haute, plus les coups brusques sont rapprochés.
+    const interval = (1.8 - size * 0.4) / aggression / DIFFICULTY;
     // Longueur de fil de référence : la distance du lancer.
     const baseLength = Math.max(4, struggleBaseLength());
     // Fil déjà rentré pendant la remontée (touche en cours de récupération) :
