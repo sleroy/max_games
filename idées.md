@@ -69,7 +69,7 @@
 
 ## 7. Progression et XP
 
-- [~] **L'XP doit revenir à zéro au début d'une pêche.**
+- [x] **L'XP doit revenir à zéro au début d'une pêche.**
   - [x] L'XP **carrière** (carnet/boutique) est persistante et ne doit pas être perdue :
     elle finance les bouchons achetés (décision v97, test « l'XP persiste »).
   - [x] **XP de partie** affichée (`⭐ … XP · … carrière`), remise à 0 à chaque JOUER
@@ -77,11 +77,11 @@
 
 ## 8. Audio et interface
 
-- [~] **Utiliser des sons réalistes trouvés sur Internet.**
-  - [x] Moteur audio procédural complet (splash, moulinet, pluie, oiseaux, poisson…).
-  - [ ] Assets CC0 externes : les sites consultés (Kenney) renvoient 403 depuis
-    l'environnement ; le jeu reste donc 100 % hors-ligne avec ses sons procéduraux.
-    À remplacer/compléter par des fichiers locaux crédités si besoin.
+- [x] **Utiliser des sons réalistes trouvés sur Internet.**
+  - [x] Moteur audio procédural complet en secours.
+  - [x] Éclaboussure réelle du domaine public + ambiance d'étang CC BY-SA 4.0
+    (Wikimedia Commons), stockées dans `assets/sons/` et créditées.
+  - [x] Chargement local avec **fallback procédural** si l'asset n'est pas décodé.
 - [x] **Pas de texte superposé** : corrigé sur petits écrans en v100 (dock repliable,
   barre de stats, boussole sous la girouette). À revérifier après la modale d'accueil.
 

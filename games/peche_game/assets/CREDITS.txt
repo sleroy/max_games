@@ -17,3 +17,11 @@ Textures ajoutees (toutes libres, embarquees en local, redimensionnees en 512):
 - assets/vase.jpg          : ambientCG "Ground054"       - CC0 1.0 - https://ambientcg.com/view?id=Ground054
 - assets/eau-normales.jpg  : three.js waternormals.jpg   - MIT     - https://github.com/mrdoob/three.js
 (Converties avec ImageMagick : 512x512, JPEG qualite 82.)
+
+--- Sons réels locaux (assets/sons) ---
+- eau-splash.wav : extrait de « Bathtub water splashes » par gradha, PDSounds #775,
+domaine public. Source : https://commons.wikimedia.org/wiki/File:Bathtub_water_splashes.ogg
+- etang-ambiance.mp3 : extrait de « Ambient sound small pond with ducks in Berlin
+2026-05-17 » par SchlurcherBot, CC BY-SA 4.0 (conversion MP3).
+Source : https://commons.wikimedia.org/wiki/File:Ambient_sound_small_pond_with_ducks_in_Berlin_2026-05-17.oga
+Licence : https://creativecommons.org/licenses/by-sa/4.0/

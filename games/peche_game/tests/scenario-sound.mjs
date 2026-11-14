@@ -34,6 +34,8 @@ export function run() {
     group('6) Moteur audio : vent continu');
     check('un bruit de vent tourne en boucle',
         !!engine.windSource && engine.windSource.loop === true && engine.windSource.started === true);
+    check('les échantillons réels sont optionnels en test (fallback)',
+        Object.keys(engine.samples).length === 0);
     engine.setWind(0.8);
     checkClose('gain du vent = 0,8 × 0,12', engine.windGain.gain.targets.at(-1), 0.096, 1e-9);
     checkClose('filtre du vent = 300 + 0,8 × 900', engine.windFilter.frequency.targets.at(-1), 1020, 1e-9);

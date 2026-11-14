@@ -286,7 +286,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Reflets sur l'eau** (option du carnet) : un cube-mapping rendu de temps en temps
   (désactivé par défaut car coûteux) ; **désactivé automatiquement** si le rendu échoue.
 - **LOD** : les petits détails des poissons (yeux, nageoires) disparaissent au loin.
-- **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
+- **Effets sonores** : échantillons **réels locaux** (`assets/sons/eau-splash.wav`
+  et `etang-ambiance.mp3`) avec **fallback procédural** (Web Audio API) si les
+  fichiers ou le décodage ne sont pas disponibles.
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
 - **Difficulté réglable** depuis le carnet : **Facile / Normal / Dur** (le poisson tire
@@ -337,13 +339,14 @@ peche_game/
 ├── script.js           # Logique 3D du jeu (three.js)
 ├── demelage.js         # Mini-jeu autonome de démêlage (canvas 2D)
 ├── quiver.js           # Mode quiver : indicateur de scion autonome
-├── sound.js            # Moteur audio procédural
+├── sound.js            # Moteur audio (échantillons réels + fallback procédural)
 ├── launch.sh           # Lance le serveur local + ouvre le navigateur
 ├── serveur.py          # Serveur local sans cache (pour le développement)
 ├── assets/
 │   ├── three.module.js # three.js r160 (MIT)
 │   ├── fish.png        # Image 2D (ancienne version)
 │   ├── pond.svg        # Décor SVG (ancienne version)
+│   ├── sons/           # éclaboussure + ambiance d'étang (voir CREDITS)
 │   └── CREDITS.txt     # Attributions
 └── README.md
 ```
@@ -366,3 +369,5 @@ Voir `assets/CREDITS.txt` :
 
 - Photo de poisson : Ffish.asia / Ellicrum — CC BY-SA 4.0
 - Bibliothèque 3D : three.js r160 — MIT
+- Éclaboussure : « Bathtub water splashes » de gradha — domaine public (PDSounds #775, via Wikimedia Commons)
+- Ambiance d'étang : « Ambient sound small pond with ducks in Berlin 2026-05-17 » de SchlurcherBot — CC BY-SA 4.0 (via Wikimedia Commons)

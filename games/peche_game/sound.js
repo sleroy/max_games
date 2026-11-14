@@ -5,6 +5,10 @@ export class SoundEngine {
         this.windGain = null;
         this.windFilter = null;
         this.enabled = true;
+        // Échantillons réels optionnels (fallback procédural si absents).
+        this.samples = {};
+        this.ambienceSource = null;
+        this.ambienceGain = null;
     }
 
     init() {
@@ -20,6 +24,7 @@ export class SoundEngine {
         this.master.gain.value = 0.5;
         this.master.connect(this.ctx.destination);
         this.startWind();
+        this.loadSamples();
     }
 
     resume() {
@@ -43,6 +48,62 @@ export class SoundEngine {
             data[i] = Math.random() * 2 - 1;
         }
         return buffer;
+    }
+
+    // -----------------------------------------------------------------------
+    // Échantillons réels locaux (assets/sons). En l'absence de fetch /
+    // decodeAudioData (tests, navigateur ancien), on garde les sons procéduraux.
+    // -----------------------------------------------------------------------
+    loadSamples() {
+        if (!this.ctx || typeof this.ctx.decodeAudioData !== 'function'
+            || typeof fetch !== 'function') {
+            return;
+        }
+        if (typeof window !== 'undefined' && window.__PECHE_SANS_AUDIO_ASSETS__) {
+            return;
+        }
+        const charger = (nom, chemin, volume, boucle) => {
+            fetch(chemin)
+                .then(function (reponse) {
+                    if (!reponse.ok) { throw new Error('asset absent'); }
+                    return reponse.arrayBuffer();
+                })
+                .then(buffer => this.ctx.decodeAudioData(buffer))
+                .then(buffer => {
+                    this.samples[nom] = buffer;
+                    if (boucle) { this.startAmbiance(nom, volume); }
+                })
+                .catch(function () { /* fallback procédural */ });
+        };
+        charger('splash', 'assets/sons/eau-splash.wav', 0.65, false);
+        charger('ambiance', 'assets/sons/etang-ambiance.mp3', 0.08, true);
+    }
+
+    jouerSample(nom, volume, duree) {
+        if (!this.ctx || !this.samples[nom]) { return false; }
+        const source = this.ctx.createBufferSource();
+        source.buffer = this.samples[nom];
+        const gain = this.ctx.createGain();
+        gain.gain.value = volume;
+        source.connect(gain);
+        gain.connect(this.master);
+        const longueur = Math.min(duree || source.buffer.duration, source.buffer.duration);
+        source.start(this.ctx.currentTime, 0, longueur);
+        return true;
+    }
+
+    startAmbiance(nom, volume) {
+        if (this.ambienceSource || !this.ctx || !this.samples[nom]) { return; }
+        const source = this.ctx.createBufferSource();
+        source.buffer = this.samples[nom];
+        source.loop = true;
+        const gain = this.ctx.createGain();
+        gain.gain.value = volume;
+        source.connect(gain);
+        gain.connect(this.master);
+        source.start();
+        this.ambienceSource = source;
+        this.ambienceGain = gain;
     }
 
     startWind() {
@@ -151,6 +212,8 @@ export class SoundEngine {
 
     splash() {
         if (!this.ctx) return;
+        // Vrai splash local si disponible, sinon synthèse procédurale.
+        if (this.jouerSample('splash', 0.65, 1.2)) { return; }
         const t = this.ctx.currentTime;
         const noise = this.ctx.createBufferSource();
         noise.buffer = this.makeNoiseBuffer(0.4);
