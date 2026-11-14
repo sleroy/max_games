@@ -50,6 +50,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
   l'eau). Le **carnet**, l'**XP**, les **bouchons achetés** et le **classement**
   sont conservés.
+- **Petits écrans** : le dock d'outils se replie derrière le bouton **🎒** pour
+  laisser la **bourriche** et la **girouette** visibles ; **Bourriche / XP / Lignes**
+  restent affichés dans une barre de stats, et le **FOV s'élargit** automatiquement
+  quand l'écran est étroit.
 - **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
   rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
   Les nénuphars, eux, se dégagent plus facilement.

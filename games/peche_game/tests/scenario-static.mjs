@@ -187,6 +187,19 @@ export function run() {
         !script.includes('journal.total = 0')
         && !script.includes('journal.experience = 0'));
 
+    group('13) Petit écran : dock repliable et FOV');
+    check('les compteurs sont sortis du dock dans une barre de stats',
+        html.includes('id="statsStrip"') && html.includes('id="bourricheLabel"'));
+    check('un bouton d’outils est présent', html.includes('id="toolToggle"'));
+    check('le dock devient un tiroir sur petit écran',
+        css.includes('.tool-dock.ouvert') && css.includes('.tool-toggle'));
+    check('les compteurs restent affichés hors du dock',
+        css.includes('.stats-strip'));
+    check('un FOV horizontal minimum est prévu pour les écrans étroits',
+        script.includes('function fovPourAspect') && script.includes('H_FOV_MIN'));
+    check('la boussole ne chevauche plus la jauge de vent',
+        /\.hud-compass\s*\{[^}]*top:\s*calc\(90px/.test(css));
+
 }
 
 export default run;

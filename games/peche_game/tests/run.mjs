@@ -28,6 +28,7 @@ import scenarioVase from './scenario-vase.mjs';
 import scenarioOndulations from './scenario-ondulations.mjs';
 import scenarioLancer from './scenario-lancer.mjs';
 import scenarioJouer from './scenario-jouer.mjs';
+import scenarioPetitEcran from './scenario-petit-ecran.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -56,6 +57,7 @@ try {
     scenarioOndulations();      // ondulations avant la touche : aléatoires
     scenarioLancer();           // geste de lancer : armé, fouetté, orienté
     scenarioJouer();            // JOUER = partie neuve (score, bourriche, lignes)
+    scenarioPetitEcran();       // petit écran : dock repliable + FOV
 } catch (error) {
     crashed = error;
 } finally {

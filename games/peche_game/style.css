@@ -839,6 +839,43 @@ button, .crank {
     white-space: nowrap;
 }
 
+/* Compteurs toujours visibles, séparés du dock (qui devient repliable sur
+   petit écran). Ils restent affichés pendant les actions. */
+.stats-strip {
+    position: absolute;
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    z-index: 7;
+    pointer-events: none;
+}
+
+/* Bouton d'ouverture du dock sur petit écran (masqué sur grand écran). */
+.tool-toggle {
+    display: none;
+    position: absolute;
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    min-height: 44px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 8;
+}
+
+.tool-toggle.hidden {
+    display: none;
+}
+
 /* Panneau (carnet / réglages). */
 .panel {
     position: absolute;
@@ -1547,11 +1584,89 @@ body.calm .struggle-marker {
 /* Boussole / orientation du soleil (idee 2 de idees.md, premiere brique). */
 .hud-compass {
     position: absolute;
-    top: calc(52px + env(safe-area-inset-top, 0px));
+    top: calc(90px + env(safe-area-inset-top, 0px));
     right: calc(18px + env(safe-area-inset-right, 0px));
     font-size: 0.8rem;
     color: #fff;
     opacity: 0.85;
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
     pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   PETITS ÉCRANS : le dock d'outils devient un TIROIR repliable pour laisser
+   la bourriche et la girouette visibles dans la scène 3D. Les compteurs
+   (bourriche / XP / lignes) restent dans la barre de stats, toujours visible.
+   --------------------------------------------------------------------------- */
+@media (max-width: 820px), (max-height: 430px) {
+    .tool-toggle {
+        display: block;
+    }
+
+    .tool-toggle.hidden {
+        display: none;
+    }
+
+    .tool-dock {
+        display: none;
+    }
+
+    .tool-dock.ouvert:not(.hidden) {
+        display: flex;
+        left: calc(8px + env(safe-area-inset-left, 0px));
+        bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+        width: min(94vw, 330px);
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+        padding: 8px;
+        gap: 6px;
+        background: rgba(8, 20, 28, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+        z-index: 9;
+        pointer-events: auto;
+    }
+
+    .tool-dock.ouvert .depth-panel {
+        width: 100%;
+        max-width: none;
+    }
+
+    .tool-dock.ouvert .depth-cross {
+        height: 64px;
+    }
+
+    .tool-dock.ouvert .depth-btn {
+        min-height: 44px;
+        padding: 6px 4px;
+        font-size: 0.86rem;
+    }
+
+    .tool-dock.ouvert .depth-hint,
+    .tool-dock.ouvert .depth-range {
+        font-size: 0.72rem;
+    }
+
+    .tool-dock.ouvert .feed-button,
+    .tool-dock.ouvert .journal-button {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Écrans très bas : on garde les commandes de profondeur, on masque le schéma
+   pour que le tiroir tienne sans trop défiler. */
+@media (max-height: 430px) {
+    .tool-dock.ouvert .depth-cross,
+    .tool-dock.ouvert .depth-hint,
+    .tool-dock.ouvert .depth-range {
+        display: none;
+    }
+
+    /* La boussole reste sous la jauge de vent (elle est remontée à 10 px). */
+    .hud-compass {
+        top: calc(52px + env(safe-area-inset-top, 0px));
+    }
 }

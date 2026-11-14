@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=99';
+import { SoundEngine } from './sound.js?v=100';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -78,6 +78,7 @@ const especeFiche = document.getElementById('especeFiche');
 const tabBtnEspeces = document.getElementById('tabBtnEspeces');
 let especeIndex = 0;             // poisson affiché dans l'onglet « Espèces »
 const toolDock = document.getElementById('toolDock');
+const toolToggle = document.getElementById('toolToggle');
 const dragButton = document.getElementById('dragButton');
 const journalEspeces = document.getElementById('journalEspeces');
 const reflectionsToggle = document.getElementById('reflectionsToggle');
@@ -486,6 +487,17 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), skyMat);
 scene.add(sky);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 600);
+// Sur un écran étroit, le FOV horizontal devient trop petit : la bourriche et
+// la girouette (à ±12 unités) sortent du cadre. On garantit un FOV horizontal
+// minimum en élargissant le FOV vertical (borné pour éviter la déformation).
+const H_FOV_MIN = 76 * Math.PI / 180;
+
+function fovPourAspect(aspect) {
+    const a = Math.max(0.2, aspect || 1);
+    const vertical = 2 * Math.atan(Math.tan(H_FOV_MIN / 2) / a) * 180 / Math.PI;
+    return Math.min(85, Math.max(50, vertical));
+}
+
 const NORMAL_CAM_POS = new THREE.Vector3(0, 8, 34);
 const NORMAL_CAM_TARGET = new THREE.Vector3(0, 0, -15);
 const cameraTarget = NORMAL_CAM_TARGET.clone();
@@ -500,6 +512,7 @@ function resize() {
     const h = window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    camera.fov = fovPourAspect(camera.aspect);
     camera.updateProjectionMatrix();
     resizePost(w, h);
 }
@@ -2185,10 +2198,46 @@ function updateArm(dt) {
 // La barre d'outils du pêcheur (Nourrir / Carnet / compteur) reste à un endroit
 // FIXE, en bas à gauche (juste à côté du pêcheur), et disparaît pendant
 // l'action (ferrage, combat, remontée, lancer) pour ne rien masquer.
+// Sur petit écran, elle devient un TIROIR repliable : les compteurs restent
+// visibles dans la barre de stats, et le bouton 🎒 ouvre/ferme les outils.
+function mettreAJourBoutonOutils() {
+    if (!toolToggle || !toolDock) {
+        return;
+    }
+    const ouvert = toolDock.classList.contains('ouvert');
+    toolToggle.textContent = ouvert ? '✕' : '🎒';
+    if (typeof toolToggle.setAttribute === 'function') {
+        toolToggle.setAttribute('aria-label',
+            ouvert ? 'Fermer les outils' : 'Afficher les outils');
+        toolToggle.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    }
+}
+
+function fermerOutils() {
+    if (toolDock) {
+        toolDock.classList.remove('ouvert');
+    }
+    mettreAJourBoutonOutils();
+}
+
+if (toolToggle) {
+    toolToggle.addEventListener('click', function () {
+        ensureSound();
+        toolDock.classList.toggle('ouvert');
+        mettreAJourBoutonOutils();
+    });
+}
+
 function updateToolDock() {
     const resting = floatState === 'idle' || floatState === 'inWater';
     const visible = resting && cameraMode === 'normal';
     toolDock.classList.toggle('hidden', !visible);
+    if (toolToggle) {
+        toolToggle.classList.toggle('hidden', !visible);
+    }
+    if (!visible) {
+        fermerOutils();
+    }
     // On ne peut amorcer qu'au repos, sans ligne à l'eau.
     feedButton.disabled = !(floatState === 'idle' || floatState === 'inWater');
 }
@@ -3405,6 +3454,7 @@ if (especeNext) {
 }
 
 function showJournal() {
+    fermerOutils();
     renderJournal();
     renderEspece();
     rendreCarteEtang();
@@ -6427,6 +6477,7 @@ canvas.addEventListener('contextmenu', event => event.preventDefault());
 feedButton.addEventListener('click', () => {
     ensureSound();
     setFeedMode(!feedMode);
+    fermerOutils();
 });
 
 // Réglage de la profondeur de la ligne (− / +).
@@ -6868,6 +6919,7 @@ function renderClassement(onglet) {
 
 function ouvrirClassement() {
     if (!classement) { return; }
+    fermerOutils();
     renderClassement(ongletClassement);
     classement.classList.add('active');
 }
@@ -7033,6 +7085,7 @@ function reinitialiserPartie() {
     fishButton.classList.remove('cooldown');
     paused = false;
     pauseButton.textContent = '⏸';
+    fermerOutils();
     majLignes();
     renderJournal();      // bourriche de la partie + XP persistant
     majCoupeProfondeur();
@@ -7350,6 +7403,12 @@ window.__game = {
     getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
+    // Responsive : FOV garanti et état du tiroir d'outils — pour les tests.
+    getFovPourAspect: fovPourAspect,
+    getCameraFov: function () { return camera.fov; },
+    isOutilsOuverts: function () {
+        return !!toolDock && toolDock.classList.contains('ouvert');
+    },
     getFloatingTexts: function () {
         return floatingTexts.map(function (item) { return item.texte; });
     },
