@@ -1779,11 +1779,13 @@ function updateFeedGauge() {
 }
 
 function setFeedMode(on) {
-    if (on && floatState !== 'idle') {
-        statusDisplay.textContent = 'Ramène d’abord la ligne pour pouvoir amorcer.';
+    // On peut amorcer à tout moment où le moulinet est libre : au repos OU
+    // avec la ligne à l'eau (l'amorçage attire les poissons vers le bouchon).
+    if (on && floatState !== 'idle' && floatState !== 'inWater') {
+        statusDisplay.textContent = 'Attends la fin de l’action pour pouvoir amorcer.';
         return;
     }
-    feedMode = !!on && floatState === 'idle';
+    feedMode = !!on && (floatState === 'idle' || floatState === 'inWater');
     feedButton.classList.toggle('active', feedMode);
     feedButton.textContent = feedMode ? '🥣 Nourrir (armé)' : '🥣 Nourrir';
     if (feedMode) {
