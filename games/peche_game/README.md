@@ -67,7 +67,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
   relâche quand la jauge passe sur le repère). Réussi → +1 point et la prise est notée
   dans le carnet ; raté → le poisson retombe à l'eau (aucun point).
-- **Pas de nouveau poisson pendant la remontée** : tant que la ligne revient vers le bord, aucun autre poisson ne peut mordre — il faut rembobiner puis relancer la canne.
+- **On peut pêcher TANT QUE LE BOUCHON EST À L'EAU** : un poisson peut mordre à tout
+  moment, **même pendant la remontée de la ligne** ! Et si tu ne touches plus à la
+  manivelle, la ligne **revient toute seule** après quelques secondes : tu ne restes
+  jamais bloqué en mode « remontée ».
 - **📖 Carnet de pêche** (bouton à côté du pêcheur), en **4 onglets** : **🐟 Prises**
   (prises, poids, record, fiche des espèces et **carte de l'étang**), **🧺 Boutique**
   (bouchons à acheter/équiper), **🎣 Touches** (comment reconnaître les 17 mouvements du

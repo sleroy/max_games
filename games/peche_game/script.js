@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=52 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=53 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=52';
+import { SoundEngine } from './sound.js?v=53';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -3016,6 +3016,7 @@ let fishCaught = false;
 let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
 let castT = 0;
 let waitTimer = 0;
+let reelIdle = 0;              // secondes sans toucher la manivelle pendant la remontée
 let biteFish = null;
 let biteCooldown = 0;
 let biteViewActive = false;
@@ -3225,7 +3226,7 @@ let snagFreed = false;
 const castStart = new THREE.Vector3();
 const castTarget = new THREE.Vector3();
 const CAST_DURATION = 0.8;
-const MAX_WAIT = 5;
+const MAX_WAIT = 12;
 
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
 // du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
@@ -3234,6 +3235,10 @@ const HOOK_DEPTH = -2.6;           // profondeur de l'hameçon sous le bouchon
 const BITE_INTEREST_RADIUS = 7;    // à cette distance, le poisson s'intéresse au bouchon
 const BITE_RADIUS = 0.9;           // distance 3D en dessous de laquelle il mord
 const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
+// Remontée de la ligne : si le joueur ne touche plus à la manivelle pendant
+// REEL_IDLE_HELP secondes, la ligne revient toute seule (REEL_AUTO unités/s).
+const REEL_IDLE_HELP = 3;
+const REEL_AUTO = 6;
 
 const raycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2(0, 0);
@@ -3282,7 +3287,8 @@ function updateCrankVisibility() {
 function startReel() {
     if (floatState === 'inWater') {
         floatState = 'reeling';
-        statusDisplay.textContent = 'On remonte la ligne… tourne la manivelle !';
+        reelIdle = 0;
+        statusDisplay.textContent = 'On remonte la ligne… (le bouchon est toujours à l’eau : un poisson peut encore mordre !)';
     }
 }
 
@@ -4160,7 +4166,10 @@ function updateFish(dt, time) {
         }
         // Un poisson qui passe près du bouchon vient renifler l'hameçon : il s'en
         // approche et remonte vers la surface. C'est ce qui rend la touche visible.
-        if (!fishCaught && floatState === 'inWater') {
+        // Le poisson s'intéresse au bouchon tant qu'il est à l'eau — y compris
+        // pendant la remontée de la ligne (s'il n'y a pas déjà un poisson ferré).
+        if (!fishCaught && !hookedFish
+            && (floatState === 'inWater' || floatState === 'reeling')) {
             const bx = floatGroup.position.x - fish.position.x;
             const bz = floatGroup.position.z - fish.position.z;
             const bd = Math.hypot(bx, bz);
@@ -4342,10 +4351,28 @@ function updateFloat(dt, time) {
             fishButton.disabled = false;
         }
     } else if (floatState === 'reeling') {
-        // Le fil ne se rembobine qu'en tournant la manivelle : un tour complet
-        // ramène REEL_PER_TURN unités (≈ 1 m), donc le nombre de tours est
-        // proportionnel à la distance restante.
-        const step = consumeCrankTurns() * REEL_PER_TURN;
+        // On ramène la ligne… mais le bouchon est TOUJOURS dans l'eau : un poisson
+        // peut encore mordre ! (Sauf si on ramène déjà un poisson ferré.)
+        if (!hookedFish) {
+            if (biteCooldown > 0) {
+                biteCooldown -= dt;
+            } else {
+                const fish = findBitingFish();
+                if (fish) {
+                    showBiteView(fish);
+                    return;
+                }
+            }
+        }
+        // Le fil se rembobine en tournant la manivelle : un tour complet ramène
+        // REEL_PER_TURN unités (≈ 1 m).
+        const tours = consumeCrankTurns();
+        reelIdle = tours > 0 ? 0 : reelIdle + dt;
+        // Filet de sécurité : si le joueur ne touche plus à la manivelle pendant
+        // quelques secondes, la ligne revient toute seule — on ne reste JAMAIS
+        // bloqué en mode « remontée ».
+        const auto = (reelIdle > REEL_IDLE_HELP && !hookedFish) ? REEL_AUTO * dt : 0;
+        const step = tours * REEL_PER_TURN + auto;
         // Le poisson est ramené jusqu'aux pieds du pêcheur.
         const shoreX = angler.position.x;
         const shoreZ = angler.position.z - 2.5;
@@ -4363,8 +4390,6 @@ function updateFloat(dt, time) {
                 hookedFish.position.y = -0.3 - (hookedFish.userData.topOffset || 0);
                 hookedFish.rotation.y = Math.atan2(-dz, dx);
             }
-            // Pendant la remontée, on finit de ramener la ligne : aucun autre
-            // poisson ne peut mordre (il faut relancer pour en prendre un).
         } else {
             if (hookedFish) {
                 // Poisson amené au bord : on le garde en main, il faudra le

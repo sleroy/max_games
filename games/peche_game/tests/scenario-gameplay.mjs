@@ -133,14 +133,27 @@ export function run() {
     checkEqual('on remonte la ligne', state(), 'reeling');
     parkFish();
     const reelBait = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
-    reelBait.position.set(G().floatGroup.position.x, -2, G().floatGroup.position.z);
-    reelBait.userData.depth = -2;
+    reelBait.position.set(G().floatGroup.position.x, -2.6, G().floatGroup.position.z);
+    reelBait.userData.depth = -2.6;
     reelBait.userData.vx = 0;
     reelBait.userData.vz = 0;
     stepFor(1.5);
-    checkEqual('pas de nouvelle touche pendant la remontée', state(), 'reeling');
+    checkEqual('un poisson peut mordre PENDANT la remontée', state(), 'bite');
     check('le bouchon reste en surface pendant la remontée',
         G().floatGroup.position.y > -0.5, G().floatGroup.position.y.toFixed(2));
+
+    // Filet de sécurité : sans toucher la manivelle, la ligne revient toute seule
+    // (on ne reste jamais bloqué en « remontée »).
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    G().startReel();
+    parkFish();
+    const avantRetour = distanceToShore();
+    stepFor(5);
+    check('sans manivelle, la ligne revient toute seule', distanceToShore() < avantRetour - 5,
+        avantRetour.toFixed(1) + ' -> ' + distanceToShore().toFixed(1) + ' unités');
+    check('on finit par revenir au repos', stepUntil(() => state() === 'idle', 10), state());
 
     group('13) Moulinet : un tour ramène 2 unités de fil');
     resetToIdle();
