@@ -406,14 +406,14 @@ export function run() {
     castTo(0, -25);
     parkFish();
     const deepFish = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
-    deepFish.position.set(G().floatGroup.position.x, -3, G().floatGroup.position.z);
-    deepFish.userData.depth = -3;
+    deepFish.position.set(G().floatGroup.position.x, -5.2, G().floatGroup.position.z);
+    deepFish.userData.depth = -5.2;
     deepFish.userData.vx = 0;
     deepFish.userData.vz = 0;
     stepFor(0.2);
     checkEqual('pas encore de touche (le poisson est trop profond)', state(), 'inWater');
     check('le bouchon signale un poisson tout proche', G().getBaitInterest(), true);
-    check('le poisson a commencé à remonter', deepFish.userData.depth > -2.7,
+    check('le poisson a commencé à remonter', deepFish.userData.depth > -4.6,
         deepFish.userData.depth.toFixed(2));
     check('il finit par mordre', stepUntil(() => state() === 'bite', 5), state());
     step(1 / 60); // une image de plus : le poisson prend sa position de touche

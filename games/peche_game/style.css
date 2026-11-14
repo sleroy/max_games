@@ -364,6 +364,63 @@ button:disabled {
     white-space: nowrap;
 }
 
+/* Onglets du carnet */
+.tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.tab {
+    flex: 1 1 auto;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    color: #eaf6ff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(127, 208, 255, 0.35);
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: rgba(127, 208, 255, 0.85);
+    color: #08222f;
+    font-weight: bold;
+}
+
+.tabpage {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tabpage.active {
+    display: flex;
+}
+
+.map-legende {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    font-size: 0.76rem;
+}
+
+.map-zone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.map-pastille {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+
 /* Fiche « reconnaître les touches » (dans le carnet) */
 .journal-touches {
     display: flex;

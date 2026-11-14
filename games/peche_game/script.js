@@ -36,6 +36,14 @@ const xpLabel = document.getElementById('xpLabel');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
+const journalTabs = document.getElementById('journalTabs');
+const pondMap = document.getElementById('pondMap');
+const tabPages = {
+    prises: document.getElementById('tabPrises'),
+    boutique: document.getElementById('tabBoutique'),
+    touches: document.getElementById('tabTouches'),
+    options: document.getElementById('tabOptions')
+};
 const toolDock = document.getElementById('toolDock');
 const dragButton = document.getElementById('dragButton');
 const journalEspeces = document.getElementById('journalEspeces');
@@ -1894,8 +1902,88 @@ boutique.addEventListener('click', event => {
     renderBoutique();
 });
 
+// ---------------------------------------------------------------------------
+// Onglets du carnet : Prises / Boutique / Touches / Options
+// ---------------------------------------------------------------------------
+function montrerOnglet(nom) {
+    Object.keys(tabPages).forEach(function (cle) {
+        const page = tabPages[cle];
+        if (page) {
+            page.classList.toggle('active', cle === nom);
+        }
+    });
+}
+
+if (journalTabs) {
+    journalTabs.addEventListener('click', function (event) {
+        const cible = event.target;
+        if (cible && cible.dataset && cible.dataset.tab) {
+            montrerOnglet(cible.dataset.tab);
+        }
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Carte de l'étang : dessinée d'après le VRAI étang (mêmes positions que la
+// scène 3D : bord, fosses, nénuphars, pêcheur, bourriche et bouchon).
+// ---------------------------------------------------------------------------
+const ZONES_CARTE = [
+    { nom: 'Bord, près de la surface', min: -1.2, max: 0.1, couleur: '#4aa3c4' },
+    { nom: 'Pleine eau', min: -2.4, max: -1.2, couleur: '#2e7f9c' },
+    { nom: 'Le fond', min: -3.5, max: -2.4, couleur: '#1f5f7a' }
+];
+
+function rendreCarteEtang() {
+    if (!pondMap) {
+        return;
+    }
+    const R = POND_RADIUS;
+    const cx = 100;
+    const cy = 60;
+    const ech = 100 / (2 * R);              // unités du monde → pixels du plan
+    const mx = function (x) { return cx + (x - POND_CENTER.x) * ech; };
+    const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
+    let svg = '<svg viewBox="0 0 200 120" role="img" aria-label="Carte de l’étang">';
+    svg += '<rect x="0" y="0" width="200" height="120" rx="10" fill="#2f6b3f"/>';
+    // L'eau : un vrai cercle, puis les fosses de plus en plus profondes.
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1) + '" fill="#4aa3c4"/>';
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech * 0.66).toFixed(1) + '" fill="#2e7f9c"/>';
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech * 0.34).toFixed(1) + '" fill="#1f5f7a"/>';
+    // Les nénuphars, aux VRAIES positions (aléatoires à chaque partie).
+    lilyPads.forEach(function (pad) {
+        svg += '<circle cx="' + mx(pad.x).toFixed(1) + '" cy="' + mz(pad.z).toFixed(1)
+            + '" r="' + Math.max(1.4, pad.radius * ech).toFixed(1) + '" fill="#3f7d4a"/>';
+    });
+    // La bourriche (jaune) et le pêcheur (blanc), eux aussi à leur vraie place.
+    svg += '<circle cx="' + mx(BOURRICHE_POS.x).toFixed(1) + '" cy="' + mz(BOURRICHE_POS.z).toFixed(1)
+        + '" r="2.4" fill="#c9a227"/>';
+    svg += '<circle cx="' + mx(angler.position.x).toFixed(1) + '" cy="' + mz(angler.position.z).toFixed(1)
+        + '" r="3.2" fill="#f2f2f2" stroke="#222222" stroke-width="0.8"/>';
+    // Le bouchon, s'il est à l'eau.
+    if (floatState !== 'idle') {
+        svg += '<circle cx="' + mx(floatGroup.position.x).toFixed(1) + '" cy="'
+            + mz(floatGroup.position.z).toFixed(1) + '" r="1.8" fill="#ff5a3c"/>';
+    }
+    svg += '</svg>';
+    // Légende : les espèces de chaque zone, d'après leurs profondeurs RÉELLES.
+    let legende = '<div class="map-legende">';
+    ZONES_CARTE.forEach(function (zone) {
+        const noms = SPECIES.filter(function (s) {
+            const p = s.profondeur || [-3.4, -0.9];
+            const mid = (p[0] + p[1]) / 2;
+            return mid >= zone.min && mid < zone.max;
+        }).sort(function (a, b) { return b.abondance - a.abondance; })
+            .slice(0, 4).map(function (s) { return s.nom; });
+        legende += '<div class="map-zone"><span class="map-pastille" style="background:'
+            + zone.couleur + '"></span>' + zone.nom + ' : ' + (noms.join(', ') || '—') + '</div>';
+    });
+    legende += '</div>';
+    pondMap.innerHTML = svg + legende;
+}
+
 function showJournal() {
     renderJournal();
+    rendreCarteEtang();
     journalPanel.classList.add('open');
 }
 
@@ -2551,37 +2639,37 @@ const FISH_COUNT = 20;
 // ---------------------------------------------------------------------------
 const SPECIES = [
     { id: 'gardon', nom: 'Gardon', form: 'fusiforme', cm: [12, 32], k: 1.1, abondance: 12,
-      combativite: [0.5, 0.8], agressivite: [0.55, 0.85], couleur: 0xbfcbd0, motif: 'argent' },
+      profondeur: [-1.6, -0.7], combativite: [0.5, 0.8], agressivite: [0.55, 0.85], couleur: 0xbfcbd0, motif: 'argent' },
     { id: 'rotengle', nom: 'Rotengle', form: 'fusiforme', cm: [15, 35], k: 1.1, abondance: 8,
-      combativite: [0.5, 0.85], agressivite: [0.6, 0.9], couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
+      profondeur: [-1.6, -0.7], combativite: [0.5, 0.85], agressivite: [0.6, 0.9], couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
     { id: 'ablette', nom: 'Ablette', form: 'petit', cm: [8, 18], k: 0.9, abondance: 9,
-      combativite: [0.4, 0.65], agressivite: [0.6, 0.95], couleur: 0xd2dcdf, motif: 'argent' },
+      profondeur: [-1.3, -0.7], combativite: [0.4, 0.65], agressivite: [0.6, 0.95], couleur: 0xd2dcdf, motif: 'argent' },
     { id: 'goujon', nom: 'Goujon', form: 'petit', cm: [10, 22], k: 1.3, abondance: 7,
-      combativite: [0.4, 0.7], agressivite: [0.5, 0.8], couleur: 0xc2a878, motif: 'taches' },
+      profondeur: [-3.0, -2.0], combativite: [0.4, 0.7], agressivite: [0.5, 0.8], couleur: 0xc2a878, motif: 'taches' },
     { id: 'breme', nom: 'Brème', form: 'plat', cm: [25, 60], k: 1.8, abondance: 6,
-      combativite: [0.55, 0.9], agressivite: [0.5, 0.8], couleur: 0x9d8f63, motif: 'ecailles' },
+      profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], couleur: 0x9d8f63, motif: 'ecailles' },
     { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [25, 55], k: 1.7, abondance: 5,
-      combativite: [0.7, 1.05], agressivite: [0.6, 0.95], couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
+      profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
     { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [35, 95], k: 2.3, abondance: 6,
-      combativite: [0.9, 1.2], agressivite: [0.7, 1.05], couleur: 0xa8853f, motif: 'ecailles' },
+      profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], couleur: 0xa8853f, motif: 'ecailles' },
     { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [18, 40], k: 2.2, abondance: 5,
-      combativite: [0.6, 0.9], agressivite: [0.6, 0.95], couleur: 0xb08b3a, motif: 'ecailles' },
+      profondeur: [-2.8, -1.9], combativite: [0.6, 0.9], agressivite: [0.6, 0.95], couleur: 0xb08b3a, motif: 'ecailles' },
     { id: 'perche', nom: 'Perche', form: 'bossu', cm: [15, 45], k: 1.4, abondance: 7,
-      combativite: [0.7, 1.05], agressivite: [0.9, 1.25], couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
+      profondeur: [-2.6, -1.5], combativite: [0.7, 1.05], agressivite: [0.9, 1.25], couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
     { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [25, 60], k: 1.2, abondance: 5,
-      combativite: [0.8, 1.15], agressivite: [0.9, 1.25], couleur: 0x9aa39c, motif: 'argent' },
+      profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], couleur: 0x9aa39c, motif: 'argent' },
     { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [40, 120], k: 0.9, abondance: 3,
-      combativite: [0.9, 1.25], agressivite: [1.25, 1.6], couleur: 0x4c5c33, motif: 'tachesClaires' },
+      profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], couleur: 0x4c5c33, motif: 'tachesClaires' },
     { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [35, 90], k: 0.8, abondance: 2,
-      combativite: [0.85, 1.15], agressivite: [1.1, 1.45], couleur: 0x8f9a83, motif: 'barres' },
+      profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], couleur: 0x8f9a83, motif: 'barres' },
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [25, 55], k: 1.6, abondance: 2,
-      combativite: [0.9, 1.2], agressivite: [1.1, 1.5], couleur: 0x556a3f, motif: 'bandeLaterale' },
+      profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], couleur: 0x556a3f, motif: 'bandeLaterale' },
     { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [20, 55], k: 1.2, abondance: 2,
-      combativite: [0.8, 1.15], agressivite: [1.0, 1.35], couleur: 0x7d6a4a, motif: 'pointsRouges' },
+      profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], couleur: 0x7d6a4a, motif: 'pointsRouges' },
     { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [40, 110], k: 0.2, abondance: 2,
-      combativite: [1.0, 1.4], agressivite: [1.1, 1.5], couleur: 0x3f4a30, motif: 'aucun' },
+      profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], couleur: 0x3f4a30, motif: 'aucun' },
     { id: 'silure', nom: 'Silure', form: 'barbu', cm: [80, 200], k: 1.0, abondance: 1,
-      combativite: [1.1, 1.5], agressivite: [1.2, 1.55], couleur: 0x474b42, motif: 'marbrures' }
+      profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], couleur: 0x474b42, motif: 'marbrures' }
 ];
 
 // Silhouettes 3D : dimensions du corps + longueur totale de référence.
@@ -2853,11 +2941,18 @@ function spawnFish() {
     fish.userData.vx = v.vx;
     fish.userData.vz = v.vz;
     fish.userData.phase = rand() * Math.PI * 2;
-    // Profondeur du DOS du poisson (déduite de la phase : aucun tirage aléatoire
-    // en plus, pour ne pas décaler le monde reproductible des tests) : le dos
-    // reste toujours sous la surface, entre -0,9 et -3,4.
-    fish.userData.depth = -0.9 - ((Math.sin(fish.userData.phase) + 1) / 2) * 2.5;
+    // Profondeur du DOS du poisson : chaque espèce a SA zone (un sandre reste au
+    // fond, une ablette près de la surface). Déduite de la phase (déjà aléatoire)
+    // pour ne pas décaler le monde reproductible des tests.
+    const plage = espece.profondeur || [-3.4, -0.9];
+    const tProf = (Math.sin(fish.userData.phase) + 1) / 2;      // 0 → 1
+    fish.userData.depth = plage[0] + tProf * (plage[1] - plage[0]);
     fish.position.y = fish.userData.depth - fish.userData.topOffset;
+    // Domaine vital : chaque poisson reste dans SON coin d'étang (il ne traverse
+    // pas tout l'étang). Rayon déduit de la phase, sans tirage aléatoire en plus.
+    fish.userData.homeX = fish.position.x;
+    fish.userData.homeZ = fish.position.z;
+    fish.userData.homeRadius = 10 + tProf * 12;                 // 10 à 22 unités
     fish.userData.power = power;
     fish.userData.aggression = aggression;
     fish.userData.type = espece.form;
@@ -3174,6 +3269,14 @@ function startCast(target) {
     fishButton.disabled = true;
     statusDisplay.textContent = 'Lancer…';
     sound.cast();
+}
+
+// Étapes où la manivelle est utile : dès que la ligne est à l'eau (pour ramener
+// la ligne et relancer où l'on veut), pendant le combat et pendant la remontée.
+const CRANK_STATES = ['inWater', 'reeling', 'struggle'];
+
+function updateCrankVisibility() {
+    crank.classList.toggle('active', CRANK_STATES.indexOf(floatState) >= 0);
 }
 
 function startReel() {
@@ -4074,6 +4177,19 @@ function updateFish(dt, time) {
                 data.depth += (HOOK_DEPTH - data.depth) * Math.min(1, dt * 2.5);
             }
         }
+        // Domaine vital : au-delà de sa zone, le poisson revient doucement (un
+        // sandre ne traverse pas tout l'étang). Il oublie sa zone pour venir à
+        // l'hameçon quand il le sent.
+        if (!data.targeting && data.homeX !== undefined) {
+            const hx = data.homeX - fish.position.x;
+            const hz = data.homeZ - fish.position.z;
+            const hd = Math.hypot(hx, hz);
+            if (hd > data.homeRadius) {
+                const k = Math.min(1, dt * 0.8);
+                data.vx += (hx / hd) * 1.5 * k;
+                data.vz += (hz / hd) * 1.5 * k;
+            }
+        }
         fish.position.x += data.vx * dt;
         fish.position.z += data.vz * dt;
 
@@ -4150,7 +4266,7 @@ function updateFloat(dt, time) {
             } else {
                 floatState = 'inWater';
                 waitTimer = 0;
-                statusDisplay.textContent = 'Le flotteur est dans l’eau… attends qu’un poisson morde.';
+                statusDisplay.textContent = 'Le flotteur est dans l’eau… attends qu’un poisson morde (ou tourne la manivelle pour ramener la ligne).';
             }
         } else {
             const x = THREE.MathUtils.lerp(castStart.x, castTarget.x, castT);
@@ -4184,6 +4300,12 @@ function updateFloat(dt, time) {
             nibbleRippleTimer = 0;
         }
         waitTimer += dt;
+        // Un tour de manivelle pendant l'attente : on ramène la ligne (pour
+        // relancer ailleurs). La manivelle ne sert donc pas qu'au combat.
+        if (consumeCrankTurns() > 0) {
+            startReel();
+            return;
+        }
         if (biteCooldown > 0) {
             biteCooldown -= dt;
         } else {
@@ -4256,8 +4378,9 @@ function updateFloat(dt, time) {
             }
         }
     }
-    // La manivelle sert pendant l'épreuve de force ET pendant la remontée.
-    crank.classList.toggle('active', floatState === 'reeling' || floatState === 'struggle');
+    // La manivelle est disponible dès que la ligne est à l'eau (on peut ramener
+    // la ligne et relancer quand on veut) et pendant le combat / la remontée.
+    updateCrankVisibility();
 }
 
 function updateLine() {
@@ -4499,7 +4622,7 @@ function animate() {
         updateFloatingTexts(dt);
         updateLine();
     }
-    crank.classList.toggle('active', floatState === 'reeling' || floatState === 'struggle');
+    updateCrankVisibility();
     // Vue RÉALISTE unique : la caméra reste toujours à distance, jamais de zoom.
     camera.position.lerp(NORMAL_CAM_POS, 1 - Math.pow(0.0001, dt));
     cameraTarget.lerp(NORMAL_CAM_TARGET, 1 - Math.pow(0.0001, dt));
@@ -4657,7 +4780,8 @@ window.__game = {
                 minKg: Math.round(s.k * Math.pow(s.cm[0], 3) / 100000 * 1000) / 1000,
                 maxKg: Math.round(s.k * Math.pow(s.cm[1], 3) / 100000 * 1000) / 1000,
                 agressivite: s.agressivite.slice(),
-                abondance: s.abondance
+                abondance: s.abondance,
+                profondeur: s.profondeur ? s.profondeur.slice() : null
             };
         });
     },
@@ -4772,3 +4896,5 @@ window.__game = {
 // La fiche des touches est construite tout à la fin : le catalogue des touches
 // est déclaré plus bas dans le fichier (on évite ainsi un accès avant création).
 renderFicheTouches();
+// Et on ouvre le carnet sur l'onglet « Prises ».
+montrerOnglet('prises');
