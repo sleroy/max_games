@@ -9,3 +9,11 @@ Aucune attribution requise (œuvre originale).
 
 Bibliothèque 3D : three.js r160 (licence MIT) - https://threejs.org/
 Fichier : assets/three.module.js
+
+---------------------------------------------------------------
+Textures ajoutees (toutes libres, embarquees en local, redimensionnees en 512):
+- assets/sol-herbe.jpg     : ambientCG "Grass004"        - CC0 1.0 - https://ambientcg.com/view?id=Grass004
+- assets/ecorce.jpg        : ambientCG "Bark006"         - CC0 1.0 - https://ambientcg.com/view?id=Bark006
+- assets/vase.jpg          : ambientCG "Ground054"       - CC0 1.0 - https://ambientcg.com/view?id=Ground054
+- assets/eau-normales.jpg  : three.js waternormals.jpg   - MIT     - https://github.com/mrdoob/three.js
+(Converties avec ImageMagick : 512x512, JPEG qualite 82.)

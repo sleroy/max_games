@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=76 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=77 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=76';
+import { SoundEngine } from './sound.js?v=77';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -824,6 +824,28 @@ function makeWaterNormalTexture() {
     return tex;
 }
 
+const textureLoader = (typeof THREE.TextureLoader === 'function') ? new THREE.TextureLoader() : null;
+function chargerTexture(nom, rx, ry) {
+    if (!textureLoader) {
+        return null;
+    }
+    let tex = null;
+    try {
+        tex = textureLoader.load('./assets/' + nom);
+    } catch (erreur) {
+        return null;      // environnement sans images (tests) : on garde la couleur
+    }
+    if (tex) {
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(rx || 1, ry || 1);
+        if (THREE.SRGBColorSpace) {
+            tex.colorSpace = THREE.SRGBColorSpace;
+        }
+    }
+    return tex;
+}
+
 // Uniforms de l'eau (partagés avec la houle calculée côté JavaScript).
 const waterUniforms = {
     uTime: { value: 0 },
@@ -835,7 +857,7 @@ const waterUniforms = {
     uShallow: { value: new THREE.Color(0x5aa7b8) },
     uDeep: { value: new THREE.Color(0x103a4e) },
     uSky: { value: new THREE.Color(0xc4e2ee) },
-    uNormals: { value: makeWaterNormalTexture() },
+    uNormals: { value: chargerTexture('eau-normales.jpg', 1, 1) || makeWaterNormalTexture() },
     uNormalsOn: { value: 0 },
     uReflection: { value: null },
     uReflectOn: { value: 0 },
@@ -1065,7 +1087,13 @@ scene.add(shore);
 // ---------------------------------------------------------------------------
 // Arbres
 // ---------------------------------------------------------------------------
-const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 1 });
+// ---------------------------------------------------------------------------
+// TEXTURES RÉELLES, chargées en LOCAL depuis assets/ (aucun CDN) :
+//   ecorce.jpg        -> écorces des arbres      (ambientCG Bark006, CC0)
+//   eau-normales.jpg  -> ridules de l'eau        (three.js waternormals, MIT)
+//   sol-herbe.jpg     -> herbe (prêt pour le terrain) (ambientCG Grass004, CC0)
+//   vase.jpg          -> fond vaseux             (ambientCG Ground054, CC0)
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, map: chargerTexture('ecorce.jpg', 2, 1) });
 const foliageMat = new THREE.MeshStandardMaterial({ color: 0x3f7a4a, roughness: 1 });
 
 // Objets temporaires réutilisés pour composer les matrices d'instances

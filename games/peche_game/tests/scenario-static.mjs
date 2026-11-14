@@ -13,7 +13,8 @@ function read(name) {
 export function run() {
     group('1) Fichiers du jeu');
     ['index.html', 'style.css', 'script.js', 'sound.js', 'README.md',
-        'assets/three.module.js', 'assets/CREDITS.txt'].forEach(name => {
+        'assets/three.module.js', 'assets/CREDITS.txt',
+        'assets/sol-herbe.jpg', 'assets/ecorce.jpg', 'assets/vase.jpg', 'assets/eau-normales.jpg'].forEach(name => {
         check(name + ' présent', fs.existsSync(path.join(GAME_DIR, name)));
     });
 
@@ -108,6 +109,9 @@ export function run() {
         !!tactileBtn && parseInt(tactileBtn[1], 10) >= 48,
         tactileBtn ? tactileBtn[1] + ' px' : 'règle tactile absente');
     check('le panneau de profondeur a un titre clair', html.indexOf('🌊 Profondeur') >= 0);
+    check('les textures sont chargées en local (aucun CDN)',
+        script.includes("chargerTexture('ecorce.jpg'") && script.includes("chargerTexture('eau-normales.jpg'")
+        && !/https?:\/\/[^'"]+\.(jpg|png)/.test(script));
 }
 
 export default run;
