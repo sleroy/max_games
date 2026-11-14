@@ -751,6 +751,87 @@ button, .crank {
     opacity: 0.9;
 }
 
+.panel-subtitle {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #7fd0ff;
+}
+
+.journal-especes {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-line;
+    max-height: 26vh;
+    overflow-y: auto;
+}
+
+.pond-map svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+    border: 2px solid rgba(127, 208, 255, 0.4);
+}
+
+/* ---------------------------------------------------------------------------
+   Tutoriel d'accueil (première visite)
+   --------------------------------------------------------------------------- */
+.tutorial {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 12, 18, 0.86);
+    z-index: 30;
+    pointer-events: auto;
+}
+
+.tutorial.open {
+    display: flex;
+}
+
+.tutorial-card {
+    width: min(90vw, 420px);
+    padding: 18px 20px;
+    background: rgba(8, 20, 28, 0.97);
+    border: 2px solid #7fd0ff;
+    border-radius: 18px;
+    color: #eaf6ff;
+    text-align: center;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.6);
+}
+
+.tutorial-hand {
+    font-size: 3.2rem;
+    line-height: 1;
+    animation: handMove 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes handMove {
+    from { transform: translate(-18px, 10px) rotate(-12deg); }
+    to { transform: translate(18px, -10px) rotate(12deg); }
+}
+
+.tutorial-text {
+    margin: 12px 0 6px;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.tutorial-step {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.tutorial-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 14px;
+}
+
 .panel-row {
     display: flex;
     align-items: center;

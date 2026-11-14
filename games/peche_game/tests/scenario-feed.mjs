@@ -9,7 +9,7 @@ import {
 } from './harness.mjs';
 
 export function run() {
-    group('30) Amorçage : viser, doser la puissance, lancer la boule');
+    group('31) Amorçage : viser, doser la puissance, lancer la boule');
     resetToIdle();
     clearLilyPads();
     checkEqual('amorçage inactif au départ', G().isFeedMode(), false);
@@ -60,7 +60,7 @@ export function run() {
         Math.hypot(chum.x - landing.x, chum.z - landing.z), 0, 0.5);
     checkEqual('le mode amorçage se désarme après le lancer', G().isFeedMode(), false);
 
-    group('31) Le nuage attire les poissons et dérive doucement');
+    group('32) Le nuage attire les poissons et dérive doucement');
     const C = G().getPondCenter();
     const chum0 = G().getChum();
     // On place un poisson à 15 unités du nuage, du côté du centre (dans l'étang).
@@ -88,11 +88,11 @@ export function run() {
     const drift = Math.hypot(later.x - chum0.x, later.z - chum0.z);
     check('le nuage ne dérive que doucement', drift < 6, drift.toFixed(2) + ' unités');
 
-    group('32) Le nuage de miettes finit par se dissiper');
+    group('33) Le nuage de miettes finit par se dissiper');
     check('le nuage disparaît après sa durée de vie',
         stepUntil(() => G().getChum() === null, 25), G().getChum());
 
-    group('33) On ne peut amorcer que quand la ligne est au repos');
+    group('34) On ne peut amorcer que quand la ligne est au repos');
     resetToIdle();
     clearLilyPads();
     checkEqual('la ligne est à l’eau', castTo(0, -25), 'inWater');

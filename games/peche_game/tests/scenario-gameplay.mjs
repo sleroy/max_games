@@ -609,6 +609,75 @@ export function run() {
     G().setDragLoosened(false);
     checkEqual('le frein est resserré', G().isDragLoosened(), false);
     resetToIdle();
+
+    group('30) Météo, vie ambiante et LOD');
+    check('météo connue', ['beau', 'rafales', 'pluie'].indexOf(G().getWeather()) >= 0, G().getWeather());
+    G().setWeather('pluie');
+    stepFor(4);
+    checkEqual('la météo passe à la pluie', G().getWeather(), 'pluie');
+    check('la pluie monte', G().getRainAmount() > 0.5, G().getRainAmount().toFixed(2));
+    check('des gouttes de pluie sont visibles', G().getRainPoints().material.opacity > 0.2,
+        G().getRainPoints().material.opacity.toFixed(2));
+    G().setWeather('beau');
+    stepFor(8);
+    check('la pluie s’arrête au beau temps', G().getRainAmount() < 0.3, G().getRainAmount().toFixed(2));
+    G().setWeather('rafales');
+    stepFor(6);
+    const ventRafale = G().getWind();
+    check('les rafales restent bornées (vent < 1)', ventRafale.strength >= 0 && ventRafale.strength < 1,
+        ventRafale.strength.toFixed(2));
+    check('les rafales sont actives', G().getWindGusts() > 0.5, G().getWindGusts().toFixed(2));
+    G().setWeather('beau');
+
+    const ambiance = G().getAmbientCounts();
+    check('des oiseaux volent dans le ciel', ambiance.birds >= 1, ambiance.birds + ' oiseaux');
+    check('des libellules volent au-dessus de l’eau', ambiance.libellules >= 1,
+        ambiance.libellules + ' libellules');
+    check('la vie ambiante est animée', G().getBirds()[0].userData.ailes.length === 2);
+
+    // LOD : les petits détails du poisson s'effacent quand il est loin.
+    const poissonLod = G().fishes[0];
+    poissonLod.position.set(G().camera.position.x + 60, -1, G().camera.position.z);
+    stepFor(0.2);
+    checkEqual('LOD : détails cachés au loin', poissonLod.userData.details.visible, false);
+    poissonLod.position.set(G().camera.position.x + 3, -1, G().camera.position.z);
+    stepFor(0.2);
+    checkEqual('LOD : détails visibles de près', poissonLod.userData.details.visible, true);
+    resetToIdle();
+
+    group('31) Fiche des espèces, tutoriel et reflets');
+    const ficheEspeces = G().getSpeciesCard();
+    check('la fiche des espèces est remplie par les prises',
+        Object.keys(ficheEspeces).length >= 1, Object.keys(ficheEspeces).join(', '));
+    check('chaque fiche a un nombre de prises et un record',
+        Object.keys(ficheEspeces).every(nom => ficheEspeces[nom].n >= 1 && ficheEspeces[nom].record >= 0));
+    check('la fiche est affichée dans le carnet',
+        el('journalEspeces').textContent.length > 5, el('journalEspeces').textContent.split('\n')[0]);
+
+    G().openTutorial();
+    checkEqual('le tutoriel s’ouvre', G().isTutorialOpen(), true);
+    check('chaque étape a un texte', G().getTutorialStep().texte.length > 20,
+        G().getTutorialStep().texte.slice(0, 40) + '…');
+    checkEqual('le tutoriel commence à l’étape 1', el('tutorialStep').textContent, '1 / 4');
+    G().nextTutorialStep();
+    checkEqual('le tutoriel avance à l’étape 2', el('tutorialStep').textContent, '2 / 4');
+    G().nextTutorialStep();
+    G().nextTutorialStep();
+    checkEqual('à la dernière étape, le bouton propose de jouer',
+        el('tutorialNext').textContent, 'Jouer !');
+    G().nextTutorialStep();
+    checkEqual('le tutoriel se ferme après la dernière étape', G().isTutorialOpen(), false);
+    closeTutorialCheck: {
+        G().closeTutorial();
+        checkEqual('le tutoriel reste fermé', G().isTutorialOpen(), false);
+    }
+
+    G().setReflections(true);
+    const reflets = G().getReflections();
+    checkEqual('reflets indisponibles sans vrai moteur de rendu (tests)', reflets.supported, false);
+    checkEqual('du coup ils restent désactivés', reflets.enabled, false);
+    G().setReflections(false);
+    checkEqual('les reflets peuvent être coupés', G().getReflections().strength, 0);
 }
 
 export default run;

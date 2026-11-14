@@ -32,6 +32,15 @@ const effectsToggle = document.getElementById('effectsToggle');
 const bourricheLabel = document.getElementById('bourricheLabel');
 const toolDock = document.getElementById('toolDock');
 const dragButton = document.getElementById('dragButton');
+const journalEspeces = document.getElementById('journalEspeces');
+const reflectionsToggle = document.getElementById('reflectionsToggle');
+const tutorial = document.getElementById('tutorial');
+const tutorialText = document.getElementById('tutorialText');
+const tutorialHand = document.getElementById('tutorialHand');
+const tutorialStepDisplay = document.getElementById('tutorialStep');
+const tutorialNext = document.getElementById('tutorialNext');
+const tutorialClose = document.getElementById('tutorialClose');
+const tutorialOpen = document.getElementById('tutorialOpen');
 
 const sound = new SoundEngine();
 
@@ -638,6 +647,8 @@ const waterUniforms = {
     uWindDir: { value: new THREE.Vector2(1, 0) },
     uWind: { value: 0 },
     uLight: { value: 1 },
+    uEnv: { value: null },
+    uReflect: { value: 0 },
     uShallow: { value: new THREE.Color(0x6fc0dd) },
     uDeep: { value: new THREE.Color(0x1f6f8b) },
     uSky: { value: new THREE.Color(0xd6edf6) }
@@ -684,6 +695,8 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform vec3 uSky;
         uniform float uWind;
         uniform float uLight;
+        uniform samplerCube uEnv;
+        uniform float uReflect;
         varying vec3 vWorldPos;
         varying vec3 vNormal;
         void main() {
@@ -692,6 +705,11 @@ const waterMaterial = new THREE.ShaderMaterial({
             float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
             vec3 col = mix(uDeep, uShallow, clamp(n.y, 0.0, 1.0));
             col = mix(col, uSky, fres * 0.6);
+            // Reflets du décor (optionnels) : cube rendu de temps en temps.
+            if (uReflect > 0.001) {
+                vec3 refl = reflect(-viewDir, n);
+                col = mix(col, textureCube(uEnv, refl).rgb, uReflect * (0.2 + fres * 0.5));
+            }
             // La nuit, l'eau s'assombrit (cohérent avec la lumière de la scène).
             col *= mix(vec3(0.30, 0.36, 0.48), vec3(1.0), uLight);
             vec3 sunDir = normalize(vec3(0.4, 1.0, -0.6));
@@ -709,6 +727,53 @@ const waterMaterial = new THREE.ShaderMaterial({
 const water = new THREE.Mesh(makeWaterGeometry(POND_RADIUS, 22, 64), waterMaterial);
 water.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(water);
+
+// ---------------------------------------------------------------------------
+// Reflets sur l'eau (optionnels) : un cube-mapping rendu de temps en temps.
+// Désactivé par défaut (coûteux) ; activable depuis le carnet.
+// ---------------------------------------------------------------------------
+const reflections = { enabled: false };
+let cubeCamera = null;
+let cubeTarget = null;
+let reflectionTimer = 0;
+if (postSupported && THREE.CubeCamera && THREE.WebGLCubeRenderTarget) {
+    try {
+        cubeTarget = new THREE.WebGLCubeRenderTarget(128, {
+            generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter
+        });
+        cubeCamera = new THREE.CubeCamera(0.5, 320, cubeTarget);
+        cubeCamera.position.set(POND_CENTER.x, 1.6, POND_CENTER.z);
+        scene.add(cubeCamera);
+    } catch (error) {
+        cubeCamera = null;
+    }
+}
+
+function setReflections(value) {
+    reflections.enabled = !!value && !!cubeCamera;
+    waterUniforms.uReflect.value = reflections.enabled ? 0.75 : 0;
+}
+
+function updateReflections(dt) {
+    if (!reflections.enabled || !cubeCamera) {
+        return;
+    }
+    reflectionTimer -= dt;
+    if (reflectionTimer > 0) {
+        return;
+    }
+    reflectionTimer = 2.5;   // on espace les mises à jour (coûteux)
+    try {
+        water.visible = false;
+        cubeCamera.update(renderer, scene);
+        water.visible = true;
+        waterUniforms.uEnv.value = cubeTarget.texture;
+    } catch (error) {
+        // Pas de reflets disponibles : on revient au rendu simple.
+        water.visible = true;
+        setReflections(false);
+    }
+}
 
 // Même houle que le shader, côté JavaScript : servez-vous en pour faire flotter
 // le bouchon sur les vagues.
@@ -1412,7 +1477,14 @@ function loadJournal() {
                 ? { kg: entry, espece: 'Poisson' }
                 : { kg: entry.kg || 0, espece: entry.espece || 'Poisson' })
             : [];
-        journal.especes = (data.especes && typeof data.especes === 'object') ? data.especes : {};
+        journal.especes = {};
+        const brut = (data.especes && typeof data.especes === 'object') ? data.especes : {};
+        Object.keys(brut).forEach(nom => {
+            const valeur = brut[nom];
+            journal.especes[nom] = (typeof valeur === 'number')
+                ? { n: valeur, record: 0 }
+                : { n: valeur.n || 0, record: valeur.record || 0 };
+        });
     } catch (error) {
         // Carnet illisible : on repart de zéro.
     }
@@ -1448,6 +1520,15 @@ function renderJournal() {
     journalList.textContent = journal.last.length
         ? journal.last.map(prise => '🐟 ' + prise.espece + ' — ' + fmtPoids(prise.kg)).join('\n')
         : '';
+    // Fiche des espèces : nombre de prises et record pour chaque espèce attrapée.
+    const nomsEspeces = Object.keys(journal.especes);
+    journalEspeces.textContent = nomsEspeces.length
+        ? nomsEspeces.map(nom => {
+            const fiche = journal.especes[nom];
+            return '🐟 ' + nom + ' — ' + fiche.n + (fiche.n > 1 ? ' prises' : ' prise')
+                + ' · record ' + fmtPoids(fiche.record || 0);
+        }).join('\n')
+        : 'Attrape ton premier poisson pour remplir la fiche !';
     bourricheLabel.textContent = '🧺 Bourriche : ' + journal.total;
 }
 
@@ -1462,7 +1543,12 @@ function addJournalEntry(weight, espece) {
     if (journal.last.length > 12) {
         journal.last.length = 12;
     }
-    journal.especes[nom] = (journal.especes[nom] || 0) + 1;
+    journal.especes[nom] = journal.especes[nom] || { n: 0, record: 0 };
+    const fiche = journal.especes[nom];
+    fiche.n += 1;
+    if (weight > fiche.record) {
+        fiche.record = Math.round(weight * 100) / 100;
+    }
     saveJournal();
     renderJournal();
 }
@@ -1758,6 +1844,70 @@ dragButton.addEventListener('pointerup', () => setDragLoosened(false));
 dragButton.addEventListener('pointercancel', () => setDragLoosened(false));
 dragButton.addEventListener('pointerleave', () => setDragLoosened(false));
 
+// --- Tutoriel d'accueil (montré à la première visite) ----------------------
+const TUTORIAL_STEPS = [
+    { main: '👆', texte: 'Bienvenue à l’étang du Bois Neuf ! Clique sur l’eau, maintiens pour doser la puissance, puis relâche pour lancer la ligne.' },
+    { main: '✊', texte: 'Quand le bouchon mordille puis s’enfonce, clique vite pour ferrer le poisson : un seul essai !' },
+    { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens « Lâcher du fil ».' },
+    { main: '🐟', texte: 'Garde le poisson en main et lance-le dans la bourriche 🧺 (comme l’amorce) pour le ranger dans ton carnet.' }
+];
+let tutorialStepIndex = 0;
+const tutorialStore = (typeof localStorage !== 'undefined') ? localStorage : null;
+const TUTORIAL_KEY = 'peche_tuto_vu';
+
+function renderTutorial() {
+    const etape = TUTORIAL_STEPS[tutorialStepIndex];
+    tutorialText.textContent = etape.texte;
+    tutorialHand.textContent = etape.main;
+    tutorialStepDisplay.textContent = (tutorialStepIndex + 1) + ' / ' + TUTORIAL_STEPS.length;
+    tutorialNext.textContent = (tutorialStepIndex === TUTORIAL_STEPS.length - 1) ? 'Jouer !' : 'Suivant';
+}
+
+function openTutorial() {
+    tutorialStepIndex = 0;
+    renderTutorial();
+    tutorial.classList.add('open');
+    if (tutorialStore) {
+        try {
+            tutorialStore.setItem(TUTORIAL_KEY, '1');
+        } catch (error) {
+            // Stockage indisponible : le tutoriel réapparaîtra.
+        }
+    }
+}
+
+function closeTutorial() {
+    tutorial.classList.remove('open');
+}
+
+function nextTutorialStep() {
+    if (tutorialStepIndex >= TUTORIAL_STEPS.length - 1) {
+        closeTutorial();
+        return;
+    }
+    tutorialStepIndex += 1;
+    renderTutorial();
+}
+
+tutorialNext.addEventListener('click', nextTutorialStep);
+tutorialClose.addEventListener('click', closeTutorial);
+tutorialOpen.addEventListener('click', () => {
+    hideJournal();
+    openTutorial();
+});
+
+let tutorielDejaVu = false;
+if (tutorialStore) {
+    try {
+        tutorielDejaVu = tutorialStore.getItem(TUTORIAL_KEY) === '1';
+    } catch (error) {
+        tutorielDejaVu = false;
+    }
+}
+if (!tutorielDejaVu) {
+    openTutorial();
+}
+
 // --- Carnet : ouverture, difficulté, accessibilité -------------------------
 journalButton.addEventListener('click', () => {
     ensureSound();
@@ -1773,6 +1923,11 @@ effectsToggle.checked = post.enabled;
 effectsToggle.addEventListener('change', () => {
     post.enabled = effectsToggle.checked !== false;
 });
+reflectionsToggle.checked = reflections.enabled;
+reflectionsToggle.addEventListener('change', () => {
+    setReflections(reflectionsToggle.checked !== false);
+    reflectionsToggle.checked = reflections.enabled;
+});
 bigTextToggle.addEventListener('change', () => {
     if (document.body) {
         document.body.classList.toggle('big-text', !!bigTextToggle.checked);
@@ -1786,6 +1941,212 @@ calmToggle.addEventListener('change', () => {
 
 loadJournal();
 renderJournal();
+
+// ---------------------------------------------------------------------------
+// Météo : beau temps → rafales → pluie. Le cycle est piloté par le TEMPS DE JEU
+// (aucun tirage aléatoire) : le monde des tests reste donc reproductible.
+// ---------------------------------------------------------------------------
+const WEATHER_CYCLE = [
+    { nom: 'beau', duree: 70, pluie: 0, rafales: 0 },
+    { nom: 'rafales', duree: 45, pluie: 0, rafales: 1 },
+    { nom: 'pluie', duree: 60, pluie: 1, rafales: 0.6 }
+];
+let weatherIndex = 0;
+let weatherTimer = WEATHER_CYCLE[0].duree;
+let weatherPluie = 0;
+let weatherRafales = 0;
+let rainRippleTimer = 0;
+const GRIS_PLUIE = new THREE.Color(0x6b7a86);
+
+function weatherName() {
+    return WEATHER_CYCLE[weatherIndex].nom;
+}
+
+function setWeather(nom) {
+    for (let i = 0; i < WEATHER_CYCLE.length; i++) {
+        if (WEATHER_CYCLE[i].nom === nom) {
+            weatherIndex = i;
+            weatherTimer = WEATHER_CYCLE[i].duree;
+            return;
+        }
+    }
+}
+
+// Gouttes de pluie : quelques centaines de points autour de l'étang.
+const RAIN_COUNT = 700;
+const rainPositions = new Float32Array(RAIN_COUNT * 3);
+for (let i = 0; i < RAIN_COUNT; i++) {
+    rainPositions[i * 3] = POND_CENTER.x - 60 + ((i * 37) % 120);
+    rainPositions[i * 3 + 1] = -0.2 + ((i * 53) % 32);
+    rainPositions[i * 3 + 2] = POND_CENTER.z - 60 + ((i * 71) % 120);
+}
+const rainGeometry = new THREE.BufferGeometry();
+rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+const rainMaterial = new THREE.PointsMaterial({
+    color: 0xcfe6f5, size: 0.24, transparent: true, opacity: 0, depthWrite: false
+});
+const rainPoints = new THREE.Points(rainGeometry, rainMaterial);
+rainPoints.frustumCulled = false;
+scene.add(rainPoints);
+
+function updateWeather(dt) {
+    weatherTimer -= dt;
+    if (weatherTimer <= 0) {
+        weatherIndex = (weatherIndex + 1) % WEATHER_CYCLE.length;
+        weatherTimer = WEATHER_CYCLE[weatherIndex].duree;
+    }
+    const cible = WEATHER_CYCLE[weatherIndex];
+    const k = Math.min(1, dt * 0.5);
+    weatherPluie += (cible.pluie - weatherPluie) * k;
+    weatherRafales += (cible.rafales - weatherRafales) * k;
+
+    // La pluie assombrit le ciel et la lumière (appelé APRÈS le cycle jour/nuit).
+    if (weatherPluie > 0.01) {
+        sunLight.intensity *= (1 - 0.5 * weatherPluie);
+        ambientLight.intensity = Math.max(0.22, ambientLight.intensity - 0.15 * weatherPluie);
+        skyLight.intensity += 0.12 * weatherPluie;
+        skyMat.uniforms.topColor.value.lerp(GRIS_PLUIE, 0.5 * weatherPluie);
+        skyMat.uniforms.bottomColor.value.lerp(GRIS_PLUIE, 0.35 * weatherPluie);
+        scene.background.copy(skyMat.uniforms.bottomColor.value);
+    }
+
+    // Gouttes + ondulations sur l'eau.
+    rainMaterial.opacity = weatherPluie * 0.75;
+    if (weatherPluie > 0.02) {
+        const pas = dt * 26;
+        for (let i = 0; i < RAIN_COUNT; i++) {
+            let y = rainPositions[i * 3 + 1] - pas;
+            if (y < -0.2) {
+                y = 30 + ((i * 13) % 12);
+            }
+            rainPositions[i * 3 + 1] = y;
+        }
+        rainGeometry.attributes.position.needsUpdate = true;
+        rainRippleTimer -= dt;
+        if (rainRippleTimer <= 0) {
+            rainRippleTimer = 0.35;
+            const a = rainRippleTimer * 37 + weatherPluie * 11;
+            spawnRipple(new THREE.Vector3(
+                POND_CENTER.x + Math.cos(a) * 18, 0.06, POND_CENTER.z + Math.sin(a) * 18));
+        }
+    }
+    sound.setRain(weatherPluie);
+}
+
+// ---------------------------------------------------------------------------
+// Vie ambiante : oiseaux, libellules et poisson qui saute.
+// ---------------------------------------------------------------------------
+const birds = [];
+for (let i = 0; i < 3; i++) {
+    const bird = new THREE.Group();
+    const corps = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 8, 6),
+        new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.9 })
+    );
+    corps.scale.set(1.8, 0.7, 0.8);
+    bird.add(corps);
+    const ailes = [];
+    for (let c = -1; c <= 1; c += 2) {
+        const aile = new THREE.Mesh(
+            new THREE.PlaneGeometry(2.2, 0.9),
+            new THREE.MeshStandardMaterial({ color: 0x33333d, roughness: 0.9, side: THREE.DoubleSide })
+        );
+        aile.position.set(0, 0.1, c * 1.1);
+        bird.add(aile);
+        ailes.push({ mesh: aile, cote: c });
+    }
+    bird.userData.ailes = ailes;
+    bird.userData.phase = i * 2.1;
+    scene.add(bird);
+    birds.push(bird);
+}
+
+const libellules = [];
+for (let i = 0; i < 3; i++) {
+    const lib = new THREE.Group();
+    const corps = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5),
+        new THREE.MeshStandardMaterial({ color: 0x2f6f8f, roughness: 0.6 })
+    );
+    corps.rotation.z = Math.PI / 2;
+    lib.add(corps);
+    for (let c = -1; c <= 1; c += 2) {
+        lib.add(new THREE.Mesh(
+            new THREE.PlaneGeometry(0.9, 0.28),
+            new THREE.MeshStandardMaterial({
+                color: 0xd9f2ff, transparent: true, opacity: 0.65, side: THREE.DoubleSide
+            })
+        ));
+    }
+    lib.userData.phase = i * 1.7;
+    scene.add(lib);
+    libellules.push(lib);
+}
+
+// Poisson qui saute hors de l'eau (un seul, réutilisé).
+const sauteur = new THREE.Group();
+sauteur.add(new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0xb9c6c0, roughness: 0.4, metalness: 0.3 })
+));
+sauteur.visible = false;
+scene.add(sauteur);
+let sautT = -1;
+let sautTimer = 26;
+let oiseauTimer = 14;
+
+function updateAmbiante(dt, time) {
+    for (let i = 0; i < birds.length; i++) {
+        const bird = birds[i];
+        const p = bird.userData.phase;
+        bird.position.set(
+            Math.cos(time * 0.06 + p) * 70,
+            24 + Math.sin(time * 0.3 + p) * 2.5,
+            -60 + Math.sin(time * 0.06 + p) * 45);
+        bird.rotation.y = -time * 0.06 - p + Math.PI / 2;
+        const battement = Math.sin(time * 9 + p) * 0.7;
+        bird.userData.ailes.forEach(a => { a.mesh.rotation.x = a.cote * (0.2 + battement); });
+    }
+    for (let i = 0; i < libellules.length; i++) {
+        const lib = libellules[i];
+        const p = lib.userData.phase;
+        lib.position.set(
+            POND_CENTER.x + Math.sin(time * 0.9 + p) * 14 + Math.sin(time * 3.1 + p) * 1.5,
+            1.2 + Math.sin(time * 2.3 + p) * 0.5,
+            POND_CENTER.z + 18 + Math.cos(time * 0.7 + p * 1.3) * 9);
+        lib.rotation.y = Math.sin(time * 2 + p) * 0.6;
+    }
+    if (sautT < 0) {
+        sautTimer -= dt;
+        if (sautTimer <= 0) {
+            sautTimer = 24 - weatherPluie * 8;
+            sautT = 0;
+            sauteur.position.set(POND_CENTER.x + 8, 0.1, POND_CENTER.z + 22);
+            sauteur.visible = true;
+            sound.jump();
+            spawnRipple(sauteur.position);
+        }
+    } else {
+        sautT += dt;
+        const duree = 1.1;
+        const t = Math.min(1, sautT / duree);
+        sauteur.position.y = 0.1 + Math.sin(Math.PI * t) * 2.6;
+        sauteur.rotation.x = -Math.sin(Math.PI * t) * 1.2;
+        if (sautT >= duree) {
+            sautT = -1;
+            sauteur.visible = false;
+            sound.jump();
+            spawnRipple(sauteur.position);
+        }
+    }
+    oiseauTimer -= dt;
+    if (oiseauTimer <= 0) {
+        oiseauTimer = 16 + weatherPluie * 10;
+        if (weatherPluie < 0.4) {
+            sound.birds();
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Poissons
@@ -2002,17 +2363,22 @@ function makeFish(size, power, aggression, form, espece) {
         }
     }
 
+    // Petits détails (nageoires pectorales, moustaches, yeux) : regroupés
+    // pour pouvoir les cacher de loin (LOD).
+    const details = new THREE.Group();
+    group.add(details);
+
     // Nageoires pectorales (2) : présentes chez tous les poissons.
     const pectorale = new THREE.Mesh(new THREE.ConeGeometry(0.18 * finScale, 0.5 * finScale, 5), finMat);
     pectorale.rotation.z = Math.PI / 2.4;
     pectorale.rotation.y = 0.5;
     pectorale.scale.z = 0.35;
     pectorale.position.set(0.25 * bodyX, -0.15 * bodyY, 0.42 * bodyZ);
-    group.add(pectorale);
+    details.add(pectorale);
     const pectorale2 = pectorale.clone();
     pectorale2.position.z = -0.42 * bodyZ;
     pectorale2.rotation.y = -0.5;
-    group.add(pectorale2);
+    details.add(pectorale2);
 
     // Moustaches (silure, poisson-chat).
     if (forme.moustaches) {
@@ -2022,7 +2388,7 @@ function makeFish(size, power, aggression, form, espece) {
             moustache.rotation.z = Math.PI / 2 - cote * 0.25;
             moustache.rotation.y = (i % 2 === 0 ? 0.35 : -0.35);
             moustache.position.set(0.62 * bodyX, 0.02 - (i % 2) * 0.12, cote * 0.12);
-            group.add(moustache);
+            details.add(moustache);
         }
     }
 
@@ -2030,16 +2396,17 @@ function makeFish(size, power, aggression, form, espece) {
     const eyeMat = new THREE.MeshStandardMaterial({ color: (espece && espece.oeil) ? espece.oeil : 0x111111 });
     const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), eyeMat);
     eye1.position.set(0.48 * bodyX, 0.18 * bodyY, 0.3 * bodyZ);
-    group.add(eye1);
+    details.add(eye1);
     const eye2 = eye1.clone();
     eye2.position.z = -0.3 * bodyZ;
-    group.add(eye2);
+    details.add(eye2);
 
     group.userData.tailPivot = tailPivot;
     group.userData.bodyMat = bodyMat;
     group.userData.bodyMesh = fishBody;
     group.userData.couleurBase = baseColor;
     group.userData.especeData = espece || null;
+    group.userData.details = details;
     // Hauteur du poisson au-dessus de son centre : sert à le garder sous l'eau.
     group.userData.topOffset = (0.6 * bodyY + finHeight) * size;
     group.scale.setScalar(size);
@@ -2827,6 +3194,13 @@ function updateWind(dt) {
     wind.dir += diff * lerpFactor;
     wind.strength += (wind.targetStrength - wind.strength) * lerpFactor;
 
+    // Rafales : la météo peut renforcer le vent par moments (toujours < 1).
+    wind.clock = (wind.clock || 0) + dt;
+    if (weatherRafales > 0.01) {
+        const rafale = weatherRafales * (0.30 + 0.30 * Math.sin(wind.clock * 2.3));
+        wind.strength = Math.min(0.95, wind.strength + rafale * dt * 0.9);
+    }
+
     vaneArrow.rotation.y = -wind.dir;
     windFill.style.width = (wind.strength * 100).toFixed(0) + '%';
     windArrow.style.transform = 'rotate(' + (wind.dir * 180 / Math.PI).toFixed(0) + 'deg)';
@@ -2901,7 +3275,9 @@ function updateFish(dt, time) {
             const bx = floatGroup.position.x - fish.position.x;
             const bz = floatGroup.position.z - fish.position.z;
             const bd = Math.hypot(bx, bz);
-            if (bd < BITE_INTEREST_RADIUS) {
+            // Sous la pluie, les poissons s'intéressent de plus loin.
+            const rayonInteret = BITE_INTEREST_RADIUS * (1 + 0.25 * weatherPluie);
+            if (bd < rayonInteret) {
                 baitInterest = true;
                 data.targeting = true;
                 const inv = bd > 0.001 ? 1 / bd : 0;
@@ -2957,6 +3333,10 @@ function updateFish(dt, time) {
             if (data.depth > -1.8 && ripples.length < 12) {
                 spawnRipple(fish.position);
             }
+        }
+        // LOD : les petits détails (yeux, nageoires) disparaissent au loin.
+        if (data.details) {
+            data.details.visible = fish.position.distanceToSquared(camera.position) < 1089;
         }
     });
 }
@@ -3303,6 +3683,9 @@ function animate() {
         updateArm(dt);
         updateRod(dt);
         updateDayNight(dt);
+        updateWeather(dt);
+        updateAmbiante(dt, elapsed);
+        updateReflections(dt);
         updateSplashes(dt);
         updateFishThrow(dt);
         updateCast(dt);
@@ -3441,6 +3824,32 @@ window.__game = {
     cancelCast: cancelCast,
     setDragLoosened: setDragLoosened,
     isDragLoosened: function () { return dragLoosened; },
+    // Météo et vie ambiante — exposé pour les tests.
+    getWeather: function () { return weatherName(); },
+    setWeather: setWeather,
+    getRainAmount: function () { return weatherPluie; },
+    getWindGusts: function () { return weatherRafales; },
+    getAmbientCounts: function () {
+        return { birds: birds.length, libellules: libellules.length, sauteur: sauteur.visible ? 1 : 0 };
+    },
+    getRainPoints: function () { return rainPoints; },
+    getBirds: function () { return birds; },
+    // Fiche des espèces, tutoriel et reflets — exposé pour les tests.
+    getSpeciesCard: function () { return Object.assign({}, journal.especes); },
+    openTutorial: openTutorial,
+    closeTutorial: closeTutorial,
+    nextTutorialStep: nextTutorialStep,
+    isTutorialOpen: function () { return tutorial.classList.contains('open'); },
+    getTutorialStep: function () {
+        return { index: tutorialStepIndex, total: TUTORIAL_STEPS.length, texte: tutorialText.textContent };
+    },
+    setReflections: setReflections,
+    getReflections: function () {
+        return {
+            enabled: reflections.enabled, supported: !!cubeCamera,
+            strength: waterUniforms.uReflect.value
+        };
+    },
     setDifficulty: setDifficulty,
     getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW }; },
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },
@@ -3483,6 +3892,9 @@ window.__game = {
         updateArm(dt);
         updateRod(dt);
         updateDayNight(dt);
+        updateWeather(dt);
+        updateAmbiante(dt, testTime);
+        updateReflections(dt);
         updateSplashes(dt);
         updateFishThrow(dt);
         updateCast(dt);

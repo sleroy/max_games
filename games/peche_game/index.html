@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=40">
+    <link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
     <div class="game-wrap">
@@ -44,6 +44,23 @@
                     🥣 « Nourrir » : maintiens sur l’eau, relâche pour doser.
                 </div>
                 <div class="journal-list" id="journalList"></div>
+                <div class="panel-subtitle">Fiche des espèces</div>
+                <div class="journal-especes" id="journalEspeces">Attrape ton premier poisson pour remplir la fiche !</div>
+                <div class="panel-subtitle">Où les trouver ?</div>
+                <div class="pond-map">
+                    <svg viewBox="0 0 200 120" role="img" aria-label="Carte de l’étang">
+                        <rect x="0" y="0" width="200" height="120" rx="10" fill="#2f6b3f"></rect>
+                        <ellipse cx="100" cy="60" rx="88" ry="50" fill="#3f9fc0"></ellipse>
+                        <ellipse cx="58" cy="42" rx="30" ry="17" fill="#2e6f4a" opacity="0.8"></ellipse>
+                        <ellipse cx="152" cy="50" rx="26" ry="15" fill="#2e6f4a" opacity="0.8"></ellipse>
+                        <ellipse cx="108" cy="88" rx="34" ry="20" fill="#1f5f7a" opacity="0.85"></ellipse>
+                        <circle cx="100" cy="108" r="6" fill="#c9a227"></circle>
+                        <text x="100" y="28" text-anchor="middle" font-size="7" fill="#eaf6ff">pleine eau : gardon, brème, carpe</text>
+                        <text x="34" y="42" text-anchor="middle" font-size="6.5" fill="#eaf6ff">herbiers : tanche</text>
+                        <text x="158" y="52" text-anchor="middle" font-size="6.5" fill="#eaf6ff">roseaux : brochet</text>
+                        <text x="112" y="90" text-anchor="middle" font-size="6.5" fill="#eaf6ff">fond : sandre, silure</text>
+                    </svg>
+                </div>
                 <div class="panel-row">
                     <label for="difficultySelect">Difficulté</label>
                     <select id="difficultySelect">
@@ -56,12 +73,27 @@
                     <label><input type="checkbox" id="effectsToggle"> Effets visuels (lumière douce)</label>
                 </div>
                 <div class="panel-row">
+                    <label><input type="checkbox" id="reflectionsToggle"> Reflets sur l’eau</label>
+                </div>
+                <div class="panel-row">
                     <label><input type="checkbox" id="bigTextToggle"> Gros texte</label>
                 </div>
                 <div class="panel-row">
                     <label><input type="checkbox" id="calmToggle"> Animations calmes</label>
                 </div>
+                <button id="tutorialOpen">📖 Revoir le tutoriel</button>
                 <button id="journalClose">Fermer</button>
+            </div>
+            <div class="tutorial" id="tutorial">
+                <div class="tutorial-card">
+                    <div class="tutorial-hand" id="tutorialHand">👆</div>
+                    <div class="tutorial-text" id="tutorialText"></div>
+                    <div class="tutorial-step" id="tutorialStep"></div>
+                    <div class="tutorial-actions">
+                        <button id="tutorialNext">Suivant</button>
+                        <button id="tutorialClose">Passer</button>
+                    </div>
+                </div>
             </div>
             <div class="hud-score">Score : <span id="score">0</span></div>
             <div class="wind-gauge">
@@ -112,6 +144,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=40"></script>
+    <script type="module" src="script.js?v=41"></script>
 </body>
 </html>

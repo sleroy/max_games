@@ -95,6 +95,21 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   reprend de la ligne mais elle ne casse pas).
 - **Barre de tension accessible** : zone dangereuse **hachurée** + légende à symboles
   (🟩 🟨 ✖) : lisible même en cas de daltonisme.
+- **Météo** : cycle beau temps → **rafales** (le vent souffle plus fort) → **pluie**
+  (gouttes, ciel grisé, ondulations sur l'eau, bruit de pluie) ; sous la pluie, les
+  poissons s'intéressent à l'hameçon **de plus loin**.
+- **Vie ambiante** : **oiseaux** qui tournent dans le ciel en battant des ailes,
+  **libellules** au-dessus de l'eau, **poisson qui saute** de temps en temps ; et le son
+  (pépiements, « plop ») va avec.
+- **Fiche des espèces** dans le carnet : nombre de prises et **record** pour chaque
+  espèce attrapée.
+- **Carte de l'étang** dans le carnet : où chercher les poissons (herbiers, roseaux,
+  pleine eau, fond).
+- **Tutoriel d'accueil** (montré à la première visite, avec une main animée) et
+  reboutonnable depuis le carnet.
+- **Reflets sur l'eau** (option du carnet) : un cube-mapping rendu de temps en temps
+  (désactivé par défaut car coûteux) ; **désactivé automatiquement** si le rendu échoue.
+- **LOD** : les petits détails des poissons (yeux, nageoires) disparaissent au loin.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).

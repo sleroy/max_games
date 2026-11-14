@@ -73,6 +73,82 @@ export class SoundEngine {
         this.windFilter.frequency.setTargetAtTime(300 + strength * 900, t, 0.6);
     }
 
+    // Pluie : bruit filtré, créé seulement quand il se met à pleuvoir.
+    startRain() {
+        if (this.rainGain || !this.ctx) {
+            return;
+        }
+        const noise = this.makeNoiseBuffer(2);
+        const source = this.ctx.createBufferSource();
+        source.buffer = noise;
+        source.loop = true;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 2600;
+        filter.Q.value = 0.6;
+        const gain = this.ctx.createGain();
+        gain.gain.value = 0;
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.master);
+        source.start();
+        this.rainSource = source;
+        this.rainFilter = filter;
+        this.rainGain = gain;
+    }
+
+    setRain(amount) {
+        if (!this.ctx) {
+            return;
+        }
+        if (amount <= 0.02 && !this.rainGain) {
+            return;
+        }
+        this.startRain();
+        const t = this.ctx.currentTime;
+        this.rainGain.gain.setTargetAtTime(amount * 0.16, t, 1.2);
+        this.rainFilter.frequency.setTargetAtTime(1800 + amount * 2200, t, 1.2);
+    }
+
+    // Pépiements d'oiseaux.
+    birds() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        for (let i = 0; i < 3; i++) {
+            const start = t + i * 0.18;
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(2200 + i * 500, start);
+            osc.frequency.exponentialRampToValueAtTime(3200 + i * 300, start + 0.06);
+            osc.frequency.exponentialRampToValueAtTime(1900 + i * 400, start + 0.13);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(0.09, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.15);
+            osc.connect(gain);
+            gain.connect(this.master);
+            osc.start(start);
+            osc.stop(start + 0.16);
+        }
+    }
+
+    // « Plop » d'un poisson qui saute hors de l'eau.
+    jump() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(700, t);
+        osc.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.28, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        osc.connect(gain);
+        gain.connect(this.master);
+        osc.start(t);
+        osc.stop(t + 0.22);
+    }
+
     splash() {
         if (!this.ctx) return;
         const t = this.ctx.currentTime;
