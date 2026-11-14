@@ -1101,9 +1101,14 @@ let bitePhase = 'floating';
 let biteViewTimer = 0;
 let biteSinkAt = 0;
 let biteSinkTimer = 0;
+let biteViewHideTimer = -1; // fermeture différée de la vue bouchon (< 0 = aucune)
 // Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
 // poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
 const BITE_WINDOW = 0.4;
+// Durée pendant laquelle on laisse « Trop tard ! » affiché après une touche
+// ratée. Comptée par la boucle de jeu (et plus courte que le temps de
+// récupération) pour ne jamais refermer une NOUVELLE touche par erreur.
+const BITE_VIEW_LINGER = 0.7;
 let tension = 0.5;
 let struggle = null;
 let struggleTimeLeft = 0;
@@ -1362,6 +1367,7 @@ function showBiteView(fish) {
     biteViewTimer = 0;
     biteSinkAt = 1.2 + Math.random() * 1.3;
     biteSinkTimer = 0;
+    biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     biteView.classList.add('active');
     biteHint.textContent = 'Attends que le bouchon s’enfonce… (1 seul essai !)';
     biteHint.classList.remove('urgent');
@@ -1413,6 +1419,17 @@ function updateBiteView(dt) {
     if (!biteViewActive) {
         return;
     }
+    // Fermeture différée (après une touche ratée) : on referme seulement si une
+    // nouvelle touche n'a pas commencé entre-temps.
+    if (biteViewHideTimer > 0) {
+        biteViewHideTimer -= dt;
+        if (biteViewHideTimer <= 0) {
+            biteViewHideTimer = -1;
+            if (floatState !== 'bite') {
+                hideBiteView();
+            }
+        }
+    }
     biteViewTimer += dt;
     if (bitePhase === 'floating') {
         floatGroup.position.y = 0.1 + Math.sin(biteViewTimer * 4) * 0.08;
@@ -1426,9 +1443,11 @@ function updateBiteView(dt) {
         }
     } else if (bitePhase === 'sinking') {
         biteSinkTimer += dt;
-        const progress = Math.min(1, biteSinkTimer / 0.25);
-        floatGroup.position.y = 0.1 - 1.4 * progress;
-        setFloatOpacity(Math.max(0, 1 - progress * 1.5));
+        // Enfoncement bien visible : le bouchon descend franchement et RESTE
+        // visible sous l'eau (il ne s'efface pas).
+        const progress = Math.min(1, biteSinkTimer / 0.18);
+        floatGroup.position.y = 0.1 - 1.6 * progress;
+        setFloatOpacity(Math.max(0.2, 1 - progress * 0.85));
         if (biteSinkTimer >= BITE_WINDOW) {
             bitePhase = 'missed';
             biteHint.textContent = 'Trop tard ! Le poisson a recraché…';
@@ -1445,7 +1464,7 @@ function updateBiteView(dt) {
             floatState = 'inWater';
             waitTimer = 0;
             statusDisplay.textContent = 'Trop tard ! Le poisson a recraché l’hameçon.';
-            setTimeout(hideBiteView, 800);
+            biteViewHideTimer = BITE_VIEW_LINGER;
         }
     }
 }
@@ -1821,6 +1840,15 @@ function updateFloat(dt, time) {
                 startReel();
             }
         }
+    } else if (floatState === 'bite') {
+        // Filet de sécurité : si la vue bouchon s'est refermée (fermeture
+        // différée d'une touche ratée), on rend la main au lieu de rester bloqué.
+        if (!biteViewActive) {
+            floatState = 'inWater';
+            waitTimer = 0;
+            biteCooldown = 1.0;
+            statusDisplay.textContent = 'Le poisson est reparti… clique sur l’eau pour relancer.';
+        }
     } else if (floatState === 'struggle') {
         floatGroup.position.x = strugglePos.x + Math.sin(time * 30) * 0.08;
         floatGroup.position.z = strugglePos.z + Math.cos(time * 25) * 0.08;
@@ -2111,6 +2139,7 @@ window.__game = {
     getWaterHeightAt: function (x, z) { return waterWaveHeightAt(x, z, testTime); },
     getBaitInterest: function () { return baitInterest; },
     getHookDepth: function () { return HOOK_DEPTH; },
+    getFloatOpacity: function () { return floatBody.material.opacity; },
     getChum: function () {
         return chum ? {
             x: chum.position.x,

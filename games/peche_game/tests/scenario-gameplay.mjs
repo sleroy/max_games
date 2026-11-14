@@ -18,7 +18,7 @@ const API = [
     'getLineLength', 'getStruggleTurnsNeeded', 'getUnitsPerTurn', 'turnCrank', 'reelClick', 'setPaused', 'step',
     'setFeedMode', 'isFeedMode', 'getFeedState', 'getFeedPower', 'getFeedTargetPower', 'startFeedCharge',
     'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChum', 'getPondCenter',
-    'water', 'getWaterHeightAt', 'getBaitInterest', 'getHookDepth'
+    'water', 'getWaterHeightAt', 'getBaitInterest', 'getHookDepth', 'getFloatOpacity'
 ];
 
 /** Distance au sol entre le bouchon et le bout de la canne. */
@@ -383,6 +383,31 @@ export function run() {
     check('le bouchon reste près de la surface de l’eau',
         floatMinY > -0.6 && floatMaxY < 0.6,
         floatMinY.toFixed(2) + ' -> ' + floatMaxY.toFixed(2));
+
+    group('25) La touche fait plonger le bouchon (et ne reste pas bloquée)');
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    checkEqual('vue bouchon active', G().isBiteViewActive(), true);
+    check('le bouchon s’enfonce (phase « sinking »)',
+        stepUntil(() => G().getBitePhase() === 'sinking', 6), G().getBitePhase());
+    stepFor(0.2);
+    check('le bouchon descend franchement sous l’eau', G().floatGroup.position.y < -0.8,
+        G().floatGroup.position.y.toFixed(2));
+    check('le bouchon reste visible en coulant', G().getFloatOpacity() > 0.1,
+        G().getFloatOpacity().toFixed(2));
+    // On ne ferre pas : la touche est ratée, le poisson repart.
+    check('la touche ratée rend la main', stepUntil(() => state() === 'inWater', 3), state());
+    stepFor(0.8);
+    checkEqual('la vue bouchon se referme après la touche ratée',
+        G().isBiteViewActive(), false);
+    // Une nouvelle touche doit encore fonctionner parfaitement (pas d'état bloqué).
+    forceBite();
+    checkEqual('une nouvelle touche rouvre la vue', G().isBiteViewActive(), true);
+    check('et le bouchon s’enfonce de nouveau',
+        stepUntil(() => G().getBitePhase() === 'sinking', 6), G().getBitePhase());
+    checkEqual('la caméra est bien en mode bouchon', G().getCameraMode(), 'bite');
 }
 
 export default run;
