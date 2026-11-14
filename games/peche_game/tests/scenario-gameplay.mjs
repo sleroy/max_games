@@ -176,9 +176,10 @@ export function run() {
     checkEqual('toujours en remontée', state(), 'reeling');
 
     group('14) Épreuve de force : des tours proportionnels à la distance');
-    // Le lancer de test à z = −90 tombe près de la berge : l'eau y est peu
-    // profonde, donc on règle une ligne courte pour ne pas pêcher dans la vase.
-    G().setProfondeur(1.2);
+    // Le lancer de test à z = −90 tombe près de la berge. Avec le contour
+    // GÉNÉRÉ, l'eau y est encore moins profonde : on règle une ligne très
+    // courte (0,75 unité ≈ 37 cm) pour ne pas pêcher dans la vase.
+    G().setProfondeur(0.75);
     const nearFish = startFight(0, -20);
     const nearLine = G().getLineLength();
     const nearTurns = G().getStruggleTurnsNeeded();

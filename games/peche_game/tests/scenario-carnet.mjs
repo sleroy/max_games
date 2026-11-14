@@ -41,10 +41,11 @@ export function run() {
     G().showJournal();
     const carte = el('pondMap').innerHTML;
     check('la carte est un dessin SVG', carte.indexOf('<svg') >= 0, carte.length + ' caractères');
-    const R = G().getPondRadius();
-    const rayonAttendu = (R * (100 / (2 * R))).toFixed(1);
-    check('le lac est un cercle au bon rayon', carte.indexOf('r="' + rayonAttendu + '"') >= 0,
-        'rayon ' + rayonAttendu);
+    // La carte suit le CONTOUR GÉNÉRÉ : plus de cercle imposé au lac.
+    check('la carte dessine le contour généré de l’étang',
+        carte.indexOf('class="contour-etang"') >= 0);
+    check('la carte n’impose plus un cercle au lac',
+        carte.indexOf('<circle cx="100" cy="60"') < 0);
     check('les nénuphars sont dessinés à leur place', carte.indexOf('#3f7d4a') >= 0,
         G().lilyPads.length + ' nénuphar(s)');
     check('le pêcheur et la bourriche sont sur la carte',

@@ -32,11 +32,13 @@ export function run() {
     // 3) Le pêcheur est DEVANT la surface de l'eau : avec la profondeur, l'eau
     //    (transparente) ne peut plus le recouvrir.
     const centre = G().getPondCenter();
-    const rayon = G().getPondRadius();
     const cam = G().camera.position;
     const dx = cam.x - centre.x;
     const dz = cam.z - centre.z;
     const longueur = Math.hypot(dx, dz) || 1;
+    // Le bord de l'eau n'est PAS un cercle : on prend le rayon LOCAL dans la
+    // direction de la caméra (contour généré).
+    const rayon = G().getRayonEtang(Math.atan2(dz, dx));
     const pointEau = {
         x: centre.x + (dx / longueur) * rayon,
         y: 0,

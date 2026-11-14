@@ -31,12 +31,12 @@ export function run() {
 
     const centre = G().getPondCenter();
     const nominal = G().getPondRadius();
-    checkEqual('le rayon NOMINAL reste 55 (échelle et carte inchangées)', nominal, 55);
+    checkEqual('le rayon NOMINAL reste 55 (échelle de la carte)', nominal, 55);
     checkEqual('la profondeur maximale ne change pas', G().getProfondeurMaxEtang(), 6.6);
     checkEqual('le centre reste à la profondeur maximale du bassin',
         G().profondeurLocale(centre.x, centre.z), 5);
 
-    // --- 1) Le bruit radial est déterministe et visible ---
+    // --- 1) Le bruit radial est déterministe et FRANCHEMENT non circulaire ---
     const a1 = 0.83;
     checkClose('le contour est déterministe (même angle, même rayon)',
         G().getRayonEtang(a1), G().getRayonEtang(a1), 0);
@@ -48,13 +48,14 @@ export function run() {
     }
     const mini = Math.min.apply(null, echantillons);
     const maxi = Math.max.apply(null, echantillons);
-    check('l’étang n’est plus un cercle parfait (le rayon varie)',
-        maxi - mini > 2.5, mini.toFixed(2) + ' → ' + maxi.toFixed(2));
-    check('la forme reste dans une fourchette crédible',
-        mini > 51 && maxi < 58.5, mini.toFixed(1) + ' / ' + maxi.toFixed(1));
-    check('le rayon maximal exposé est cohérent',
-        Math.abs(G().getRayonEtangMax() - maxi) < 1.2,
-        G().getRayonEtangMax().toFixed(2) + ' vs ' + maxi.toFixed(2));
+    check('l’étang n’est PAS un cercle : le rayon varie fortement',
+        maxi - mini > 15, mini.toFixed(2) + ' → ' + maxi.toFixed(2)
+        + ' (' + (100 * (maxi - mini) / nominal).toFixed(0) + ' % du rayon)');
+    check('la forme reste dans une fourchette crédible (pas un lac gigantesque)',
+        mini > 40 && maxi < 70, mini.toFixed(1) + ' / ' + maxi.toFixed(1));
+    check('le rayon maximal exposé est une borne supérieure crédible',
+        G().getRayonEtangMax() >= maxi && G().getRayonEtangMax() - maxi < 5,
+        G().getRayonEtangMax().toFixed(2) + ' (borne) vs ' + maxi.toFixed(2) + ' (atteint)');
     const valeurs = [];
     for (let i = 0; i < 16; i++) {
         valeurs.push(G().getRayonEtang((i / 16) * Math.PI * 2).toFixed(3));
@@ -161,7 +162,8 @@ export function run() {
     G().showJournal();
     const carte = el('pondMap').innerHTML;
     check('la carte dessine le contour généré', carte.indexOf('contour-etang') >= 0);
-    check('le cercle au rayon nominal est conservé', carte.indexOf('r="50.0"') >= 0);
+    check('la carte n’impose plus de cercle au lac',
+        carte.indexOf('<circle cx="100" cy="60"') < 0);
     check('les bandes et isobathes suivent le contour (plusieurs paths)',
         (carte.match(/<path/g) || []).length >= 9,
         (carte.match(/<path/g) || []).length + ' chemins');

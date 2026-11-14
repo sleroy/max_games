@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=91';
+import { SoundEngine } from './sound.js?v=92';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -561,12 +561,14 @@ const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.15);
 sunLight.position.set(SUN_DIRECTION.x * 70, 73, SUN_DIRECTION.z * 70);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
-sunLight.shadow.camera.left = -70;
-sunLight.shadow.camera.right = 70;
-sunLight.shadow.camera.top = 70;
-sunLight.shadow.camera.bottom = -70;
+// L'étang généré peut atteindre ~63 unités de rayon : la carte d'ombre doit
+// couvrir tout le lac et la berge, sinon les arbres du fond perdent leur ombre.
+sunLight.shadow.camera.left = -90;
+sunLight.shadow.camera.right = 90;
+sunLight.shadow.camera.top = 90;
+sunLight.shadow.camera.bottom = -90;
 sunLight.shadow.camera.near = 1;
-sunLight.shadow.camera.far = 200;
+sunLight.shadow.camera.far = 260;
 // Ombres plus propres (moins d'« acné » sur le sable et l'eau).
 sunLight.shadow.bias = -0.0004;
 sunLight.shadow.normalBias = 0.03;
@@ -739,15 +741,18 @@ const RIVE_Y = 0.35;
 
 // ---------------------------------------------------------------------------
 // CONTOUR GÉNÉRÉ DE L'ÉTANG (idee 3 de idees.md)
-// Le bord n'est plus un cercle parfait : c'est une somme de sinus « seedés »
-// (coefficients fixes) autour du rayon nominal. C'est déterministe et cela ne
-// consomme AUCUN tirage aléatoire : le monde des tests reste reproductible.
-// Amplitude totale : 2,6 % + 1,3 % + 0,7 % = 4,6 % du rayon (≈ 2,5 unités).
+// Le bord n'est PAS un cercle : c'est une somme de plusieurs harmoniques
+// (coefficients fixes, donc déterministe). Les basses fréquences donnent une
+// forme allongée et lobée (une vraie « mare »), les hautes ajoutent des criques.
+// Amplitude totale : 10,5 % + 6 % + 3,5 % + 2 % = 22 % du rayon nominal.
+// Le rayon varie donc d'environ 43 à 67 unités : ce n'est plus un cercle.
+// Aucun tirage aléatoire n'est consommé : le monde des tests reste reproductible.
 // ---------------------------------------------------------------------------
 const BRUIT_ETANG = [
-    { amplitude: 0.026, frequence: 3, phase: 0.7 },
-    { amplitude: 0.013, frequence: 5, phase: 2.1 },
-    { amplitude: 0.007, frequence: 8, phase: 4.3 }
+    { amplitude: 0.105, frequence: 2, phase: 0.6 },
+    { amplitude: 0.060, frequence: 3, phase: 2.4 },
+    { amplitude: 0.035, frequence: 5, phase: 4.1 },
+    { amplitude: 0.020, frequence: 7, phase: 1.3 }
 ];
 const RAYON_ETANG_VARIATION = BRUIT_ETANG.reduce(function (total, bruit) {
     return total + bruit.amplitude;
@@ -1337,7 +1342,8 @@ function addTree(x, z, scale) {
 
 for (let i = 0; i < 40; i++) {
     const angle = (i / 40) * Math.PI * 2 + rand() * 0.1;
-    const radius = POND_RADIUS + 8 + rand() * 35;
+    // Les arbres poussent DERRIÈRE la rive LOCALE (le contour n'est pas un cercle).
+    const radius = rayonEtang(angle) + 8 + rand() * 35;
     const x = POND_CENTER.x + Math.cos(angle) * radius;
     const z = POND_CENTER.z + Math.sin(angle) * radius;
     // Laisse dégagé l'espace devant la caméra et le pêcheur.
@@ -1345,7 +1351,7 @@ for (let i = 0; i < 40; i++) {
         continue;
     }
     // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
-    if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < POND_RADIUS + 4) {
+    if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angle) + 4) {
         continue;
     }
     addTree(x, z, 0.8 + rand() * 0.7);
@@ -1363,7 +1369,8 @@ for (let i = 0; i < 14; i++) {
     const pad = new THREE.Mesh(new THREE.CircleGeometry(radius, 16), lilyMat);
     pad.rotation.x = -Math.PI / 2;
     const angle = rand() * Math.PI * 2;
-    const r = rand() * (POND_RADIUS - 12);
+    // Les nénuphars restent DANS l'eau, à distance du bord local.
+    const r = rand() * Math.max(1, rayonEtang(angle) - 12);
     pad.position.set(POND_CENTER.x + Math.cos(angle) * r, 0.06, POND_CENTER.z + Math.sin(angle) * r);
     scene.add(pad);
     lilyPads.push({ x: pad.position.x, z: pad.position.z, radius: radius });
@@ -1400,7 +1407,8 @@ const rockInst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), ro
 rockInst.castShadow = true;
 for (let i = 0; i < 12; i++) {
     const angle = rand() * Math.PI * 2;
-    const r = POND_RADIUS + 3 + rand() * 12;
+    // Les rochers restent sur la berge, derrière le bord local.
+    const r = rayonEtang(angle) + 3 + rand() * 12;
     const s = 0.6 + rand() * 1.3;
     _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15, POND_CENTER.z + Math.sin(angle) * r);
     _euler.set(rand(), rand(), rand());
@@ -2089,7 +2097,7 @@ function updateChum(dt) {
     const dx = chum.position.x - POND_CENTER.x;
     const dz = chum.position.z - POND_CENTER.z;
     const dd = Math.hypot(dx, dz);
-    const maxR = POND_RADIUS - 6;
+    const maxR = rayonEtang(Math.atan2(dz, dx)) - 6;
     if (dd > maxR) {
         chum.position.x = POND_CENTER.x + (dx / dd) * maxR;
         chum.position.z = POND_CENTER.z + (dz / dd) * maxR;
@@ -2219,6 +2227,10 @@ const POSTES = [
 ];
 let posteActuel = 0;
 
+// Distance entre le pêcheur et le bord LOCAL de l'eau. Comme le contour est
+// irrégulier, le poste est reculé ou avancé radialement pour rester sur la berge.
+const POSTE_MARGE = 2.2;
+
 // Exposition lumineuse du poste demandé (par défaut : le poste courant).
 function expositionPoste(index) {
     const poste = POSTES[(typeof index === 'number') ? index : posteActuel];
@@ -2248,12 +2260,32 @@ function tournerAutourEtang(base, delta, cible) {
     return cible;
 }
 
+// Où est le NORD à l'écran ? Comme le poste fait le tour de l'étang, la caméra
+// tourne aussi : « Nord en haut » n'est vrai qu'au poste sud. On affiche une
+// flèche calculée à partir de la direction réelle de la caméra.
+function flecheNordEcran() {
+    const fx = cameraTarget.x - camera.position.x;
+    const fz = cameraTarget.z - camera.position.z;
+    const norme = Math.hypot(fx, fz) || 1;
+    const avant = { x: fx / norme, z: fz / norme };
+    // « Droite » à l'écran, dans le plan du sol (x = est, z = sud).
+    const droite = { x: -avant.z, z: avant.x };
+    const nord = { x: 0, z: -1 };
+    const versAvant = nord.x * avant.x + nord.z * avant.z;
+    const versDroite = nord.x * droite.x + nord.z * droite.z;
+    if (Math.abs(versAvant) >= Math.abs(versDroite)) {
+        return versAvant >= 0 ? '↑' : '↓';
+    }
+    return versDroite >= 0 ? '→' : '←';
+}
+
 function majEtiquettePoste() {
     if (!compassDisplay) {
         return;
     }
     const poste = POSTES[posteActuel];
-    compassDisplay.textContent = '🧭 Nord en haut · ☀️ soleil au ' + azimutTexte(SUN_AZIMUT)
+    compassDisplay.textContent = '🧭 Nord ' + flecheNordEcran()
+        + ' · ☀️ soleil au ' + azimutTexte(SUN_AZIMUT)
         + ' · 📍 poste ' + poste.nom.toLowerCase();
 }
 
@@ -2287,30 +2319,47 @@ function placerAuPoste(index) {
     posteActuel = index;
     const delta = poste.delta;
 
-    // Pêcheur : même distance à l'étang, il regarde toujours le centre.
+    // 1) Rotation RIGIDE du matériel autour du centre : le poste fait le tour.
     tournerAutourEtang(POSTE_ANGLER, delta, angler.position);
     angler.rotation.y = Math.PI + delta;
-
-    // Canne : base et bout logiques, pivot orienté vers le centre.
     tournerAutourEtang(POSTE_ROD_BASE, delta, rodBase);
     tournerAutourEtang(POSTE_ROD_TIP, delta, rodTip);
+    tournerAutourEtang(POSTE_BOURRICHE, delta, BOURRICHE_POS);
+    tournerAutourEtang(POSTE_GIROUETTE, delta, vaneGroup.position);
+    tournerAutourEtang(POSTE_CAM_POS, delta, NORMAL_CAM_POS);
+    tournerAutourEtang(POSTE_CAM_TARGET, delta, NORMAL_CAM_TARGET);
+
+    // 2) L'ÉTANG N'EST PAS UN CERCLE : on recale TOUT le matériel dans l'axe
+    //    radial pour que le pêcheur soit à POSTE_MARGE du bord LOCAL. Le
+    //    décalage est le même pour la canne, la bourriche, la girouette et la
+    //    caméra : le matériel reste rigide et le cadrage identique.
+    const dxAngler = angler.position.x - POND_CENTER.x;
+    const dzAngler = angler.position.z - POND_CENTER.z;
+    const distanceAngler = Math.hypot(dxAngler, dzAngler) || 1;
+    const anglePoste = Math.atan2(dzAngler, dxAngler);
+    const distanceVoulue = rayonEtang(anglePoste) + POSTE_MARGE;
+    const decalage = distanceVoulue - distanceAngler;
+    const decalX = (dxAngler / distanceAngler) * decalage;
+    const decalZ = (dzAngler / distanceAngler) * decalage;
+    [angler.position, rodBase, rodTip, BOURRICHE_POS, vaneGroup.position,
+        NORMAL_CAM_POS, NORMAL_CAM_TARGET].forEach(function (repere) {
+        repere.x += decalX;
+        repere.z += decalZ;
+    });
+
+    // Canne : pivot à la nouvelle base, orienté vers l'étang.
     rodPivot.position.copy(rodBase);
     rodPivot.rotation.y = delta;
     rodBend = 0;
     rodGroup.rotation.x = 0;
+    rodTipVisual.copy(rodTip);
 
     // Bouchon au repos, au bout de la canne.
     floatIdle.set(rodTip.x, rodTip.y - 0.6, rodTip.z);
     floatGroup.position.copy(floatIdle);
 
-    // Bourriche et girouette : elles font partie du poste.
-    tournerAutourEtang(POSTE_BOURRICHE, delta, BOURRICHE_POS);
+    // Bourriche et caméra suivent le décalage radial.
     bourriche.position.copy(BOURRICHE_POS);
-    tournerAutourEtang(POSTE_GIROUETTE, delta, vaneGroup.position);
-
-    // Caméra : on tourne son point de vue autour de l'étang (cadrage identique).
-    tournerAutourEtang(POSTE_CAM_POS, delta, NORMAL_CAM_POS);
-    tournerAutourEtang(POSTE_CAM_TARGET, delta, NORMAL_CAM_TARGET);
     camera.position.copy(NORMAL_CAM_POS);
     cameraTarget.copy(NORMAL_CAM_TARGET);
     camera.lookAt(cameraTarget);
@@ -2701,11 +2750,8 @@ function rendreCarteEtang() {
     // L'eau : des BANDES DE PROFONDEUR calculées avec le VRAI relief (plus c'est
     // foncé, plus c'est profond) — la carte sert vraiment à choisir où lancer.
     const TEINTES = ['#74c6e0', '#5cb4d2', '#48a2c4', '#3790b3', '#2b7ea1', '#216b8e', '#18597a', '#124a67'];
-    // Cercle de RÉFÉRENCE (rayon nominal 55) : pointillé discret, il sert à
-    // comparer la forme réelle au cercle théorique.
-    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1)
-        + '" fill="none" stroke="#eaf6ff" stroke-width="0.35" stroke-dasharray="1 2" opacity="0.5"/>';
-    // L'eau : le VRAI contour généré, rempli de la teinte de surface.
+    // L'eau : le VRAI contour généré (aucun cercle imposé), rempli de la teinte
+    // de surface. Les bandes de profondeur et les isobathes suivent ce contour.
     svg += '<path class="contour-etang" d="' + cheminContour(1)
         + '" fill="' + TEINTES[0] + '" stroke="#eaf6ff" stroke-width="0.8" opacity="0.95"/>';
     for (let i = 1; i < TEINTES.length; i++) {
@@ -2775,8 +2821,6 @@ function rendreCarteEtang() {
             + zone.couleur + '"></span>' + zone.nom + ' : ' + (noms.join(', ') || '—') + '</div>';
     });
     legende += '</div>';
-    legende += '<div class="map-zone">⭕ Cercle pointillé : rayon nominal (55 unités) — '
-        + 'le trait clair est le vrai contour de l’étang.</div>';
     // Profondeur à l'endroit du bouchon (et profondeur de l'hameçon).
     if (floatState !== 'idle') {
         const profLocale = profondeurLocale(floatGroup.position.x, floatGroup.position.z);
@@ -3890,7 +3934,8 @@ function makeFish(size, power, aggression, form, espece) {
 
 function randomFishPosition() {
     const angle = rand() * Math.PI * 2;
-    const r = rand() * (POND_RADIUS - 12);
+    // Le poisson naît DANS l'eau, à distance du bord local (contour irrégulier).
+    const r = rand() * Math.max(1, rayonEtang(angle) - 12);
     return new THREE.Vector3(
         POND_CENTER.x + Math.cos(angle) * r,
         -2.0,
@@ -4503,7 +4548,7 @@ function computeStrugglePos() {
     const dx = x - POND_CENTER.x;
     const dz = z - POND_CENTER.z;
     const d = Math.hypot(dx, dz);
-    const maxR = POND_RADIUS - 3;
+    const maxR = rayonEtang(Math.atan2(dz, dx)) - 3;
     if (d > maxR) {
         x = POND_CENTER.x + (dx / d) * maxR;
         z = POND_CENTER.z + (dz / d) * maxR;
@@ -5357,8 +5402,9 @@ function updateFish(dt, time) {
         const dz = fish.position.z - POND_CENTER.z;
         const dist = Math.hypot(dx, dz);
         // Un poisson qui vise l'hameçon peut venir jusqu'au bord : le bouchon
-        // peut être posé tout près de la rive.
-        const limit = data.targeting ? POND_RADIUS : POND_RADIUS - 5;
+        // peut être posé tout près de la rive. La limite suit le bord LOCAL.
+        const rayonLocal = rayonEtang(Math.atan2(dz, dx));
+        const limit = data.targeting ? rayonLocal - 0.5 : rayonLocal - 5;
         if (dist > limit) {
             const nx = dx / dist;
             const nz = dz / dist;
@@ -6633,3 +6679,6 @@ window.__game = {
 renderFicheTouches();
 // Et on ouvre le carnet sur l'onglet « Prises ».
 montrerOnglet('prises');
+// Le poste par défaut est calé sur la rive LOCALE de l'étang généré : comme ce
+// n'est pas un cercle, on ne peut pas se contenter des positions historiques.
+placerAuPoste(0);

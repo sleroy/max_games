@@ -106,7 +106,8 @@ export function run() {
     forceBite();
     checkEqual('aucun zoom pendant la touche', G().getCameraMode(), 'normal');
     check('la caméra reste loin du bouchon (vue réaliste)',
-        Math.abs(G().camera.position.z - 34) < 1, 'caméra z = ' + G().camera.position.z.toFixed(1));
+        G().camera.position.distanceTo(G().floatGroup.position) > 15,
+        'distance = ' + G().camera.position.distanceTo(G().floatGroup.position).toFixed(1) + ' unités');
     tempsJusqua(() => G().getBitePhase() === 'touche', 45);
     checkEqual('la vraie touche est là', G().getBitePhase(), 'touche');
     const rondsAvant = G().getMissRings();

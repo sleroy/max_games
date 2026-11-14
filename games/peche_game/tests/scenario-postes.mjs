@@ -27,22 +27,29 @@ export function run() {
     G().afficherAccueil();
 
     const centre = G().getPondCenter();
-    const rayon = G().getPondRadius();
+    const MARGE_POSTE = 2.2;
+    // Écart entre un objet et le bord LOCAL de l'eau (le contour n'est pas un cercle).
+    const ecartAuBord = function (p) {
+        const dx = p.x - centre.x;
+        const dz = p.z - centre.z;
+        return Math.hypot(dx, dz) - G().getRayonEtang(Math.atan2(dz, dx));
+    };
     const posteInitial = G().getPoste();
-    checkEqual('au démarrage, on pêche au sud (poste historique)', posteInitial.id, 'sud');
+    checkEqual('au démarrage, on pêche au sud', posteInitial.id, 'sud');
     checkEqual('le jeu propose 4 postes', G().getPostes().length, 4);
     checkEqual('les 4 boutons sont présents sur l’écran d’accueil',
         POSTES.every(p => !!el(p.bouton)), true);
 
-    // --- Le poste sud ne change RIEN aux positions historiques ---
+    // --- Le poste sud est calé sur la rive LOCALE (pas un cercle) ---
     const anglerSud = G().angler.position;
-    checkClose('le pêcheur du sud est à sa place historique (x)', anglerSud.x, -4, 1e-9);
-    checkClose('le pêcheur du sud est à sa place historique (z)', anglerSud.z, 18, 1e-9);
-    const distanceSud = Math.hypot(-4, 18 - centre.z);
-    checkClose('le pêcheur est à 58 unités du centre', distance2D(anglerSud, centre),
-        distanceSud, 1e-6);
+    checkClose('au sud, le pêcheur est à la marge du bord local',
+        ecartAuBord(anglerSud), MARGE_POSTE, 0.02);
+    check('le poste sud ne réutilise pas la distance circulaire historique',
+        Math.abs(distance2D(anglerSud, centre) - Math.hypot(-4, 58)) > 0.5,
+        distance2D(anglerSud, centre).toFixed(1) + ' unités du centre');
 
-    // --- Les 4 postes : même rayon, canne et caméra cohérentes ---
+    // --- Les 4 postes : chacun sur SA rive, canne et caméra cohérentes ---
+    const fleches = { sud: '↑', est: '→', nord: '↓', ouest: '←' };
     const mesures = POSTES.map(function (poste) {
         const ok = G().placerAuPoste(poste.index);
         const courant = G().getPoste();
@@ -57,8 +64,8 @@ export function run() {
         const bourriche = G().getBourriche();
         const girouette = G().getGirouette();
 
-        checkClose('« ' + poste.id + ' » : le pêcheur reste à la même distance du centre',
-            distance2D(pecheur, centre), distanceSud, 0.01);
+        checkClose('« ' + poste.id + ' » : le pêcheur est à la marge du bord local',
+            ecartAuBord(pecheur), MARGE_POSTE, 0.02);
         checkClose('« ' + poste.id + ' » : la canne garde sa longueur (3 m)',
             distance2D(bout, base), Math.hypot(2.2, 5.11), 0.05);
         check('« ' + poste.id + ' » : le bout de la canne regarde l’étang',
@@ -70,16 +77,19 @@ export function run() {
         check('« ' + poste.id + ' » : la caméra vise l’étang',
             distance2D(cible, centre) < distance2D(camera, centre),
             Math.round(distance2D(cible, centre)) + ' < ' + Math.round(distance2D(camera, centre)));
-        checkClose('« ' + poste.id + ' » : la bourriche accompagne le pêcheur (même rayon)',
-            distance2D(bourriche, centre), Math.hypot(-12, 13 - centre.z), 0.01);
-        checkClose('« ' + poste.id + ' » : la girouette accompagne le pêcheur',
-            distance2D(girouette, centre), Math.hypot(12, 16 - centre.z), 0.01);
+        checkClose('« ' + poste.id + ' » : la bourriche reste collée au pêcheur',
+            distance2D(pecheur, bourriche), Math.hypot(8, 5), 0.02);
+        checkClose('« ' + poste.id + ' » : la girouette reste collée au pêcheur',
+            distance2D(pecheur, girouette), Math.hypot(16, 2), 0.02);
+        check('« ' + poste.id + ' » : la boussole indique où est le nord à l’écran',
+            el('compass').textContent.indexOf('Nord ' + fleches[poste.id]) >= 0,
+            el('compass').textContent);
         check('« ' + poste.id + ' » : le pêcheur est hors de l’eau',
-            distance2D(pecheur, centre) > rayon,
-            distance2D(pecheur, centre).toFixed(1) + ' > ' + rayon);
-        check('« ' + poste.id + ' » : la bourriche reste au bord de l’eau',
-            distance2D(bourriche, centre) > rayon - 2 && distance2D(bourriche, centre) < rayon + 3,
-            distance2D(bourriche, centre).toFixed(1));
+            ecartAuBord(pecheur) > MARGE_POSTE - 0.2,
+            ecartAuBord(pecheur).toFixed(2) + ' unités du bord');
+        check('« ' + poste.id + ' » : la bourriche reste près du bord',
+            Math.abs(ecartAuBord(bourriche)) < 6,
+            ecartAuBord(bourriche).toFixed(1) + ' unités du bord');
 
         return {
             id: poste.id,
@@ -113,9 +123,13 @@ export function run() {
     };
     checkEqual('au nord, le lancer se pose dans l’étang',
         castTo(cibleLancer.x, cibleLancer.z), 'inWater');
+    const angleBouchon = Math.atan2(
+        G().floatGroup.position.z - centre.z, G().floatGroup.position.x - centre.x);
+    const rayonBouchon = G().getRayonEtang(angleBouchon);
     check('le bouchon est bien dans l’étang',
-        distance2D(G().floatGroup.position, centre) < rayon,
-        distance2D(G().floatGroup.position, centre).toFixed(1) + ' < ' + rayon);
+        distance2D(G().floatGroup.position, centre) < rayonBouchon,
+        distance2D(G().floatGroup.position, centre).toFixed(1) + ' < '
+        + rayonBouchon.toFixed(1));
     checkEqual('on ne peut pas changer de poste avec la ligne à l’eau',
         G().placerAuPoste(1), false);
     checkEqual('le poste n’a pas changé', G().getPoste().id, 'nord');
