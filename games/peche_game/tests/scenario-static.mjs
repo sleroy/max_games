@@ -121,6 +121,14 @@ export function run() {
     check('plus aucune direction solaire codée en dur dans le shader',
         !script.includes('normalize(vec3(0.4, 1.0, -0.6))'));
 
+    group('7) Étang généré (idee 3)');
+    check('le contour vient d’un bruit radial déterministe',
+        script.includes('function rayonEtang') && script.includes('const BRUIT_ETANG'));
+    check('la rive et l’eau suivent ce contour',
+        script.includes('makeShoreGeometry') && script.includes('rayonEtang(a)'));
+    check('la carte du carnet affiche le contour généré',
+        script.includes('contour-etang'));
+
 }
 
 export default run;

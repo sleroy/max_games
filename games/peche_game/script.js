@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=89';
+import { SoundEngine } from './sound.js?v=90';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -730,12 +730,39 @@ for (let i = 0; i < 8; i++) {
 // Étang
 // ---------------------------------------------------------------------------
 const POND_CENTER = new THREE.Vector3(0, 0, -40);
-const POND_RADIUS = 55;
+const POND_RADIUS = 55;   // rayon NOMINAL (la forme réelle ondule autour de lui)
 // Hauteur de la rive. La rive est légèrement PLUS HAUTE que l'eau : celle-ci
 // reste « dans son bol ». Sans cela, la surface de l'eau arrive exactement au
 // niveau des pieds du pêcheur (et le dépasse même en cas de rafale) : le
 // pêcheur donne alors l'impression de flotter, voire d'être dans l'eau.
 const RIVE_Y = 0.35;
+
+// ---------------------------------------------------------------------------
+// CONTOUR GÉNÉRÉ DE L'ÉTANG (idee 3 de idees.md)
+// Le bord n'est plus un cercle parfait : c'est une somme de sinus « seedés »
+// (coefficients fixes) autour du rayon nominal. C'est déterministe et cela ne
+// consomme AUCUN tirage aléatoire : le monde des tests reste reproductible.
+// Amplitude totale : 2,6 % + 1,3 % + 0,7 % = 4,6 % du rayon (≈ 2,5 unités).
+// ---------------------------------------------------------------------------
+const BRUIT_ETANG = [
+    { amplitude: 0.026, frequence: 3, phase: 0.7 },
+    { amplitude: 0.013, frequence: 5, phase: 2.1 },
+    { amplitude: 0.007, frequence: 8, phase: 4.3 }
+];
+const RAYON_ETANG_VARIATION = BRUIT_ETANG.reduce(function (total, bruit) {
+    return total + bruit.amplitude;
+}, 0);
+const RAYON_ETANG_MAX = POND_RADIUS * (1 + RAYON_ETANG_VARIATION);
+
+// Rayon de l'étang dans la direction `angle` (radians, x = cos, z = sin).
+function rayonEtang(angle) {
+    let facteur = 1;
+    for (let i = 0; i < BRUIT_ETANG.length; i++) {
+        const bruit = BRUIT_ETANG[i];
+        facteur += bruit.amplitude * Math.sin(bruit.frequence * angle + bruit.phase);
+    }
+    return POND_RADIUS * facteur;
+}
 
 // ---------------------------------------------------------------------------
 // Relief de l'étang : le fond est un BASSIN (peu profond au bord, profond au
@@ -748,12 +775,15 @@ const FOSSES = [
     { x: 20, z: -26, rayon: 9, plus: 1.2 }
 ];
 
-// Profondeur d'eau (positive) à un point de l'étang.
+// Profondeur d'eau (positive) à un point de l'étang. Le bord suit le CONTOUR
+// GÉNÉRÉ : à un même éloignement du centre, on n'a pas la même profondeur
+// selon la direction (l'étang est un peu ovale, avec des criques).
 function profondeurLocale(x, z) {
     const dx = x - POND_CENTER.x;
     const dz = z - POND_CENTER.z;
     const d = Math.hypot(dx, dz);
-    const t = Math.min(1, d / POND_RADIUS);
+    const rayonLocal = rayonEtang(Math.atan2(dz, dx));
+    const t = Math.min(1, d / rayonLocal);
     let prof = FOND_BORD + (FOND_CENTRE - FOND_BORD) * (1 - t * t);   // cuvette
     FOSSES.forEach(function (fosse) {
         const fd = Math.hypot(x - fosse.x, z - fosse.z);
@@ -769,14 +799,15 @@ function fondY(x, z) {
     return -profondeurLocale(x, z);
 }
 
-// Fond de l'étang : un disque dont les sommets suivent le relief.
-function makeFondGeometry(radius, rings, segments) {
+// Fond de l'étang : un disque dont les sommets suivent le relief ET le contour
+// généré. `marge` déborde un peu sous la rive pour éviter toute fente visible.
+function makeFondGeometry(marge, rings, segments) {
     const positions = [POND_CENTER.x, fondY(POND_CENTER.x, POND_CENTER.z), POND_CENTER.z];
     const indices = [];
     for (let r = 1; r <= rings; r++) {
-        const rr = radius * (r / rings);
         for (let s = 0; s < segments; s++) {
             const a = (s / segments) * Math.PI * 2;
+            const rr = (rayonEtang(a) + marge) * (r / rings);
             const x = Math.cos(a) * rr;
             const z = Math.sin(a) * rr;
             positions.push(x, fondY(POND_CENTER.x + x, POND_CENTER.z + z), z);
@@ -809,7 +840,7 @@ function makeFondGeometry(radius, rings, segments) {
 }
 
 const pondBottom = new THREE.Mesh(
-    makeFondGeometry(POND_RADIUS + 2, 26, 96),
+    makeFondGeometry(2, 26, 96),
     // Double face : les faces du disque pointent vers le bas -> invisibles depuis
     // la berge ; on voyait donc le ciel a travers l'eau (d'ou la nappe blanche).
     new THREE.MeshStandardMaterial({ color: 0x246b7a, roughness: 1, side: THREE.DoubleSide })
@@ -819,14 +850,15 @@ pondBottom.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(pondBottom);
 
 // Eau : disque « polaire » (anneaux + rayons) pour permettre au shader de
-// déformer finement la surface en vagues.
-function makeWaterGeometry(radius, rings, segments) {
+// déformer finement la surface en vagues. Chaque anneau suit le CONTOUR de
+// l'étang : le bord de l'eau n'est plus un cercle parfait.
+function makeWaterGeometry(rings, segments) {
     const positions = [0, 0, 0];
     const indices = [];
     for (let r = 1; r <= rings; r++) {
-        const rr = radius * (r / rings);
         for (let s = 0; s < segments; s++) {
             const a = (s / segments) * Math.PI * 2;
+            const rr = rayonEtang(a) * (r / rings);
             positions.push(Math.cos(a) * rr, 0, Math.sin(a) * rr);
         }
     }
@@ -1096,7 +1128,7 @@ const waterMaterial = new THREE.ShaderMaterial({
     `
 });
 
-const water = new THREE.Mesh(makeWaterGeometry(POND_RADIUS, 22, 64), waterMaterial);
+const water = new THREE.Mesh(makeWaterGeometry(22, 64), waterMaterial);
 water.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(water);
 
@@ -1167,11 +1199,47 @@ function updateWater(t) {
     waterUniforms.uWind.value = wind.strength;
 }
 
+// Rive : un anneau dont le bord INTÉRIEUR suit le contour généré de l'étang.
+// (Un RingGeometry donnait un cercle parfait et laissait des fentes.)
+function makeShoreGeometry(outer, segments) {
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let s = 0; s < segments; s++) {
+        const a = (s / segments) * Math.PI * 2;
+        const cos = Math.cos(a);
+        const sin = Math.sin(a);
+        const rIn = rayonEtang(a);
+        const xIn = cos * rIn;
+        const zIn = sin * rIn;
+        const xOut = cos * outer;
+        const zOut = sin * outer;
+        positions.push(xIn, 0, zIn, xOut, 0, zOut);
+        uvs.push((xIn / outer + 1) / 2, (zIn / outer + 1) / 2,
+            (xOut / outer + 1) / 2, (zOut / outer + 1) / 2);
+    }
+    for (let s = 0; s < segments; s++) {
+        const s1 = (s + 1) % segments;
+        const i0 = s * 2;
+        const o0 = s * 2 + 1;
+        const i1 = s1 * 2;
+        const o1 = s1 * 2 + 1;
+        // Ordre des sommets choisi pour que les normales pointent vers le HAUT.
+        indices.push(i0, o1, o0);
+        indices.push(i0, i1, o1);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
+}
+
 const shore = new THREE.Mesh(
-    new THREE.RingGeometry(POND_RADIUS, 220, 96),
+    makeShoreGeometry(220, 96),
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, map: chargerTexture('sol-herbe.jpg', 180, 180) })
 );
-shore.rotation.x = -Math.PI / 2;
 shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
 shore.receiveShadow = true;
 scene.add(shore);
@@ -1310,7 +1378,8 @@ const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, 40);
 let reedCount = 0;
 for (let i = 0; i < 40; i++) {
     const angle = rand() * Math.PI * 2;
-    const r = POND_RADIUS - 1 - rand() * 5;
+    // Les roseaux poussent DANS l'eau, le long du contour généré.
+    const r = rayonEtang(angle) - 1 - rand() * 5;
     const x = POND_CENTER.x + Math.cos(angle) * r;
     const z = POND_CENTER.z + Math.sin(angle) * r;
     const h = 2 + rand() * 2.5;
@@ -1929,7 +1998,7 @@ function computeFeedLanding() {
     const dx = lx - POND_CENTER.x;
     const dz = lz - POND_CENTER.z;
     const dd = Math.hypot(dx, dz);
-    const maxR = POND_RADIUS - 2;
+    const maxR = rayonEtang(Math.atan2(dz, dx)) - 2;
     if (dd > maxR) {
         lx = POND_CENTER.x + (dx / dd) * maxR;
         lz = POND_CENTER.z + (dz / dd) * maxR;
@@ -2614,20 +2683,36 @@ function rendreCarteEtang() {
     const ech = 100 / (2 * R);              // unités du monde → pixels du plan
     const mx = function (x) { return cx + (x - POND_CENTER.x) * ech; };
     const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
+    // Chemin SVG du contour GÉNÉRÉ (facteur 1 = bord de l'eau, < 1 = isobathe).
+    const cheminContour = function (facteur) {
+        const n = 96;
+        let d = '';
+        for (let i = 0; i <= n; i++) {
+            const a = (i / n) * Math.PI * 2;
+            const rr = rayonEtang(a) * facteur * ech;
+            const x = cx + Math.cos(a) * rr;
+            const y = cy + Math.sin(a) * rr;
+            d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
+        }
+        return d + 'Z';
+    };
     let svg = '<svg viewBox="0 0 200 120" role="img" aria-label="Carte de l’étang">';
     svg += '<rect x="0" y="0" width="200" height="120" rx="10" fill="#2f6b3f"/>';
     // L'eau : des BANDES DE PROFONDEUR calculées avec le VRAI relief (plus c'est
     // foncé, plus c'est profond) — la carte sert vraiment à choisir où lancer.
     const TEINTES = ['#74c6e0', '#5cb4d2', '#48a2c4', '#3790b3', '#2b7ea1', '#216b8e', '#18597a', '#124a67'];
     svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1) + '" fill="' + TEINTES[0] + '"/>';
+    // Le VRAI contour (généré) par-dessus le rayon nominal, pour montrer la forme.
+    svg += '<path class="contour-etang" d="' + cheminContour(1)
+        + '" fill="none" stroke="#eaf6ff" stroke-width="1" opacity="0.9"/>';
     for (let i = 1; i < TEINTES.length; i++) {
         const prof = FOND_BORD + (i / TEINTES.length) * (FOND_CENTRE - FOND_BORD);
         const frac = (prof - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
         if (frac <= 0.02 || frac >= 0.99) {
             continue;
         }
-        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="'
-            + (R * Math.sqrt(1 - frac) * ech).toFixed(1) + '" fill="' + TEINTES[i] + '"/>';
+        svg += '<path d="' + cheminContour(Math.sqrt(1 - frac))
+            + '" fill="' + TEINTES[i] + '"/>';
     }
     // ISOBATHES : les courbes de 1 m et 2 m (le 3 m n'existe que dans les fosses,
     // annotées juste après), avec leur valeur écrite.
@@ -2637,7 +2722,7 @@ function rendreCarteEtang() {
             return;
         }
         const rr = R * Math.sqrt(1 - frac) * ech;
-        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + rr.toFixed(1)
+        svg += '<path d="' + cheminContour(Math.sqrt(1 - frac))
             + '" fill="none" stroke="#eaf6ff" stroke-width="0.7" stroke-dasharray="2.5 1.5" opacity="0.9"/>';
         svg += '<text x="' + (cx + rr * 0.7).toFixed(1) + '" y="' + (cy - rr * 0.7 + 2).toFixed(1)
             + '" font-size="6.4" font-weight="bold" fill="#ffffff" stroke="#0d3348" stroke-width="0.5">'
@@ -4224,9 +4309,10 @@ function startCast(target) {
     const wdx = castTarget.x - POND_CENTER.x;
     const wdz = castTarget.z - POND_CENTER.z;
     const wd = Math.hypot(wdx, wdz);
-    if (wd > POND_RADIUS - 2) {
-        castTarget.x = POND_CENTER.x + (wdx / wd) * (POND_RADIUS - 2);
-        castTarget.z = POND_CENTER.z + (wdz / wd) * (POND_RADIUS - 2);
+    const maxR = rayonEtang(Math.atan2(wdz, wdx)) - 2;
+    if (wd > maxR) {
+        castTarget.x = POND_CENTER.x + (wdx / wd) * maxR;
+        castTarget.z = POND_CENTER.z + (wdz / wd) * maxR;
     }
     castT = 0;
     fishCaught = false;
@@ -6354,6 +6440,26 @@ window.__game = {
     getFeedRange: function () { return { min: FEED_MIN_RANGE, max: FEED_MAX_RANGE }; },
     getPondCenter: function () { return { x: POND_CENTER.x, z: POND_CENTER.z }; },
     getPondRadius: function () { return POND_RADIUS; },
+    // Contour généré de l'étang (idee 3) — exposé pour les tests et la carte.
+    getRayonEtang: function (angle) { return rayonEtang(angle); },
+    getRayonEtangMax: function () { return RAYON_ETANG_MAX; },
+    getContourEtang: function (segments) {
+        const n = Math.max(8, Math.floor(segments || 96));
+        const points = [];
+        for (let i = 0; i < n; i++) {
+            const angle = (i / n) * Math.PI * 2;
+            const rayonLocal = rayonEtang(angle);
+            points.push({
+                angle: angle,
+                rayon: rayonLocal,
+                x: POND_CENTER.x + Math.cos(angle) * rayonLocal,
+                z: POND_CENTER.z + Math.sin(angle) * rayonLocal
+            });
+        }
+        return points;
+    },
+    getFondMesh: function () { return pondBottom; },
+    getShoreMesh: function () { return shore; },
     water: water,
     bourriche: bourriche,
     getWaterHeightAt: function (x, z) { return waterWaveHeightAt(x, z, testTime); },

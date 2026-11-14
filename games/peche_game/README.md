@@ -41,6 +41,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Choix du poste** : au démarrage, quatre boutons **Sud / Est / Nord / Ouest** font
   le tour de l'étang. Le pêcheur, la canne, la bourriche et la caméra suivent ; le
   soleil, lui, reste au sud-ouest (chaque poste a donc sa lumière).
+- **Étang généré** : le contour est une somme de sinus (même forme à chaque partie).
+  L'eau, le fond, la rive, la carte du carnet et les profondeurs locales suivent ce
+  contour ; le rayon nominal (55 unités) et la profondeur maximale ne changent pas.
 - **Clic gauche sur l'eau** : **clique et maintiens** pour viser (une jauge de puissance oscille), puis **relâche au bon moment** : plus la puissance est forte, plus tu lances loin (le vent décale le lancer).
 - **Choisis ton bouchon** (liste « Bouchon **équipé** » ou **boutique** du carnet) :
   **Anglaise** (longue tige, très sensible), **Waggler** (court, se couche sur le côté),
