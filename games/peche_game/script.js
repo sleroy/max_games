@@ -3,10 +3,11 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=106';
+import { SoundEngine } from './sound.js?v=107';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
+import { creerClassement } from './classement.js';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -7044,90 +7045,32 @@ function avertirVitesse() {
     }
 }
 
-// Le classement vit en mémoire et, si le navigateur le permet, dans le stockage
-// local (il survit alors d'une session à l'autre).
-let classementLocal = [];
-try {
-    if (journalStore) {
-        const brut = journalStore.getItem(RANKING_KEY);
-        if (brut) {
-            const liste = JSON.parse(brut);
-            if (Array.isArray(liste)) { classementLocal = liste; }
-        }
-    }
-} catch (e) { classementLocal = []; }
+// Classement local délégué au module classement.js.
+const classementApi = creerClassement({
+    store: journalStore,
+    rankingKey: RANKING_KEY,
+    nomKey: NOM_KEY,
+    getPartieStats: function () { return partieStats; },
+    fmtPoids: fmtPoids,
+    rankingList: rankingList,
+    rankingTabs: rankingTabs
+});
 
 function chargerClassement() {
-    return classementLocal.slice();
+    return classementApi.charger();
 }
 
 function sauverClassement(liste) {
-    classementLocal = liste.slice(0, 50);
-    try {
-        if (journalStore) { journalStore.setItem(RANKING_KEY, JSON.stringify(classementLocal)); }
-    } catch (e) { /* stockage plein ou refusé */ }
+    classementApi.sauver(liste);
 }
 
 function enregistrerClassement(nom) {
-    const pseudo = String(nom || '').trim().slice(0, 12) || 'Pêcheur';
-    const entree = {
-        nom: pseudo,
-        date: new Date().toISOString().slice(0, 10),
-        poissons: partieStats.poissons,
-        poids: Math.round(partieStats.poids * 100) / 100,
-        records: Object.assign({}, partieStats.records)
-    };
-    const liste = chargerClassement();
-    liste.push(entree);
-    sauverClassement(liste);
-    try { if (journalStore) { journalStore.setItem(NOM_KEY, pseudo); } } catch (e) { /* plein */ }
-    return entree;
+    return classementApi.enregistrer(nom);
 }
 
 function renderClassement(onglet) {
     ongletClassement = onglet || 'poissons';
-    if (!rankingList) { return; }
-    const liste = chargerClassement();
-    let html = '';
-    if (ongletClassement === 'records') {
-        const parEspece = {};
-        liste.forEach(function (e) {
-            const rec = e.records || {};
-            Object.keys(rec).forEach(function (esp) {
-                if (!parEspece[esp] || rec[esp] > parEspece[esp].kg) {
-                    parEspece[esp] = { kg: rec[esp], nom: e.nom };
-                }
-            });
-        });
-        const especes = Object.keys(parEspece).sort(function (a, b) {
-            return parEspece[b].kg - parEspece[a].kg;
-        });
-        html = especes.length
-            ? '<table class="ranking-table"><tr><th>Espèce</th><th>Record</th><th>Pêcheur</th></tr>'
-                + especes.map(function (esp) {
-                    return '<tr><td>' + esp + '</td><td>' + fmtPoids(parEspece[esp].kg)
-                        + '</td><td>' + parEspece[esp].nom + '</td></tr>';
-                }).join('') + '</table>'
-            : '<p>Aucun record pour le moment.</p>';
-    } else {
-        const cle = ongletClassement === 'poids' ? 'poids' : 'poissons';
-        const tri = liste.slice().sort(function (a, b) { return b[cle] - a[cle]; }).slice(0, 10);
-        html = tri.length
-            ? '<table class="ranking-table"><tr><th>#</th><th>Pêcheur</th><th>'
-                + (cle === 'poids' ? 'Poids' : 'Poissons') + '</th><th>Date</th></tr>'
-                + tri.map(function (e, i) {
-                    return '<tr><td>' + (i + 1) + '</td><td>' + e.nom + '</td><td>'
-                        + (cle === 'poids' ? fmtPoids(e.poids) : e.poissons) + '</td><td>'
-                        + (e.date || '') + '</td></tr>';
-                }).join('') + '</table>'
-            : '<p>Classement vide : termine une partie pour y figurer !</p>';
-    }
-    rankingList.innerHTML = html;
-    if (rankingTabs && typeof rankingTabs.querySelectorAll === 'function') {
-        rankingTabs.querySelectorAll('.tab').forEach(function (btn) {
-            btn.classList.toggle('active', btn.dataset.rank === ongletClassement);
-        });
-    }
+    classementApi.render(ongletClassement);
 }
 
 function ouvrirClassement() {

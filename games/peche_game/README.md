@@ -340,6 +340,7 @@ peche_game/
 ├── demelage.js         # Mini-jeu autonome de démêlage (canvas 2D)
 ├── quiver.js           # Mode quiver : indicateur de scion autonome
 ├── especes.js          # Données espèces, styles de combat, silhouettes, touches
+├── classement.js       # Stockage et rendu du classement local
 ├── sound.js            # Moteur audio (échantillons réels + fallback procédural)
 ├── launch.sh           # Lance le serveur local + ouvre le navigateur
 ├── serveur.py          # Serveur local sans cache (pour le développement)
