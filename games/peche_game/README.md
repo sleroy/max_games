@@ -44,17 +44,21 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **Pose à coulisse**, **Bolognaise** (gros, peu sensible). Plus le bouchon est sensible,
   plus la **fenêtre de ferrage** est longue… mais plus il montre de **fausses touches** !
   Les autres bouchons (à **capacités spéciales**) s'achètent avec l'**expérience**.
-- **Attendre qu'un poisson morde** : sois **patient** ! Le bouchon reste presque **immobile**
-  pendant quelques secondes (il suit seulement la houle), puis il bouge… et c'est **ce
-  mouvement qu'il faut lire**. Comme au bord de l'eau, le bouchon est plombé : un poisson
+- **Attendre qu'un poisson morde** : le bouchon reste presque **immobile** quelques
+  secondes (il suit seulement la houle), puis il bouge **vite** — et c'est **ce mouvement
+  qu'il faut lire**. Avant LA bonne touche, le poisson en fait **2 ou 3 fausses** : chacune
+  a **son dessin propre** (vitesse, fréquence des petits coups, **inclinaison** et **dérive**
+  différentes), avec un « Ça bouge… » et **deux ronds sur l'eau** pour les repérer de loin.
+  Comme au bord de l'eau, le bouchon est plombé : un poisson
   qui **soulève** l'appât le fait **monter** (« ascenseur »), un poisson qui tire le fait
   **plonger** ou **partir de côté**. Il y a **18 touches au catalogue** — des **fausses**
   (frémissement, tapotement, danse du bouchon, enfoncement partiel, fausse remontée,
   couchage manqué, dérive, deux coups, touche hésitante, il tourne sur place) et les
   **vraies** (coulée franche, ascenseur, coulée lente et lourde, il file sous l'eau, il se
-  couche franchement, enfoncement sec, remontée sèche). Chaque poisson a ses habitudes :
-  un petit poisson tapote, un gros coule lentement… Le carnet contient la **fiche
-  « Reconnaître les touches »** qui les décrit toutes : à toi de les reconnaître en vrai !
+  couche franchement, enfoncement sec, remontée sèche, touche à la volée). Chaque poisson a
+  ses habitudes : un petit poisson tapote, un gros coule lentement… Le carnet contient la
+  **fiche « Reconnaître les touches »** qui les décrit toutes : à toi de les reconnaître
+  en vrai !
   Si tu laisses passer LA touche, le poisson recrache l'hameçon et des **ronds rouges
   concentriques** s'écartent du bouchon pour te montrer que tu l'as **ratée**.
 - **Ferrer au bon moment** : clique pile pendant la vraie touche → **tu démarres avec

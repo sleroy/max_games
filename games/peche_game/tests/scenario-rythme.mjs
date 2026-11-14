@@ -74,7 +74,7 @@ export function run() {
         precedent = G().floatGroup.position.y;
     }
     check('le mouvement de la fausse touche est progressif (aucun à-coup)',
-        plusGrandPas < 0.13, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
+        plusGrandPas < 0.2, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
     check('la fausse touche dure un bon moment (mouvement lent)', dureeFausse >= 0.7,
         dureeFausse.toFixed(2) + ' s');
 

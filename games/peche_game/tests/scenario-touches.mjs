@@ -83,7 +83,7 @@ export function run() {
     // Les petits coups (tapotement, danse) ont des rebonds VOLONTAIRES : le
     // bouchon saute sur la surface comme un vrai. On vérifie seulement qu'aucun
     // mouvement ne fait un bond démesuré (ce qui trahirait un défaut).
-    check('aucun à-coup démesuré (accélération bornée)', plusGrandeAccel < 0.25,
+    check('aucun à-coup démesuré (accélération bornée)', plusGrandeAccel < 0.3,
         'plus grande accélération ' + plusGrandeAccel.toFixed(3) + ' u/image² (' + pireAccel + ')');
     check('chaque touche est visible de loin (mouvement assez grand)',
         invisibles.length === 0, invisibles.join(', ') || 'aucune');
@@ -101,6 +101,30 @@ export function run() {
         'inclinaison ' + court.rot.toFixed(2) + ' rad');
     const long = G().mouvementDeTouche(montee, 1, false);
     check('une longue tige ressort vraiment', long.y > 1, long.y.toFixed(2) + ' unité');
+
+    // --- Des touches RAPIDES, et un dessin BIEN À ELLE pour chacune ---
+    check('la vitesse globale est rapide', G().getVitesseTouches() <= 0.6,
+        G().getVitesseTouches() + ' (× la durée du catalogue)');
+    const durees = touches.map(t => G().dureeTouche(t));
+    check('aucune touche ne traîne (max 1,3 s)', Math.max.apply(null, durees) <= 1.3,
+        Math.max.apply(null, durees).toFixed(2) + ' s');
+    const dureesVraies = vraies.map(t => G().dureeTouche(t));
+    check('les vraies touches sont très rapides (max 0,5 s)',
+        Math.max.apply(null, dureesVraies) <= 0.5,
+        Math.max.apply(null, dureesVraies).toFixed(2) + ' s');
+    const dessins = new Set(touches.map(t =>
+        [t.forme, t.rot || 0, t.derive || 0, t.coups || 0].join('|')));
+    check('chaque touche a un dessin distinct', dessins.size === touches.length,
+        dessins.size + ' dessins pour ' + touches.length + ' touches');
+
+    // --- 2 ou 3 fausses touches annoncées AVANT la vraie ---
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    check('au moins 2 fausses touches avant la vraie', G().getBiteSignaux() >= 2,
+        G().getBiteSignaux() + ' fausses touche(s) programmée(s)');
+    resetToIdle();
 
     // --- Le choix de la touche dépend du poisson ---
     const touchePetit = G().choisirTouche(false, 0.3, 1.0);

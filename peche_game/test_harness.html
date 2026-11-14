@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>test poids</title></head>
+<body>
+<canvas id="gameCanvas" width="800" height="500"></canvas>
+<div class="struggle" id="struggle"><div id="struggleInfo"></div><div class="struggle-track"><div id="struggleMarker"></div></div></div>
+<div class="catch-message" id="catchMessage"></div>
+<span id="score">0</span>
+<div id="status"></div>
+<button id="fishButton">go</button>
+<script>
+window.addEventListener('error', function (e) { document.body.setAttribute('data-result', 'ERREUR: ' + (e.message || 'inconnue')); });
+</script>
+<script type="importmap">{ "imports": { "three": "./assets/three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import './script.js';
+
+window.addEventListener('load', function () {
+    setTimeout(function () {
+        var g = window.__game;
+        var out = [];
+        out.push('game=' + !!g);
+        if (g) {
+            g.setPaused(true);
+            g.fishes.forEach(function (fish) { fish.position.set(50, -0.6, -90); fish.userData.vx = 0; fish.userData.vz = 0; });
+            g.startCast(new THREE.Vector3(0, 0.1, -40));
+            for (var i = 0; i < 60; i++) { g.step(1/60); }
+            var f = g.fishes[0];
+            f.position.copy(g.floatGroup.position);
+            f.userData.vx = 0; f.userData.vz = 0;
+            f.userData.size = 0.8; f.userData.power = 0.6; f.userData.aggression = 0.6;
+            for (var i = 0; i < 2; i++) { g.step(1/60); }
+            out.push('state=' + g.getState());
+            out.push('poids=' + f.userData.weight);
+            out.push('info=' + document.getElementById('struggleInfo').textContent);
+            for (var i = 0; i < 20; i++) { g.reelClick(); g.step(1/60); }
+            out.push('apresLutte=' + g.getState());
+            out.push('catchMsg=' + document.getElementById('catchMessage').textContent);
+            out.push('catchShown=' + document.getElementById('catchMessage').classList.contains('show'));
+            for (var i = 0; i < 400; i++) { g.step(1/60); }
+            out.push('final=' + g.getState());
+            out.push('score=' + document.getElementById('score').textContent);
+            out.push('status=' + document.getElementById('status').textContent);
+        }
+        document.body.setAttribute('data-result', out.join(' | '));
+    }, 1500);
+});
+</script>
+g</body>
+</html>
+`kill 15186`.
+cd /home/enfant/programme/peche_game && python3 
