@@ -270,6 +270,14 @@ export function run() {
     checkEqual('retour au repos', state(), 'idle');
     checkEqual('un point de plus', Number(el('score').textContent) - scoreBis, 1);
     checkEqual('une prise de plus dans le carnet', G().getJournal().total, journalBis.total + 1);
+    checkEqual('l’espèce enregistrée est celle du poisson attrapé',
+        G().getJournal().last[0].espece, caught2.userData.espece);
+    check('le carnet affiche l’espèce sur la ligne de la prise',
+        el('journalList').textContent.includes(caught2.userData.espece),
+        el('journalList').textContent.split('\n')[0]);
+    check('le nombre d’espèces capturées est suivi',
+        Object.keys(G().getJournal().especes).length >= 1,
+        Object.keys(G().getJournal().especes).join(', '));
     check('message de victoire affiché', el('catchMessage').classList.contains('show'), true);
     check('le message donne le poids', el('catchMessage').textContent.includes('kg'), el('catchMessage').textContent);
     checkEqual('le poisson rangé a quitté l’étang', G().fishes.indexOf(caught2), -1);
@@ -290,7 +298,11 @@ export function run() {
             snapped = true;
         }
     }
-    check('sans tourner, le fil finit trop tendu', snapped);
+    check('sans tourner, le poisson finit par se décrocher', state() !== 'struggle', state());
+    // Selon la taille de l'espèce : le fil casse (gros poisson) ou le temps
+    // s'écoule (petit poisson qui ne peut pas tendre la ligne à fond).
+    check('le fil casse ou le temps s’écoule', snapped || G().getStruggleTimeLeft() <= 0,
+        'fil cassé : ' + snapped + ', temps restant : ' + G().getStruggleTimeLeft().toFixed(1) + ' s');
     check('le poisson s\'est décroché', state() !== 'struggle', state());
     check('le poisson est puni', lostFish.userData.losses > lossesLost && lostFish.userData.aggression > aggroLost,
         'échecs ' + lossesLost + ' -> ' + lostFish.userData.losses);
@@ -504,6 +516,50 @@ export function run() {
     check('réglages de bloom et vignette cohérents', fx.bloom > 0 && fx.vignette > 0,
         fx.bloom + ' / ' + fx.vignette);
     G().setVisualEffects(false);
+
+    group('28) Espèces de poissons (formes, tailles et poids réalistes)');
+    const especes = G().getSpecies();
+    check('au moins 14 espèces d’eau douce', especes.length >= 14, especes.length + ' espèces');
+    check('chaque espèce a une silhouette 3D', especes.every(e => typeof e.form === 'string' && e.form.length > 3));
+    check('longueurs réalistes (min < max)', especes.every(e => e.minCm > 0 && e.maxCm > e.minCm));
+    check('combativité renseignée', especes.every(e => e.agressivite[1] > e.agressivite[0]));
+    check('au moins 4 silhouettes différentes',
+        new Set(especes.map(e => e.form)).size >= 4,
+        Array.from(new Set(especes.map(e => e.form))).join(', '));
+
+    const carpe = especes.find(e => e.id === 'carpe');
+    const gardon = especes.find(e => e.id === 'gardon');
+    const silure = especes.find(e => e.id === 'silure');
+    const brochet = especes.find(e => e.id === 'brochet');
+    check('la carpe est un gros poisson (5 à 30 kg)', carpe.maxKg > 5 && carpe.maxKg < 30, carpe.maxKg + ' kg max');
+    check('le gardon reste petit (< 1 kg)', gardon.maxKg < 1, gardon.maxKg + ' kg max');
+    check('le silure est énorme (> 30 kg)', silure.maxKg > 30, silure.maxKg + ' kg max');
+    check('le brochet est plus combatif que le gardon',
+        brochet.agressivite[0] > gardon.agressivite[0],
+        brochet.agressivite[0] + ' vs ' + gardon.agressivite[0]);
+    check('le poids suit la formule des pêcheurs (K × L³)',
+        Math.abs(G().poidsRealisteKilos(carpe, 60) - 2.3 * Math.pow(60, 3) / 100000) < 1e-9,
+        G().poidsRealisteKilos(carpe, 60).toFixed(2) + ' kg pour 60 cm');
+
+    // Les poissons de l'étang portent bien une espèce et des données réalistes.
+    const noms = G().fishes.map(f => f.userData.espece);
+    check('chaque poisson appartient à une espèce connue',
+        noms.every(n => especes.some(e => e.nom === n)), noms.slice(0, 4).join(', '));
+    check('chaque poisson a une longueur dans la fourchette de son espèce',
+        G().fishes.every(f => {
+            const e = especes.find(x => x.nom === f.userData.espece);
+            return e && f.userData.longueurCm >= e.minCm && f.userData.longueurCm <= e.maxCm;
+        }));
+    check('le poids de chaque poisson est déduit de sa longueur',
+        G().fishes.every(f => {
+            const e = especes.find(x => x.nom === f.userData.espece);
+            return e && Math.abs(f.userData.weight - G().poidsRealisteKilos(e, f.userData.longueurCm)) < 0.002;
+        }));
+    check('des tailles très variées dans l’étang',
+        Math.max.apply(null, G().fishes.map(f => f.userData.longueurCm))
+            - Math.min.apply(null, G().fishes.map(f => f.userData.longueurCm)) > 20,
+        Math.min.apply(null, G().fishes.map(f => f.userData.longueurCm)) + ' à '
+            + Math.max.apply(null, G().fishes.map(f => f.userData.longueurCm)) + ' cm');
 }
 
 export default run;

@@ -1388,7 +1388,7 @@ const fishThrowOrigin = new THREE.Vector3();
 // ---------------------------------------------------------------------------
 // Carnet de pêche (conservé dans le navigateur quand c'est possible)
 // ---------------------------------------------------------------------------
-const journal = { total: 0, totalWeight: 0, best: 0, last: [] };
+const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {} };
 const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null;
 const JOURNAL_KEY = 'peche_carnet_v1';
 
@@ -1405,7 +1405,13 @@ function loadJournal() {
         journal.total = data.total || 0;
         journal.totalWeight = data.totalWeight || 0;
         journal.best = data.best || 0;
-        journal.last = Array.isArray(data.last) ? data.last : [];
+        // Migration : les anciennes prises étaient de simples nombres.
+        journal.last = Array.isArray(data.last)
+            ? data.last.map(entry => (typeof entry === 'number')
+                ? { kg: entry, espece: 'Poisson' }
+                : { kg: entry.kg || 0, espece: entry.espece || 'Poisson' })
+            : [];
+        journal.especes = (data.especes && typeof data.especes === 'object') ? data.especes : {};
     } catch (error) {
         // Carnet illisible : on repart de zéro.
     }
@@ -1422,35 +1428,40 @@ function saveJournal() {
     }
 }
 
-function fmtKg(value) {
-    return value.toFixed(1).replace('.', ',') + ' kg';
+// Poids affiché : 2 décimales sous 1 kg (un gardon de 0,36 kg).
+function fmtPoids(value) {
+    return (value < 1 ? value.toFixed(2) : value.toFixed(1)).replace('.', ',') + ' kg';
 }
 
 function renderJournal() {
+    const nbEspeces = Object.keys(journal.especes).length;
     if (journal.total === 0) {
         journalStats.textContent = 'Aucune prise pour l’instant… Lance la canne !';
     } else {
         journalStats.textContent = 'Prises : ' + journal.total
-            + ' · Poids total : ' + fmtKg(journal.totalWeight)
-            + ' · Record : ' + fmtKg(journal.best);
+            + ' · Poids total : ' + fmtPoids(journal.totalWeight)
+            + ' · Record : ' + fmtPoids(journal.best)
+            + ' · Espèces : ' + nbEspeces;
     }
     // Pas de appendChild ici : le carnet s'affiche en texte simple.
     journalList.textContent = journal.last.length
-        ? journal.last.map(weight => '🐟 ' + fmtKg(weight)).join('\n')
+        ? journal.last.map(prise => '🐟 ' + prise.espece + ' — ' + fmtPoids(prise.kg)).join('\n')
         : '';
     bourricheLabel.textContent = '🧺 Bourriche : ' + journal.total;
 }
 
-function addJournalEntry(weight) {
+function addJournalEntry(weight, espece) {
     journal.total += 1;
-    journal.totalWeight = Math.round((journal.totalWeight + weight) * 10) / 10;
+    journal.totalWeight = Math.round((journal.totalWeight + weight) * 100) / 100;
     if (weight > journal.best) {
         journal.best = weight;
     }
-    journal.last.unshift(Math.round(weight * 10) / 10);
+    const nom = espece || 'Poisson';
+    journal.last.unshift({ kg: Math.round(weight * 100) / 100, espece: nom });
     if (journal.last.length > 12) {
         journal.last.length = 12;
     }
+    journal.especes[nom] = (journal.especes[nom] || 0) + 1;
     saveJournal();
     renderJournal();
 }
@@ -1501,7 +1512,8 @@ function startHoldingFish(fish) {
     fishThrowTarget = fishThrowPowerFor(bourricheDistance());
     fishButton.disabled = true;
     fishButton.textContent = 'Lance le poisson !';
-    statusDisplay.textContent = 'Belle prise ! Lance-la dans la bourriche 🧺 (appuie, maintiens, relâche au bon moment).';
+    const espece = fish.userData.espece ? fish.userData.espece + ' ' : '';
+    statusDisplay.textContent = espece + 'au bord ! Lance-le dans la bourriche 🧺 (appuie, maintiens, relâche au bon moment).';
 }
 
 function setFishThrowPower(value) {
@@ -1580,12 +1592,13 @@ function storeHeldFish() {
     caughtWeight = weight;
     score++;
     scoreDisplay.textContent = score;
-    showCatchMessage(weight);
-    addJournalEntry(weight);
+    showCatchMessage(weight, fish.userData.espece);
+    addJournalEntry(weight, fish.userData.espece);
     sound.catchFish();
     spawnRipple(BOURRICHE_POS);
     spawnSplash(BOURRICHE_POS);
-    statusDisplay.textContent = 'Dans la bourriche ! ' + fmtKg(weight) + ' (+1) 🧺';
+    statusDisplay.textContent = 'Dans la bourriche ! ' + fish.userData.espece + ' — '
+        + fmtPoids(weight) + ' (+1) 🧺';
 }
 
 // Raté : le poisson retombe à l'eau et repart.
@@ -1673,89 +1686,255 @@ renderJournal();
 const fishes = [];
 const FISH_COUNT = 20;
 
-function makeFish(size, power, aggression, type) {
+// ---------------------------------------------------------------------------
+// Espèces d'eau douce : silhouette, longueur réelle (cm), poids, combativité,
+// couleurs et motif d'écailles.
+//   poids (kg) ≈ K × longueur(cm)³ / 100 000   ← formule réelle des pêcheurs
+//   (K = « facteur de condition » : 2,3 pour une carpe bien nourrie, 0,2 pour
+//    une anguille très allongée…)
+// `abondance` = fréquence relative dans l'étang.
+// ---------------------------------------------------------------------------
+const SPECIES = [
+    { id: 'gardon', nom: 'Gardon', form: 'fusiforme', cm: [12, 32], k: 1.1, abondance: 12,
+      combativite: [0.5, 0.8], agressivite: [0.55, 0.85], couleur: 0xbfcbd0, motif: 'argent' },
+    { id: 'rotengle', nom: 'Rotengle', form: 'fusiforme', cm: [15, 35], k: 1.1, abondance: 8,
+      combativite: [0.5, 0.85], agressivite: [0.6, 0.9], couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
+    { id: 'ablette', nom: 'Ablette', form: 'petit', cm: [8, 18], k: 0.9, abondance: 9,
+      combativite: [0.4, 0.65], agressivite: [0.6, 0.95], couleur: 0xd2dcdf, motif: 'argent' },
+    { id: 'goujon', nom: 'Goujon', form: 'petit', cm: [10, 22], k: 1.3, abondance: 7,
+      combativite: [0.4, 0.7], agressivite: [0.5, 0.8], couleur: 0xc2a878, motif: 'taches' },
+    { id: 'breme', nom: 'Brème', form: 'plat', cm: [25, 60], k: 1.8, abondance: 6,
+      combativite: [0.55, 0.9], agressivite: [0.5, 0.8], couleur: 0x9d8f63, motif: 'ecailles' },
+    { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [25, 55], k: 1.7, abondance: 5,
+      combativite: [0.7, 1.05], agressivite: [0.6, 0.95], couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
+    { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [35, 95], k: 2.3, abondance: 6,
+      combativite: [0.9, 1.2], agressivite: [0.7, 1.05], couleur: 0xa8853f, motif: 'ecailles' },
+    { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [18, 40], k: 2.2, abondance: 5,
+      combativite: [0.6, 0.9], agressivite: [0.6, 0.95], couleur: 0xb08b3a, motif: 'ecailles' },
+    { id: 'perche', nom: 'Perche', form: 'bossu', cm: [15, 45], k: 1.4, abondance: 7,
+      combativite: [0.7, 1.05], agressivite: [0.9, 1.25], couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
+    { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [25, 60], k: 1.2, abondance: 5,
+      combativite: [0.8, 1.15], agressivite: [0.9, 1.25], couleur: 0x9aa39c, motif: 'argent' },
+    { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [40, 120], k: 0.9, abondance: 3,
+      combativite: [0.9, 1.25], agressivite: [1.25, 1.6], couleur: 0x4c5c33, motif: 'tachesClaires' },
+    { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [35, 90], k: 0.8, abondance: 2,
+      combativite: [0.85, 1.15], agressivite: [1.1, 1.45], couleur: 0x8f9a83, motif: 'barres' },
+    { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [25, 55], k: 1.6, abondance: 2,
+      combativite: [0.9, 1.2], agressivite: [1.1, 1.5], couleur: 0x556a3f, motif: 'bandeLaterale' },
+    { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [20, 55], k: 1.2, abondance: 2,
+      combativite: [0.8, 1.15], agressivite: [1.0, 1.35], couleur: 0x7d6a4a, motif: 'pointsRouges' },
+    { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [40, 110], k: 0.2, abondance: 2,
+      combativite: [1.0, 1.4], agressivite: [1.1, 1.5], couleur: 0x3f4a30, motif: 'aucun' },
+    { id: 'silure', nom: 'Silure', form: 'barbu', cm: [80, 200], k: 1.0, abondance: 1,
+      combativite: [1.1, 1.5], agressivite: [1.2, 1.55], couleur: 0x474b42, motif: 'marbrures' }
+];
+
+// Silhouettes 3D : dimensions du corps + longueur totale de référence.
+const FORMES = {
+    fusiforme: { bodyX: 1.5, bodyY: 0.78, bodyZ: 0.58, queue: 'fourche', dorsale: 0.55, longueurRef: 2.30 },
+    profond: { bodyX: 1.6, bodyY: 1.02, bodyZ: 0.72, queue: 'fourche', dorsale: 0.5, longueurRef: 2.42 },
+    plat: { bodyX: 1.55, bodyY: 1.3, bodyZ: 0.34, queue: 'fourche', dorsale: 0.75, longueurRef: 2.36 },
+    torpille: { bodyX: 2.7, bodyY: 0.62, bodyZ: 0.5, queue: 'arrondie', dorsale: 0.35, dorsaleReculee: true, longueurRef: 3.74 },
+    bossu: { bodyX: 1.45, bodyY: 0.95, bodyZ: 0.62, queue: 'fourche', dorsale: 0.7, epines: true, longueurRef: 2.24 },
+    anguille: { bodyX: 3.4, bodyY: 0.3, bodyZ: 0.3, queue: 'fine', dorsale: 0, longueurRef: 4.58 },
+    barbu: { bodyX: 2.4, bodyY: 0.85, bodyZ: 0.78, queue: 'arrondie', dorsale: 0.4, moustaches: true, longueurRef: 3.38 },
+    petit: { bodyX: 1.35, bodyY: 0.72, bodyZ: 0.52, queue: 'fourche', dorsale: 0.45, longueurRef: 2.12 }
+};
+// Ancien paramètre numérique de « type » → nouvelle silhouette (compatibilité).
+const FORMES_PAR_TYPE = ['profond', 'bossu', 'torpille', 'plat'];
+
+// Motifs d'écailles : textures dessinées une seule fois, puis partagées.
+// (Uniquement fillRect + fillStyle : compatible partout.)
+const _texturesMotif = {};
+
+function makeFishTexture(motif) {
+    if (_texturesMotif[motif]) {
+        return _texturesMotif[motif];
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, 0, 64, 64);
+    if (motif === 'rayures') {                 // barres verticales (perche)
+        g.fillStyle = 'rgba(35,50,25,0.55)';
+        for (let i = 0; i < 5; i++) {
+            g.fillRect(i * 13 + 3, 0, 6, 64);
+        }
+    } else if (motif === 'barres') {           // barres fines (sandre)
+        g.fillStyle = 'rgba(40,50,40,0.45)';
+        for (let i = 0; i < 7; i++) {
+            g.fillRect(i * 9 + 2, 0, 3, 64);
+        }
+    } else if (motif === 'bandeLaterale') {    // bande sombre (black-bass)
+        g.fillStyle = 'rgba(30,45,25,0.5)';
+        g.fillRect(0, 26, 64, 10);
+    } else if (motif === 'ecailles') {         // écailles (carpe, brème)
+        g.fillStyle = 'rgba(120,90,40,0.30)';
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
+                g.fillRect(x * 8 + (y % 2) * 4, y * 8, 6, 6);
+            }
+        }
+    } else if (motif === 'mouchetures') {      // taches fines (tanche)
+        g.fillStyle = 'rgba(25,40,20,0.5)';
+        for (let i = 0; i < 40; i++) {
+            g.fillRect((i * 17) % 64, (i * 29) % 64, 3, 2);
+        }
+    } else if (motif === 'taches') {           // petites taches (goujon)
+        g.fillStyle = 'rgba(80,60,30,0.4)';
+        for (let i = 0; i < 28; i++) {
+            g.fillRect((i * 13) % 64, (i * 23) % 64, 4, 3);
+        }
+    } else if (motif === 'tachesClaires') {    // taches claires (brochet)
+        g.fillStyle = 'rgba(255,255,255,0.55)';
+        for (let i = 0; i < 34; i++) {
+            g.fillRect((i * 11) % 64, (i * 19) % 64, 7, 4);
+        }
+    } else if (motif === 'pointsRouges') {     // mouchetures + points rouges (truite)
+        g.fillStyle = 'rgba(60,40,25,0.5)';
+        for (let i = 0; i < 30; i++) {
+            g.fillRect((i * 7) % 64, (i * 17) % 64, 3, 3);
+        }
+        g.fillStyle = 'rgba(190,70,50,0.6)';
+        for (let i = 0; i < 10; i++) {
+            g.fillRect((i * 23 + 5) % 64, (i * 31 + 9) % 64, 4, 4);
+        }
+    } else if (motif === 'marbrures') {        // grandes marbrures (silure)
+        g.fillStyle = 'rgba(20,25,20,0.45)';
+        for (let i = 0; i < 16; i++) {
+            g.fillRect((i * 19) % 56, (i * 27) % 56, 14, 11);
+        }
+    }
+    // Léger ombrage « dos plus sombre / ventre plus clair ».
+    g.fillStyle = 'rgba(0,0,0,0.16)';
+    g.fillRect(0, 0, 64, 10);
+    g.fillStyle = 'rgba(255,255,255,0.20)';
+    g.fillRect(0, 54, 64, 10);
+    _texturesMotif[motif] = new THREE.CanvasTexture(canvas);
+    return _texturesMotif[motif];
+}
+
+function makeFish(size, power, aggression, form, espece) {
     const group = new THREE.Group();
 
-    // Couleur : plus le poisson est puissant/agressif, plus il tire vers le rouge.
-    const t = Math.min(1, ((power - 0.6) / 0.9) * 0.5 + ((aggression - 0.6) / 0.9) * 0.5);
-    const color = new THREE.Color(0xffb066).lerp(new THREE.Color(0xd23a12), t);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.1 });
+    // Silhouette (compatibilité : un ancien « type » numérique est accepté).
+    const forme = FORMES[form] || FORMES[FORMES_PAR_TYPE[form]] || FORMES.fusiforme;
 
-    const thickness = 1.0 + (power - 0.6) * 0.5;
-    const tailScale = 0.8 + (aggression - 0.6) * 0.6;
-    const finScale = 0.6 + (aggression - 0.6) * 0.8;
+    // Couleur = celle de l'espèce ; un poisson très combatif vire au rouge.
+    const couleur = espece ? espece.couleur : 0xffb066;
+    const baseColor = new THREE.Color(couleur);
+    const t = Math.min(1, Math.max(0,
+        ((power - 1.0) / 0.5) * 0.5 + ((aggression - 1.1) / 0.5) * 0.5));
+    const bodyMat = new THREE.MeshStandardMaterial({
+        color: baseColor.clone().lerp(new THREE.Color(0xd23a12), t * 0.7),
+        map: makeFishTexture(espece ? espece.motif : 'aucun'),
+        roughness: 0.35,
+        metalness: 0.25
+    });
+    const finMat = new THREE.MeshStandardMaterial({
+        color: (espece && espece.nageoires) ? espece.nageoires : couleur,
+        roughness: 0.5,
+        metalness: 0.15
+    });
 
-    // Forme du corps selon le type de poisson.
-    let bodyX = 2.0;
-    let bodyY = thickness;
-    let bodyZ = 0.8 * thickness;
-    if (type === 1) {
-        bodyX = 1.3;
-        bodyY = 1.2 * thickness;
-        bodyZ = 1.0 * thickness;
-    } else if (type === 2) {
-        bodyX = 2.6;
-        bodyY = 0.7 * thickness;
-        bodyZ = 0.6 * thickness;
-    } else if (type === 3) {
-        bodyX = 1.4;
-        bodyY = 1.6 * thickness;
-        bodyZ = 0.5 * thickness;
-    }
+    const tailScale = 0.8 + (aggression - 0.6) * 0.5;
+    const finScale = 0.6 + (aggression - 0.6) * 0.5;
+    const bodyX = forme.bodyX;
+    const bodyY = forme.bodyY;
+    const bodyZ = forme.bodyZ;
 
     const fishBody = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), bodyMat);
     fishBody.scale.set(bodyX, bodyY, bodyZ);
     fishBody.castShadow = true;
     group.add(fishBody);
 
-    // Queue selon le type.
+    // Queue : fourchue, arrondie ou fine selon la silhouette.
     const tailPivot = new THREE.Group();
     tailPivot.position.x = -0.6 * bodyX;
-    if (type === 2) {
-        const tail1 = new THREE.Mesh(new THREE.ConeGeometry(0.4 * tailScale, 1.0 * tailScale, 6), bodyMat);
-        tail1.rotation.z = Math.PI / 2;
-        tail1.rotation.y = 0.4;
-        tail1.position.set(-0.4 * tailScale, 0.2, 0);
-        tailPivot.add(tail1);
-        const tail2 = tail1.clone();
-        tail2.rotation.y = -0.4;
-        tail2.position.y = -0.2;
-        tailPivot.add(tail2);
-    } else if (type === 1 || type === 3) {
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.7 * tailScale, 0.8 * tailScale, 8), bodyMat);
+    if (forme.queue === 'fine') {
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.22 * tailScale, 1.1 * tailScale, 6), finMat);
         tail.rotation.z = Math.PI / 2;
-        tail.scale.z = 0.3;
+        tail.scale.z = 0.5;
+        tail.position.x = -0.4 * tailScale;
+        tailPivot.add(tail);
+    } else if (forme.queue === 'arrondie') {
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.55 * tailScale, 0.9 * tailScale, 8), finMat);
+        tail.rotation.z = Math.PI / 2;
+        tail.scale.z = 0.35;
         tail.position.x = -0.4 * tailScale;
         tailPivot.add(tail);
     } else {
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.6 * tailScale, 1.1 * tailScale, 8), bodyMat);
-        tail.rotation.z = Math.PI / 2;
-        tail.position.x = -0.35 * tailScale;
-        tailPivot.add(tail);
+        const tail1 = new THREE.Mesh(new THREE.ConeGeometry(0.42 * tailScale, 1.0 * tailScale, 6), finMat);
+        tail1.rotation.z = Math.PI / 2;
+        tail1.rotation.y = 0.35;
+        tail1.position.set(-0.4 * tailScale, 0.18, 0);
+        tailPivot.add(tail1);
+        const tail2 = tail1.clone();
+        tail2.rotation.y = -0.35;
+        tail2.position.y = -0.18;
+        tailPivot.add(tail2);
     }
     group.add(tailPivot);
 
-    // Aileron dorsal (plus haut pour le type plat).
-    const finHeight = (type === 3 ? 1.2 : 0.7) * finScale;
-    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.35 * finScale, finHeight, 4), bodyMat);
-    fin.position.set(-0.1, 0.6 * bodyY + 0.3 * finScale, 0);
-    fin.rotation.z = -0.25;
-    group.add(fin);
+    // Nageoire dorsale (épineuse chez la perche, reculée chez le brochet).
+    const finHeight = Math.max(0.15, forme.dorsale * 1.5) * finScale;
+    if (forme.dorsale > 0) {
+        const fin = new THREE.Mesh(new THREE.ConeGeometry(0.3 * finScale, finHeight, 4), finMat);
+        fin.position.set(forme.dorsaleReculee ? -0.35 * bodyX : -0.05, 0.6 * bodyY + finHeight / 2 - 0.05, 0);
+        fin.rotation.z = forme.epines ? -0.08 : -0.25;
+        fin.scale.z = 0.4;
+        group.add(fin);
+        if (forme.epines) {
+            for (let i = 0; i < 4; i++) {
+                const epine = new THREE.Mesh(new THREE.ConeGeometry(0.05 * finScale, 0.28 * finScale, 4), finMat);
+                epine.position.set(0.25 - i * 0.16, 0.6 * bodyY + finHeight * 0.7, 0);
+                group.add(epine);
+            }
+        }
+    }
 
-    // Yeux
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), eyeMat);
-    eye1.position.set(0.5 * bodyX, 0.2 * bodyY, 0.32 * bodyZ);
+    // Nageoires pectorales (2) : présentes chez tous les poissons.
+    const pectorale = new THREE.Mesh(new THREE.ConeGeometry(0.18 * finScale, 0.5 * finScale, 5), finMat);
+    pectorale.rotation.z = Math.PI / 2.4;
+    pectorale.rotation.y = 0.5;
+    pectorale.scale.z = 0.35;
+    pectorale.position.set(0.25 * bodyX, -0.15 * bodyY, 0.42 * bodyZ);
+    group.add(pectorale);
+    const pectorale2 = pectorale.clone();
+    pectorale2.position.z = -0.42 * bodyZ;
+    pectorale2.rotation.y = -0.5;
+    group.add(pectorale2);
+
+    // Moustaches (silure, poisson-chat).
+    if (forme.moustaches) {
+        for (let i = 0; i < 4; i++) {
+            const cote = i < 2 ? 1 : -1;
+            const moustache = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, 0.7, 4), bodyMat);
+            moustache.rotation.z = Math.PI / 2 - cote * 0.25;
+            moustache.rotation.y = (i % 2 === 0 ? 0.35 : -0.35);
+            moustache.position.set(0.62 * bodyX, 0.02 - (i % 2) * 0.12, cote * 0.12);
+            group.add(moustache);
+        }
+    }
+
+    // Yeux (certaines espèces ont l'œil rouge, comme la tanche).
+    const eyeMat = new THREE.MeshStandardMaterial({ color: (espece && espece.oeil) ? espece.oeil : 0x111111 });
+    const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), eyeMat);
+    eye1.position.set(0.48 * bodyX, 0.18 * bodyY, 0.3 * bodyZ);
     group.add(eye1);
     const eye2 = eye1.clone();
-    eye2.position.z = -0.32 * bodyZ;
+    eye2.position.z = -0.3 * bodyZ;
     group.add(eye2);
 
     group.userData.tailPivot = tailPivot;
     group.userData.bodyMat = bodyMat;
     group.userData.bodyMesh = fishBody;
+    group.userData.couleurBase = baseColor;
+    group.userData.especeData = espece || null;
     // Hauteur du poisson au-dessus de son centre : sert à le garder sous l'eau.
-    group.userData.topOffset = (0.6 * bodyY + 0.3 * finScale + finHeight / 2) * size;
+    group.userData.topOffset = (0.6 * bodyY + finHeight) * size;
     group.scale.setScalar(size);
     group.userData.size = size;
     return group;
@@ -1777,12 +1956,37 @@ function randomFishVelocity() {
     return { vx: Math.cos(dir) * speed, vz: Math.sin(dir) * speed };
 }
 
+// Poids réaliste : formule du « facteur de condition » des pêcheurs.
+function poidsRealisteKilos(espece, longueurCm) {
+    return espece.k * Math.pow(longueurCm, 3) / 100000;
+}
+
+// Tirage d'espèce pondéré par son abondance dans l'étang.
+function pickSpecies() {
+    let total = 0;
+    for (let i = 0; i < SPECIES.length; i++) {
+        total += SPECIES[i].abondance;
+    }
+    let r = rand() * total;
+    for (let i = 0; i < SPECIES.length; i++) {
+        r -= SPECIES[i].abondance;
+        if (r <= 0) {
+            return SPECIES[i];
+        }
+    }
+    return SPECIES[0];
+}
+
 function spawnFish() {
-    const size = 0.7 + rand() * 0.9;
-    const power = 0.6 + rand() * 0.9;
-    const aggression = 0.6 + rand() * 0.9;
-    const type = Math.floor(rand() * 4);
-    const fish = makeFish(size, power, aggression, type);
+    const espece = pickSpecies();
+    // Longueur réelle tirée dans la fourchette de l'espèce (cm).
+    const longueurCm = espece.cm[0] + rand() * (espece.cm[1] - espece.cm[0]);
+    const forme = FORMES[espece.form] || FORMES.fusiforme;
+    // Échelle 3D donnant au poisson sa vraie taille (2 unités ≈ 1 m).
+    const size = Math.max(0.08, (longueurCm / 50) / forme.longueurRef);
+    const power = espece.combativite[0] + rand() * (espece.combativite[1] - espece.combativite[0]);
+    const aggression = espece.agressivite[0] + rand() * (espece.agressivite[1] - espece.agressivite[0]);
+    const fish = makeFish(size, power, aggression, espece.form, espece);
     fish.position.copy(randomFishPosition());
     const v = randomFishVelocity();
     fish.userData.vx = v.vx;
@@ -1795,9 +1999,15 @@ function spawnFish() {
     fish.position.y = fish.userData.depth - fish.userData.topOffset;
     fish.userData.power = power;
     fish.userData.aggression = aggression;
-    fish.userData.type = type;
+    fish.userData.type = espece.form;
+    fish.userData.espece = espece.nom;
+    fish.userData.especeId = espece.id;
+    // Longueur affichée (cm) : c'est elle qui sert aussi au calcul du poids,
+    // pour que le carnet et le poisson soient parfaitement cohérents.
+    const longueurAffichee = Math.round(longueurCm);
+    fish.userData.longueurCm = longueurAffichee;
+    fish.userData.weight = Math.round(poidsRealisteKilos(espece, longueurAffichee) * 1000) / 1000;
     fish.userData.losses = 0;
-    fish.userData.weight = Math.round((Math.pow(size, 3) * (1.2 + power * 0.5) + rand() * 0.3) * 10) / 10;
     fish.userData.hooked = false;
     scene.add(fish);
     fishes.push(fish);
@@ -1832,11 +2042,10 @@ function punishFish(fish) {
         fish.userData.vz = v.vz;
     }
     if (fish.userData.bodyMat) {
-        const power = fish.userData.power;
-        const aggression = fish.userData.aggression;
-        const t = Math.min(1, ((power - 0.6) / 0.9) * 0.5 + ((aggression - 0.6) / 0.9) * 0.5);
-        const color = new THREE.Color(0xffb066).lerp(new THREE.Color(0xd23a12), t);
-        fish.userData.bodyMat.color.copy(color);
+        // Un poisson perdu devient plus rouge (il « chauffe »).
+        const base = fish.userData.couleurBase || new THREE.Color(0xffb066);
+        const t = Math.min(1, (fish.userData.losses || 0) * 0.2);
+        fish.userData.bodyMat.color.copy(base).lerp(new THREE.Color(0xd23a12), t);
     }
 }
 
@@ -1967,7 +2176,7 @@ function endCast() {
         scoreDisplay.textContent = score;
         showCatchMessage(caughtWeight);
         sound.catchFish();
-        statusDisplay.textContent = 'Poisson attrapé ! ' + caughtWeight.toFixed(1).replace('.', ',') + ' kg (+1) 🎣';
+        statusDisplay.textContent = 'Poisson attrapé ! ' + fmtPoids(caughtWeight) + ' (+1) 🎣';
         fishCaught = false;
     } else if (snagFreed) {
         statusDisplay.textContent = 'Ligne dégagée ! Tu peux relancer.';
@@ -2008,8 +2217,9 @@ function updateStruggleTimer() {
 
 let catchMessageTimer = null;
 
-function showCatchMessage(weight) {
-    catchMessage.textContent = 'Poisson attrapé ! ' + weight.toFixed(1).replace('.', ',') + ' kg 🎣';
+function showCatchMessage(weight, espece) {
+    catchMessage.textContent = (espece ? espece + ' ! ' : 'Poisson attrapé ! ')
+        + fmtPoids(weight) + ' 🎣';
     catchMessage.classList.add('show');
     if (catchMessageTimer) {
         clearTimeout(catchMessageTimer);
@@ -2088,7 +2298,7 @@ function startStruggle(fish) {
         // Le poisson reprend du fil (la ligne et la distance reculent) : une
         // vitesse de fond, plus des « coups » brusques de temps en temps.
         // La difficulté rend le poisson plus combatif : il tire plus fort.
-        pullSpeed: Math.min(2.0, (0.4 + size * 0.6) * power * DIFFICULTY),
+        pullSpeed: Math.min(2.0, Math.max(0.35, (0.4 + size * 0.6) * power * DIFFICULTY)),
         burstDistance: (0.3 + size * 0.4) * power * DIFFICULTY,
         burstInterval: interval,
         burstTimer: interval
@@ -3061,9 +3271,24 @@ window.__game = {
     getJournal: function () {
         return {
             total: journal.total, totalWeight: journal.totalWeight,
-            best: journal.best, last: journal.last.slice()
+            best: journal.best, last: journal.last.slice(),
+            especes: Object.assign({}, journal.especes)
         };
     },
+    // Espèces disponibles (longueurs/poids réalistes calculés).
+    getSpecies: function () {
+        return SPECIES.map(function (s) {
+            return {
+                id: s.id, nom: s.nom, form: s.form,
+                minCm: s.cm[0], maxCm: s.cm[1], k: s.k,
+                minKg: Math.round(s.k * Math.pow(s.cm[0], 3) / 100000 * 1000) / 1000,
+                maxKg: Math.round(s.k * Math.pow(s.cm[1], 3) / 100000 * 1000) / 1000,
+                agressivite: s.agressivite.slice(),
+                abondance: s.abondance
+            };
+        });
+    },
+    poidsRealisteKilos: poidsRealisteKilos,
     setDifficulty: setDifficulty,
     getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW }; },
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },

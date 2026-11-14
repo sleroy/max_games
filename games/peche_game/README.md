@@ -85,6 +85,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   sillage près de la surface, **éclaboussures** au ferrage.
 - **Décor optimisé** : arbres, roseaux et rochers en *instancing* (un seul appel de
   dessin), ce qui laisse de la marge pour la végétation.
+- **Espèces réalistes** : 16 poissons d'eau douce d'Europe, chacun avec sa **silhouette
+  3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
+  **combativité**. Le poids est calculé avec la formule des pêcheurs
+  (`poids ≈ K × longueur³ / 100 000`), et le **carnet note l'espèce** de chaque prise.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
@@ -95,6 +99,37 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   l'amorçage et le lancer du poisson, manivelle au doigt), invite à passer en paysage,
   interface qui respecte les encoches (zones sûres), bouton pause et plein écran ⛶.
 - Plein écran et HUD en surimpression.
+
+## Espèces (16 poissons d'eau douce d'Europe)
+
+Chaque espèce a sa **silhouette 3D**, sa **texture d'écailles** dessinée à la main
+(rayures, taches, mouchetures…), ses couleurs, sa **longueur réelle** et sa
+**combativité**. Le poids n'est pas tiré au hasard : il vient de la formule des
+pêcheurs, `poids (kg) ≈ K × longueur(cm)³ / 100 000`, où `K` est le « facteur de
+condition » de l'espèce (2,3 pour une carpe bien nourrie, 0,2 pour une anguille
+très allongée).
+
+| Espèce | Silhouette | Longueur | Poids max | Combat |
+|---|---|---|---|---|
+| Ablette | petit | 8 – 18 cm | 0,05 kg | 🟢 |
+| Gardon | fusiforme | 12 – 32 cm | 0,36 kg | 🟢 |
+| Rotengle | fusiforme (nageoires rouges) | 15 – 35 cm | 0,47 kg | 🟢 |
+| Goujon | petit, moucheté | 10 – 22 cm | 0,14 kg | 🟢 |
+| Brème | haut et plat | 25 – 60 cm | 3,9 kg | 🟡 |
+| Tanche | profond, œil rouge | 25 – 55 cm | 2,8 kg | 🟡 |
+| Carassin | profond, doré | 18 – 40 cm | 1,4 kg | 🟡 |
+| Carpe | profond, écailles | 35 – 95 cm | 19,7 kg | 🟠 |
+| Perche | bossu, dorsale épineuse, nageoires rouges | 15 – 45 cm | 1,3 kg | 🟠 |
+| Chevesne | fusiforme | 25 – 60 cm | 2,6 kg | 🟠 |
+| Truite | fusiforme, points rouges | 20 – 55 cm | 2,0 kg | 🟠 |
+| Black-bass | bossu, bande latérale | 25 – 55 cm | 2,7 kg | 🔴 |
+| Sandre | torpille, barres | 35 – 90 cm | 5,8 kg | 🔴 |
+| Brochet | torpille, taches claires | 40 – 120 cm | 15,6 kg | 🔴 |
+| Anguille | serpent | 40 – 110 cm | 2,7 kg | 🔴 |
+| Silure | barbu (moustaches) | 80 – 200 cm | 80 kg | 🔴 |
+
+> La taille affichée sur le poisson correspond à sa **taille réelle** (2 unités du
+> monde ≈ 1 m) : un gardon est vraiment petit, un silure vraiment énorme.
 
 ## Structure
 
