@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=49 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=50 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=49';
+import { SoundEngine } from './sound.js?v=50';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1767,6 +1767,27 @@ function acheterBouchon(id) {
     saveJournal();
     renderJournal();
     return true;
+}
+
+// La ligne casse (nénuphars) : le bouchon part avec elle ! S'il avait été ACHETÉ
+// (payé avec de l'expérience), il quitte l'inventaire et on repêche avec un
+// bouchon de départ. Renvoie le bouchon perdu, ou null si c'était un bouchon
+// offert (les bouchons de départ sont toujours dans le sac).
+function perdreLeBouchon() {
+    const flotteur = flotteurCourant();
+    if ((flotteur.prix || 0) <= 0) {
+        return null;
+    }
+    const index = journal.bouchons.indexOf(flotteur.id);
+    if (index >= 0) {
+        journal.bouchons.splice(index, 1);
+    }
+    // On reprend le premier bouchon offert.
+    flotteurChoix = BOUCHONS_DE_DEPART[0];
+    saveJournal();
+    setFloatType(flotteurChoix);
+    renderJournal();          // (rafraîchit aussi la boutique : on peut le racheter)
+    return flotteur;
 }
 
 // Construit la liste déroulante (bouchons possédés) et la boutique.
@@ -3684,10 +3705,18 @@ function endSnag(freed) {
         floatState = 'reeling';
     } else {
         sound.lineBreak();
-        statusDisplay.textContent = 'La ligne a cassé ! Le bouchon est perdu…';
         floatGroup.visible = false;
         lineBrokenTimer = 1.2;
         floatState = 'broken';
+        // Le bouchon part avec la ligne : s'il avait été acheté, il est PERDU.
+        const perdu = perdreLeBouchon();
+        if (perdu) {
+            statusDisplay.textContent = 'La ligne a cassé ! Ton bouchon « ' + perdu.nom
+                + ' » est perdu… tu repêches avec le bouchon de départ.';
+            spawnFloatingText('Bouchon perdu !', floatGroup.position, '#ff6b6b');
+        } else {
+            statusDisplay.textContent = 'La ligne a cassé ! Le bouchon est perdu… (un bouchon de départ : sans regret).';
+        }
     }
 }
 
@@ -4532,6 +4561,7 @@ window.__game = {
     getBouchonsPossedes: function () { return journal.bouchons.slice(); },
     getBoutiqueHtml: function () { return boutique ? boutique.innerHTML : ''; },
     acheterBouchon: acheterBouchon,
+    perdreLeBouchon: perdreLeBouchon,
     xpPourPrise: xpPourPrise,
     gagnerExperience: gagnerExperience,
     getCapaciteBouchon: function () { return capaciteBouchon(); },

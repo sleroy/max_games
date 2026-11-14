@@ -78,6 +78,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   moins de fausses touches), **Waggler plombé** (combat plus long, poisson moins combatif)
   et **Bouchon du maître** (polyvalent + 50 % d'expérience). On équipe un bouchon d'un clic
   et l'expérience comme les bouchons achetés sont **sauvegardés** dans le navigateur.
+  ⚠️ **Prends garde aux nénuphars** : si la ligne s'y accroche et **casse**, le bouchon
+  équipé **part avec elle**. Un bouchon **acheté** est alors **perdu** (il quitte le sac et
+  il faudra le **racheter** avec de l'expérience) ; les bouchons **de départ** ne coûtent rien.
 - **Bouton pause** (⏸) : fige le jeu (et le bouton plein écran ⛶ en dessous).
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
 - **Bouton 🥣 Nourrir (amorçage)** : clique une fois sur le bouton pour armer le mode,
@@ -108,7 +111,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   touche est **ratée**, des **ronds rouges concentriques** s'écartent du bouchon. Le bouchon
   a été un peu **agrandi** (et ses mouvements amplifiés) pour rester lisible de la berge.
 - **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
-- **Accrochage dans les nénuphars** avec risque de casser la ligne.
+- **Accrochage dans les nénuphars** : la ligne peut casser… et le **bouchon part avec
+  elle** ! Un bouchon **acheté** est alors perdu (il faudra le racheter), et on repêche
+  avec un bouchon de départ.
 - Les poissons perdus deviennent plus agressifs, plus rapides et plus rouges.
 - **Manivelle** (tours proportionnels à la distance) pendant l'épreuve de force et la remontée.
 - **Amorçage (boule de nourriture)** : bouton « Nourrir », visée au maintien de la souris

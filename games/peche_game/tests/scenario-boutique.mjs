@@ -170,6 +170,62 @@ export function run() {
     check('le bouchon du maître donne plus d’expérience', xpMaitre > xpAnglaise,
         xpAnglaise + ' XP -> ' + xpMaitre + ' XP');
 
+    // -----------------------------------------------------------------------
+    group('40) Perdre son bouchon dans les nénuphars');
+
+    resetToIdle();
+    clearLilyPads();
+    G().setExperience(500);
+    G().acheterBouchon('truque');
+    G().setFloatType('truque');
+    checkEqual('bouchon acheté et équipé', G().getFloatType(), 'truque');
+
+    // On pose un nénuphar et on lance DESSUS : la ligne s'y accroche.
+    G().lilyPads.push({ x: 0, z: -25, radius: 4 });
+    castTo(0, -25);
+    checkEqual('la ligne s’accroche au nénuphar', state(), 'snag');
+    let garde = 0;
+    while (state() === 'snag' && garde++ < 60 * 30) {
+        step(1 / 60);           // on ne clique pas : la tension monte et ça casse
+    }
+    check('la ligne finit par casser', state() === 'broken' || state() === 'idle', state());
+    check('un message flottant annonce la perte',
+        G().getFloatingTexts().indexOf('Bouchon perdu !') >= 0,
+        G().getFloatingTexts().join(' / '));
+    checkEqual('le bouchon ACHETÉ est perdu', G().getBouchonsPossedes().indexOf('truque'), -1);
+    checkEqual('on repêche avec le bouchon de départ', G().getFloatType(), 'anglaise');
+    check('le message explique la perte', el('status').textContent.indexOf('perdu') >= 0,
+        el('status').textContent);
+    const boutiqueApres = G().getBoutiqueHtml();
+    check('la boutique propose de le racheter',
+        boutiqueApres.indexOf('data-id="truque"') >= 0
+        && boutiqueApres.indexOf('data-id="truque" disabled') < 0,
+        'bouton « truque » de nouveau disponible');
+    for (let i = 0; i < 120; i++) {
+        step(1 / 60);           // la ligne cassée « revient » et on repart au repos
+    }
+    checkEqual('retour au repos après la casse', state(), 'idle');
+    checkEqual('on peut racheter le bouchon perdu', G().acheterBouchon('truque'), true);
+    G().lilyPads.length = 0;
+
+    // Un bouchon de DÉPART, lui, n'est jamais retiré de l'inventaire.
+    resetToIdle();
+    G().setFloatType('anglaise');
+    const sacAvant = G().getBouchonsPossedes().length;
+    G().lilyPads.push({ x: 0, z: -25, radius: 4 });
+    castTo(0, -25);
+    garde = 0;
+    while (state() === 'snag' && garde++ < 60 * 30) {
+        step(1 / 60);
+    }
+    for (let i = 0; i < 120; i++) {
+        step(1 / 60);
+    }
+    checkEqual('un bouchon de départ n’est pas retiré du sac',
+        G().getBouchonsPossedes().length, sacAvant);
+    checkEqual('on garde le bouchon de départ équipé', G().getFloatType(), 'anglaise');
+    G().lilyPads.length = 0;
+
     G().setExperience(0);
     resetToIdle();
     G().setFloatType('anglaise');
