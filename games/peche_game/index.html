@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=45">
+    <link rel="stylesheet" href="style.css?v=46">
 </head>
 <body>
     <div class="game-wrap">
@@ -32,6 +32,7 @@
                 <button class="feed-button" id="feedButton">🥣 Nourrir</button>
                 <button class="journal-button" id="journalButton">📖 Carnet</button>
                 <div class="bourriche-label" id="bourricheLabel">🧺 Bourriche : 0</div>
+                <div class="bourriche-label" id="xpLabel">⭐ 0 XP</div>
             </div>
             <div class="panel" id="journal">
                 <h2 class="panel-title">📖 Carnet de pêche</h2>
@@ -71,6 +72,12 @@
                     </select>
                 </div>
                 <div class="float-info" id="floatInfo"></div>
+                <div class="panel-subtitle">🎣 Boutique de bouchons <span class="shop-xp" id="shopXp">⭐ 0 XP</span></div>
+                <div class="shop-hint">
+                    Range des poissons dans la bourriche pour gagner de l’<b>expérience</b> (XP),
+                    puis achète des bouchons aux <b>capacités spéciales</b> !
+                </div>
+                <div class="shop-list" id="boutique"></div>
                 <div class="panel-row">
                     <label for="difficultySelect">Difficulté</label>
                     <select id="difficultySelect">
@@ -154,6 +161,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=45"></script>
+    <script type="module" src="script.js?v=46"></script>
 </body>
 </html>

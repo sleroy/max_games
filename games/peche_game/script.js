@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=45 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=46 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=45';
+import { SoundEngine } from './sound.js?v=46';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -34,6 +34,9 @@ const bigTextToggle = document.getElementById('bigTextToggle');
 const calmToggle = document.getElementById('calmToggle');
 const effectsToggle = document.getElementById('effectsToggle');
 const bourricheLabel = document.getElementById('bourricheLabel');
+const xpLabel = document.getElementById('xpLabel');
+const shopXp = document.getElementById('shopXp');
+const boutique = document.getElementById('boutique');
 const toolDock = document.getElementById('toolDock');
 const dragButton = document.getElementById('dragButton');
 const journalEspeces = document.getElementById('journalEspeces');
@@ -1141,19 +1144,49 @@ scene.add(floatGroup);
 //   - sur une touche en remontée : l'anglaise sort la moitié de sa tige, un
 //     bouchon court et sensible (waggler) se couche sur le côté.
 // ---------------------------------------------------------------------------
+// Capacités spéciales des bouchons. Les valeurs « neutres » valent 1.
+//   fenetre  : longueur de la fenêtre de ferrage (> 1 = plus facile)
+//   fausses  : nombre de fausses touches (< 1 = moins de pièges)
+//   avantage : avantage laissé au poisson au ferrage (< 1 = mieux pour toi)
+//   temps    : temps d'épreuve de force (> 1 = plus de temps)
+//   xp       : expérience gagnée (> 1 = plus d'expérience)
+//   voyant   : le bouchon reste visible la nuit
+const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false };
+
+// Bouchons offerts au départ (les autres s'ACHÈTENT avec l'expérience).
+const BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
+
 const FLOTTEURS = [
-    { id: 'anglaise', nom: 'Anglaise', sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
+    { id: 'anglaise', nom: 'Anglaise', prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
       couleur: 0xff5a3c, corps: 0xf4f4f4,
       desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
-    { id: 'waggler', nom: 'Waggler', sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
+    { id: 'waggler', nom: 'Waggler', prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
       couleur: 0xffd24d, corps: 0xf4f4f4,
       desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
-    { id: 'coulisse', nom: 'Pose à coulisse', sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
+    { id: 'coulisse', nom: 'Pose à coulisse', prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
       couleur: 0xd0552a, corps: 0xf4f4f4,
       desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
-    { id: 'bolognaise', nom: 'Bolognaise', sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
+    { id: 'bolognaise', nom: 'Bolognaise', prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
       couleur: 0xe04a2a, corps: 0xffe066,
       desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' }
+    // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
+    { id: 'plume', nom: 'Plume d’oie lumineuse', prix: 45, remontee: 'couche', longueur: 2.0,
+      couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
+      capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
+      desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
+    { id: 'truque', nom: 'Bouchon truqué', prix: 80, remontee: 'couche', longueur: 1.8,
+      couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
+      capacite: { fausses: 0.55 }, sensibilite: 1.2,
+      desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
+    { id: 'plombee', nom: 'Waggler plombé', prix: 120, remontee: 'couche', longueur: 1.9,
+      couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
+      capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
+      desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
+    { id: 'maitre', nom: 'Bouchon du maître', prix: 250, remontee: 'demi-tige', longueur: 2.8,
+      couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
+      capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
+      sensibilite: 1.25,
+      desc: 'Le bouchon du maître pêcheur : un peu tout à la fois (ferrage plus facile, moins de fausses touches, poisson moins combatif) et 50 % d’expérience en plus !' }
 ];
 let flotteurChoix = 'anglaise';
 
@@ -1173,6 +1206,16 @@ function appliquerFlotteurVisuel(f) {
     floatStick.material.color.set(f.couleur);
     floatBody.material.color.set(f.corps);
     floatStick.userData.longueur = f.longueur;
+    // Bouchons lumineux : une petite lueur propre les rend lisibles la nuit.
+    const lueur = capaciteBouchon(f).voyant;
+    if (floatStick.material.emissive) {
+        floatStick.material.emissive.set(lueur ? f.couleur : 0x000000);
+        floatStick.material.emissiveIntensity = lueur ? 0.9 : 0;
+    }
+    if (floatBody.material.emissive) {
+        floatBody.material.emissive.set(lueur ? 0x335566 : 0x000000);
+        floatBody.material.emissiveIntensity = lueur ? 0.45 : 0;
+    }
 }
 
 function setFloatType(id) {
@@ -1190,6 +1233,30 @@ function setFloatType(id) {
     appliquerFlotteurVisuel(f);
     journal.bouchon = f.id;
     saveJournal();
+}
+
+// Retrouve un bouchon par son identifiant (ou null).
+function trouverFlotteur(id) {
+    for (let i = 0; i < FLOTTEURS.length; i++) {
+        if (FLOTTEURS[i].id === id) {
+            return FLOTTEURS[i];
+        }
+    }
+    return null;
+}
+
+// Capacités du bouchon donné (ou du bouchon équipé) : les valeurs manquantes
+// prennent la valeur neutre (CAPACITE_BASE).
+function capaciteBouchon(f) {
+    const c = (f || flotteurCourant()).capacite || {};
+    return {
+        fenetre: c.fenetre || CAPACITE_BASE.fenetre,
+        fausses: c.fausses || CAPACITE_BASE.fausses,
+        avantage: c.avantage || CAPACITE_BASE.avantage,
+        temps: c.temps || CAPACITE_BASE.temps,
+        xp: c.xp || CAPACITE_BASE.xp,
+        voyant: !!c.voyant
+    };
 }
 
 floatInfo.textContent = flotteurCourant().desc;
@@ -1539,7 +1606,7 @@ const fishThrowOrigin = new THREE.Vector3();
 // ---------------------------------------------------------------------------
 // Carnet de pêche (conservé dans le navigateur quand c'est possible)
 // ---------------------------------------------------------------------------
-const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {} };
+const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, bouchons: BOUCHONS_DE_DEPART.slice() };
 const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null;
 const JOURNAL_KEY = 'peche_carnet_v1';
 
@@ -1572,6 +1639,19 @@ function loadJournal() {
         });
         if (typeof data.bouchon === 'string') {
             flotteurChoix = data.bouchon;
+        }
+        // Expérience gagnée en pêchant, et bouchons achetés à la boutique.
+        journal.experience = Math.max(0, Math.floor(data.experience || 0));
+        journal.bouchons = BOUCHONS_DE_DEPART.slice();
+        const achetes = Array.isArray(data.bouchons) ? data.bouchons : [];
+        achetes.forEach(id => {
+            if (trouverFlotteur(id) && journal.bouchons.indexOf(id) < 0) {
+                journal.bouchons.push(id);
+            }
+        });
+        // Bouchon sauvegardé qui n'est plus possédé : on repasse au premier offert.
+        if (journal.bouchons.indexOf(flotteurChoix) < 0) {
+            flotteurChoix = BOUCHONS_DE_DEPART[0];
         }
     } catch (error) {
         // Carnet illisible : on repart de zéro.
@@ -1618,6 +1698,8 @@ function renderJournal() {
         }).join('\n')
         : 'Attrape ton premier poisson pour remplir la fiche !';
     bourricheLabel.textContent = '🧺 Bourriche : ' + journal.total;
+    xpLabel.textContent = '⭐ ' + journal.experience + ' XP';
+    shopXp.textContent = '⭐ ' + journal.experience + ' XP';
 }
 
 function addJournalEntry(weight, espece) {
@@ -1640,6 +1722,111 @@ function addJournalEntry(weight, espece) {
     saveJournal();
     renderJournal();
 }
+
+// ---------------------------------------------------------------------------
+// Expérience et boutique de bouchons
+// ---------------------------------------------------------------------------
+// On gagne de l'expérience (XP) en rangeant des poissons dans la bourriche :
+// plus le poisson est lourd, plus il rapporte. Cette expérience sert à ACHETER
+// des bouchons aux capacités spéciales (moins de fausses touches, combat plus
+// court, visible la nuit…).
+
+function xpPourPrise(poids) {
+    const brut = 4 + (poids || 0) * 8;
+    return Math.max(3, Math.round(brut * capaciteBouchon().xp));
+}
+
+// Encaisse l'expérience d'une prise. Renvoie le nombre de XP gagnés.
+function gagnerExperience(poids) {
+    const gain = xpPourPrise(poids);
+    journal.experience += gain;
+    saveJournal();
+    renderJournal();
+    return gain;
+}
+
+function bouchonPossede(id) {
+    return journal.bouchons.indexOf(id) >= 0;
+}
+
+// Achète un bouchon avec l'expérience. Renvoie true si l'achat a réussi.
+function acheterBouchon(id) {
+    const f = trouverFlotteur(id);
+    if (!f || bouchonPossede(id) || journal.experience < f.prix) {
+        return false;
+    }
+    journal.experience -= f.prix;
+    journal.bouchons.push(id);
+    saveJournal();
+    renderJournal();
+    return true;
+}
+
+// Construit la liste déroulante (bouchons possédés) et la boutique.
+function renderBoutique() {
+    // 1) La liste déroulante ne propose que ce qu'on possède.
+    let options = '';
+    FLOTTEURS.forEach(f => {
+        if (bouchonPossede(f.id)) {
+            options += '<option value="' + f.id + '">' + f.nom + '</option>';
+        }
+    });
+    floatSelect.innerHTML = options;
+    if (bouchonPossede(flotteurChoix)) {
+        floatSelect.value = flotteurChoix;
+    }
+    if (!boutique) {
+        return;
+    }
+    // 2) La boutique : un bouton « Équiper » ou « Acheter » pour chaque bouchon.
+    let html = '';
+    FLOTTEURS.forEach(f => {
+        const possede = bouchonPossede(f.id);
+        const equipe = f.id === flotteurChoix;
+        const assez = journal.experience >= f.prix;
+        let bouton;
+        if (possede) {
+            bouton = equipe
+                ? '<button class="shop-btn equipped" disabled>✅ Équipé</button>'
+                : '<button class="shop-btn" data-action="equiper" data-id="' + f.id + '">Équiper</button>';
+        } else {
+            bouton = '<button class="shop-btn buy" data-action="acheter" data-id="' + f.id + '"'
+                + (assez ? '' : ' disabled') + '>Acheter · ' + f.prix + ' XP</button>';
+        }
+        html += '<div class="shop-item' + (possede ? ' owned' : '') + '">'
+            + '<div class="shop-name">' + f.nom
+            + (possede ? '' : ' <span class="shop-price">' + f.prix + ' XP</span>') + '</div>'
+            + (f.atout ? '<div class="shop-trait">' + f.atout + '</div>' : '')
+            + '<div class="shop-desc">' + f.desc + '</div>'
+            + bouton + '</div>';
+    });
+    boutique.innerHTML = html;
+}
+
+// Un seul écouteur pour toute la boutique (les boutons sont recréés souvent).
+boutique.addEventListener('click', event => {
+    const cible = event.target;
+    if (!cible || !cible.dataset || !cible.dataset.id) {
+        return;
+    }
+    const id = cible.dataset.id;
+    if (cible.dataset.action === 'equiper') {
+        ensureSound();
+        setFloatType(id);
+        sound.reel();
+    } else if (cible.dataset.action === 'acheter') {
+        if (acheterBouchon(id)) {
+            ensureSound();
+            setFloatType(id);
+            sound.catchFish();
+            const f = trouverFlotteur(id);
+            statusDisplay.textContent = f.nom + ' acheté et équipé ! ' + f.atout;
+        } else {
+            statusDisplay.textContent = 'Pas assez d’expérience : pêche encore des poissons pour ce bouchon !';
+        }
+    }
+    renderBoutique();
+});
 
 function showJournal() {
     renderJournal();
@@ -1769,11 +1956,12 @@ function storeHeldFish() {
     scoreDisplay.textContent = score;
     showCatchMessage(weight, fish.userData.espece);
     addJournalEntry(weight, fish.userData.espece);
+    const gainXp = gagnerExperience(weight);
     sound.catchFish();
     spawnRipple(BOURRICHE_POS);
     spawnSplash(BOURRICHE_POS);
     statusDisplay.textContent = 'Dans la bourriche ! ' + fish.userData.espece + ' — '
-        + fmtPoids(weight) + ' (+1) 🧺';
+        + fmtPoids(weight) + ' (+1 · +' + gainXp + ' XP) 🧺';
 }
 
 // Raté : le poisson retombe à l'eau et repart.
@@ -2007,7 +2195,10 @@ journalButton.addEventListener('click', () => {
 });
 journalClose.addEventListener('click', hideJournal);
 difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
-floatSelect.addEventListener('change', () => setFloatType(floatSelect.value));
+floatSelect.addEventListener('change', () => {
+    setFloatType(floatSelect.value);
+    renderBoutique();
+});
 effectsToggle.checked = post.enabled;
 effectsToggle.addEventListener('change', () => {
     post.enabled = effectsToggle.checked !== false;
@@ -2031,6 +2222,7 @@ calmToggle.addEventListener('change', () => {
 loadJournal();
 setFloatType(flotteurChoix);
 renderJournal();
+renderBoutique();
 
 // ---------------------------------------------------------------------------
 // Météo : beau temps → rafales → pluie. Le cycle est piloté par le TEMPS DE JEU
@@ -2894,7 +3086,9 @@ function computeStrugglePos() {
 function startStruggle(fish, facteurAvantage) {
     // `facteurAvantage` vient du ferrage : < 1 = avantage au joueur (le poisson
     // est proche), > 1 = avantage au poisson (il faut ramener plus de fil).
-    const avantage = (typeof facteurAvantage === 'number') ? facteurAvantage : 1;
+    const cap = capaciteBouchon();
+    // L'avantage laissé au poisson peut être réduit par le bouchon équipé.
+    const avantage = ((typeof facteurAvantage === 'number') ? facteurAvantage : 1) * cap.avantage;
     const size = fish.userData.size;
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
@@ -2925,7 +3119,7 @@ function startStruggle(fish, facteurAvantage) {
     tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
     // Temps limite : assez large pour jouer à la souris, mais il faut vraiment
     // ramener le poisson — et le chrono se resserre quand DIFFICULTY augmente.
-    struggleTimeLeft = Math.min(22, Math.max(6, (baseLength * 0.65) / DIFFICULTY)) * (2 - avantage);
+    struggleTimeLeft = Math.min(22, Math.max(6, (baseLength * 0.65) / DIFFICULTY)) * (2 - avantage) * cap.temps;
     updateStruggleTimer();
     computeStrugglePos();
     floatGroup.position.copy(strugglePos);
@@ -2954,10 +3148,15 @@ function showBiteView(fish) {
     bitePhase = 'floating';
     biteViewTimer = 0;
     const flotteur = flotteurCourant();
+    const cap = capaciteBouchon(flotteur);
     // Plus le bouchon est sensible, plus la fenêtre de ferrage est longue…
-    biteFenetre = BITE_WINDOW * flotteur.sensibilite;
-    // …mais plus il montre de fausses touches !
-    biteSignauxRestants = 1 + Math.floor(rand() * 2 * flotteur.sensibilite);
+    // …et certains bouchons achetés l'allongent encore (capacité « fenetre »).
+    biteFenetre = BITE_WINDOW * flotteur.sensibilite * cap.fenetre;
+    // …mais plus il montre de fausses touches ! (« fausses » < 1 = moins de pièges)
+    const signauxBase = 1 + Math.floor(rand() * 2 * flotteur.sensibilite);
+    biteSignauxRestants = cap.fausses >= 1
+        ? signauxBase
+        : Math.max(1, Math.round(signauxBase * cap.fausses));
     biteToucheType = rand() < 0.5 ? 'enfoncement' : 'remontee';
     biteSinkAt = 0.6 + rand() * 0.8;
     biteSignalTimer = 0;
@@ -4006,12 +4205,27 @@ window.__game = {
         return FLOTTEURS.map(function (f) {
             return {
                 id: f.id, nom: f.nom, sensibilite: f.sensibilite,
-                remontee: f.remontee, longueur: f.longueur, desc: f.desc
+                remontee: f.remontee, longueur: f.longueur, desc: f.desc,
+                prix: f.prix || 0, atout: f.atout || '',
+                capacite: capaciteBouchon(f)
             };
         });
     },
     getFloatType: function () { return flotteurCourant().id; },
     setFloatType: setFloatType,
+    // Expérience et boutique de bouchons — exposées pour les tests.
+    getExperience: function () { return journal.experience; },
+    setExperience: function (value) {
+        journal.experience = Math.max(0, Math.floor(value || 0));
+        saveJournal();
+        renderJournal();
+    },
+    getBouchonsPossedes: function () { return journal.bouchons.slice(); },
+    getBoutiqueHtml: function () { return boutique ? boutique.innerHTML : ''; },
+    acheterBouchon: acheterBouchon,
+    xpPourPrise: xpPourPrise,
+    gagnerExperience: gagnerExperience,
+    getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
     startReel: startReel,

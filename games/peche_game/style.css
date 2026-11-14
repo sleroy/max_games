@@ -775,6 +775,88 @@ button, .crank {
     padding: 6px 8px;
 }
 
+/* Boutique de bouchons (dans le carnet) */
+.shop-xp {
+    float: right;
+    font-weight: bold;
+    color: #ffd76e;
+}
+
+.shop-hint {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0.85;
+}
+
+.shop-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shop-item {
+    border: 1px solid rgba(127, 208, 255, 0.35);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.shop-item.owned {
+    border-color: rgba(126, 217, 87, 0.45);
+}
+
+.shop-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.shop-price {
+    font-weight: normal;
+    font-size: 0.8rem;
+    color: #ffd76e;
+}
+
+.shop-trait {
+    font-size: 0.8rem;
+    color: #9ef0c0;
+}
+
+.shop-desc {
+    font-size: 0.76rem;
+    line-height: 1.45;
+    opacity: 0.85;
+}
+
+.shop-btn {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    color: #08222f;
+    background: #7fd0ff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.shop-btn.buy {
+    background: #ffd76e;
+}
+
+.shop-btn.equipped {
+    background: rgba(126, 217, 87, 0.85);
+    cursor: default;
+}
+
+.shop-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .pond-map svg {
     width: 100%;
     height: auto;
