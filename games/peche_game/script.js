@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=82 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=83 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=82';
+import { SoundEngine } from './sound.js?v=83';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1991,7 +1991,7 @@ function updateToolDock() {
     const visible = resting && cameraMode === 'normal';
     toolDock.classList.toggle('hidden', !visible);
     // On ne peut amorcer qu'au repos, sans ligne à l'eau.
-    feedButton.disabled = floatState !== 'idle';
+    feedButton.disabled = !(floatState === 'idle' || floatState === 'inWater');
 }
 
 // ---------------------------------------------------------------------------
@@ -2788,7 +2788,7 @@ function setCastPower(value) {
 }
 
 function startCastCharge(point) {
-    if (castState !== 'idle' || floatState !== 'idle' || feedMode) {
+    if (castState !== 'idle' || (floatState !== 'idle' && floatState !== 'inWater') || feedMode) {
         return;
     }
     castState = 'charging';
@@ -5174,11 +5174,6 @@ function updateFloat(dt, time) {
             waitTimer = Math.min(waitTimer, MAX_WAIT - 6);
         }
         waitTimer += dt;
-        // Trois secondes avant la remontée automatique : on prévient le joueur.
-        if (waitTimer > MAX_WAIT - 3 && !avertiRemontee) {
-            avertiRemontee = true;
-            statusDisplay.textContent = 'Toujours rien… la ligne va remonter TOUTE SEULE dans 3 s (tourne la manivelle pour la ramener, ou relance).';
-        }
         // Un tour de manivelle pendant l'attente : on ramène la ligne (pour
         // relancer ailleurs). La manivelle ne sert donc pas qu'au combat.
         if (consumeCrankTurns() > 0) {
@@ -5191,8 +5186,6 @@ function updateFloat(dt, time) {
             const fish = findBitingFish();
             if (fish) {
                 showBiteView(fish);
-            } else if (waitTimer > MAX_WAIT) {
-                startReel(true);
             }
         }
     } else if (floatState === 'bite') {
@@ -5331,7 +5324,7 @@ canvas.addEventListener('pointerdown', event => {
         return;
     }
     // Mode amorçage : un appui sur l'eau commence à charger la puissance.
-    if (feedMode && floatState === 'idle') {
+    if (feedMode && (floatState === 'idle' || floatState === 'inWater') && castState === 'idle') {
         if (feedState === 'idle') {
             const p = waterPointFromEvent(event);
             if (p) {
