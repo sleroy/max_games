@@ -1,12 +1,25 @@
-# AGENTS.md — Instructions pour l'agent (Cline)
+# AGENTS.md — Guide du dépôt « max_games »
 
-## Règles pour l'agent : publier automatiquement sur GitHub
+> Ce fichier sert à **deux publics** :
+> - 🧒 **Toi** (le créateur de jeux) → lis la **Partie 1**.
+> - 🤖 **L'agent IA (Cline)** → applique les règles du haut et la **Partie 2**.
 
-> **⚠️ Règle principale :** après **chaque** modification de fichiers dans ce dépôt,
-> l'agent doit **automatiquement** committer **et** pousser les changements sur GitHub,
-> sans attendre que l'utilisateur le demande.
+## ⚡ Le résumé en 30 secondes
 
-### Procédure à suivre après toute modification
+- **1 jeu = 1 dossier** dans `games/` (ex. `games/mon-super-jeu/`).
+- Un jeu, c'est **3 fichiers** : `index.html`, `style.css`, `script.js`.
+- **Tester** : `python3 -m http.server` puis ouvrir <http://127.0.0.1:8000/>.
+- **Publier** : ajouter le jeu à `index.html` + `README.md` + ce fichier.
+- **L'agent s'occupe du reste** : il committe et pousse tout seul sur GitHub.
+
+---
+
+## 🤖 Règles pour l'agent (Cline) — à appliquer toujours
+
+### 1. Publier automatiquement sur GitHub
+
+> **⚠️ Règle principale :** après **chaque** modification de fichiers, l'agent doit
+> **automatiquement** committer **et** pousser sur GitHub, sans qu'on le lui demande.
 
 ```bash
 git add -A
@@ -15,36 +28,242 @@ git push origin main
 ```
 
 - Ne jamais laisser de modifications non poussées en fin de tâche.
-- Si le push échoue (authentification / réseau), prévenir l'utilisateur et afficher la
-  commande `gh auth login` à exécuter.
+- Si le push échoue (authentification / réseau) : prévenir et rappeler `gh auth login`.
 - Ne pas utiliser `--force` sauf demande explicite.
 
-### Dépôt et déploiement
+### 2. Dépôt et déploiement
 
 | Élément | Valeur |
 |---|---|
 | Dépôt GitHub | [`sleroy/max_games`](https://github.com/sleroy/max_games) (public) |
 | Branche principale | `main` |
 | Remote | `origin` → `https://github.com/sleroy/max_games.git` |
-| Hébergement | GitHub Pages (déploiement depuis la branche `main`, dossier `/`) |
+| Hébergement | GitHub Pages (branche `main`, dossier `/`) |
 | URL du site | `https://sleroy.github.io/max_games/` |
 
-### Push automatique (filet de sécurité actif)
+### 3. Push automatique (filet de sécurité)
 
-Ce dépôt est configuré avec `core.hooksPath = .githooks` : le hook `post-commit`
+Le dépôt est configuré avec `core.hooksPath = .githooks` : le hook `post-commit`
 **pousse automatiquement** la branche courante vers `origin` à chaque commit.
 
-Pour activer ce comportement sur une nouvelle copie du dépôt :
+Sur une nouvelle copie du dépôt : `git config core.hooksPath .githooks`.
+Le hook est silencieux s'il n'y a pas de remote ou pendant un rebase.
 
-```bash
-git config core.hooksPath .githooks
+---
+
+## 🧒 Partie 1 — Créer un jeu vidéo (guide pas à pas)
+
+Pas besoin d'être un pro : **commence simple**, puis améliore petit à petit. 😊
+
+### ✅ Checklist : ajouter un nouveau jeu
+
+1. **Choisis une idée simple** : « un carré qui évite des obstacles ».
+2. **Crée un dossier** dans `games/` : `games/mon-super-jeu/`
+   (minuscules, tirets, **pas d'espaces ni d'accents**).
+3. **Crée 3 fichiers** : `index.html`, `style.css`, `script.js` (voir le squelette).
+4. **Teste en local** : `python3 -m http.server` →
+   <http://127.0.0.1:8000/games/mon-super-jeu/>.
+5. **Ajoute le jeu à la liste** : `index.html`, `README.md` et ce fichier.
+6. **Commit + push** : l'agent le fait automatiquement.
+7. **Joue en ligne** : `https://sleroy.github.io/max_games/games/mon-super-jeu/`
+
+### 🧱 Le squelette de départ
+
+**`index.html`**
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon super jeu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Mon super jeu</h1>
+    <canvas id="game" width="800" height="600"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>
 ```
 
-Le hook est volontairement silencieux en cas d'absence de remote ou de rebase en cours.
+**`style.css`**
+```css
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: sans-serif;
+    color: #ffffff;
+    background: #1a1a2e;
+}
+canvas {
+    background: #16213e;
+    border-radius: 8px;
+    touch-action: none;
+}
+```
 
-## Liste des jeux disponibles (source de vérité)
+**`script.js`**
+```js
+// Récupère le canvas et son "pinceau" (le contexte 2D)
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
 
-Tout **dossier placé dans `games/` et contenant un `index.html`** est un jeu exposé sur le site.
+// Le joueur : pour commencer, un simple carré
+const joueur = { x: 380, y: 500, taille: 40, vitesse: 300 };
+
+// Mémorise les touches appuyées
+const touches = {};
+addEventListener('keydown', e => touches[e.key] = true);
+addEventListener('keyup',   e => touches[e.key] = false);
+
+// La boucle de jeu (tourne ~60 fois par seconde)
+let dernier = performance.now();
+function boucle(maintenant) {
+    const dt = (maintenant - dernier) / 1000; // temps écoulé (secondes)
+    dernier = maintenant;
+    maj(dt);      // mettre à jour le monde
+    dessine();    // dessiner l'écran
+    requestAnimationFrame(boucle);
+}
+
+function maj(dt) {
+    if (touches['ArrowLeft'])  joueur.x -= joueur.vitesse * dt;
+    if (touches['ArrowRight']) joueur.x += joueur.vitesse * dt;
+    joueur.x = Math.max(0, Math.min(canvas.width - joueur.taille, joueur.x));
+}
+
+function dessine() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f9c74f';
+    ctx.fillRect(joueur.x, joueur.y, joueur.taille, joueur.taille);
+}
+
+requestAnimationFrame(boucle);
+```
+
+---
+
+### 🔁 Comprendre la boucle de jeu
+
+1. `maj(dt)` → **mettre à jour** le monde (déplacer le joueur, les ennemis…).
+2. `dessine()` → **effacer** l'écran puis **tout redessiner**.
+
+`dt` est le temps écoulé depuis l'image précédente. En multipliant par `dt`,
+le jeu va **à la même vitesse** sur un ordinateur rapide ou lent. 👍
+
+### ⭐ Bonnes pratiques
+
+- **Commence petit** : un carré qui bouge, puis ajoute ennemis, score…
+- **Une idée = un jeu** : ne mélange pas plusieurs jeux dans un dossier.
+- **Noms clairs** : `vitesseEnnemi`, `score`… (évite `a`, `b`, `x1`).
+- **Utilise `const` et `let`** (`var` = ancien, à éviter).
+- **Une seule boucle** `requestAnimationFrame` par jeu.
+- **Range l'état dans un objet** : `const jeu = { score: 0, vies: 3 };`
+- **Découpe en petites fonctions** : `maj()`, `dessine()`, `creerEnnemi()`.
+- **Commente en français** : ton « toi du futur » te remerciera.
+- **Teste après chaque petite étape** et regarde la console (touche **F12**).
+
+### 🚫 Erreurs classiques à éviter
+
+- Tout écrire dans le HTML → mets le JavaScript dans `script.js`.
+- Copier du code sans comprendre → demande à l'agent de **t'expliquer**.
+- Ouvrir un jeu en `file://` alors qu'il utilise des modules → serveur HTTP.
+- Oublier `dt` → le jeu accélère ou ralentit selon l'ordinateur.
+- Oublier d'ajouter le jeu à `index.html` → il n'apparaît pas sur le site.
+- Utiliser une image ou un son **sans vérifier la licence** → mets un `CREDITS.txt`.
+
+### 🧪 Tester son jeu en local
+
+```bash
+cd games/mon-super-jeu
+python3 -m http.server 8000
+# puis ouvre http://127.0.0.1:8000/
+```
+
+Ouvre la **console** du navigateur (**F12**) : les erreurs en rouge expliquent
+souvent le problème. C'est le meilleur ami du créateur de jeux ! 🐞
+
+---
+
+## 📚 Bibliothèques recommandées
+
+**Conseil :** commence **sans bibliothèque** (canvas + JavaScript) pour apprendre les
+bases, puis ajoutes-en une quand tu en as besoin.
+
+| Bibliothèque | Pour faire… | Niveau | Site |
+|---|---|---|---|
+| **p5.js** | dessiner et créer en 2D très simplement | 🟢 débutant | <https://p5js.org> |
+| **Kaplay** (ex-Kaboom) | des jeux 2D très vite (arcade, plateforme) | 🟢 débutant | <https://kaplayjs.com> |
+| **Phaser** | des jeux 2D complets et pro | 🟠 intermédiaire | <https://phaser.io> |
+| **three.js** | de la 3D (déjà utilisé dans `peche_game`) | 🟠 intermédiaire | <https://threejs.org> |
+| **Matter.js** | de la physique (chute, rebond, collision) | 🟠 intermédiaire | <https://brm.io/matter-js> |
+| **Howler.js** | des sons et de la musique | 🟢 tous | <https://howlerjs.com> |
+| **GSAP** | des animations fluides | 🟢 tous | <https://gsap.com> |
+
+**Que choisir ?**
+
+- « Je veux juste dessiner et bouger des formes » → **canvas seul** ou **p5.js**.
+- « Je veux un vrai jeu 2D avec niveaux et ennemis » → **Kaplay** ou **Phaser**.
+- « Je veux de la 3D » → **three.js**.
+
+> 💡 Pour ajouter une bibliothèque, télécharge son fichier `.js` **dans le dossier du jeu**
+> (comme `peche_game/assets/three.module.js`) et référence-le en local. On évite les
+> liens externes (CDN) pour que le jeu fonctionne même sans Internet.
+
+## 🎨 Ressources gratuites (images, sons, polices)
+
+| Ressource | Contenu | Licence |
+|---|---|---|
+| [Kenney](https://kenney.nl/assets) | packs d'images et de sons | CC0 (libre) |
+| [OpenGameArt](https://opengameart.org) | images, sons, musiques | à vérifier |
+| [itch.io — assets gratuits](https://itch.io/game-assets/free) | ressources de jeux | à vérifier |
+| [Freesound](https://freesound.org) | bruitages | à vérifier |
+| [Google Fonts](https://fonts.google.com) | polices | open source |
+| [Coolors](https://coolors.co) | palettes de couleurs | libre |
+
+**Règle d'or :** note toujours la **source** et la **licence** dans un fichier
+`CREDITS.txt` à côté du jeu (exemple : `games/peche_game/assets/CREDITS.txt`).
+Préfère les ressources **CC0**.
+
+---
+
+## 🤖 Partie 2 — Détails du dépôt (pour l'agent)
+
+### 📦 Conventions
+
+- **Tout jeu** vit dans `games/<nom-du-jeu>/` et contient un `index.html`.
+- Noms de dossiers : **minuscules, tirets, sans espaces** (`mon-super-jeu`).
+- Un jeu est **autonome** : il référence ses fichiers en **relatif**
+  (`style.css`, `./assets/...`) — jamais de chemin absolu (`/...`).
+- **Site 100 % statique** : pas d'étape de build, pas de `node_modules` versionné.
+- Conserver `.nojekyll` (sinon GitHub Pages ignore certains dossiers).
+- `games/peche_game/` utilise des **modules ES** → serveur HTTP obligatoire.
+- Commentaires et textes d'interface **en français**.
+- Ne pas supprimer `/home/enfant/peche_game_git_backup` (ancienne sauvegarde Git).
+
+### 🗂️ Arborescence
+
+```
+.
+├── index.html                 # Page d'accueil (liste des jeux)
+├── README.md                  # Présentation du projet
+├── AGENTS.md                  # Ce guide (agent + créateur)
+├── .nojekyll
+├── .githooks/post-commit      # Push automatique
+└── games/
+    ├── jeu1/                  # Morpion
+    ├── minecraft/             # Minecraft (three.js)
+    ├── minecraft-online/      # Minecraft — version en ligne
+    ├── minecraft-trap-pvp/    # Minecraft Trap PVP
+    ├── page 1/                # Page de démo
+    ├── peche_game/            # Jeu de pêche 3D
+    └── slime_game/            # Slime Adventure
+```
+
+### 📋 Liste des jeux (source de vérité)
 
 | # | Jeu | Dossier | Techno | Lien |
 |---|---|---|---|---|
@@ -58,53 +277,24 @@ Tout **dossier placé dans `games/` et contenant un `index.html`** est un jeu ex
 
 **Total : 7 entrées.**
 
-### Règle : maintenir `index.html`
+### ➕ Quand un jeu est ajouté / retiré / renommé
 
-`index.html` (racine) est la **page d'accueil du site** et doit toujours lister les jeux réellement présents.
+1. Ajoute (ou retire) un `<li class="game">` dans `index.html` en renseignant
+   `data-folder="games/mon-super-jeu/"` et `data-tech`.
+2. Mets à jour le tableau **ci-dessus**.
+3. Mets à jour le tableau du `README.md`.
+4. Commit + push (l'agent le fait tout seul).
 
-À faire **à chaque ajout / suppression / renommage d'un jeu** :
+> 💡 Le compteur en haut de `index.html` se **calcule automatiquement** en JavaScript.
+> Pour un dossier contenant un espace, encode l'URL : `page 1/` → `page%201/`.
 
-1. Ajouter (ou retirer) l'élément `<li class="game">` correspondant dans `index.html`, en renseignant
-   les attributs `data-folder` et `data-tech` (utilisés par la liste et le compteur).
-2. Mettre à jour le tableau ci-dessus.
-3. Mettre à jour le tableau du `README.md`.
-4. Committer et pousser (voir la règle de push automatique en haut de ce fichier).
+## 📖 Petit glossaire
 
-Points d'attention :
-
-- Le compteur en en-tête (`#gameCount`) est **calculé automatiquement en JS** à partir du nombre de
-  `<li class="game">`. La valeur `7` codée en dur n'est qu'un repli si JavaScript est désactivé.
-- Les liens vers un dossier contenant un espace doivent être encodés : `games/page 1/` → `games/page%201/`.
-- Garder les mêmes conventions de style : textes et descriptions en français, icône emoji par jeu.
-
-## Présentation du projet
-
-Collection de jeux web statiques (HTML / CSS / JavaScript), exposés via GitHub Pages.
-
-```
-.
-├── index.html                 # Page d'accueil (liste des jeux)
-├── README.md                  # Présentation du projet
-├── AGENTS.md                  # Instructions pour l'agent (Cline)
-├── .nojekyll                  # Désactive le traitement Jekyll sur GitHub Pages
-├── .githooks/post-commit      # Hook de push automatique
-└── games/                     # Tous les jeux exposés sur le site
-    ├── jeu1/                  # Jeu de Morpion
-    ├── minecraft/             # Minecraft en JavaScript (three.js)
-    ├── minecraft-online/      # Minecraft JS — version en ligne (survie, craft)
-    ├── minecraft-trap-pvp/    # Minecraft Trap PVP
-    ├── page 1/                # Page de démonstration statique
-    ├── peche_game/            # Jeu de pêche 3D (three.js)
-    └── slime_game/            # Slime Adventure
-```
-
-## Contraintes techniques
-
-- **Site 100 % statique** : pas d'étape de build, pas de `node_modules` versionné.
-- Conserver le fichier `.nojekyll` (sinon les dossiers commençant par `_` seraient ignorés
-  par GitHub Pages).
-- `games/peche_game/` utilise des **modules ES** : le jeu doit être servi via HTTP
-  (`python3 -m http.server`) et non ouvert en `file://`.
-- Respecter les conventions existantes : commentaires et textes d'interface en français.
-- Ne pas supprimer le dossier `/home/enfant/peche_game_git_backup` (sauvegarde de
-  l'ancien historique Git de `peche_game`).
+- **Canvas** : la zone rectangulaire où l'on dessine.
+- **Contexte 2D (`ctx`)** : l'objet qui sert de « pinceau ».
+- **Boucle de jeu** : fonction répétée ~60×/s qui met à jour puis dessine.
+- **`dt` (delta time)** : temps écoulé depuis l'image précédente.
+- **Sprite** : une image de personnage ou d'objet.
+- **Hitbox** : la zone invisible qui détecte les collisions.
+- **Assets** : les images, sons et polices d'un jeu.
+- **FPS** : images par seconde (*frames per second*).
