@@ -50,6 +50,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   toujours séparées par de vraies **pauses**. Il attend alors que tu guettes le bon moment
   pour **LA vraie touche**, franche, de deux types : **enfoncement complet** ou **remontée**
   (l'anglaise sort la moitié de sa tige ; un bouchon court se couche sur le côté).
+  Si tu laisses passer la touche, le poisson recrache l'hameçon et des **ronds rouges
+  concentriques** s'écartent du bouchon pour te montrer que tu l'as **ratée**.
 - **Ferrer au bon moment** : clique pile pendant la vraie touche → **tu démarres avec
   l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
   (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.
@@ -94,7 +96,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   à la touche**, **fausses touches**, **deux types de vraies touches** (enfoncement /
   remontée) et **avantage au ferrage** (parfait = avantage au joueur, trop tôt/trop tard =
   avantage au poisson).
-- **Mode bouchon** : vue rapprochée, enfoncement sous l'eau, fenêtre de ferrage à un seul essai.
+- **Vue réaliste** (plus aucun zoom) : on surveille son **bouchon de loin**, comme au bord
+  de l'eau, et c'est à l'œil (et à l'oreille : le « ploc » du bouchon) qu'on repère la
+  **vraie touche**. Des **messages flottants** dans la scène 3D disent ce qui se passe
+  (« Un poisson s'approche… », « Ça bouge… », « FERRÉ ! », « Trop tôt ! ») et, quand une
+  touche est **ratée**, des **ronds rouges concentriques** s'écartent du bouchon. Le bouchon
+  a été un peu **agrandi** (et ses mouvements amplifiés) pour rester lisible de la berge.
 - **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
 - **Accrochage dans les nénuphars** avec risque de casser la ligne.
 - Les poissons perdus deviennent plus agressifs, plus rapides et plus rouges.

@@ -364,41 +364,8 @@ button:disabled {
     white-space: nowrap;
 }
 
-.bite-view {
-    position: absolute;
-    inset: 0;
-    display: none;
-    cursor: pointer;
-    z-index: 5;
-}
-
-.bite-view.active {
-    display: block;
-}
-
-.bite-hint {
-    position: absolute;
-    left: 50%;
-    bottom: 16%;
-    transform: translateX(-50%);
-    color: #fff;
-    font-size: 1.4em;
-    font-weight: bold;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-    pointer-events: none;
-    white-space: nowrap;
-}
-
-.bite-hint.urgent {
-    color: #ffe14d;
-    font-size: 1.9em;
-    animation: bitePulse 0.3s infinite alternate;
-}
-
-@keyframes bitePulse {
-    from { transform: translateX(-50%) scale(1); }
-    to { transform: translateX(-50%) scale(1.12); }
-}
+/* La « vue bouchon » (zoom + bandeau) a été SUPPRIMÉE : on pêche maintenant en
+   vue réaliste, avec des messages flottants dans la scène 3D. */
 
 /* Bouton « Nourrir » (amorçage) — dans la barre d'outils, à côté du pêcheur */
 .feed-button {
@@ -947,8 +914,7 @@ body.big-text {
 }
 
 body.calm .catch-message,
-body.calm .struggle-timer.urgent,
-body.calm .bite-hint.urgent {
+body.calm .struggle-timer.urgent {
     animation: none;
 }
 

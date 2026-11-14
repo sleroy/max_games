@@ -133,7 +133,16 @@ function makeClassList() {
 function makeContext2d() {
     return {
         fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 0,
+        font: '',
+        textAlign: '',
+        textBaseline: '',
         fillRect() {},
+        strokeRect() {},
+        fillText() {},
+        strokeText() {},
+        measureText() { return { width: 0 }; },
         createRadialGradient() { return { addColorStop() {} }; }
     };
 }
@@ -414,7 +423,7 @@ export function resetToIdle(maxSeconds = 200) {
     while (state() !== 'idle' && t < maxSeconds) {
         const current = state();
         if (current === 'bite') {
-            fire('biteView', 'pointerdown', { button: 0 });   // ferrage immédiat
+            fire('gameCanvas', 'pointerdown', { button: 0 });   // ferrage immédiat
         } else if (current === 'snag') {
             G().reelClick();
         } else if (current === 'struggle' || current === 'reeling') {
@@ -463,7 +472,7 @@ export function forceBite() {
 /** Ferre au bon moment (pendant la vraie touche). */
 export function strike() {
     stepUntil(() => G().getBitePhase() === 'touche', 45);
-    fire('biteView', 'pointerdown', { button: 0 });
+    fire('gameCanvas', 'pointerdown', { button: 0 });
 }
 
 /** Enchaîne lancer → touche → ferrage et renvoie le poisson ferré. */

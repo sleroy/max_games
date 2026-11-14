@@ -78,15 +78,16 @@ export function run() {
     castTo(0, -25);
     const earlyFish = forceBite();
     checkEqual('un poisson qui mord déclenche le mode bouchon', state(), 'bite');
-    checkEqual('vue bouchon affichée', G().isBiteViewActive(), true);
-    checkEqual('classe CSS de la vue bouchon', el('biteView').classList.contains('active'), true);
-    checkEqual('caméra rapprochée', G().getCameraMode(), 'bite');
+    checkEqual('touche en cours', G().isBiteViewActive(), true);
+    checkEqual('aucun zoom : on garde la vue réaliste', G().getCameraMode(), 'normal');
+    check('un message flottant annonce l’approche du poisson',
+        G().getFloatingTexts().length > 0, G().getFloatingTexts().join(' / '));
     checkEqual('le poisson qui mord est caché', earlyFish.visible, false);
     checkEqual('phase initiale : bouchon qui flotte', G().getBitePhase(), 'floating');
 
     const aggroBefore = earlyFish.userData.aggression;
     const lossesBefore = earlyFish.userData.losses;
-    fire('biteView', 'pointerdown', { button: 0 });
+    fire('gameCanvas', 'pointerdown', { button: 0 });
     checkEqual('ferrer trop tôt : le poisson s\'enfuit', state(), 'inWater');
     check('le poisson effrayé devient plus agressif', earlyFish.userData.aggression > aggroBefore,
         aggroBefore.toFixed(2) + ' -> ' + earlyFish.userData.aggression.toFixed(2));
@@ -468,7 +469,7 @@ export function run() {
     check('le bouchon bouge vraiment (il coule ou il remonte)',
         Math.abs(G().floatGroup.position.y - 0.1) > 0.05 || Math.abs(G().floatGroup.rotation.z) > 0.1,
         G().floatGroup.position.y.toFixed(2) + ' / z ' + G().floatGroup.rotation.z.toFixed(2));
-    fire('biteView', 'pointerdown', { button: 0 });
+    fire('gameCanvas', 'pointerdown', { button: 0 });
     checkEqual('ferrer au bon moment déclenche le combat', state(), 'struggle');
     checkEqual('ferrage parfait', G().getStrikeQuality(), 'parfait');
     check('avantage au joueur (facteur < 1)', G().getFightAdvantage() < 1,
@@ -484,7 +485,7 @@ export function run() {
     forceBite();
     check('une fausse touche arrive', stepUntil(() => G().getBitePhase() === 'fausse', 15),
         G().getBitePhase());
-    fire('biteView', 'pointerdown', { button: 0 });
+    fire('gameCanvas', 'pointerdown', { button: 0 });
     checkEqual('ferrer trop tôt ferre quand même', state(), 'struggle');
     checkEqual('ferrage trop tôt', G().getStrikeQuality(), 'tot');
     check('avantage au poisson (facteur > 1)', G().getFightAdvantage() > 1,
@@ -498,7 +499,7 @@ export function run() {
     forceBite();
     stepUntil(() => G().getBitePhase() === 'touche', 45);
     check('la fenêtre se referme', stepUntil(() => G().getBitePhase() === 'ratee', 3), G().getBitePhase());
-    fire('biteView', 'pointerdown', { button: 0 });
+    fire('gameCanvas', 'pointerdown', { button: 0 });
     checkEqual('ferrer trop tard ferre quand même (dernière chance)', state(), 'struggle');
     checkEqual('ferrage trop tard', G().getStrikeQuality(), 'tard');
     check('avantage au poisson (facteur > 1)', G().getFightAdvantage() > 1,

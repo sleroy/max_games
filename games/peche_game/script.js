@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=47 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=48 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=47';
+import { SoundEngine } from './sound.js?v=48';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2862,7 +2862,7 @@ let waitTimer = 0;
 let biteFish = null;
 let biteCooldown = 0;
 let biteViewActive = false;
-// Phases du mode bouchon :
+// Phases de la touche : le joueur suit son bouchon DE LOIN (vue réaliste).
 //   'floating' = le bouchon flotte (rien ne mord)
 //   'fausse'   = fausse touche (le bouchon bouge, mais ce n'est pas LE moment)
 //   'touche'   = la VRAIE touche (fenêtre de ferrage)
@@ -2870,7 +2870,7 @@ let biteViewActive = false;
 let bitePhase = 'floating';
 let biteViewTimer = 0;
 let biteSinkAt = 0;
-let biteViewHideTimer = -1;         // fermeture différée de la vue bouchon
+let biteViewHideTimer = -1;         // fermeture différée de la touche (après un raté)
 let biteNibbleTimer = 0;
 let biteToucheType = 'enfoncement'; // 'enfoncement' | 'remontee'
 let biteFauxType = 'partiel';
@@ -3295,15 +3295,15 @@ function updateBiteView(dt) {
         const k = Math.sin(Math.min(1, t / biteSignalDuree) * Math.PI);
         if (biteFauxType === 'partiel') {
             // Enfoncement incomplet : le bouchon plonge à moitié puis remonte.
-            floatGroup.position.y = 0.1 - 0.38 * k;
+            floatGroup.position.y = 0.1 - 0.9 * k;
         } else if (biteFauxType === 'remontee') {
-            floatGroup.position.y = 0.1 + 0.26 * k;
+            floatGroup.position.y = 0.1 + 0.6 * k;
         } else if (biteFauxType === 'couche') {
-            floatGroup.rotation.z = 1.15 * k;
-            floatGroup.position.y = 0.1 + 0.1 * k;
+            floatGroup.rotation.z = 1.3 * k;
+            floatGroup.position.y = 0.1 + 0.25 * k;
         } else {
             // Tremblement : le bouchon frémit doucement sur place.
-            floatGroup.position.y = 0.1 + Math.sin(t * 12) * 0.04 * k;
+            floatGroup.position.y = 0.1 + Math.sin(t * 12) * 0.09 * k;
         }
         setFloatOpacity(1);
         if (t >= biteSignalDuree) {
@@ -3317,17 +3317,17 @@ function updateBiteView(dt) {
         biteSignalTimer += dt;
         const progress = Math.min(1, biteSignalTimer / 0.5);
         if (biteToucheType === 'enfoncement') {
-            // Touche en enfoncement : le bouchon coule franchement.
-            floatGroup.position.y = 0.1 - 1.6 * progress;
+            // Touche en enfoncement : le bouchon coule franchement et s'efface.
+            floatGroup.position.y = 0.1 - 2.2 * progress;
             setFloatOpacity(Math.max(0.2, 1 - progress * 0.85));
         } else if (flotteur.remontee === 'couche') {
-            // Bouchon court et sensible : il se couche sur le côté.
+            // Bouchon court et sensible : il se couche complètement sur le côté.
             floatGroup.rotation.z = Math.min(1.35, progress * 1.7);
-            floatGroup.position.y = 0.1 + 0.2 * progress;
+            floatGroup.position.y = 0.1 + 0.35 * progress;
             setFloatOpacity(1);
         } else {
             // Longue tige (anglaise) : la moitié du bouchon ressort de l'eau.
-            floatGroup.position.y = 0.1 + 0.55 * progress;
+            floatGroup.position.y = 0.1 + 1.6 * progress;
             setFloatOpacity(1);
         }
         if (biteSignalTimer >= biteFenetre) {
@@ -3970,8 +3970,8 @@ function updateFloat(dt, time) {
             }
         }
     } else if (floatState === 'bite') {
-        // Filet de sécurité : si la vue bouchon s'est refermée (fermeture
-        // différée d'une touche ratée), on rend la main au lieu de rester bloqué.
+        // Filet de sécurité : si la touche s'est terminée (fermeture différée
+        // d'une touche ratée), on rend la main au lieu de rester bloqué.
         if (!biteViewActive) {
             floatState = 'inWater';
             waitTimer = 0;

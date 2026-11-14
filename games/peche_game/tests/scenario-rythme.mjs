@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual,
-    G, step, resetToIdle, clearLilyPads, castTo, forceBite
+    G, fire, state, step, resetToIdle, clearLilyPads, castTo, forceBite
 } from './harness.mjs';
 
 /** Avance le jeu et renvoie le temps écoulé (s) jusqu'à ce que `test()` soit vrai. */
@@ -60,12 +60,23 @@ export function run() {
     check('le premier mouvement arrive après plus de 2 s de calme', tCalme + tSuite >= 2,
         (tCalme + tSuite).toFixed(1) + ' s avant le premier mouvement');
 
-    // 4) Le mouvement d'une fausse touche est LENT et progressif (aucun à-coup).
-    const yDepart = G().floatGroup.position.y;
-    step(0.1);
-    const deplacement = Math.abs(G().floatGroup.position.y - yDepart);
-    check('la fausse touche bouge lentement', deplacement < 0.15,
-        deplacement.toFixed(3) + ' unité en 0,1 s');
+    // 4) Le mouvement d'une fausse touche est PROGRESSIF : aucun à-coup.
+    let precedent = G().floatGroup.position.y;
+    let plusGrandPas = 0;
+    let dureeFausse = 0;
+    while (dureeFausse < 3) {
+        step(1 / 60);
+        dureeFausse += 1 / 60;
+        if (G().getBitePhase() !== 'fausse') {
+            break;                       // la phase vient de se terminer
+        }
+        plusGrandPas = Math.max(plusGrandPas, Math.abs(G().floatGroup.position.y - precedent));
+        precedent = G().floatGroup.position.y;
+    }
+    check('le mouvement de la fausse touche est progressif (aucun à-coup)',
+        plusGrandPas < 0.1, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
+    check('la fausse touche dure un bon moment (mouvement lent)', dureeFausse >= 0.7,
+        dureeFausse.toFixed(2) + ' s');
 
     // 5) Une vraie pause sépare deux mouvements du bouchon.
     tempsJusqua(() => G().getBitePhase() !== 'fausse', 10);      // fin de la fausse touche
@@ -85,6 +96,59 @@ export function run() {
         Math.abs(G().floatGroup.position.y - 0.1) > 0.15
         || Math.abs(G().floatGroup.rotation.z) > 0.5,
         G().floatGroup.position.y.toFixed(2) + ' / z ' + G().floatGroup.rotation.z.toFixed(2));
+    // -----------------------------------------------------------------------
+    group('38) Vue réaliste : messages flottants et anneau rouge');
+    resetToIdle();
+
+    // Une touche RATÉE (on laisse passer la fenêtre) : message + ronds rouges.
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    checkEqual('aucun zoom pendant la touche', G().getCameraMode(), 'normal');
+    check('la caméra reste loin du bouchon (vue réaliste)',
+        Math.abs(G().camera.position.z - 34) < 1, 'caméra z = ' + G().camera.position.z.toFixed(1));
+    tempsJusqua(() => G().getBitePhase() === 'touche', 45);
+    checkEqual('la vraie touche est là', G().getBitePhase(), 'touche');
+    const rondsAvant = G().getMissRings();
+    tempsJusqua(() => G().getBitePhase() === 'termine', 10);   // on laisse filer
+    checkEqual('le poisson a recraché', G().getBitePhase(), 'termine');
+    const textesRate = G().getFloatingTexts();
+    check('un message flottant signale la touche ratée',
+        textesRate.some(t => t.indexOf('Raté') >= 0), textesRate.join(' / '));
+    check('des ronds rouges s’écartent du bouchon',
+        G().getMissRings() - rondsAvant >= 2,
+        (G().getMissRings() - rondsAvant) + ' ronds rouges');
+    for (let i = 0; i < 240; i++) {                 // 4 secondes plus tard…
+        step(1 / 60);
+    }
+    checkEqual('les ronds rouges finissent par disparaître', G().getMissRings(), 0);
+    check('le message de touche ratée a disparu tout seul',
+        G().getFloatingTexts().indexOf('Raté ! Il a recraché…') === -1,
+        G().getFloatingTexts().join(' / ') || 'aucun message');
+    resetToIdle();
+
+    // Un ferrage PARFAIT : message de réussite.
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    tempsJusqua(() => G().getBitePhase() === 'touche', 45);
+    fire('gameCanvas', 'pointerdown', { button: 0 });
+    checkEqual('le poisson est ferré', state(), 'struggle');
+    check('un message flottant annonce le ferrage',
+        G().getFloatingTexts().some(t => t.indexOf('FERRÉ') >= 0),
+        G().getFloatingTexts().join(' / '));
+    resetToIdle();
+
+    // Ferrage TROP TÔT (sur une fausse touche) : message d'avertissement.
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    tempsJusqua(() => G().getBitePhase() === 'fausse', 20);
+    fire('gameCanvas', 'pointerdown', { button: 0 });
+    checkEqual('le poisson est ferré malgré tout', state(), 'struggle');
+    check('un message flottant prévient qu’on a ferré trop tôt',
+        G().getFloatingTexts().some(t => t.indexOf('Trop tôt') >= 0),
+        G().getFloatingTexts().join(' / '));
     resetToIdle();
 }
 
