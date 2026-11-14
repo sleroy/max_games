@@ -1413,3 +1413,16 @@ body.calm .struggle-marker {
     background: rgba(150, 20, 20, 0.85);
     border-color: #ff8a75;
 }
+
+
+/* Boussole / orientation du soleil (idee 2 de idees.md, premiere brique). */
+.hud-compass {
+    position: absolute;
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    right: calc(18px + env(safe-area-inset-right, 0px));
+    font-size: 0.8rem;
+    color: #fff;
+    opacity: 0.85;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}

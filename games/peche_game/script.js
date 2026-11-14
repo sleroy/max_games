@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=86 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=87 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=86';
+import { SoundEngine } from './sound.js?v=87';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
