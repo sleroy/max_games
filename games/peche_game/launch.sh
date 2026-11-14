@@ -79,7 +79,7 @@ arrete() {
     echo "  Serveur arrêté. Bonne pêche et à bientôt !  🎣"
     exit 0
 }
-trap arrete INT TERM
+trap arrete INT TERM HUP
 
 wait "$SERVEUR"
 arrete
