@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=63 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=64 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=63';
+import { SoundEngine } from './sound.js?v=64';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1258,7 +1258,7 @@ function majEtiquetteProfondeur() {
         return;
     }
     const bornes = bornesProfondeur();
-    depthLabel.textContent = '🌊 ' + (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m';
+    depthLabel.textContent = (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m';
     if (depthMinus) {
         depthMinus.disabled = profondeurLigne <= bornes[0] + 0.01;
     }

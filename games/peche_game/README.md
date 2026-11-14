@@ -157,7 +157,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Zones de profondeur réalistes** : chaque espèce nage dans SA tranche d'eau (ablette et
   gardon près de la surface, carpe et tanche sur le fond, sandre et silure dans les fosses)
   et **reste dans son coin d'étang** (un sandre ne traverse pas tout l'étang).
-- **Profondeur réglable (🌊 − / +)** : la longueur de ligne va de 0,3 m à 2,5 m selon le
+- **Profondeur réglable (⬆️ Moins profond / ⬇️ Plus profond)** : deux **gros boutons**
+  illustrés (56 px de haut sur mobile/tablette, faciles à toucher pour les enfants) ; la
+  longueur de ligne va de 0,3 m à 2,5 m selon le
   bouchon (la pose à coulisse descend le plus bas), au pas de **12,5 cm**. Une **coupe de
   l'eau** en direct (en bas à gauche) montre le **bouchon en surface, le fil, l'hameçon à
   SA profondeur et le fond de l'étang** à l'endroit pêché : le point rouge = l'hameçon est

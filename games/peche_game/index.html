@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=63">
+    <link rel="stylesheet" href="style.css?v=64">
 </head>
 <body>
     <div class="game-wrap">
@@ -28,9 +28,8 @@
             <div class="tool-dock" id="toolDock">
                 <div class="depth-panel" id="depthPanel">
                     <div class="depth-panel-head">
-                        <span class="depth-label" id="depthLabel">🌊 1,3 m</span>
-                        <button class="depth-btn" id="depthMinus">−</button>
-                        <button class="depth-btn" id="depthPlus">+</button>
+                        <span class="depth-title">🌊 Profondeur</span>
+                        <span class="depth-label" id="depthLabel">1,3 m</span>
                     </div>
                     <div class="depth-cross" id="depthCross">
                         <div class="depth-bottom" id="depthBottomLine"></div>
@@ -38,6 +37,12 @@
                         <div class="depth-float" id="depthFloat"></div>
                         <div class="depth-hook" id="depthHook"></div>
                         <span class="depth-zone" id="depthZoneLabel">mi-eau</span>
+                    </div>
+                    <div class="depth-actions">
+                        <button class="depth-btn" id="depthMinus"
+                            aria-label="Moins profond : remonter l’hameçon vers la surface">⬆️ Moins profond</button>
+                        <button class="depth-btn" id="depthPlus"
+                            aria-label="Plus profond : descendre l’hameçon vers le fond">⬇️ Plus profond</button>
                     </div>
                     <div class="depth-hint" id="depthHint">Fond ici : —</div>
                 </div>
@@ -197,6 +202,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=63"></script>
+    <script type="module" src="script.js?v=64"></script>
 </body>
 </html>

@@ -89,6 +89,25 @@ export function run() {
         script.includes('setPointerCapture') && script.includes('releasePointerCapture'));
     check('adaptation du rendu au mobile (résolution limitée)',
         script.includes('isMobileDevice'));
+
+    group('5) Profondeur : des boutons GROS et explicites');
+    check('les deux boutons de profondeur sont présents',
+        html.includes('id="depthMinus"') && html.includes('id="depthPlus"'));
+    check('les boutons disent ce qu’ils font (des mots, pas juste + / −)',
+        /id="depthMinus"[\s\S]{0,200}Moins profond/.test(html)
+        && /id="depthPlus"[\s\S]{0,200}Plus profond/.test(html));
+    check('les boutons sont décrits pour l’accessibilité',
+        html.indexOf('aria-label="Moins profond') >= 0
+        && html.indexOf('aria-label="Plus profond') >= 0);
+    const hauteurs = [...css.matchAll(/\.depth-btn\s*\{[^}]*min-height:\s*(\d+)px/g)]
+        .map(m => parseInt(m[1], 10));
+    check('les boutons sont hauts partout (≥ 40 px)',
+        hauteurs.length > 0 && hauteurs.every(h => h >= 40), hauteurs.join(' / ') + ' px');
+    const tactileBtn = css.match(/@media \(pointer: coarse\)[^{]*\{[\s\S]*?\.depth-btn\s*\{[^}]*min-height:\s*(\d+)px/);
+    check('sur mobile / tablette, les boutons font ≥ 48 px',
+        !!tactileBtn && parseInt(tactileBtn[1], 10) >= 48,
+        tactileBtn ? tactileBtn[1] + ' px' : 'règle tactile absente');
+    check('le panneau de profondeur a un titre clair', html.indexOf('🌊 Profondeur') >= 0);
 }
 
 export default run;

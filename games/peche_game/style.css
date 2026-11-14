@@ -685,6 +685,31 @@ button, .crank {
         padding: 9px 14px;
     }
 
+    /* Profondeur : boutons XXL, lisibles et faciles à toucher pour les enfants. */
+    .depth-panel {
+        width: 224px;
+        padding: 8px 10px;
+    }
+
+    .depth-panel-head {
+        font-size: 0.88rem;
+    }
+
+    .depth-label {
+        font-size: 1.2rem;
+    }
+
+    .depth-btn {
+        min-height: 56px;
+        padding: 8px 6px;
+        font-size: 0.95rem;
+        border-radius: 12px;
+    }
+
+    .depth-hint {
+        font-size: 0.76rem;
+    }
+
     /* La jauge passe au-dessus de la barre d'outils. */
     .feed-gauge {
         width: min(58vw, 340px);
@@ -886,7 +911,7 @@ button, .crank {
 /* Coupe de l'eau : bouchon, fil, hameçon et fond, en direct. */
 .depth-panel {
     pointer-events: auto;
-    width: 154px;
+    width: 190px;
     padding: 6px 8px;
     color: #fff;
     background: rgba(0, 0, 0, 0.52);
@@ -896,10 +921,16 @@ button, .crank {
 
 .depth-panel-head {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.78rem;
     font-weight: bold;
+}
+
+.depth-title {
+    opacity: 0.92;
+    white-space: nowrap;
 }
 
 .depth-cross {
@@ -987,29 +1018,46 @@ button, .crank {
 }
 
 .depth-label {
-    font-size: 0.8rem;
+    font-size: 1.02rem;
     font-weight: bold;
-    color: #eaf6ff;
-    min-width: 64px;
+    color: #9fe6ff;
+    white-space: nowrap;
 }
 
 .depth-btn {
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    font-size: 1rem;
-    line-height: 1;
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 6px 6px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    line-height: 1.15;
     font-family: inherit;
+    text-align: center;
     color: #08222f;
     background: #7fd0ff;
     border: none;
-    border-radius: 6px;
+    border-radius: 9px;
     cursor: pointer;
+    touch-action: manipulation;
+}
+
+.depth-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.depth-btn:active {
+    transform: scale(0.97);
 }
 
 .depth-btn:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
     cursor: not-allowed;
+    transform: none;
 }
 
 /* Onglet Espèces : une fiche par poisson, avec navigation. */
