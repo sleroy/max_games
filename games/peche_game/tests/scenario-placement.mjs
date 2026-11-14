@@ -116,6 +116,11 @@ export function run() {
         el('cartePlacementAide').textContent.indexOf(
             libre.marge.toFixed(1).replace('.', ',')) >= 0,
         el('cartePlacementAide').textContent);
+    const projRepere = G().projeterPlacement(libre.angle, libre.marge);
+    checkClose('le repère écran suit la sélection',
+        parseFloat(el('cartePlacementRepere').style.left), projRepere.clientX, 1);
+    checkClose('le repère écran suit la sélection (y)',
+        parseFloat(el('cartePlacementRepere').style.top), projRepere.clientY, 1);
 
     // --- Cliquer DANS l'eau : on est repoussé sur la berge (marge mini) ---
     cliquerCarte(angleLibre, -4);

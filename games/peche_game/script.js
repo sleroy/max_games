@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=98';
+import { SoundEngine } from './sound.js?v=99';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -58,6 +58,7 @@ const posteNord = document.getElementById('posteNord');
 const posteOuest = document.getElementById('posteOuest');
 const cartePlacement = document.getElementById('cartePlacement');
 const cartePlacementAide = document.getElementById('cartePlacementAide');
+const cartePlacementRepere = document.getElementById('cartePlacementRepere');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -2669,17 +2670,24 @@ carteScene.add(carteBande);
 const carteMarqueur = new THREE.Group();
 carteMarqueur.name = 'emplacement-marker';
 const carteMarqueurTige = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15, 0.15, 2.4, 6),
+    new THREE.CylinderGeometry(0.22, 0.22, 5.8, 8),
     new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.6 })
 );
-carteMarqueurTige.position.y = 1.2;
+carteMarqueurTige.position.y = 2.9;
 carteMarqueur.add(carteMarqueurTige);
 const carteMarqueurTete = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5, 10, 8),
+    new THREE.SphereGeometry(0.95, 12, 10),
     new THREE.MeshStandardMaterial({ color: 0xfff0a8, roughness: 0.5 })
 );
-carteMarqueurTete.position.y = 2.7;
+carteMarqueurTete.position.y = 6.3;
 carteMarqueur.add(carteMarqueurTete);
+const carteMarqueurAnneau = new THREE.Mesh(
+    new THREE.TorusGeometry(1.35, 0.16, 8, 24),
+    new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.5 })
+);
+carteMarqueurAnneau.rotation.x = Math.PI / 2;
+carteMarqueurAnneau.position.y = 0.18;
+carteMarqueur.add(carteMarqueurAnneau);
 carteScene.add(carteMarqueur);
 
 // --- Renderer dédié à la petite carte (contexte WebGL séparé, 320×320) ---
@@ -2765,6 +2773,12 @@ function renderCartePlacement() {
                 : POSTES[posteActuel].nom.toLowerCase())
             + ' · ' + emplacementMarge.toFixed(1).replace('.', ',')
             + ' unité(s) de la berge — clique ou glisse sur le relief.';
+    }
+    if (cartePlacementRepere && cartePlacement) {
+        const projection = projeterPlacement(emplacementAngle, emplacementMarge);
+        const rect = cartePlacement.getBoundingClientRect();
+        cartePlacementRepere.style.left = (projection.clientX - rect.left) + 'px';
+        cartePlacementRepere.style.top = (projection.clientY - rect.top) + 'px';
     }
     if (carteRenderer) {
         carteCamera.updateMatrixWorld();

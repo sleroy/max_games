@@ -1441,6 +1441,20 @@ body.calm .struggle-marker {
     font-size: 1rem;
 }
 
+/* Repère écran : toujours visible, même quand le mât 3D est loin. */
+.carte-3d-repere {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 50%;
+    background: #ffd166;
+    border: 2px solid #5a3b00;
+    box-shadow: 0 0 10px rgba(255, 209, 102, 0.95);
+    pointer-events: none;
+    transition: left 0.12s linear, top 0.12s linear;
+}
+
 .carte-placement-aide {
     font-size: 0.75rem;
     line-height: 1.3;

@@ -142,6 +142,9 @@ export function run() {
         script.includes('intersectObject(carteTerrain)'));
     check('la carte indique le nord et le soleil',
         html.includes('carte-3d-nord') && html.includes('carte-3d-soleil'));
+    check('un repère écran suit la position choisie',
+        html.includes('id="cartePlacementRepere"')
+        && script.includes('cartePlacementRepere.style.left'));
     check('la couronne de placement est un ruban 3D',
         script.includes('zone-placement') && script.includes('PLACEMENT_MARGE_MIN'));
     check('le clic et le glisser sont branchés sur la carte',
