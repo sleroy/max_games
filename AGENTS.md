@@ -44,17 +44,17 @@ Le hook est volontairement silencieux en cas d'absence de remote ou de rebase en
 
 ## Liste des jeux disponibles (source de vérité)
 
-Tout **dossier à la racine contenant un `index.html`** est un jeu exposé sur le site.
+Tout **dossier placé dans `games/` et contenant un `index.html`** est un jeu exposé sur le site.
 
 | # | Jeu | Dossier | Techno | Lien |
 |---|---|---|---|---|
-| 1 | 🎣 L'étang du Bois Neuf | `peche_game/` | three.js | [jouer](https://sleroy.github.io/max_games/peche_game/) |
-| 2 | ⛏️ Minecraft en JavaScript | `minecraft/` | three.js | [jouer](https://sleroy.github.io/max_games/minecraft/) |
-| 3 | 🌐 Minecraft JS — Online | `minecraft-online/` | three.js | [jouer](https://sleroy.github.io/max_games/minecraft-online/) |
-| 4 | 🪤 Minecraft Trap PVP | `minecraft-trap-pvp/` | three.js | [jouer](https://sleroy.github.io/max_games/minecraft-trap-pvp/) |
-| 5 | ❌⭕ Jeu de Morpion | `jeu1/` | JavaScript | [jouer](https://sleroy.github.io/max_games/jeu1/) |
-| 6 | 🟢 Slime Adventure | `slime_game/` | Canvas 2D | [jouer](https://sleroy.github.io/max_games/slime_game/) |
-| 7 | 📄 Page de démo | `page 1/` | HTML | [voir](https://sleroy.github.io/max_games/page%201/) |
+| 1 | 🎣 L'étang du Bois Neuf | `games/peche_game/` | three.js | [jouer](https://sleroy.github.io/max_games/games/peche_game/) |
+| 2 | ⛏️ Minecraft en JavaScript | `games/minecraft/` | three.js | [jouer](https://sleroy.github.io/max_games/games/minecraft/) |
+| 3 | 🌐 Minecraft JS — Online | `games/minecraft-online/` | three.js | [jouer](https://sleroy.github.io/max_games/games/minecraft-online/) |
+| 4 | 🪤 Minecraft Trap PVP | `games/minecraft-trap-pvp/` | three.js | [jouer](https://sleroy.github.io/max_games/games/minecraft-trap-pvp/) |
+| 5 | ❌⭕ Jeu de Morpion | `games/jeu1/` | JavaScript | [jouer](https://sleroy.github.io/max_games/games/jeu1/) |
+| 6 | 🟢 Slime Adventure | `games/slime_game/` | Canvas 2D | [jouer](https://sleroy.github.io/max_games/games/slime_game/) |
+| 7 | 📄 Page de démo | `games/page 1/` | HTML | [voir](https://sleroy.github.io/max_games/games/page%201/) |
 
 **Total : 7 entrées.**
 
@@ -74,7 +74,7 @@ Points d'attention :
 
 - Le compteur en en-tête (`#gameCount`) est **calculé automatiquement en JS** à partir du nombre de
   `<li class="game">`. La valeur `7` codée en dur n'est qu'un repli si JavaScript est désactivé.
-- Les liens vers un dossier contenant un espace doivent être encodés : `page 1/` → `page%201/`.
+- Les liens vers un dossier contenant un espace doivent être encodés : `games/page 1/` → `games/page%201/`.
 - Garder les mêmes conventions de style : textes et descriptions en français, icône emoji par jeu.
 
 ## Présentation du projet
@@ -84,15 +84,18 @@ Collection de jeux web statiques (HTML / CSS / JavaScript), exposés via GitHub 
 ```
 .
 ├── index.html                 # Page d'accueil (liste des jeux)
+├── README.md                  # Présentation du projet
+├── AGENTS.md                  # Instructions pour l'agent (Cline)
 ├── .nojekyll                  # Désactive le traitement Jekyll sur GitHub Pages
 ├── .githooks/post-commit      # Hook de push automatique
-├── jeu1/                      # Jeu de Morpion
-├── minecraft/                 # Minecraft en JavaScript (three.js)
-├── minecraft-online/          # Minecraft JS — version en ligne (survie, craft)
-├── minecraft-trap-pvp/        # Minecraft Trap PVP
-├── page 1/                    # Page de démonstration statique
-├── peche_game/                # Jeu de pêche 3D (three.js)
-└── slime_game/                # Slime Adventure
+└── games/                     # Tous les jeux exposés sur le site
+    ├── jeu1/                  # Jeu de Morpion
+    ├── minecraft/             # Minecraft en JavaScript (three.js)
+    ├── minecraft-online/      # Minecraft JS — version en ligne (survie, craft)
+    ├── minecraft-trap-pvp/    # Minecraft Trap PVP
+    ├── page 1/                # Page de démonstration statique
+    ├── peche_game/            # Jeu de pêche 3D (three.js)
+    └── slime_game/            # Slime Adventure
 ```
 
 ## Contraintes techniques
@@ -100,7 +103,7 @@ Collection de jeux web statiques (HTML / CSS / JavaScript), exposés via GitHub 
 - **Site 100 % statique** : pas d'étape de build, pas de `node_modules` versionné.
 - Conserver le fichier `.nojekyll` (sinon les dossiers commençant par `_` seraient ignorés
   par GitHub Pages).
-- `peche_game/` utilise des **modules ES** : le jeu doit être servi via HTTP
+- `games/peche_game/` utilise des **modules ES** : le jeu doit être servi via HTTP
   (`python3 -m http.server`) et non ouvert en `file://`.
 - Respecter les conventions existantes : commentaires et textes d'interface en français.
 - Ne pas supprimer le dossier `/home/enfant/peche_game_git_backup` (sauvegarde de
