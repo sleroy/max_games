@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=70 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=71 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=70';
+import { SoundEngine } from './sound.js?v=71';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -728,6 +728,13 @@ function makeFondGeometry(radius, rings, segments) {
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    // Profondeur d'eau RÉELLE sous chaque sommet : sert à foncer l'eau au large
+    // et à la garder claire au bord (plus de bassine bleu pâle uniforme).
+    const depths = [];
+    for (let i = 0; i < positions.length; i += 3) {
+        depths.push(profondeurLocale(POND_CENTER.x + positions[i], POND_CENTER.z + positions[i + 2]));
+    }
+    geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(depths, 1));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;
@@ -769,6 +776,13 @@ function makeWaterGeometry(radius, rings, segments) {
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    // Profondeur d'eau RÉELLE sous chaque sommet : sert à foncer l'eau au large
+    // et à la garder claire au bord (plus de bassine bleu pâle uniforme).
+    const depths = [];
+    for (let i = 0; i < positions.length; i += 3) {
+        depths.push(profondeurLocale(POND_CENTER.x + positions[i], POND_CENTER.z + positions[i + 2]));
+    }
+    geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(depths, 1));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;
@@ -782,9 +796,9 @@ const waterUniforms = {
     uLight: { value: 1 },
     uEnv: { value: null },
     uReflect: { value: 0 },
-    uShallow: { value: new THREE.Color(0x6fc0dd) },
-    uDeep: { value: new THREE.Color(0x1f6f8b) },
-    uSky: { value: new THREE.Color(0xd6edf6) }
+    uShallow: { value: new THREE.Color(0x5aa7b8) },
+    uDeep: { value: new THREE.Color(0x103a4e) },
+    uSky: { value: new THREE.Color(0xc4e2ee) }
 };
 
 // Eau transparente avec des vagues dont l'amplitude et la vitesse suivent le
@@ -799,6 +813,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform float uWind;
         varying vec3 vWorldPos;
         varying vec3 vNormal;
+        varying float vDepth;
         // Hauteur de la houle + son gradient (pour la normale).
         float waveHeight(vec2 p, float t, out vec2 grad) {
             float amp = 0.08 * (0.5 + uWind * 1.4);
@@ -818,6 +833,16 @@ const waterMaterial = new THREE.ShaderMaterial({
             vec2 grad;
             wp.y += waveHeight(wp.xz, uTime, grad);
             vWorldPos = wp.xyz;
+            // Profondeur RÉELLE de l'étang sous ce point (mêmes constantes que
+            // profondeurLocale) : claire au bord, sombre au centre et dans les fosses.
+            vec2 dp = wp.xz - vec2(0.0, -40.0);
+            float dd = length(dp);
+            float tt = min(1.0, dd / 55.0);
+            float pr = 1.4 + 3.6 * (1.0 - tt * tt);
+            float f1 = length(wp.xz - vec2(-16.0, -56.0)) / 11.0;
+            float f2 = length(wp.xz - vec2(20.0, -26.0)) / 9.0;
+            pr += 1.6 * max(0.0, 1.0 - f1 * f1) + 1.2 * max(0.0, 1.0 - f2 * f2);
+            vDepth = pr;
             vNormal = normalize(vec3(-grad.x, 1.0, -grad.y));
             gl_Position = projectionMatrix * viewMatrix * wp;
         }
@@ -832,11 +857,16 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform float uReflect;
         varying vec3 vWorldPos;
         varying vec3 vNormal;
+        varying float vDepth;
         void main() {
             vec3 n = normalize(vNormal);
             vec3 viewDir = normalize(cameraPosition - vWorldPos);
             float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
-            vec3 col = mix(uDeep, uShallow, clamp(n.y, 0.0, 1.0));
+            // LA profondeur commande la couleur : claire au bord, sombre au fond.
+            float prof = clamp(vDepth / 5.2, 0.0, 1.0);
+            vec3 col = mix(uShallow, uDeep, prof);
+            // Un peu de vaguelette : petites variations de teinte.
+            col *= 0.94 + 0.06 * clamp(n.y, 0.0, 1.0);
             col = mix(col, uSky, fres * 0.45);
             // Reflets du décor (optionnels) : cube rendu de temps en temps.
             if (uReflect > 0.001) {
@@ -851,7 +881,7 @@ const waterMaterial = new THREE.ShaderMaterial({
             col += vec3(spec);
             // Eau plus transparente : on voit la moitié inférieure du bouchon et
             // le bas de ligne sous la surface.
-            float alpha = 0.36 + fres * 0.26;
+            float alpha = clamp(0.40 + prof * 0.45 + fres * 0.25, 0.0, 0.97);
             gl_FragColor = vec4(col, alpha);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
