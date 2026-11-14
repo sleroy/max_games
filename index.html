@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collection de jeux web</title>
+    <title>Jeux disponibles — Collection de jeux web</title>
+    <meta name="description" content="Liste des jeux web disponibles : pêche 3D, Minecraft, morpion, plateforme.">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -17,17 +18,17 @@
 
         header {
             text-align: center;
-            max-width: 780px;
-            margin: 0 auto 2.75rem;
+            max-width: 820px;
+            margin: 0 auto 2.5rem;
         }
 
         header h1 {
-            font-size: clamp(2rem, 5vw, 3rem);
+            font-size: clamp(1.9rem, 5vw, 2.8rem);
             background: linear-gradient(90deg, #f9c74f, #f8961e, #f3722c);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: .75rem;
+            margin-bottom: .7rem;
         }
 
         header p {
@@ -36,134 +37,208 @@
             line-height: 1.6;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-            max-width: 1100px;
-            margin: 0 auto;
+        header .count {
+            margin-top: .9rem;
+            font-size: .85rem;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            opacity: .65;
         }
 
-        .card {
+        /* --- Liste des jeux --- */
+        .games {
+            list-style: none;
+            max-width: 820px;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
+            gap: 1rem;
+        }
+
+        .game {
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
             background: rgba(255, 255, 255, .06);
             border: 1px solid rgba(255, 255, 255, .12);
-            border-radius: 16px;
-            padding: 1.5rem;
-            text-decoration: none;
-            color: inherit;
+            border-radius: 14px;
+            padding: 1.1rem 1.35rem;
             backdrop-filter: blur(6px);
             transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
         }
 
-        .card:hover,
-        .card:focus-visible {
-            transform: translateY(-6px);
+        .game:hover {
+            transform: translateX(4px);
             border-color: rgba(249, 199, 79, .7);
-            box-shadow: 0 14px 30px rgba(0, 0, 0, .45);
-            outline: none;
+            box-shadow: 0 12px 26px rgba(0, 0, 0, .4);
         }
 
-        .card .icon {
-            font-size: 2.6rem;
+        .game .icon {
+            font-size: 2.2rem;
             line-height: 1;
-            margin-bottom: .9rem;
+            flex-shrink: 0;
         }
 
-        .card h2 {
-            font-size: 1.2rem;
-            margin-bottom: .5rem;
-            color: #ffffff;
-        }
+        .game .info { flex-grow: 1; min-width: 0; }
 
-        .card p {
-            font-size: .95rem;
+        .game h2 { font-size: 1.15rem; margin-bottom: .2rem; }
+
+        .game h2 a { color: #ffffff; text-decoration: none; }
+
+        .game h2 a:hover,
+        .game h2 a:focus-visible { color: #f9c74f; outline: none; }
+
+        .game .desc {
+            font-size: .93rem;
             opacity: .78;
-            line-height: 1.5;
-            flex-grow: 1;
+            line-height: 1.45;
         }
 
-        .card .play {
-            margin-top: 1.1rem;
-            align-self: flex-start;
+        .game .meta {
+            margin-top: .5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .badge {
+            font-size: .72rem;
+            padding: .15rem .55rem;
+            border-radius: 999px;
+            background: rgba(249, 199, 79, .16);
+            border: 1px solid rgba(249, 199, 79, .35);
+            color: #f9c74f;
+        }
+
+        .game code { font-size: .78rem; opacity: .55; }
+
+        .play {
+            flex-shrink: 0;
             font-weight: 600;
             font-size: .9rem;
             color: #f9c74f;
+            text-decoration: none;
+            padding: .5rem 1rem;
+            border: 1px solid rgba(249, 199, 79, .5);
+            border-radius: 999px;
+            white-space: nowrap;
+            transition: background .2s ease;
+        }
+
+        .play:hover,
+        .play:focus-visible {
+            background: rgba(249, 199, 79, .16);
+            outline: none;
         }
 
         footer {
             text-align: center;
-            margin-top: 3.5rem;
+            margin-top: 3rem;
             opacity: .55;
             font-size: .85rem;
         }
 
         footer a { color: #f9c74f; text-decoration: none; }
         footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 560px) {
+            .game { flex-wrap: wrap; }
+            .play { width: 100%; text-align: center; }
+        }
     </style>
 </head>
 <body>
     <header>
         <h1>🎮 Collection de jeux web</h1>
-        <p>Une sélection de petits jeux et démos en HTML, CSS et JavaScript.
-           Cliquez sur une carte pour lancer le jeu.</p>
+        <p>Liste des jeux disponibles. Cliquez sur « Jouer » pour lancer un jeu.</p>
+        <p class="count"><span id="gameCount">7</span> entrées disponibles</p>
     </header>
 
-    <main class="grid">
-        <a class="card" href="peche_game/">
-            <span class="icon">🎣</span>
-            <h2>L'étang du Bois Neuf</h2>
-            <p>Jeu de pêche en 3D (three.js) : vent, ferrage, épreuve de force et bouchon.</p>
-            <span class="play">▶ Jouer</span>
-        </a>
+    <main>
+        <ul class="games" id="games">
+            <li class="game" data-folder="peche_game/" data-tech="three.js">
+                <span class="icon">🎣</span>
+                <div class="info">
+                    <h2><a href="peche_game/">L'étang du Bois Neuf</a></h2>
+                    <p class="desc">Jeu de pêche en 3D : vent, ferrage, épreuve de force et bouchon.</p>
+                    <p class="meta"><span class="badge">three.js</span><code>peche_game/</code></p>
+                </div>
+                <a class="play" href="peche_game/">Jouer ▶</a>
+            </li>
 
-        <a class="card" href="minecraft/">
-            <span class="icon">⛏️</span>
-            <h2>Minecraft en JavaScript</h2>
-            <p>Un monde voxel 3D façon Minecraft, construit avec three.js.</p>
-            <span class="play">▶ Jouer</span>
-        </a>
+            <li class="game" data-folder="minecraft/" data-tech="three.js">
+                <span class="icon">⛏️</span>
+                <div class="info">
+                    <h2><a href="minecraft/">Minecraft en JavaScript</a></h2>
+                    <p class="desc">Monde voxel 3D façon Minecraft, construit avec three.js.</p>
+                    <p class="meta"><span class="badge">three.js</span><code>minecraft/</code></p>
+                </div>
+                <a class="play" href="minecraft/">Jouer ▶</a>
+            </li>
 
-        <a class="card" href="minecraft-online/">
-            <span class="icon">🌐</span>
-            <h2>Minecraft JS — Online</h2>
-            <p>Version enrichie : survie, cycle jour/nuit, monstres et système de craft.</p>
-            <span class="play">▶ Jouer</span>
-        </a>
+            <li class="game" data-folder="minecraft-online/" data-tech="three.js">
+                <span class="icon">🌐</span>
+                <div class="info">
+                    <h2><a href="minecraft-online/">Minecraft JS — Online</a></h2>
+                    <p class="desc">Version enrichie : survie, cycle jour/nuit, monstres et système de craft.</p>
+                    <p class="meta"><span class="badge">three.js</span><code>minecraft-online/</code></p>
+                </div>
+                <a class="play" href="minecraft-online/">Jouer ▶</a>
+            </li>
 
-        <a class="card" href="minecraft-trap-pvp/">
-            <span class="icon">🪤</span>
-            <h2>Minecraft Trap PVP</h2>
-            <p>Arène PVP de type Minecraft : pièges et affrontements.</p>
-            <span class="play">▶ Jouer</span>
-        </a>
+            <li class="game" data-folder="minecraft-trap-pvp/" data-tech="three.js">
+                <span class="icon">🪤</span>
+                <div class="info">
+                    <h2><a href="minecraft-trap-pvp/">Minecraft Trap PVP</a></h2>
+                    <p class="desc">Arène PVP de type Minecraft : pièges et affrontements.</p>
+                    <p class="meta"><span class="badge">three.js</span><code>minecraft-trap-pvp/</code></p>
+                </div>
+                <a class="play" href="minecraft-trap-pvp/">Jouer ▶</a>
+            </li>
 
-        <a class="card" href="jeu1/">
-            <span class="icon">❌⭕</span>
-            <h2>Jeu de Morpion</h2>
-            <p>Tic-tac-toe classique, jouable à deux ou contre l'IA.</p>
-            <span class="play">▶ Jouer</span>
-        </a>
+            <li class="game" data-folder="jeu1/" data-tech="JavaScript">
+                <span class="icon">❌⭕</span>
+                <div class="info">
+                    <h2><a href="jeu1/">Jeu de Morpion</a></h2>
+                    <p class="desc">Tic-tac-toe classique, jouable à deux ou contre l'IA.</p>
+                    <p class="meta"><span class="badge">JavaScript</span><code>jeu1/</code></p>
+                </div>
+                <a class="play" href="jeu1/">Jouer ▶</a>
+            </li>
 
-        <a class="card" href="slime_game/">
-            <span class="icon">🟢</span>
-            <h2>Slime Adventure</h2>
-            <p>Jeu de plateforme par niveaux : guidez le slime jusqu'au but.</p>
-            <span class="play">▶ Jouer</span>
-        </a>
+            <li class="game" data-folder="slime_game/" data-tech="Canvas 2D">
+                <span class="icon">🟢</span>
+                <div class="info">
+                    <h2><a href="slime_game/">Slime Adventure</a></h2>
+                    <p class="desc">Jeu de plateforme par niveaux : guidez le slime jusqu'au but.</p>
+                    <p class="meta"><span class="badge">Canvas 2D</span><code>slime_game/</code></p>
+                </div>
+                <a class="play" href="slime_game/">Jouer ▶</a>
+            </li>
 
-        <a class="card" href="page%201/">
-            <span class="icon">📄</span>
-            <h2>Page de démo</h2>
-            <p>Exemple simple de page statique (dossier 1).</p>
-            <span class="play">▶ Voir</span>
-        </a>
+            <li class="game" data-folder="page 1/" data-tech="HTML">
+                <span class="icon">📄</span>
+                <div class="info">
+                    <h2><a href="page%201/">Page de démo</a></h2>
+                    <p class="desc">Exemple simple de page statique (dossier 1).</p>
+                    <p class="meta"><span class="badge">HTML</span><code>page 1/</code></p>
+                </div>
+                <a class="play" href="page%201/">Voir ▶</a>
+            </li>
+        </ul>
     </main>
 
     <footer>
         Hébergé sur <a href="https://pages.github.com/">GitHub Pages</a> ·
         <a href="https://github.com/sleroy/max_games">Voir le code</a>
     </footer>
+
+    <script>
+        // Compteur automatique : se met à jour si des jeux sont ajoutés / retirés de la liste.
+        var items = document.querySelectorAll('#games .game');
+        var counter = document.getElementById('gameCount');
+        if (counter) { counter.textContent = items.length; }
+    </script>
 </body>
 </html>

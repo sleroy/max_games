@@ -42,6 +42,41 @@ git config core.hooksPath .githooks
 
 Le hook est volontairement silencieux en cas d'absence de remote ou de rebase en cours.
 
+## Liste des jeux disponibles (source de vérité)
+
+Tout **dossier à la racine contenant un `index.html`** est un jeu exposé sur le site.
+
+| # | Jeu | Dossier | Techno | Lien |
+|---|---|---|---|---|
+| 1 | 🎣 L'étang du Bois Neuf | `peche_game/` | three.js | [jouer](https://sleroy.github.io/max_games/peche_game/) |
+| 2 | ⛏️ Minecraft en JavaScript | `minecraft/` | three.js | [jouer](https://sleroy.github.io/max_games/minecraft/) |
+| 3 | 🌐 Minecraft JS — Online | `minecraft-online/` | three.js | [jouer](https://sleroy.github.io/max_games/minecraft-online/) |
+| 4 | 🪤 Minecraft Trap PVP | `minecraft-trap-pvp/` | three.js | [jouer](https://sleroy.github.io/max_games/minecraft-trap-pvp/) |
+| 5 | ❌⭕ Jeu de Morpion | `jeu1/` | JavaScript | [jouer](https://sleroy.github.io/max_games/jeu1/) |
+| 6 | 🟢 Slime Adventure | `slime_game/` | Canvas 2D | [jouer](https://sleroy.github.io/max_games/slime_game/) |
+| 7 | 📄 Page de démo | `page 1/` | HTML | [voir](https://sleroy.github.io/max_games/page%201/) |
+
+**Total : 7 entrées.**
+
+### Règle : maintenir `index.html`
+
+`index.html` (racine) est la **page d'accueil du site** et doit toujours lister les jeux réellement présents.
+
+À faire **à chaque ajout / suppression / renommage d'un jeu** :
+
+1. Ajouter (ou retirer) l'élément `<li class="game">` correspondant dans `index.html`, en renseignant
+   les attributs `data-folder` et `data-tech` (utilisés par la liste et le compteur).
+2. Mettre à jour le tableau ci-dessus.
+3. Mettre à jour le tableau du `README.md`.
+4. Committer et pousser (voir la règle de push automatique en haut de ce fichier).
+
+Points d'attention :
+
+- Le compteur en en-tête (`#gameCount`) est **calculé automatiquement en JS** à partir du nombre de
+  `<li class="game">`. La valeur `7` codée en dur n'est qu'un repli si JavaScript est désactivé.
+- Les liens vers un dossier contenant un espace doivent être encodés : `page 1/` → `page%201/`.
+- Garder les mêmes conventions de style : textes et descriptions en français, icône emoji par jeu.
+
 ## Présentation du projet
 
 Collection de jeux web statiques (HTML / CSS / JavaScript), exposés via GitHub Pages.
