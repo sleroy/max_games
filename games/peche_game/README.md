@@ -48,6 +48,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
   rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
   Les nénuphars, eux, se dégagent plus facilement.
+- **Ondulations avant la touche** : quand un poisson renifle l'appât, de petites
+  vagues et plongées se produisent à des **intervalles aléatoires** (durée et
+  amplitude variables, parfois deux coups rapprochés). Impossible de chronométrer
+  le clic : seule la **vraie touche** compte.
 - **Étang généré** : le contour n'est **pas un cercle**. Une somme d'harmoniques
   donne une forme allongée et lobée (rayon ≈ 43 à 63 unités autour d'un rayon
   nominal de 55). L'eau, le fond, la rive, la carte du carnet et les profondeurs

@@ -148,6 +148,14 @@ export function run() {
     check('le bouton signale le temps de récupération',
         css.includes('#fishButton.cooldown'));
 
+    group('10) Ondulations avant la touche : aléatoires');
+    check('les mordillements utilisent un générateur local',
+        script.includes('function nibbleRand') && script.includes('nibbleRngState'));
+    check('plus de cycle périodique de 4 s',
+        !script.includes('const cycle = time % 4'));
+    check('plus de rond toutes les 1,8 s',
+        !script.includes('nibbleRippleTimer = 1.8'));
+
 }
 
 export default run;

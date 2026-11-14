@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=94';
+import { SoundEngine } from './sound.js?v=95';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -4524,8 +4524,24 @@ let escaped = false;
 let timeoutEscape = false;
 let shake = 0;
 let baitInterest = false;   // un poisson renifle-t-il l'hameçon (retour visuel) ?
-let nibbleRippleTimer = 0;  // petites ondulations quand un poisson est tout près
 let nibblePhase = 0;        // avancement du « mordillement » en cours (0 = aucun)
+// Mordillements ALÉATOIRES : petits coups, durées et intervalles varient. On
+// utilise un générateur LOCAL pour ne PAS consommer le hasard du monde (les
+// tests restent reproductibles et le reste du jeu ne change pas).
+let nibbleRngState = 0x9e3779b9 >>> 0;
+let nibbleSuivant = 0;      // délai avant le prochain mordillement
+let nibbleDebut = -1;       // -1 = aucun mordillement en cours
+let nibbleDuree = 0;
+let nibbleAmplitude = 0;
+let nibbleInteretAvant = false;
+
+function nibbleRand() {
+    nibbleRngState = (nibbleRngState + 0x6d2b79f5) >>> 0;
+    let t = nibbleRngState;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
 let caughtWeight = 0;
 let lineBrokenTimer = 0;
 let snagFreed = false;
@@ -5801,22 +5817,50 @@ function updateFloat(dt, time) {
             // L'hameçon est dans la vase : le bouchon se couche et rien ne mord.
             floatGroup.rotation.z = 1.45;
         }
-        // Un poisson qui renifle l'appât fait « mordiller » le bouchon de temps en
-        // temps seulement : un petit plongeon bref (environ une fois toutes les 4 s),
-        // et pas une agitation continue. Le rythme suit le temps de jeu : aucun
-        // tirage aléatoire, donc le monde des tests reste reproductible.
+        // Un poisson qui renifle l'appât fait « mordiller » le bouchon de temps
+        // en temps. Les ondulations sont ALÉATOIRES (intervalles, durée et
+        // amplitude varient) : impossible de chronométrer le clic. On utilise un
+        // petit générateur LOCAL pour ne pas décaler le hasard du monde.
         if (baitInterest) {
-            const cycle = time % 4;
-            nibblePhase = cycle < 0.9 ? Math.sin((cycle / 0.9) * Math.PI) : 0;
-            floatGroup.position.y -= 0.06 * nibblePhase;
-            nibbleRippleTimer -= dt;
-            if (nibbleRippleTimer <= 0) {
-                nibbleRippleTimer = 1.8;
-                spawnRipple(floatGroup.position);
+            if (!nibbleInteretAvant) {
+                // Nouvelle approche : nouvelle séquence, dérivée de l'instant.
+                nibbleRngState = ((Math.floor(time * 1000) ^ 0x9e3779b9) >>> 0) || 1;
+                nibbleSuivant = 0.2 + nibbleRand() * 0.9;
+                nibbleDebut = -1;
+                nibblePhase = 0;
+            }
+            nibbleInteretAvant = true;
+            if (nibbleDebut < 0) {
+                nibbleSuivant -= dt;
+                if (nibbleSuivant <= 0) {
+                    nibbleDebut = time;
+                    nibbleDuree = 0.2 + nibbleRand() * 0.55;
+                    nibbleAmplitude = 0.03 + nibbleRand() * 0.06;
+                    spawnRipple(floatGroup.position);
+                }
+            } else {
+                const avancement = (time - nibbleDebut) / nibbleDuree;
+                if (avancement >= 1) {
+                    nibbleDebut = -1;
+                    nibblePhase = 0;
+                    // Parfois un deuxième rond juste après le mordillement.
+                    if (nibbleRand() < 0.3) {
+                        spawnRipple(floatGroup.position);
+                    }
+                    // Intervalle ALÉATOIRE avant le prochain mordillement.
+                    nibbleSuivant = nibbleRand() < 0.25
+                        ? 0.12 + nibbleRand() * 0.35   // parfois deux coups rapprochés
+                        : 0.6 + nibbleRand() * 2.4;    // sinon 0,6 à 3,0 s
+                } else {
+                    nibblePhase = Math.sin(Math.PI * avancement);
+                    floatGroup.position.y -= nibbleAmplitude * nibblePhase;
+                }
             }
         } else {
+            nibbleInteretAvant = false;
+            nibbleDebut = -1;
+            nibbleSuivant = 0;
             nibblePhase = 0;
-            nibbleRippleTimer = 0;
         }
         // Un poisson qui renifle l'esche fait patienter plus longtemps.
         if (baitInterest) {
@@ -6843,6 +6887,18 @@ window.__game = {
     bourriche: bourriche,
     getWaterHeightAt: function (x, z) { return waterWaveHeightAt(x, z, testTime); },
     getBaitInterest: function () { return baitInterest; },
+    // Mordillements avant la touche — exposés pour vérifier leur caractère aléatoire.
+    getNibble: function () {
+        return {
+            interesse: baitInterest,
+            actif: nibbleDebut >= 0,
+            suivant: nibbleSuivant,
+            duree: nibbleDuree,
+            amplitude: nibbleAmplitude,
+            phase: nibblePhase,
+            graine: nibbleRngState
+        };
+    },
     getHookDepth: function () { return HOOK_DEPTH; },
     // Profondeur de la ligne (réglable) et relief de l'étang — pour les tests.
     getProfondeur: function () { return profondeurLigne; },

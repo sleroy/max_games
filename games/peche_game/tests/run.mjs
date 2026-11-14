@@ -25,6 +25,7 @@ import scenarioSoleil from './scenario-soleil.mjs';
 import scenarioEtang from './scenario-etang.mjs';
 import scenarioPlacement from './scenario-placement.mjs';
 import scenarioVase from './scenario-vase.mjs';
+import scenarioOndulations from './scenario-ondulations.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -50,6 +51,7 @@ try {
     scenarioEtang();            // étang généré : contour, eau, fond, rive, carte
     scenarioPlacement();        // choix libre sur la carte vue de dessus
     scenarioVase();             // la vase est tenace (rythme obligatoire)
+    scenarioOndulations();      // ondulations avant la touche : aléatoires
 } catch (error) {
     crashed = error;
 } finally {
