@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=62 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=63 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=62';
+import { SoundEngine } from './sound.js?v=63';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1267,14 +1267,65 @@ function majEtiquetteProfondeur() {
     }
 }
 
+let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
 function setProfondeur(valeur) {
     const bornes = bornesProfondeur();
-    // Pas de 0,5 unité (25 cm), borné par le bouchon équipé.
-    const arrondi = Math.round(valeur * 2) / 2;
+    // Pas fin de 0,25 unité (12,5 cm) pour pouvoir viser la couche exacte, et
+    // borné par le bouchon équipé.
+    const arrondi = Math.round(valeur * 4) / 4;
     profondeurLigne = Math.min(bornes[1], Math.max(bornes[0], arrondi));
     HOOK_DEPTH = -profondeurLigne;
     appliquerProfondeurVisuelle();
     majEtiquetteProfondeur();
+    majCoupeProfondeur();
+}
+
+// ---------------------------------------------------------------------------
+// COUPE DE L'EAU : le petit schéma qui montre, en direct, le bouchon en
+// surface, le fil, l'hameçon à SA profondeur et le fond de l'étang à l'endroit
+// pêché. C'est la partie « visuelle » du réglage de profondeur.
+// ---------------------------------------------------------------------------
+const depthCross = document.getElementById('depthCross');
+const depthBottomLine = document.getElementById('depthBottomLine');
+const depthHookLine = document.getElementById('depthHookLine');
+const depthHookDot = document.getElementById('depthHook');
+const depthZoneLabel = document.getElementById('depthZoneLabel');
+const depthHint = document.getElementById('depthHint');
+let dernierCoupe = -1;
+let coupePrete = false;   // le schéma attend que le jeu soit entièrement initialisé
+
+// Hauteur d'eau (unités) représentée par la hauteur du schéma.
+const COUPE_REF = 6.8;
+
+function nombreMetres(unites) {
+    return (unites / 2).toFixed(1).replace('.', ',') + ' m';
+}
+
+function majCoupeProfondeur() {
+    if (!depthCross || !coupePrete) {
+        return;
+    }
+    const enEau = floatState !== 'idle';
+    const px = enEau ? floatGroup.position.x : castTarget.x;
+    const pz = enEau ? floatGroup.position.z : castTarget.z;
+    const profLocale = profondeurLocale(px, pz);
+    // Le fond, en % de la hauteur du schéma (jamais collé aux bords).
+    const fondPct = Math.min(96, Math.max(8, (profLocale / COUPE_REF) * 100));
+    depthBottomLine.style.top = (100 - fondPct).toFixed(1) + '%';
+    depthBottomLine.style.height = fondPct.toFixed(1) + '%';
+    // L'hameçon et le fil qui le relie au bouchon.
+    const hameconPct = Math.min(100, (profondeurLigne / COUPE_REF) * 100);
+    depthHookDot.style.top = hameconPct.toFixed(1) + '%';
+    depthHookLine.style.height = hameconPct.toFixed(1) + '%';
+    const zone = profondeurLigne < 1.6 ? 'surface' : (profondeurLigne < 3.2 ? 'mi-eau' : 'fond');
+    depthZoneLabel.textContent = zone;
+    // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
+    const dansLeFond = profondeurLigne > profLocale - 0.25;
+    depthHookDot.classList.toggle('danger', dansLeFond);
+    depthHint.classList.toggle('alerte', dansLeFond);
+    depthHint.textContent = dansLeFond
+        ? '⚠ Fond à ' + nombreMetres(profLocale) + ' : hameçon dans la vase !'
+        : zone + ' · fond à ' + nombreMetres(profLocale);
 }
 
 const floatIdle = new THREE.Vector3(rodTip.x, rodTip.y - 0.6, rodTip.z);
@@ -3355,7 +3406,6 @@ function punishFish(fish) {
 // ---------------------------------------------------------------------------
 let score = 0;
 let fishCaught = false;
-let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
 let castT = 0;
 let waitTimer = 0;
 let reelIdle = 0;                // secondes sans toucher la manivelle pendant la remontée
@@ -3834,6 +3884,9 @@ function startStruggle(fish, facteurAvantage) {
     const aggression = fish.userData.aggression;
     // Chaque espèce se bat à SA façon (traction, tirades, endurance, écarts).
     const style = styleEspece(fish.userData.especeId);
+    // Une ligne profonde met le poisson dans son élément : il se défend un peu
+    // mieux (à choisir : les poissons du fond… ou un combat plus facile).
+    const bonusProfondeur = 1 + 0.05 * Math.max(0, profondeurLigne - 2.5);
     // Plus la difficulté est haute, plus les coups brusques sont rapprochés.
     const interval = Math.max(0.6,
         (1.4 - size * 0.25) / aggression / DIFFICULTY * style.intervalle);
@@ -3856,7 +3909,7 @@ function startStruggle(fish, facteurAvantage) {
         // brusques (une petite ablette secoue le bouchon aussi fort qu'une carpe !).
         // `power` = combativité de l'espèce, `aggression` = son ardeur.
         pullSpeed: Math.min(3.8, Math.max(0.7,
-            (0.9 + size * 0.9) * power * (0.8 + aggression * 0.3) * DIFFICULTY * style.traction)),
+            (0.9 + size * 0.9) * power * (0.8 + aggression * 0.3) * DIFFICULTY * style.traction * bonusProfondeur)),
         burstDistance: (0.35 + size * 0.45) * power * (0.8 + aggression * 0.3) * DIFFICULTY * style.coups,
         burstInterval: interval,
         burstTimer: interval,
@@ -4247,9 +4300,10 @@ function isSnagged(point) {
     return false;
 }
 
-function startSnag() {
+function startSnag(mode) {
     floatState = 'snag';
     tension = 0.5;
+    const dansLaVase = mode === 'fond';
     snag = {
         pullRate: 0.12,
         burstStrength: 0.10,
@@ -4259,14 +4313,16 @@ function startSnag() {
     };
     strugglePanel.classList.add('active');
     sound.snag();
-    struggleInfo.textContent = 'Ligne accrochée aux nénuphars';
+    struggleInfo.textContent = dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
     struggleTimer.textContent = '';
     struggleTimer.classList.remove('urgent');
     struggleHint.textContent = 'Clique vite pour dégager la ligne !';
     updateStruggleBar();
     fishButton.disabled = false;
     fishButton.textContent = 'Dégager !';
-    statusDisplay.textContent = 'La ligne s’est accrochée aux nénuphars ! Clique pour la dégager.';
+    statusDisplay.textContent = dansLaVase
+        ? 'Ton hameçon s’est enfoncé dans la vase ! Clique pour le dégager, puis règle une ligne moins profonde.'
+        : 'La ligne s’est accrochée aux nénuphars ! Clique pour la dégager.';
 }
 
 function endSnag(freed) {
@@ -4736,12 +4792,22 @@ function updateFloat(dt, time) {
                 floatState = 'inWater';
                 waitTimer = 0;
                 depuisLancement = 0;
+                const profLocale = profondeurLocale(castTarget.x, castTarget.z);
+                // Hameçon BEAUCOUP trop profond : il s'enfonce dans la vase et
+                // s'y accroche (il faut le dégager à la main !).
+                if (profondeurLigne > profLocale + 0.3) {
+                    hameconDansLaVase = true;
+                    startSnag('fond');
+                    majCoupeProfondeur();
+                    return;
+                }
                 // Profondeur réglée > profondeur de l'eau à cet endroit : l'hameçon
                 // est DANS LA VASE (le bouchon se couche, rien ne mord).
-                hameconDansLaVase = profondeurLigne > profondeurLocale(castTarget.x, castTarget.z) - 0.25;
+                hameconDansLaVase = profondeurLigne > profLocale - 0.25;
                 statusDisplay.textContent = hameconDansLaVase
-                    ? 'Ton hameçon est dans la vase ! Remonte la ligne (manivelle) et choisis moins profond.'
-                    : 'Le flotteur est dans l’eau… attends qu’un poisson morde (ou tourne la manivelle pour ramener la ligne).';
+                    ? 'Hameçon dans la vase (fond à ' + nombreMetres(profLocale) + ') : remonte la ligne et choisis moins profond !'
+                    : 'Ligne à ' + nombreMetres(profondeurLigne) + ' dans ' + nombreMetres(profLocale) + ' d’eau : attends qu’un poisson morde !';
+                majCoupeProfondeur();
             }
         } else {
             const x = THREE.MathUtils.lerp(castStart.x, castTarget.x, castT);
@@ -5024,6 +5090,9 @@ if (depthPlus) {
     });
 }
 majEtiquetteProfondeur();
+// Le jeu est initialisé : la coupe de l'eau (schéma) peut se dessiner.
+coupePrete = true;
+majCoupeProfondeur();
 
 fishButton.addEventListener('click', () => {
     ensureSound();
@@ -5116,6 +5185,11 @@ function animate() {
         updateWater(elapsed);
         updateFish(dt, elapsed);
         updateFloat(dt, elapsed);
+        // La coupe de l'eau suit le bouchon (5 fois par seconde suffit).
+        if (elapsed - dernierCoupe > 0.2) {
+            dernierCoupe = elapsed;
+            majCoupeProfondeur();
+        }
         updateFeed(dt);
         updateChum(dt);
         updateArm(dt);
@@ -5193,6 +5267,7 @@ window.__game = {
     getStylesCombat: function () { return STYLES_COMBAT; },
     styleEspece: styleEspece,
     getStruggleStyle: function () { return struggle ? struggle.styleNom : ''; },
+    majCoupeProfondeur: majCoupeProfondeur,
     choisirTouche: choisirTouche,
     mouvementDeTouche: mouvementDeTouche,
     dureeTouche: dureeTouche,

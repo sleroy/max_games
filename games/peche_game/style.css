@@ -883,6 +883,109 @@ button, .crank {
     gap: 6px;
 }
 
+/* Coupe de l'eau : bouchon, fil, hameçon et fond, en direct. */
+.depth-panel {
+    pointer-events: auto;
+    width: 154px;
+    padding: 6px 8px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.52);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 10px;
+}
+
+.depth-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.depth-cross {
+    position: relative;
+    height: 86px;
+    margin-top: 5px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: linear-gradient(#8fd0e8 0%, #2f7fa3 22%, #10394e 100%);
+}
+
+.depth-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 70%;
+    height: 30%;
+    background: rgba(78, 58, 38, 0.75);
+    border-top: 2px dashed #c9a06a;
+}
+
+.depth-hookline {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 38%;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.depth-float {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+    margin-top: -3px;
+    border-radius: 50%;
+    background: #f9c74f;
+    box-shadow: 0 0 7px rgba(249, 199, 79, 0.95);
+}
+
+.depth-hook {
+    position: absolute;
+    left: 50%;
+    top: 38%;
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: #eaf7ff;
+    border: 1.5px solid #0a2433;
+}
+
+.depth-hook.danger {
+    background: #ff6b57;
+    box-shadow: 0 0 8px rgba(255, 107, 87, 0.9);
+}
+
+.depth-zone {
+    position: absolute;
+    right: 4px;
+    bottom: 3px;
+    font-size: 0.62rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.depth-hint {
+    margin-top: 4px;
+    font-size: 0.68rem;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.depth-hint.alerte {
+    color: #ffd166;
+    font-weight: bold;
+    opacity: 1;
+}
+
 .depth-label {
     font-size: 0.8rem;
     font-weight: bold;

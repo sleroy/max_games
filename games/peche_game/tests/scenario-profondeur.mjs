@@ -72,8 +72,10 @@ export function run() {
     resetToIdle();
     clearLilyPads();
     G().setFloatType('coulisse');
-    G().setProfondeur(4.5);
-    castTo(0, -90);                               // près de la berge : peu d'eau
+    // Point de lancer toujours à portée, en bord d'étang (peu d'eau).
+    const PROF_BERGE = G().profondeurLocale(30, -10);
+    G().setProfondeur(PROF_BERGE - 0.1);          // un peu trop long : dans la vase
+    castTo(30, -10);
     checkEqual('la ligne est dans la vase', G().isHameconDansLaVase(), true);
     check('le jeu prévient', el('status').textContent.indexOf('vase') >= 0,
         el('status').textContent);
@@ -82,8 +84,21 @@ export function run() {
     resetToIdle();
     clearLilyPads();
     G().setProfondeur(1.0);
-    castTo(0, -90);
+    castTo(30, -10);
     checkEqual('en réglant court, plus de vase', G().isHameconDansLaVase(), false);
+    resetToIdle();
+    G().setFloatType('anglaise');
+    G().setProfondeur(2.5);
+
+    // --- ALÉA : hameçon franchement enfoncé dans le fond = ACCROCHAGE ---
+    resetToIdle();
+    clearLilyPads();
+    G().setFloatType('coulisse');
+    G().setProfondeur(PROF_BERGE + 0.6);
+    castTo(30, -10);
+    checkEqual('un hameçon trop profond s’accroche dans la vase', state(), 'snag');
+    check('le jeu explique l’accrochage', el('status').textContent.indexOf('vase') >= 0,
+        el('status').textContent);
     resetToIdle();
     G().setFloatType('anglaise');
     G().setProfondeur(2.5);
@@ -108,6 +123,7 @@ export function run() {
     // --- Touche À LA VOLÉE (esche prise pendant la descente) ---
     resetToIdle();
     clearLilyPads();
+    stepFor(1.2);                                 // laisse retomber le délai entre touches
     G().setProfondeur(1.0);                       // faible profondeur
     castTo(0, -25);
     const vif = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
@@ -120,6 +136,33 @@ export function run() {
     checkEqual('morsure immédiate après le lancer', state(), 'bite');
     checkEqual('c’est une touche À LA VOLÉE', G().getBiteTouchId(), 'a_la_volee');
     resetToIdle();
+    G().setProfondeur(2.5);
+
+    // --- La COUPE DE L'EAU : le visuel du réglage de profondeur ---
+    resetToIdle();
+    G().setFloatType('coulisse');
+    G().setProfondeur(1.5);
+    const hautHamecon = parseFloat(el('depthHook').style.top);
+    checkEqual('le schéma nomme la couche d’eau (surface)', el('depthZoneLabel').textContent, 'surface');
+    G().setProfondeur(4.5);
+    const basHamecon = parseFloat(el('depthHook').style.top);
+    check('le schéma enfonce l’hameçon quand la ligne s’allonge',
+        basHamecon > hautHamecon + 15, hautHamecon.toFixed(0) + '% -> ' + basHamecon.toFixed(0) + '%');
+    checkEqual('le schéma nomme la couche d’eau (fond)', el('depthZoneLabel').textContent, 'fond');
+    check('le schéma donne la profondeur du fond', el('depthHint').textContent.indexOf('fond à') >= 0,
+        el('depthHint').textContent);
+    // L'hameçon dans le fond : alerte rouge sur le schéma.
+    resetToIdle();
+    clearLilyPads();
+    G().setProfondeur(PROF_BERGE + 0.6);
+    castTo(30, -10);
+    G().majCoupeProfondeur();
+    checkEqual('le schéma passe en alerte dans la vase',
+        el('depthHook').classList.contains('danger'), true);
+    check('le schéma prévient du risque', el('depthHint').textContent.indexOf('vase') >= 0,
+        el('depthHint').textContent);
+    resetToIdle();
+    G().setFloatType('anglaise');
     G().setProfondeur(2.5);
 
     // --- La carte montre les isobathes et la profondeur du moment ---
