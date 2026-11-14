@@ -23,6 +23,21 @@ const feedGaugeTarget = document.getElementById('feedGaugeTarget');
 
 const sound = new SoundEngine();
 
+// ---------------------------------------------------------------------------
+// Aléatoire du jeu : notre propre générateur « seedé », pour que le monde soit
+// reproductible indépendamment du nombre d'objets créés par three.js (chaque
+// objet de three.js consomme de l'aléatoire pour son identifiant interne).
+// ---------------------------------------------------------------------------
+let rngState = 20240101 >>> 0;
+
+function rand() {
+    rngState = (rngState + 0x6d2b79f5) >>> 0;
+    let t = rngState;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
 function ensureSound() {
     sound.init();
     sound.resume();
@@ -178,6 +193,11 @@ const isMobileDevice = typeof window.matchMedia === 'function'
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
+// Rendu plus « photo » : tone mapping ACES (comme une caméra). Les shaders
+// maison (ciel, eau) incluent les chunks de tone mapping pour rester cohérents.
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -195,7 +215,7 @@ const skyMat = new THREE.ShaderMaterial({
         exponent: { value: 0.7 }
     },
     vertexShader: 'varying vec3 vWorldPosition; void main() { vec4 wp = modelMatrix * vec4(position, 1.0); vWorldPosition = wp.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize(vWorldPosition + offset).y; gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0); }'
+    fragmentShader: 'uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize(vWorldPosition + offset).y; gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'
 });
 const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), skyMat);
 scene.add(sky);
@@ -230,9 +250,14 @@ resize();
 // ---------------------------------------------------------------------------
 // Lumières
 // ---------------------------------------------------------------------------
-scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+// Lumière ambiante douce + lumière « ciel/sol » : les volumes sont plus naturels.
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
 
-const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.2);
+const skyLight = new THREE.HemisphereLight(0xcfe8ff, 0x3a5a3f, 0.5);
+scene.add(skyLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.15);
 sunLight.position.set(40, 60, 20);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
@@ -242,6 +267,9 @@ sunLight.shadow.camera.top = 70;
 sunLight.shadow.camera.bottom = -70;
 sunLight.shadow.camera.near = 1;
 sunLight.shadow.camera.far = 200;
+// Ombres plus propres (moins d'« acné » sur le sable et l'eau).
+sunLight.shadow.bias = -0.0004;
+sunLight.shadow.normalBias = 0.03;
 scene.add(sunLight);
 
 const sunMesh = new THREE.Mesh(
@@ -270,18 +298,51 @@ sunGlow.scale.set(70, 70, 1);
 sunGlow.position.set(55, 55, -90);
 scene.add(sunGlow);
 
+// ---------------------------------------------------------------------------
+// Cycle jour / nuit : le soleil décrit un arc, le ciel et la lumière suivent.
+// ---------------------------------------------------------------------------
+const DAY_LENGTH = 420;   // durée d'un cycle complet (secondes)
+let dayPhase = 0.20;      // 0 = aube, 0,25 = midi, 0,5 = crépuscule, 0,75 = nuit
+const SKY_TOP_DAY = new THREE.Color(0x4a9fd8);
+const SKY_BOTTOM_DAY = new THREE.Color(0xe6f6fd);
+const SKY_TOP_NIGHT = new THREE.Color(0x0b1c33);
+const SKY_BOTTOM_NIGHT = new THREE.Color(0x2b3f57);
+const SUN_WARM = new THREE.Color(0xffb877);
+const SUN_DAY = new THREE.Color(0xfff2cc);
+
+function updateDayNight(dt) {
+    dayPhase = (dayPhase + dt / DAY_LENGTH) % 1;
+    const angle = dayPhase * Math.PI * 2;
+    const daylight = Math.max(0, Math.sin(angle)); // 0 la nuit, 1 en plein jour
+    // Soleil : position, couleur et intensité.
+    sunLight.position.set(Math.cos(angle) * 70, 12 + daylight * 65, -60);
+    sunLight.intensity = 0.25 + daylight * 1.05;
+    sunLight.color.copy(SUN_WARM).lerp(SUN_DAY, daylight);
+    sunMesh.position.copy(sunLight.position).multiplyScalar(0.75);
+    sunGlow.position.copy(sunMesh.position);
+    // Ciel (dégradé), brume et fond.
+    skyMat.uniforms.topColor.value.copy(SKY_TOP_NIGHT).lerp(SKY_TOP_DAY, daylight);
+    skyMat.uniforms.bottomColor.value.copy(SKY_BOTTOM_NIGHT).lerp(SKY_BOTTOM_DAY, daylight);
+    scene.background.copy(skyMat.uniforms.bottomColor.value);
+    scene.fog.color.copy(skyMat.uniforms.bottomColor.value);
+    // Lumières d'ambiance : la nuit reste assez claire pour jouer.
+    ambientLight.intensity = 0.42 + daylight * 0.22;
+    skyLight.intensity = 0.38 + daylight * 0.30;
+    waterUniforms.uLight.value = 0.35 + daylight * 0.65;
+}
+
 // Nuages
 const clouds = [];
 const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
 for (let i = 0; i < 8; i++) {
     const cloud = new THREE.Group();
     for (let j = 0; j < 4; j++) {
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(3 + Math.random() * 2, 8, 6), cloudMat);
-        puff.position.set(j * 4 - 6, Math.random() * 1.5, Math.random() * 2);
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(3 + rand() * 2, 8, 6), cloudMat);
+        puff.position.set(j * 4 - 6, rand() * 1.5, rand() * 2);
         puff.scale.y = 0.5;
         cloud.add(puff);
     }
-    cloud.position.set(-90 + Math.random() * 180, 42 + Math.random() * 22, -120 - Math.random() * 50);
+    cloud.position.set(-90 + rand() * 180, 42 + rand() * 22, -120 - rand() * 50);
     scene.add(cloud);
     clouds.push(cloud);
 }
@@ -338,6 +399,7 @@ const waterUniforms = {
     uTime: { value: 0 },
     uWindDir: { value: new THREE.Vector2(1, 0) },
     uWind: { value: 0 },
+    uLight: { value: 1 },
     uShallow: { value: new THREE.Color(0x6fc0dd) },
     uDeep: { value: new THREE.Color(0x1f6f8b) },
     uSky: { value: new THREE.Color(0xd6edf6) }
@@ -383,6 +445,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform vec3 uDeep;
         uniform vec3 uSky;
         uniform float uWind;
+        uniform float uLight;
         varying vec3 vWorldPos;
         varying vec3 vNormal;
         void main() {
@@ -391,12 +454,16 @@ const waterMaterial = new THREE.ShaderMaterial({
             float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
             vec3 col = mix(uDeep, uShallow, clamp(n.y, 0.0, 1.0));
             col = mix(col, uSky, fres * 0.6);
+            // La nuit, l'eau s'assombrit (cohérent avec la lumière de la scène).
+            col *= mix(vec3(0.30, 0.36, 0.48), vec3(1.0), uLight);
             vec3 sunDir = normalize(vec3(0.4, 1.0, -0.6));
             vec3 halfDir = normalize(viewDir + sunDir);
-            float spec = pow(max(dot(n, halfDir), 0.0), 60.0) * (0.35 + uWind * 0.8);
+            float spec = pow(max(dot(n, halfDir), 0.0), 60.0) * (0.35 + uWind * 0.8) * uLight;
             col += vec3(spec);
             float alpha = 0.52 + fres * 0.3;
             gl_FragColor = vec4(col, alpha);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
         }
     `
 });
@@ -440,77 +507,119 @@ scene.add(shore);
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 1 });
 const foliageMat = new THREE.MeshStandardMaterial({ color: 0x3f7a4a, roughness: 1 });
 
-function addTree(x, z, scale) {
-    const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3 * scale, 0.45 * scale, 3 * scale, 6),
-        trunkMat
-    );
-    trunk.position.set(x, 1.5 * scale - 0.4, z);
-    trunk.castShadow = true;
-    scene.add(trunk);
+// Objets temporaires réutilisés pour composer les matrices d'instances
+// (aucune allocation dans les boucles).
+const _mat4 = new THREE.Matrix4();
+const _quat = new THREE.Quaternion();
+const _vec = new THREE.Vector3();
+const _scl = new THREE.Vector3();
+const _euler = new THREE.Euler();
+const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
+// Arbres : un seul appel de dessin pour tous les troncs, un autre pour le feuillage.
+const TREE_MAX = 40;
+const trunkInst = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.3, 0.45, 3, 6), trunkMat, TREE_MAX
+);
+const foliageInst = new THREE.InstancedMesh(
+    new THREE.ConeGeometry(1, 1, 8), foliageMat, TREE_MAX * 3
+);
+trunkInst.castShadow = true;
+foliageInst.castShadow = true;
+scene.add(trunkInst);
+scene.add(foliageInst);
+let trunkCount = 0;
+let foliageCount = 0;
+
+function addTree(x, z, scale) {
+    // Tronc
+    _vec.set(x, 1.5 * scale - 0.4, z);
+    _scl.set(scale, scale, scale);
+    _quat.identity();
+    _mat4.compose(_vec, _quat, _scl);
+    trunkInst.setMatrixAt(trunkCount++, _mat4);
+    // Feuillage : 3 cônes empilés (géométrie unitaire mise à l'échelle)
     for (let i = 0; i < 3; i++) {
-        const cone = new THREE.Mesh(
-            new THREE.ConeGeometry((2.4 - i * 0.55) * scale, (2.6 - i * 0.4) * scale, 8),
-            foliageMat
-        );
-        cone.position.set(x, (3 + i * 1.5) * scale - 0.4, z);
-        cone.castShadow = true;
-        scene.add(cone);
+        const r = (2.4 - i * 0.55) * scale;
+        const h = (2.6 - i * 0.4) * scale;
+        _vec.set(x, (3 + i * 1.5) * scale - 0.4, z);
+        _scl.set(r, h, r);
+        _mat4.compose(_vec, _quat, _scl);
+        foliageInst.setMatrixAt(foliageCount++, _mat4);
     }
 }
 
 for (let i = 0; i < 40; i++) {
-    const angle = (i / 40) * Math.PI * 2 + Math.random() * 0.1;
-    const radius = POND_RADIUS + 8 + Math.random() * 35;
+    const angle = (i / 40) * Math.PI * 2 + rand() * 0.1;
+    const radius = POND_RADIUS + 8 + rand() * 35;
     const x = POND_CENTER.x + Math.cos(angle) * radius;
     const z = POND_CENTER.z + Math.sin(angle) * radius;
     // Laisse dégagé l'espace devant la caméra et le pêcheur.
     if (z > 5 && Math.abs(x) < 30) {
         continue;
     }
-    addTree(x, z, 0.8 + Math.random() * 0.7);
+    addTree(x, z, 0.8 + rand() * 0.7);
 }
+trunkInst.count = trunkCount;
+foliageInst.count = foliageCount;
+trunkInst.instanceMatrix.needsUpdate = true;
+foliageInst.instanceMatrix.needsUpdate = true;
 
 // Nénuphars
 const lilyPads = [];
 const lilyMat = new THREE.MeshStandardMaterial({ color: 0x3f7d4a, roughness: 0.8, side: THREE.DoubleSide });
 for (let i = 0; i < 14; i++) {
-    const radius = 1.2 + Math.random() * 1.6;
+    const radius = 1.2 + rand() * 1.6;
     const pad = new THREE.Mesh(new THREE.CircleGeometry(radius, 16), lilyMat);
     pad.rotation.x = -Math.PI / 2;
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.random() * (POND_RADIUS - 12);
+    const angle = rand() * Math.PI * 2;
+    const r = rand() * (POND_RADIUS - 12);
     pad.position.set(POND_CENTER.x + Math.cos(angle) * r, 0.06, POND_CENTER.z + Math.sin(angle) * r);
     scene.add(pad);
     lilyPads.push({ x: pad.position.x, z: pad.position.z, radius: radius });
 }
 
-// Roseaux
+// Roseaux (instanciés : un seul appel de dessin). Pivot à la base pour
+// qu'ils puissent se balancer au vent.
 const reedMat = new THREE.MeshStandardMaterial({ color: 0x2f6b3f, roughness: 0.9 });
+const reedGeo = new THREE.CylinderGeometry(0.05, 0.09, 1, 5);
+reedGeo.translate(0, 0.5, 0);
+const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, 40);
+let reedCount = 0;
 for (let i = 0; i < 40; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = POND_RADIUS - 1 - Math.random() * 5;
+    const angle = rand() * Math.PI * 2;
+    const r = POND_RADIUS - 1 - rand() * 5;
     const x = POND_CENTER.x + Math.cos(angle) * r;
     const z = POND_CENTER.z + Math.sin(angle) * r;
-    const h = 2 + Math.random() * 2.5;
-    const reed = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, h, 5), reedMat);
-    reed.position.set(x, h / 2, z);
-    reed.rotation.z = (Math.random() - 0.5) * 0.25;
-    scene.add(reed);
+    const h = 2 + rand() * 2.5;
+    const rotZ = (rand() - 0.5) * 0.25;
+    _vec.set(x, 0, z);
+    _quat.setFromAxisAngle(UNIT_Z, rotZ);
+    _scl.set(1, h, 1);
+    _mat4.compose(_vec, _quat, _scl);
+    reedInst.setMatrixAt(reedCount++, _mat4);
 }
+reedInst.count = reedCount;
+reedInst.instanceMatrix.needsUpdate = true;
+scene.add(reedInst);
 
-// Rochers
+// Rochers (instanciés).
 const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 1 });
+const rockInst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), rockMat, 12);
+rockInst.castShadow = true;
 for (let i = 0; i < 12; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = POND_RADIUS + 3 + Math.random() * 12;
-    const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6 + Math.random() * 1.3, 0), rockMat);
-    rock.position.set(POND_CENTER.x + Math.cos(angle) * r, 0.2, POND_CENTER.z + Math.sin(angle) * r);
-    rock.rotation.set(Math.random(), Math.random(), Math.random());
-    rock.castShadow = true;
-    scene.add(rock);
+    const angle = rand() * Math.PI * 2;
+    const r = POND_RADIUS + 3 + rand() * 12;
+    const s = 0.6 + rand() * 1.3;
+    _vec.set(POND_CENTER.x + Math.cos(angle) * r, 0.2, POND_CENTER.z + Math.sin(angle) * r);
+    _euler.set(rand(), rand(), rand());
+    _quat.setFromEuler(_euler);
+    _scl.set(s, s, s);
+    _mat4.compose(_vec, _quat, _scl);
+    rockInst.setMatrixAt(i, _mat4);
 }
+rockInst.instanceMatrix.needsUpdate = true;
+scene.add(rockInst);
 
 // ---------------------------------------------------------------------------
 // Vent + girouette
@@ -610,11 +719,17 @@ function cylinderBetween(start, end, radius, material) {
     return mesh;
 }
 
-const rodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
-scene.add(cylinderBetween(rodBase, rodTip, 0.08, rodMat));
+// La canne est regroupée depuis sa base : on peut ainsi la faire plier.
+const rodGroup = new THREE.Group();
+rodGroup.position.copy(rodBase);
+scene.add(rodGroup);
 
-const handleEnd = rodBase.clone().lerp(rodTip, 0.2);
-scene.add(cylinderBetween(rodBase, handleEnd, 0.15, new THREE.MeshStandardMaterial({ color: 0x3b2a1a })));
+const rodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
+const rodLocalTip = rodTip.clone().sub(rodBase);
+rodGroup.add(cylinderBetween(new THREE.Vector3(0, 0, 0), rodLocalTip, 0.08, rodMat));
+
+const handleEnd = rodLocalTip.clone().multiplyScalar(0.2);
+rodGroup.add(cylinderBetween(new THREE.Vector3(0, 0, 0), handleEnd, 0.15, new THREE.MeshStandardMaterial({ color: 0x3b2a1a })));
 
 const reel = new THREE.Mesh(
     new THREE.CylinderGeometry(0.28, 0.28, 0.22, 14),
@@ -622,13 +737,32 @@ const reel = new THREE.Mesh(
 );
 reel.position.copy(handleEnd).add(new THREE.Vector3(0.25, -0.25, 0));
 reel.rotation.z = Math.PI / 2;
-scene.add(reel);
+rodGroup.add(reel);
+
+// Pliage de la canne + position VISUELLE du bout (la ligne part de là).
+// `rodTip` reste la référence logique (distances, tests) et ne bouge pas.
+const rodTipVisual = rodTip.clone();
+const ROD_BEND_AXIS = new THREE.Vector3(1, 0, 0);
+let rodBend = 0;
+
+function updateRod(dt) {
+    const target = (floatState === 'struggle' || floatState === 'reeling') ? tension * 0.5
+        : (floatState === 'bite' ? 0.10 : 0);
+    rodBend += (target - rodBend) * Math.min(1, dt * 6);
+    rodGroup.rotation.x = -rodBend;
+    rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, -rodBend).add(rodBase);
+}
 
 // ---------------------------------------------------------------------------
 // Ligne + flotteur
 // ---------------------------------------------------------------------------
-const lineGeometry = new THREE.BufferGeometry().setFromPoints([rodTip.clone(), rodTip.clone()]);
+// Ligne préallouée (aucune allocation par image) : on écrit dans le tampon.
+const LINE_SEGMENTS = 12;
+const linePositions = new Float32Array((LINE_SEGMENTS + 1) * 3);
+const lineGeometry = new THREE.BufferGeometry();
+lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
 const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({ color: 0x222222 }));
+line.frustumCulled = false;
 scene.add(line);
 
 function makeBobberTexture() {
@@ -876,6 +1010,7 @@ function landFeed() {
     feedState = 'idle';
     feedBall.visible = false;
     sound.splash();
+    spawnSplash(feedLanding);
     spawnChum(feedLanding);
     setFeedMode(false);
     statusDisplay.textContent = 'Amorce lancée ! Les poissons s’approchent du nuage de miettes…';
@@ -1056,6 +1191,7 @@ function makeFish(size, power, aggression, type) {
 
     group.userData.tailPivot = tailPivot;
     group.userData.bodyMat = bodyMat;
+    group.userData.bodyMesh = fishBody;
     // Hauteur du poisson au-dessus de son centre : sert à le garder sous l'eau.
     group.userData.topOffset = (0.6 * bodyY + 0.3 * finScale + finHeight / 2) * size;
     group.scale.setScalar(size);
@@ -1064,8 +1200,8 @@ function makeFish(size, power, aggression, type) {
 }
 
 function randomFishPosition() {
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.random() * (POND_RADIUS - 12);
+    const angle = rand() * Math.PI * 2;
+    const r = rand() * (POND_RADIUS - 12);
     return new THREE.Vector3(
         POND_CENTER.x + Math.cos(angle) * r,
         -2.0,
@@ -1074,22 +1210,22 @@ function randomFishPosition() {
 }
 
 function randomFishVelocity() {
-    const dir = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 2.5;
+    const dir = rand() * Math.PI * 2;
+    const speed = 2 + rand() * 2.5;
     return { vx: Math.cos(dir) * speed, vz: Math.sin(dir) * speed };
 }
 
 function spawnFish() {
-    const size = 0.7 + Math.random() * 0.9;
-    const power = 0.6 + Math.random() * 0.9;
-    const aggression = 0.6 + Math.random() * 0.9;
-    const type = Math.floor(Math.random() * 4);
+    const size = 0.7 + rand() * 0.9;
+    const power = 0.6 + rand() * 0.9;
+    const aggression = 0.6 + rand() * 0.9;
+    const type = Math.floor(rand() * 4);
     const fish = makeFish(size, power, aggression, type);
     fish.position.copy(randomFishPosition());
     const v = randomFishVelocity();
     fish.userData.vx = v.vx;
     fish.userData.vz = v.vz;
-    fish.userData.phase = Math.random() * Math.PI * 2;
+    fish.userData.phase = rand() * Math.PI * 2;
     // Profondeur du DOS du poisson (déduite de la phase : aucun tirage aléatoire
     // en plus, pour ne pas décaler le monde reproductible des tests) : le dos
     // reste toujours sous la surface, entre -0,9 et -3,4.
@@ -1099,7 +1235,7 @@ function spawnFish() {
     fish.userData.aggression = aggression;
     fish.userData.type = type;
     fish.userData.losses = 0;
-    fish.userData.weight = Math.round((Math.pow(size, 3) * (1.2 + power * 0.5) + Math.random() * 0.3) * 10) / 10;
+    fish.userData.weight = Math.round((Math.pow(size, 3) * (1.2 + power * 0.5) + rand() * 0.3) * 10) / 10;
     fish.userData.hooked = false;
     scene.add(fish);
     fishes.push(fish);
@@ -1421,7 +1557,7 @@ function showBiteView(fish) {
     biteViewActive = true;
     bitePhase = 'floating';
     biteViewTimer = 0;
-    biteSinkAt = 1.2 + Math.random() * 1.3;
+    biteSinkAt = 1.2 + rand() * 1.3;
     biteSinkTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     biteView.classList.add('active');
@@ -1453,6 +1589,7 @@ function hookFish() {
         biteFish = null;
         fish.visible = true;
         sound.reel();
+        spawnSplash(floatGroup.position);
         hideBiteView();
         startStruggle(fish);
     } else if (bitePhase === 'floating') {
@@ -1576,7 +1713,7 @@ function updateStruggle(dt) {
     struggle.burstTimer -= dt;
     if (struggle.burstTimer <= 0) {
         struggle.lineLength += struggle.burstDistance;
-        struggle.burstTimer = struggle.burstInterval * (0.7 + Math.random() * 0.6);
+        struggle.burstTimer = struggle.burstInterval * (0.7 + rand() * 0.6);
         shake = 0.14;
     }
     // 3) La barre et la position du poisson suivent la longueur de fil sortie.
@@ -1679,7 +1816,7 @@ function updateSnag(dt) {
     snag.burstTimer -= dt;
     if (snag.burstTimer <= 0) {
         tension += snag.burstStrength;
-        snag.burstTimer = snag.burstInterval * (0.7 + Math.random() * 0.6);
+        snag.burstTimer = snag.burstInterval * (0.7 + rand() * 0.6);
         shake = 0.12;
     }
     if (tension >= 1) {
@@ -1728,14 +1865,56 @@ function updateRipples(dt) {
 }
 
 // ---------------------------------------------------------------------------
+// Éclaboussures (ferrage, atterrissage de l'amorce)
+// ---------------------------------------------------------------------------
+const splashes = [];
+const splashGeo = new THREE.SphereGeometry(0.1, 6, 6);
+
+function spawnSplash(position) {
+    if (splashes.length > 60) {
+        return;
+    }
+    for (let i = 0; i < 8; i++) {
+        const drop = new THREE.Mesh(splashGeo, new THREE.MeshBasicMaterial({
+            color: 0xeaf6ff, transparent: true, opacity: 0.9
+        }));
+        drop.position.set(position.x, Math.max(0.15, position.y), position.z);
+        const a = (i / 8) * Math.PI * 2;
+        drop.userData.vx = Math.cos(a) * (1.2 + (i % 3) * 0.5);
+        drop.userData.vz = Math.sin(a) * (1.2 + (i % 3) * 0.5);
+        drop.userData.vy = 3.5 + (i % 3) * 0.7;
+        scene.add(drop);
+        splashes.push({ mesh: drop, t: 0 });
+    }
+}
+
+function updateSplashes(dt) {
+    for (let i = splashes.length - 1; i >= 0; i--) {
+        const s = splashes[i];
+        s.t += dt;
+        const d = s.mesh.userData;
+        d.vy -= 12 * dt;
+        s.mesh.position.x += d.vx * dt;
+        s.mesh.position.z += d.vz * dt;
+        s.mesh.position.y += d.vy * dt;
+        s.mesh.material.opacity = Math.max(0, 0.9 * (1 - s.t / 0.9));
+        if (s.t > 0.9 || s.mesh.position.y < -0.2) {
+            scene.remove(s.mesh);
+            s.mesh.material.dispose();
+            splashes.splice(i, 1);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Mise à jour
 // ---------------------------------------------------------------------------
 function updateWind(dt) {
     wind.timer -= dt;
     if (wind.timer <= 0) {
-        wind.targetDir = Math.random() * Math.PI * 2;
-        wind.targetStrength = Math.random() * 0.8;
-        wind.timer = 6 + Math.random() * 6;
+        wind.targetDir = rand() * Math.PI * 2;
+        wind.targetStrength = rand() * 0.8;
+        wind.timer = 6 + rand() * 6;
     }
     const lerpFactor = 1 - Math.pow(0.1, dt);
     let diff = wind.targetDir - wind.dir;
@@ -1785,6 +1964,7 @@ function updateFish(dt, time) {
             data.tailPivot.rotation.y = Math.sin(time * 25) * 0.8;
             return;
         }
+        data.targeting = false;
         // L'amorce attire les poissons vers le nuage de miettes.
         if (chum && chum.strength > 0) {
             const cx = chum.position.x - fish.position.x;
@@ -1816,6 +1996,7 @@ function updateFish(dt, time) {
             const bd = Math.hypot(bx, bz);
             if (bd < BITE_INTEREST_RADIUS) {
                 baitInterest = true;
+                data.targeting = true;
                 const inv = bd > 0.001 ? 1 / bd : 0;
                 const wanted = Math.min(BITE_APPROACH_ACCEL, bd * 2.2);
                 const k = Math.min(1, dt * 4);
@@ -1830,7 +2011,9 @@ function updateFish(dt, time) {
         const dx = fish.position.x - POND_CENTER.x;
         const dz = fish.position.z - POND_CENTER.z;
         const dist = Math.hypot(dx, dz);
-        const limit = POND_RADIUS - 5;
+        // Un poisson qui vise l'hameçon peut venir jusqu'au bord : le bouchon
+        // peut être posé tout près de la rive.
+        const limit = data.targeting ? POND_RADIUS : POND_RADIUS - 5;
         if (dist > limit) {
             const nx = dx / dist;
             const nz = dz / dist;
@@ -1841,11 +2024,33 @@ function updateFish(dt, time) {
             fish.position.z = POND_CENTER.z + nz * limit;
         }
 
-        fish.rotation.y = Math.atan2(-data.vz, data.vx);
+        // Nage : ondulation du corps, inclinaison dans les virages, queue.
+        const yaw = Math.atan2(-data.vz, data.vx);
+        let yawDelta = yaw - (data.prevYaw === undefined ? yaw : data.prevYaw);
+        while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
+        while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+        data.prevYaw = yaw;
+        fish.rotation.y = yaw;
+        fish.rotation.z = Math.max(-0.45, Math.min(0.45, yawDelta * 5))
+            + Math.sin(time * 2 + data.phase) * 0.05;
+        if (data.bodyMesh) {
+            data.bodyMesh.rotation.y = Math.sin(time * 9 + data.phase) * 0.10;
+        }
         // position.y = profondeur du dos − hauteur du poisson : il reste sous l'eau,
         // seuls les gros poissons montrent leur dorsale près de la surface.
         fish.position.y = data.depth - data.topOffset + Math.sin(time * 2 + data.phase) * 0.12;
         data.tailPivot.rotation.y = Math.sin(time * 9 + data.phase) * 0.5;
+        // Sillage : une petite ondulation quand le poisson nage près de la surface.
+        if (data.wakeTimer === undefined) {
+            data.wakeTimer = 1 + (data.phase % 2.5);
+        }
+        data.wakeTimer -= dt;
+        if (data.wakeTimer <= 0) {
+            data.wakeTimer = 2.5 + ((data.phase * 7) % 3);
+            if (data.depth > -1.8 && ripples.length < 12) {
+                spawnRipple(fish.position);
+            }
+        }
     });
 }
 
@@ -1966,18 +2171,18 @@ function updateFloat(dt, time) {
 }
 
 function updateLine() {
-    const start = rodTip;
+    const start = rodTipVisual;
     const end = floatGroup.position;
-    const points = [];
-    const segments = 12;
-    for (let i = 0; i <= segments; i++) {
-        const t = i / segments;
-        const x = start.x + (end.x - start.x) * t;
-        const z = start.z + (end.z - start.z) * t;
-        const y = start.y + (end.y - start.y) * t - Math.sin(Math.PI * t) * 0.8;
-        points.push(new THREE.Vector3(x, y, z));
+    // La ligne pend, mais se raidit quand le fil est tendu.
+    const sag = 0.8 * (1 - Math.min(1, Math.max(0, tension)) * 0.65);
+    for (let i = 0; i <= LINE_SEGMENTS; i++) {
+        const t = i / LINE_SEGMENTS;
+        const o = i * 3;
+        linePositions[o] = start.x + (end.x - start.x) * t;
+        linePositions[o + 1] = start.y + (end.y - start.y) * t - Math.sin(Math.PI * t) * sag;
+        linePositions[o + 2] = start.z + (end.z - start.z) * t;
     }
-    line.geometry.setFromPoints(points);
+    lineGeometry.attributes.position.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -2139,6 +2344,9 @@ function animate() {
         updateFeed(dt);
         updateChum(dt);
         updateArm(dt);
+        updateRod(dt);
+        updateDayNight(dt);
+        updateSplashes(dt);
         updateRipples(dt);
         updateLine();
     }
@@ -2242,6 +2450,9 @@ window.__game = {
         updateFeed(dt);
         updateChum(dt);
         updateArm(dt);
+        updateRod(dt);
+        updateDayNight(dt);
+        updateSplashes(dt);
         updateRipples(dt);
         updateLine();
     }
