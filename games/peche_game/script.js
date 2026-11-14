@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=57 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=58 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=57';
+import { SoundEngine } from './sound.js?v=58';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1235,7 +1235,7 @@ function setFloatOpacity(opacity) {
 // Profondeur de la LIGNE : distance entre le bouchon et l'hameçon, en UNITÉS
 // (2 unités ≈ 1 m). Le joueur la règle avec − / + ; elle est bornée par le type
 // de bouchon (une « pose à coulisse » descend bien plus profond).
-let profondeurLigne = 2.6;              // 1,3 m par défaut
+let profondeurLigne = 2.5;              // 1,25 m par défaut
 let HOOK_DEPTH = -profondeurLigne;      // hauteur (y) de l'hameçon
 
 function bornesProfondeur(f) {
@@ -2080,6 +2080,25 @@ function rendreCarteEtang() {
     svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1) + '" fill="#4aa3c4"/>';
     svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech * 0.66).toFixed(1) + '" fill="#2e7f9c"/>';
     svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech * 0.34).toFixed(1) + '" fill="#1f5f7a"/>';
+    // ISOBATHES : les courbes de profondeur (le bassin), d'après le VRAI relief.
+    [1.6, 2.6, 3.6, 4.6].forEach(function (prof) {
+        const frac = (prof - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
+        if (frac <= 0.02 || frac >= 0.98) {
+            return;
+        }
+        const rr = R * Math.sqrt(1 - frac) * ech;
+        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + rr.toFixed(1)
+            + '" fill="none" stroke="#cdeaf7" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.75"/>';
+        svg += '<text x="' + cx + '" y="' + (cy - rr - 1).toFixed(1)
+            + '" text-anchor="middle" font-size="5.5" fill="#eaf6ff">'
+            + (prof / 2).toFixed(1).replace('.', ',') + ' m</text>';
+    });
+    // Les deux fosses.
+    FOSSES.forEach(function (fosse) {
+        svg += '<circle cx="' + mx(fosse.x).toFixed(1) + '" cy="' + mz(fosse.z).toFixed(1)
+            + '" r="' + (fosse.rayon * ech).toFixed(1)
+            + '" fill="none" stroke="#9fd3ea" stroke-width="0.5" stroke-dasharray="1 2" opacity="0.6"/>';
+    });
     // Les nénuphars, aux VRAIES positions (aléatoires à chaque partie).
     lilyPads.forEach(function (pad) {
         svg += '<circle cx="' + mx(pad.x).toFixed(1) + '" cy="' + mz(pad.z).toFixed(1)
@@ -2109,6 +2128,13 @@ function rendreCarteEtang() {
             + zone.couleur + '"></span>' + zone.nom + ' : ' + (noms.join(', ') || '—') + '</div>';
     });
     legende += '</div>';
+    // Profondeur à l'endroit du bouchon (et profondeur de l'hameçon).
+    if (floatState !== 'idle') {
+        const profLocale = profondeurLocale(floatGroup.position.x, floatGroup.position.z);
+        legende += '<div class="map-zone">🌊 Ici : ' + (profLocale / 2).toFixed(1).replace('.', ',')
+            + ' m d’eau · hameçon à ' + (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m'
+            + (hameconDansLaVase ? ' — <b>dans la vase !</b>' : '') + '</div>';
+    }
     pondMap.innerHTML = svg + legende;
 }
 
@@ -3252,6 +3278,7 @@ let castT = 0;
 let waitTimer = 0;
 let reelIdle = 0;                // secondes sans toucher la manivelle pendant la remontée
 let hameconDansLaVase = false;   // hameçon posé dans la vase (profondeur trop grande)
+let depuisLancement = 99;        // temps écoulé depuis que le bouchon s'est posé
 let biteFish = null;
 let biteCooldown = 0;
 let biteViewActive = false;
@@ -3355,7 +3382,10 @@ const TOUCHES = [
       desc: 'Il disparaît d’un coup, très vite : un poisson vif a emporté l’esche.' },
     { id: 'remontee_seche', nom: 'Remontée sèche', forme: 'montee', a: 2.0, duree: 0.4,
       vrai: true, famille: 'remontee', qui: 'vif',
-      desc: 'Il ressort d’un coup, très haut : les plombs ont été soulevés d’un seul geste.' }
+      desc: 'Il ressort d’un coup, très haut : les plombs ont été soulevés d’un seul geste.' },
+    { id: 'a_la_volee', nom: 'Touche à la volée', forme: 'descente', a: 2.0, duree: 0.4,
+      vrai: true, famille: 'enfoncement', qui: 'tous',
+      desc: 'L’esche est prise PENDANT la descente : le bouchon ne se pose même pas. Ferrer tout de suite !' }
 ];
 
 const TOUCHES_PAR_ID = {};
@@ -3746,7 +3776,14 @@ function showBiteView(fish) {
         ? signauxBase
         : Math.max(1, Math.round(signauxBase * cap.fausses));
     // Le poisson a ses habitudes : quelle « touche » aura-t-on cette fois ?
-    biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression);
+    // Juste après le lancer et à faible profondeur, l'esche peut être prise
+    // « à la volée » (le bouchon ne se pose même pas).
+    if (depuisLancement < 0.9 && profondeurLigne < 1.6) {
+        biteTouche = TOUCHES_PAR_ID.a_la_volee;
+        spawnFloatingText('À la volée !', floatGroup.position, '#ffe14d');
+    } else {
+        biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression);
+    }
     biteSinkAt = 2 + rand() * 2.5;     // le bouchon reste CALME quelques secondes
     biteSignalTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
@@ -4491,7 +4528,10 @@ function updateFish(dt, time) {
         }
         // position.y = profondeur du dos − hauteur du poisson : il reste sous l'eau,
         // seuls les gros poissons montrent leur dorsale près de la surface.
-        fish.position.y = data.depth - data.topOffset + Math.sin(time * 2 + data.phase) * 0.12;
+        // Le poisson reste toujours au-dessus du relief (le fond est un bassin).
+        const yBas = fondY(fish.position.x, fish.position.z) + 0.3;
+        fish.position.y = Math.max(yBas,
+            data.depth - data.topOffset + Math.sin(time * 2 + data.phase) * 0.12);
         data.tailPivot.rotation.y = Math.sin(time * 9 + data.phase) * 0.5;
         // Poisson caché sous l'eau : seules ses bulles et son sillage le trahissent.
         fish.visible = false;
@@ -4534,6 +4574,7 @@ function updateFloat(dt, time) {
             } else {
                 floatState = 'inWater';
                 waitTimer = 0;
+                depuisLancement = 0;
                 // Profondeur réglée > profondeur de l'eau à cet endroit : l'hameçon
                 // est DANS LA VASE (le bouchon se couche, rien ne mord).
                 hameconDansLaVase = profondeurLigne > profondeurLocale(castTarget.x, castTarget.z) - 0.25;
@@ -4555,6 +4596,7 @@ function updateFloat(dt, time) {
         floatGroup.position.z += Math.sin(wind.dir) * wind.strength * 0.6 * dt;
         const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
         floatGroup.position.y = 0.1 + houle;
+        depuisLancement += dt;
         if (hameconDansLaVase) {
             // L'hameçon est dans la vase : le bouchon se couche et rien ne mord.
             floatGroup.rotation.z = 1.45;
@@ -5059,6 +5101,13 @@ window.__game = {
     getWaterHeightAt: function (x, z) { return waterWaveHeightAt(x, z, testTime); },
     getBaitInterest: function () { return baitInterest; },
     getHookDepth: function () { return HOOK_DEPTH; },
+    // Profondeur de la ligne (réglable) et relief de l'étang — pour les tests.
+    getProfondeur: function () { return profondeurLigne; },
+    setProfondeur: setProfondeur,
+    getBornesProfondeur: function () { return bornesProfondeur().slice(); },
+    profondeurLocale: profondeurLocale,
+    fondY: fondY,
+    isHameconDansLaVase: function () { return hameconDansLaVase; },
     getFloatOpacity: function () { return floatBody.material.opacity; },
     // Bourriche, carnet et lancer du poisson — exposé pour les tests.
     getBourriche: function () {
@@ -5168,6 +5217,7 @@ window.__game = {
     getChum: function () {
         return chum ? {
             x: chum.position.x,
+            y: chum.position.y,
             z: chum.position.z,
             radius: chum.radius,
             age: chum.age,

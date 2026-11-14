@@ -133,8 +133,9 @@ export function run() {
     checkEqual('on remonte la ligne', state(), 'reeling');
     parkFish();
     const reelBait = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
-    reelBait.position.set(G().floatGroup.position.x, -2.6, G().floatGroup.position.z);
-    reelBait.userData.depth = -2.6;
+    reelBait.position.set(G().floatGroup.position.x, -2.5, G().floatGroup.position.z);
+    reelBait.userData.depth = -2.5;
+    reelBait.userData.profondeurZone = [-3.3, -1.7];
     reelBait.userData.vx = 0;
     reelBait.userData.vz = 0;
     stepFor(1.5);
@@ -175,6 +176,9 @@ export function run() {
     checkEqual('toujours en remontée', state(), 'reeling');
 
     group('14) Épreuve de force : des tours proportionnels à la distance');
+    // Le lancer de test à z = −90 tombe près de la berge : l'eau y est peu
+    // profonde, donc on règle une ligne courte pour ne pas pêcher dans la vase.
+    G().setProfondeur(1.5);
     const nearFish = startFight(0, -20);
     const nearLine = G().getLineLength();
     const nearTurns = G().getStruggleTurnsNeeded();
@@ -193,6 +197,7 @@ export function run() {
         farTurns / nearTurns, farDistance / nearLine, 0.05);
     check('un long lancer demande beaucoup plus de tours', farTurns > nearTurns * 2,
         nearTurns.toFixed(1) + ' -> ' + farTurns.toFixed(1) + ' tours');
+    G().setProfondeur(2.5);            // on revient à la profondeur par défaut
 
     group('15) Le poisson tire : la ligne et la distance reculent');
     const pulled = startFight(0, -20);
@@ -421,6 +426,7 @@ export function run() {
     const deepFish = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
     deepFish.position.set(G().floatGroup.position.x, -5.2, G().floatGroup.position.z);
     deepFish.userData.depth = -5.2;
+    deepFish.userData.profondeurZone = [-6.5, -0.5];   // il peut mordre à l'hameçon
     deepFish.userData.vx = 0;
     deepFish.userData.vz = 0;
     stepFor(0.2);

@@ -48,7 +48,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   pendant quelques secondes (il suit seulement la houle), puis il bouge… et c'est **ce
   mouvement qu'il faut lire**. Comme au bord de l'eau, le bouchon est plombé : un poisson
   qui **soulève** l'appât le fait **monter** (« ascenseur »), un poisson qui tire le fait
-  **plonger** ou **partir de côté**. Il y a **17 touches au catalogue** — des **fausses**
+  **plonger** ou **partir de côté**. Il y a **18 touches au catalogue** — des **fausses**
   (frémissement, tapotement, danse du bouchon, enfoncement partiel, fausse remontée,
   couchage manqué, dérive, deux coups, touche hésitante, il tourne sur place) et les
   **vraies** (coulée franche, ascenseur, coulée lente et lourde, il file sous l'eau, il se
@@ -149,8 +149,18 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   dessin), ce qui laisse de la marge pour la végétation.
 - **Zones de profondeur réalistes** : chaque espèce nage dans SA tranche d'eau (ablette et
   gardon près de la surface, carpe et tanche sur le fond, sandre et silure dans les fosses)
-  et **reste dans son coin d'étang** (un sandre ne traverse pas tout l'étang). L'hameçon est
-  posé **profond** (1,3 m sous le bouchon), donc on pêche près du fond, comme au bord de l'eau.
+  et **reste dans son coin d'étang** (un sandre ne traverse pas tout l'étang).
+- **Profondeur réglable (🌊 − / +)** : on choisit la longueur de ligne (de 0,3 m à 2,5 m
+  selon le bouchon — la pose à coulisse descend le plus bas). Le bouchon et l'hameçon sont
+  dessinés à la bonne distance, et **seuls les poissons dont la tranche d'eau contient
+  l'hameçon mordent** : ligne courte pour les gardons, longue pour les carpes !
+- **Un vrai bassin** : le fond est modelé (0,7 m au bord, 2,5 m au centre, deux fosses plus
+  profondes) et la carte du carnet trace les **isobathes** avec la profondeur sous le
+  bouchon. Si la ligne est plus longue que l'eau, l'hameçon est **dans la vase** : le
+  bouchon se couche et rien ne mord.
+- **Amorçage à profondeur** : le nuage d'amorce **coule** jusqu'à la profondeur de la ligne
+  et n'attire que les poissons de cette couche d'eau. À faible profondeur, l'esche peut
+  même être prise **à la volée** (le bouchon ne se pose pas !).
 - **Espèces réalistes** : 16 poissons d'eau douce d'Europe, chacun avec sa **silhouette
   3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
   **combativité**. Le poids est calculé avec la formule des pêcheurs
