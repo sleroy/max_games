@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=87';
+import { SoundEngine } from './sound.js?v=88';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -51,6 +51,11 @@ const closeRanking = document.getElementById('closeRanking');
 const accueil = document.getElementById('accueil');
 const playButton = document.getElementById('playButton');
 const accueilClassement = document.getElementById('accueilClassement');
+const compassDisplay = document.getElementById('compass');
+const posteSud = document.getElementById('posteSud');
+const posteEst = document.getElementById('posteEst');
+const posteNord = document.getElementById('posteNord');
+const posteOuest = document.getElementById('posteOuest');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -1393,12 +1398,16 @@ function cylinderBetween(start, end, radius, material) {
 }
 
 // La canne est regroupée depuis sa base : on peut ainsi la faire plier.
-const rodGroup = new THREE.Group();
-rodGroup.position.copy(rodBase);
-scene.add(rodGroup);
-
 const rodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
 const rodLocalTip = rodTip.clone().sub(rodBase);
+// PIVOT DE LA CANNE : la canne est regroupée depuis sa base et orientée par un
+// pivot (rotation.y). On peut ainsi la faire plier (rodGroup.rotation.x) SANS
+// que le pliage dépende de l'orientation du poste autour de l'étang.
+const rodPivot = new THREE.Group();
+rodPivot.position.copy(rodBase);
+scene.add(rodPivot);
+const rodGroup = new THREE.Group();
+rodPivot.add(rodGroup);
 // Canne CONIQUE : talon de 25 mm, scion de 4 mm (pas un tube uniforme).
 const rodMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.025, rodLocalTip.length(), 10), rodMat);
 rodMesh.position.copy(rodLocalTip).multiplyScalar(0.5);
@@ -1421,6 +1430,7 @@ rodGroup.add(reel);
 // `rodTip` reste la référence logique (distances, tests) et ne bouge pas.
 const rodTipVisual = rodTip.clone();
 const ROD_BEND_AXIS = new THREE.Vector3(1, 0, 0);
+const AXE_VERTICAL = new THREE.Vector3(0, 1, 0);
 let rodBend = 0;
 
 function updateRod(dt) {
@@ -1428,7 +1438,13 @@ function updateRod(dt) {
         : (floatState === 'bite' ? 0.10 : 0);
     rodBend += (target - rodBend) * Math.min(1, dt * 6);
     rodGroup.rotation.x = -rodBend;
-    rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, -rodBend).add(rodBase);
+    // Pliage autour de l'axe LOCAL de la canne, puis orientation du poste :
+    // c'est exactement la transformation de rodPivot -> rodGroup.
+    rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, -rodBend);
+    if (rodPivot.rotation.y) {
+        rodTipVisual.applyAxisAngle(AXE_VERTICAL, rodPivot.rotation.y);
+    }
+    rodTipVisual.add(rodBase);
 }
 
 // ---------------------------------------------------------------------------
@@ -2066,6 +2082,142 @@ bourriche.add(bourricheNet);
 bourriche.scale.setScalar(0.66);
 bourriche.position.copy(BOURRICHE_POS);
 scene.add(bourriche);
+
+// ---------------------------------------------------------------------------
+// EMPLACEMENTS AUTOUR DE L'ÉTANG (idee 1 de idees.md)
+// Le monde (eau, poissons, nénuphars) ne bouge pas : c'est le « poste de
+// pêche » qui fait le tour de l'étang. On tourne donc tout le matériel du
+// pêcheur autour de POND_CENTER : pêcheur, canne, bouchon au repos, bourriche,
+// girouette et caméra. Les 4 postes sont à 90° l'un de l'autre.
+//   delta = rotation autour du centre (0 = poste historique, au sud).
+// ---------------------------------------------------------------------------
+const POSTES = [
+    { id: 'sud', nom: 'Sud', delta: 0, exposition: 1.00 },
+    { id: 'est', nom: 'Est', delta: Math.PI / 2, exposition: 1.03 },
+    { id: 'nord', nom: 'Nord', delta: Math.PI, exposition: 0.92 },
+    { id: 'ouest', nom: 'Ouest', delta: -Math.PI / 2, exposition: 1.05 }
+];
+let posteActuel = 0;
+
+// Positions de référence du poste SUD (les valeurs historiques du jeu). On les
+// fait tourner autour de l'étang pour obtenir les trois autres postes.
+const POSTE_ANGLER = angler.position.clone();
+const POSTE_ROD_BASE = rodBase.clone();
+const POSTE_ROD_TIP = rodTip.clone();
+const POSTE_BOURRICHE = BOURRICHE_POS.clone();
+const POSTE_GIROUETTE = vaneGroup.position.clone();
+const POSTE_CAM_POS = NORMAL_CAM_POS.clone();
+const POSTE_CAM_TARGET = NORMAL_CAM_TARGET.clone();
+
+// Fait tourner `base` autour du centre de l'étang et écrit le résultat dans
+// `cible` (on réutilise les Vector3 existants : aucun objet recréé).
+function tournerAutourEtang(base, delta, cible) {
+    const dx = base.x - POND_CENTER.x;
+    const dz = base.z - POND_CENTER.z;
+    const cos = Math.cos(delta);
+    const sin = Math.sin(delta);
+    cible.copy(base);
+    cible.x = POND_CENTER.x + dx * cos + dz * sin;
+    cible.z = POND_CENTER.z - dx * sin + dz * cos;
+    return cible;
+}
+
+function majEtiquettePoste() {
+    if (!compassDisplay) {
+        return;
+    }
+    const poste = POSTES[posteActuel];
+    compassDisplay.textContent = '🧭 Nord en haut · ☀️ soleil au sud-ouest · 📍 poste '
+        + poste.nom.toLowerCase();
+}
+
+const posteBoutons = [
+    { element: posteSud, index: 0 },
+    { element: posteEst, index: 1 },
+    { element: posteNord, index: 2 },
+    { element: posteOuest, index: 3 }
+];
+
+function majBoutonsPoste() {
+    posteBoutons.forEach(function (bouton) {
+        if (!bouton.element) {
+            return;
+        }
+        const actif = bouton.index === posteActuel;
+        bouton.element.classList.toggle('actif', actif);
+        if (typeof bouton.element.setAttribute === 'function') {
+            bouton.element.setAttribute('aria-pressed', actif ? 'true' : 'false');
+        }
+    });
+}
+
+// Place tout le matériel du pêcheur au poste `index`. Refusé si une ligne est
+// en l'air ou à l'eau : on ne se téléporte pas en pleine partie.
+function placerAuPoste(index) {
+    const poste = POSTES[index];
+    if (!poste || floatState !== 'idle') {
+        return false;
+    }
+    posteActuel = index;
+    const delta = poste.delta;
+
+    // Pêcheur : même distance à l'étang, il regarde toujours le centre.
+    tournerAutourEtang(POSTE_ANGLER, delta, angler.position);
+    angler.rotation.y = Math.PI + delta;
+
+    // Canne : base et bout logiques, pivot orienté vers le centre.
+    tournerAutourEtang(POSTE_ROD_BASE, delta, rodBase);
+    tournerAutourEtang(POSTE_ROD_TIP, delta, rodTip);
+    rodPivot.position.copy(rodBase);
+    rodPivot.rotation.y = delta;
+    rodBend = 0;
+    rodGroup.rotation.x = 0;
+
+    // Bouchon au repos, au bout de la canne.
+    floatIdle.set(rodTip.x, rodTip.y - 0.6, rodTip.z);
+    floatGroup.position.copy(floatIdle);
+
+    // Bourriche et girouette : elles font partie du poste.
+    tournerAutourEtang(POSTE_BOURRICHE, delta, BOURRICHE_POS);
+    bourriche.position.copy(BOURRICHE_POS);
+    tournerAutourEtang(POSTE_GIROUETTE, delta, vaneGroup.position);
+
+    // Caméra : on tourne son point de vue autour de l'étang (cadrage identique).
+    tournerAutourEtang(POSTE_CAM_POS, delta, NORMAL_CAM_POS);
+    tournerAutourEtang(POSTE_CAM_TARGET, delta, NORMAL_CAM_TARGET);
+    camera.position.copy(NORMAL_CAM_POS);
+    cameraTarget.copy(NORMAL_CAM_TARGET);
+    camera.lookAt(cameraTarget);
+
+    // Repères du combat : l'ancre est au bout de la canne.
+    struggleAnchor.set(rodTip.x, 0, rodTip.z);
+    strugglePos.set(rodTip.x, 0.1, rodTip.z);
+
+    // Visées par défaut : vers le centre de l'étang, à bonne distance.
+    const dx = POND_CENTER.x - angler.position.x;
+    const dz = POND_CENTER.z - angler.position.z;
+    const d = Math.hypot(dx, dz) || 1;
+    castAim.set(angler.position.x + (dx / d) * 30, 0.1, angler.position.z + (dz / d) * 30);
+    feedAim.set(angler.position.x + (dx / d) * 22, 0.1, angler.position.z + (dz / d) * 22);
+    castTarget.set(castAim.x, 0.1, castAim.z);
+
+    majCoupeProfondeur();
+    majEtiquettePoste();
+    majBoutonsPoste();
+    return true;
+}
+
+posteBoutons.forEach(function (bouton) {
+    if (!bouton.element) {
+        return;
+    }
+    bouton.element.addEventListener('click', function () {
+        placerAuPoste(bouton.index);
+    });
+});
+majBoutonsPoste();
+majEtiquettePoste();
+
 
 // Poisson tenu en main, prêt à être lancé.
 let heldFish = null;
@@ -6034,6 +6186,20 @@ window.__game = {
     demarrerJeu: demarrerJeu,
     afficherAccueil: afficherAccueil,
     isAccueilVisible: function () { return !!accueil && accueil.classList.contains('active'); },
+    // Emplacements autour de l'étang (idee 1) — exposés pour les tests.
+    getPoste: function () {
+        const poste = POSTES[posteActuel];
+        return { index: posteActuel, id: poste.id, nom: poste.nom, delta: poste.delta };
+    },
+    getPostes: function () {
+        return POSTES.map(function (poste) {
+            return { id: poste.id, nom: poste.nom, delta: poste.delta };
+        });
+    },
+    placerAuPoste: placerAuPoste,
+    getRodBase: function () { return { x: rodBase.x, y: rodBase.y, z: rodBase.z }; },
+    getCameraTarget: function () { return { x: cameraTarget.x, y: cameraTarget.y, z: cameraTarget.z }; },
+    getGirouette: function () { return { x: vaneGroup.position.x, z: vaneGroup.position.z }; },
     couleurEau: couleurEau,
     getFondDoubleFace: function () { return pondBottom.material.side === THREE.DoubleSide; },
     getEauCouleurs: function () {

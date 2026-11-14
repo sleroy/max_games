@@ -1366,6 +1366,61 @@ body.calm .struggle-marker {
     opacity: 0.9;
 }
 
+/* Choix de l'emplacement autour de l'étang (idee 1 de idees.md). */
+.poste-choix {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    margin: 2px 0;
+}
+
+.poste-choix-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.poste-boutons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.poste-btn {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    min-height: 44px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.poste-btn:hover {
+    border-color: #fff;
+}
+
+.poste-btn.actif {
+    background: rgba(60, 140, 80, 0.85);
+    border-color: #bff0c8;
+    box-shadow: 0 0 12px rgba(120, 230, 150, 0.7);
+}
+
+.poste-choix-hint {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+@media (pointer: coarse) {
+    .poste-btn {
+        min-height: 48px;
+    }
+}
+
 .overlay-score {
     font-size: 1rem;
     padding: 8px 10px;

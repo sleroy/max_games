@@ -20,6 +20,7 @@ import scenarioProfondeur from './scenario-profondeur.mjs';
 import scenarioStyles from './scenario-styles.mjs';
 import scenarioLignes from './scenario-lignes.mjs';
 import scenarioRagondin from './scenario-ragondin.mjs';
+import scenarioPostes from './scenario-postes.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -40,6 +41,7 @@ try {
     scenarioStyles();          // un style de touches et de combat par espèce
     scenarioLignes();          // lignes (vies), casse, fin de partie, classement
     scenarioRagondin();        // ragondin voleur : 3 clics, vol, rareté
+    scenarioPostes();          // emplacements : les 4 bords de l'étang
 } catch (error) {
     crashed = error;
 } finally {
