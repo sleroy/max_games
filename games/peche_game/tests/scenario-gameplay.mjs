@@ -56,7 +56,7 @@ export function run() {
     checkEqual('relâcher lance la ligne', state(), 'flying');
     checkEqual('la jauge est refermée', el('feedGauge').classList.contains('active'), false);
     checkEqual('bouton désactivé pendant le vol', el('fishButton').disabled, true);
-    checkEqual('texte d\'état', statusText(), 'Lancer…');
+    check('texte d’état', statusText().indexOf('Lancer…') === 0, statusText());
     stepFor(0.9, 0.05);
     checkEqual('le bouchon tombe dans l\'eau (0,8 s)', state(), 'inWater');
     const distance = castDistance();

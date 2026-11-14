@@ -12,7 +12,7 @@ function read(name) {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'sound.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'sound.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sol-herbe.jpg', 'assets/ecorce.jpg', 'assets/vase.jpg', 'assets/eau-normales.jpg'].forEach(name => {
         check(name + ' présent', fs.existsSync(path.join(GAME_DIR, name)));
@@ -213,6 +213,14 @@ export function run() {
         script.includes('tenterAttaquePredateur'));
     check('le carnassier repart avec un avantage',
         script.includes('PREDATOR_ATTACK_ADVANTAGE'));
+
+    group('15) Démêlage et quiver');
+    check('le mini-jeu est dans un module dédié', script.includes("from './demelage.js'"));
+    check('le mode quiver est dans un module dédié', script.includes("from './quiver.js'"));
+    check('le lancer peut être tendu pendant le vol', script.includes('tendreLigneAuLancer'));
+    check('un état « tangle » bloque la pêche', script.includes("floatState = 'tangle'"));
+    check('le scion remplace le bouchon en quiver', script.includes('techniqueCourante === \'quiver\'')
+        && script.includes('quiverCanvas'));
 
 }
 

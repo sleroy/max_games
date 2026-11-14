@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=103">
+    <link rel="stylesheet" href="style.css?v=104">
 </head>
 <body>
     <div class="game-wrap">
@@ -58,10 +58,21 @@
             </div>
             <button class="tool-toggle" id="toolToggle" aria-label="Afficher les outils"
                 aria-controls="toolDock" aria-expanded="false">🎒</button>
-            <div class="overlay-panel active" id="accueil">
-                <h2 class="overlay-title">🎣 L’étang du Bois Neuf</h2>
+            <button class="end-game-button" id="endGameButton"
+                aria-label="Terminer la partie et revenir à l’accueil">🏁 Terminer</button>
+            <div class="modal-backdrop active" id="modalBackdrop" aria-hidden="true"></div>
+            <div class="overlay-panel active" id="accueil" role="dialog" aria-modal="true"
+                aria-labelledby="accueilTitre">
+                <h2 class="overlay-title" id="accueilTitre">🎣 L’étang du Bois Neuf</h2>
                 <p class="overlay-text">Attrape les poissons du bord de l’eau : règle ta profondeur,<br>
                     amorce, lance et ferre au bon moment !</p>
+                <div class="panel-row technique-row">
+                    <label for="techniqueSelect">🎣 Technique</label>
+                    <select id="techniqueSelect" class="overlay-input">
+                        <option value="bouchon" selected>Bouchon (flotteur)</option>
+                        <option value="quiver">Quiver (scion de canne)</option>
+                    </select>
+                </div>
                 <div class="poste-choix">
                     <span class="poste-choix-label">📍 Choisis ta place autour de l’étang :</span>
                     <div class="carte-placement" id="cartePlacementBoite">
@@ -92,18 +103,22 @@
                 <p class="overlay-text" style="font-size:0.78rem;opacity:0.75">
                     Ton nom est demandé en fin de partie.</p>
             </div>
-            <div class="overlay-panel" id="gameOver">
-                <h2 class="overlay-title">💥 Plus de lignes !</h2>
-                <p class="overlay-text">Tu as cassé tes 5 lignes. Voici ta partie :</p>
+            <div class="overlay-panel" id="gameOver" role="dialog" aria-modal="true"
+                aria-labelledby="gameOverTitle">
+                <h2 class="overlay-title" id="gameOverTitle">💥 Plus de lignes !</h2>
+                <p class="overlay-text" id="gameOverText">Tu as cassé tes 5 lignes. Voici ta partie :</p>
                 <div class="overlay-score" id="gameOverScore"></div>
                 <label class="overlay-label" for="playerName">Ton nom :</label>
                 <input class="overlay-input" id="playerName" maxlength="12" placeholder="Ton prénom">
                 <button class="feed-button" id="saveScore">Enregistrer au classement</button>
+                <button class="feed-button" id="saveAndMenu">✅ Enregistrer et revenir à l’accueil</button>
                 <button class="journal-button" id="showRanking">🏆 Voir le classement</button>
                 <button class="journal-button" id="restartGame">🔁 Rejouer</button>
+                <button class="journal-button" id="backToMenu">🏠 Accueil (sans enregistrer)</button>
             </div>
-            <div class="overlay-panel" id="classement">
-                <h2 class="overlay-title">🏆 Classement local</h2>
+            <div class="overlay-panel" id="classement" role="dialog" aria-modal="true"
+                aria-labelledby="classementTitre">
+                <h2 class="overlay-title" id="classementTitre">🏆 Classement local</h2>
                 <div class="tabs" id="rankingTabs">
                     <button class="tab active" data-rank="poissons">🐟 Poissons</button>
                     <button class="tab" data-rank="poids">⚖️ Poids total</button>
@@ -111,6 +126,21 @@
                 </div>
                 <div class="overlay-list" id="rankingList"></div>
                 <button class="journal-button" id="closeRanking">Fermer</button>
+            </div>
+            <div class="tangle-game" id="tangleGame" role="dialog" aria-modal="true"
+                aria-labelledby="tangleTitle">
+                <div class="tangle-card">
+                    <h2 id="tangleTitle">🧶 Ligne emmêlée !</h2>
+                    <p id="tangleMessage">Suis le fil du DÉPART (vert) à l’ARRIVÉE (rouge),
+                        sans sortir du câble.</p>
+                    <canvas id="tangleCanvas" width="640" height="360"
+                        aria-label="Mini-jeu de démêlage : suivre le fil"></canvas>
+                    <div class="tangle-hud">
+                        <span id="tangleTimer">⏱ 14.0 s</span>
+                        <span id="tangleProgress">0 %</span>
+                    </div>
+                    <button id="tangleGiveUp">Abandonner (perdre une ligne)</button>
+                </div>
             </div>
             <div class="panel" id="journal">
                 <h2 class="panel-title">📖 Carnet de pêche</h2>
@@ -232,6 +262,11 @@
                 <div class="struggle-legend">🟩 zone sûre · 🟨 attention (hachures) · ✖ la ligne casse</div>
                 <button class="drag-button" id="dragButton">🔓 Lâcher du fil</button>
             </div>
+            <div class="quiver-panel" id="quiverPanel" aria-hidden="true">
+                <canvas id="quiverCanvas" width="240" height="80"
+                    aria-label="Scion de la canne (technique quiver)"></canvas>
+                <span>Scion</span>
+            </div>
             <div class="hud-bottom">
                 <div class="status" id="status">Clique sur l'eau pour lancer la ligne.</div>
                 <button id="fishButton">Lancer la canne</button>
@@ -264,6 +299,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=103"></script>
+    <script type="module" src="script.js?v=104"></script>
 </body>
 </html>

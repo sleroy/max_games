@@ -48,8 +48,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   boussole indique où est le **nord à l'écran** (↑ ↓ ← →).
 - **JOUER = partie neuve** : le score, la bourriche de la partie, les lignes et les
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
-  l'eau). Le **carnet**, l'**XP**, les **bouchons achetés** et le **classement**
-  sont conservés.
+  l'eau). L'**XP de partie** affichée repart aussi à 0 ; le **carnet**, l'**XP
+  carrière** (boutique), les **bouchons achetés** et le **classement** sont conservés.
 - **Petits écrans** : le dock d'outils se replie derrière le bouton **🎒** pour
   laisser la **bourriche** et la **girouette** visibles ; **Bourriche / XP / Lignes**
   restent affichés dans une barre de stats, et le **FOV s'élargit** automatiquement
@@ -63,6 +63,23 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   carnassier prend sa place avec un **avantage** (combat plus dur, chrono plus court).
   Un **popup 3D** (« 🐟 Brochet attaque ! ») s'affiche **près du bouchon**, en
   plus du message de statut, pour prévenir immédiatement le joueur.
+- **Lancer tendu / ligne emmêlée** : pendant le vol, **clique pour tendre la ligne**
+  avant que le bouchon touche l'eau. Si tu ne le fais pas, la ligne peut s'**emmêler**
+  (32 %) : un **mini-jeu** s'ouvre alors. Suis le câble au doigt du **DÉPART** vert
+  à l'**ARRIVÉE** rouge, sans sortir du câble et dans le temps imparti. Un abandon
+  ou un temps écoulé **coûte une ligne** ; un tracé réussi libère la ligne.
+- **Deux techniques** : **bouchon** (flotteur classique) ou **quiver** (scion de
+  canne, aucun bouchon). En quiver, la canne est inclinée et un **indicateur de
+  scion** montre les touches ; le catalogue des 18 touches reste le même, chaque
+  mouvement a sa courbe/secousse propre. La technique se choisit sur l'écran
+  d'accueil et est mémorisée dans le carnet.
+- **Terminer la partie** : le bouton **🏁 Terminer** ouvre le bilan, permet de
+  saisir son **nom**, d'enregistrer au classement et de revenir à l'**accueil**
+  (même s'il reste des lignes). L'accueil est une **vraie modale bloquante** :
+  le lac n'est pas jouable tant qu'on n'a pas cliqué sur **Jouer**.
+- **Spécimens hors norme** : environ **7 %** des poissons dépassent les normes de
+  leur espèce (taille, poids, combativité, agressivité). Ils sont signalés
+  (« ✨ HORS NORME ») et restent cohérents avec le carnet et les records.
 - **Vase** : un hameçon trop profond s'accroche. La vase **aspire** : clique en
   rythme (≈ 3 clics/s) pour la défaire, sinon la tension monte et la ligne casse.
   Les nénuphars, eux, se dégagent plus facilement.
@@ -318,6 +335,8 @@ peche_game/
 ├── index.html          # Page principale + HUD
 ├── style.css           # Styles (plein écran, manivelle, barres…)
 ├── script.js           # Logique 3D du jeu (three.js)
+├── demelage.js         # Mini-jeu autonome de démêlage (canvas 2D)
+├── quiver.js           # Mode quiver : indicateur de scion autonome
 ├── sound.js            # Moteur audio procédural
 ├── launch.sh           # Lance le serveur local + ouvre le navigateur
 ├── serveur.py          # Serveur local sans cache (pour le développement)
@@ -328,6 +347,18 @@ peche_game/
 │   └── CREDITS.txt     # Attributions
 └── README.md
 ```
+
+## Tests
+
+Le harnais charge le vrai `script.js` avec un faux DOM et un three.js minimal :
+
+```bash
+cd games/peche_game
+node tests/run.mjs
+```
+
+Les scénarios 64–66 couvrent la fin volontaire, l'accueil modal, l'XP de partie,
+les spécimens hors norme, le lancer/emmêlement et le mode quiver.
 
 ## Crédits
 

@@ -23,6 +23,8 @@ export const GAME_DIR = path.resolve(HERE, '..');
 const FILES = {
     script: path.join(GAME_DIR, 'script.js'),
     sound: path.join(GAME_DIR, 'sound.js'),
+    demelage: path.join(GAME_DIR, 'demelage.js'),
+    quiver: path.join(GAME_DIR, 'quiver.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -111,7 +113,8 @@ function fakeSetTimeout(fn, delay = 0) {
 const RECTS = {
     gameCanvas: { left: 0, top: 0, width: 1280, height: 720 },
     crank: { left: 1000, top: 560, width: 120, height: 120 },
-    cartePlacement: { left: 0, top: 0, width: 320, height: 320 }
+    cartePlacement: { left: 0, top: 0, width: 320, height: 320 },
+    tangleCanvas: { left: 0, top: 0, width: 640, height: 360 }
 };
 
 /** @type {Map<string, object>} */
@@ -136,6 +139,8 @@ function makeContext2d() {
         fillStyle: '',
         strokeStyle: '',
         lineWidth: 0,
+        lineCap: '',
+        lineJoin: '',
         font: '',
         textAlign: '',
         textBaseline: '',
@@ -143,6 +148,18 @@ function makeContext2d() {
         strokeRect() {},
         fillText() {},
         strokeText() {},
+        clearRect() {},
+        beginPath() {},
+        closePath() {},
+        moveTo() {},
+        lineTo() {},
+        arc() {},
+        quadraticCurveTo() {},
+        fill() {},
+        stroke() {},
+        save() {},
+        restore() {},
+        setLineDash() {},
         measureText() { return { width: 0 }; },
         createRadialGradient() { return { addColorStop() {} }; }
     };
@@ -295,6 +312,7 @@ export function installEnvironment() {
     setSeed(20240101);
     Math.random = rng;                                  // monde reproductible
     globalThis.window = globalThis;
+    globalThis.__PECHE_RARE__ = 0;                     // tests : pas de spécimen rare
     globalThis.devicePixelRatio = 1;
     globalThis.innerWidth = 1280;
     globalThis.innerHeight = 720;
@@ -339,6 +357,8 @@ export async function loadGame() {
         throw new Error("script.js n'importe plus 'three' : adapter le harnais");
     }
     fs.copyFileSync(FILES.sound, path.join(tmpDir, 'sound.js'));
+    fs.copyFileSync(FILES.demelage, path.join(tmpDir, 'demelage.js'));
+    fs.copyFileSync(FILES.quiver, path.join(tmpDir, 'quiver.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
     fs.writeFileSync(path.join(tmpDir, 'three-stub.mjs'), stub);
@@ -349,6 +369,9 @@ export async function loadGame() {
     SoundClass = (await import(pathToFileURL(path.join(tmpDir, 'sound.js')).href)).SoundEngine;
     game = globalThis.__game;
     game.setPaused(true);
+    game.setTangleChance(0);       // les casts des tests ne s'emmêlent pas
+    game.setHorsNormeChance(0);    // monde de test sans spécimen hors norme
+    game.setTechnique('bouchon');  // les tests historiques pêchent au bouchon
     return game;
 }
 
