@@ -39,6 +39,14 @@ export function run() {
         checkEqual('même version de cache pour le CSS et le JS', jsVersion[1], cssVersion[1]);
     }
 
+    group('3b) Modules importés versionnés (anti-cache)');
+    const soundImport = script.match(/from '\.\/sound\.js\?v=(\d+)'/);
+    check("script.js importe sound.js avec une version (?v=)", !!soundImport,
+        soundImport ? soundImport[1] : 'absent');
+    if (jsVersion && soundImport) {
+        checkEqual('même version pour sound.js et index.html', soundImport[1], jsVersion[1]);
+    }
+
     group('4) Chargement de three.js');
     check('importmap déclaré', html.includes('type="importmap"'));
     check('« three » -> ./assets/three.module.js', html.includes('"./assets/three.module.js"'));

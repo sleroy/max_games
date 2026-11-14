@@ -68,7 +68,14 @@ echo "  Pour ARRÊTER le jeu : appuie sur Ctrl+C."
 echo
 
 # --- 5) On démarre le serveur (uniquement accessible depuis cet ordinateur).
-python3 -m http.server "$PORT" --bind 127.0.0.1 &
+#         On utilise « serveur.py » : il interdit au navigateur de garder une
+#         vieille version des fichiers (sinon le jeu peut planter après une
+#         mise à jour). S'il manque, on retombe sur le serveur de Python.
+if [ -f serveur.py ]; then
+    python3 serveur.py "$PORT" &
+else
+    python3 -m http.server "$PORT" --bind 127.0.0.1 &
+fi
 SERVEUR=$!
 
 # --- Arrêt propre : on coupe le serveur et on dit au revoir.

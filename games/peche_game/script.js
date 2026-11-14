@@ -1,5 +1,9 @@
 import * as THREE from 'three';
-import { SoundEngine } from './sound.js';
+// Le « ?v=44 » est essentiel : sans lui, le navigateur peut resservir une
+// VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
+// « sound.setRain is not a function ». On numérote donc AUSSI les modules
+// importés (la version doit rester la même que celle de index.html).
+import { SoundEngine } from './sound.js?v=44';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -538,7 +542,9 @@ function buildEnvironment() {
         );
         envSun.position.set(24, 40, -30);
         envScene.add(envSun);
-        scene.environment = pmrem.fromScene(envScene, 0.05).texture;
+        // 0.04 rad de flou : assez doux pour un ciel crédible, et juste sous la
+        // limite de three.js (à 0.05 il prévient « sigmaRadians … is too large »).
+        scene.environment = pmrem.fromScene(envScene, 0.04).texture;
         pmrem.dispose();
     } catch (error) {
         // Pas d'environnement disponible : l'éclairage direct suffit.

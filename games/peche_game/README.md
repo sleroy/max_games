@@ -22,10 +22,17 @@ nécessitent une origine `http://`) :
 
 ```bash
 cd peche_game
-python3 -m http.server 8000
+python3 serveur.py 8000
 ```
 
 Puis ouvrir : <http://127.0.0.1:8000/index.html>
+
+> `serveur.py` envoie `Cache-Control: no-store` : le navigateur redemande toujours
+> la **dernière** version des fichiers. C'est important, car avec un serveur qui
+> laisse le cache faire, le navigateur peut resservir un vieux `sound.js`… et le
+> jeu plante alors avec `sound.setRain is not a function`. En dépannage, un
+> **rechargement forcé** (`Ctrl+Shift+R`, ou `Cmd+Shift+R` sur Mac) règle le
+> problème.
 
 Fonctionne dans Firefox et Chrome (WebGL requis).
 
@@ -179,6 +186,7 @@ peche_game/
 ├── script.js           # Logique 3D du jeu (three.js)
 ├── sound.js            # Moteur audio procédural
 ├── launch.sh           # Lance le serveur local + ouvre le navigateur
+├── serveur.py          # Serveur local sans cache (pour le développement)
 ├── assets/
 │   ├── three.module.js # three.js r160 (MIT)
 │   ├── fish.png        # Image 2D (ancienne version)
