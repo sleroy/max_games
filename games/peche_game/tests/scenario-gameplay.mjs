@@ -178,7 +178,7 @@ export function run() {
     group('14) Épreuve de force : des tours proportionnels à la distance');
     // Le lancer de test à z = −90 tombe près de la berge : l'eau y est peu
     // profonde, donc on règle une ligne courte pour ne pas pêcher dans la vase.
-    G().setProfondeur(1.5);
+    G().setProfondeur(1.2);
     const nearFish = startFight(0, -20);
     const nearLine = G().getLineLength();
     const nearTurns = G().getStruggleTurnsNeeded();
@@ -794,8 +794,8 @@ export function run() {
     check('l’hameçon mesure moins de 4 cm', mes.hameconCm <= 4, mes.hameconCm + ' cm');
     check('un nénuphar fait 10 à 40 cm de rayon', mes.nenupharCm >= 10 && mes.nenupharCm <= 40,
         mes.nenupharCm + ' cm');
-    check('la canne mesure 4 à 6 m', mes.canneM >= 4 && mes.canneM <= 6, mes.canneM + ' m');
-    check('le pêcheur mesure 1,6 à 1,9 m', mes.pecheurM >= 1.6 && mes.pecheurM <= 1.9,
+    check('la canne mesure 2,8 à 3,2 m', mes.canneM >= 2.8 && mes.canneM <= 3.2, mes.canneM + ' m');
+    check('le pêcheur mesure 1,65 à 1,75 m', mes.pecheurM >= 1.65 && mes.pecheurM <= 1.75,
         mes.pecheurM + ' m');
     check('l’étang mesure 40 à 70 m de large', mes.etangM >= 40 && mes.etangM <= 70,
         mes.etangM + ' m');

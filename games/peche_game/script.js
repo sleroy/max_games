@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=69 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=70 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=69';
+import { SoundEngine } from './sound.js?v=70';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1145,8 +1145,9 @@ scene.add(angler);
 // ---------------------------------------------------------------------------
 // Canne
 // ---------------------------------------------------------------------------
+// Pecheur de 1,70 m ; canne au flotteur de 3 m (6 unites).
 const rodBase = new THREE.Vector3(-3, 2.2 + RIVE_Y, 17);
-const rodTip = new THREE.Vector3(0, 7, 8);
+const rodTip = new THREE.Vector3(-0.8, 4.81, 11.89); // ~3 m du talon
 
 function cylinderBetween(start, end, radius, material) {
     const dir = new THREE.Vector3().subVectors(end, start);
@@ -1165,13 +1166,18 @@ scene.add(rodGroup);
 
 const rodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
 const rodLocalTip = rodTip.clone().sub(rodBase);
-rodGroup.add(cylinderBetween(new THREE.Vector3(0, 0, 0), rodLocalTip, 0.08, rodMat));
+// Canne CONIQUE : talon de 25 mm, scion de 4 mm (pas un tube uniforme).
+const rodMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.025, rodLocalTip.length(), 10), rodMat);
+rodMesh.position.copy(rodLocalTip).multiplyScalar(0.5);
+rodMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), rodLocalTip.clone().normalize());
+rodMesh.castShadow = true;
+rodGroup.add(rodMesh);
 
 const handleEnd = rodLocalTip.clone().multiplyScalar(0.2);
-rodGroup.add(cylinderBetween(new THREE.Vector3(0, 0, 0), handleEnd, 0.15, new THREE.MeshStandardMaterial({ color: 0x3b2a1a })));
+rodGroup.add(cylinderBetween(new THREE.Vector3(0, 0, 0), handleEnd, 0.055, new THREE.MeshStandardMaterial({ color: 0x3b2a1a })));
 
 const reel = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.28, 0.22, 14),
+    new THREE.CylinderGeometry(0.06, 0.06, 0.05, 14),
     new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.4 })
 );
 reel.position.copy(handleEnd).add(new THREE.Vector3(0.25, -0.25, 0));
@@ -4901,7 +4907,7 @@ function updateFloat(dt, time) {
                 // Profondeur réglée > profondeur de l'eau à cet endroit : l'hameçon
                 // est DANS LA VASE → il s'y ACCROCHE, exactement comme dans les
                 // nénuphars : il faut le dégager (même mini-jeu).
-                hameconDansLaVase = profondeurLigne > profLocale - 0.25;
+                hameconDansLaVase = profondeurLigne > profLocale - 0.5;
                 if (hameconDansLaVase) {
                     startSnag('fond');
                     majCoupeProfondeur();
@@ -5633,7 +5639,7 @@ window.__game = {
             roseauCm: cm(0.035 * 2),
             bourricheCm: cm(0.72 * 2),
             canneM: Math.round(rodTip.distanceTo(rodBase) / u * 10) / 10,
-            pecheurM: Math.round(3.5 / u * 100) / 100,
+            pecheurM: Math.round(3.4 / u * 100) / 100,
             etangM: Math.round(POND_RADIUS * 2 / u),
             fondM: Math.round(FOND_CENTRE / u * 10) / 10,
             poisson3DCm: poisson3DCm,
