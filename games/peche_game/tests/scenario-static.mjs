@@ -48,8 +48,11 @@ export function run() {
     }
 
     group('3c) Interface du carnet (onglets + largeur)');
-    check('le panneau du carnet est assez LARGE', /\.panel\s*\{[^}]*width:\s*min\(94vw,\s*880px\)/.test(css),
+    check('le panneau du carnet est assez LARGE', /\.panel\s*\{[^}]*width:\s*min\(94vw,\s*900px\)/.test(css),
         (css.match(/\.panel\s*\{[^}]*width:\s*min\(([^)]*)\)/) || [])[1] || '?');
+    check('le panneau a une hauteur FIXE (fin du long défilement)',
+        /\.panel\s*\{[^}]*height:\s*min\(88vh,\s*760px\)[^}]*overflow:\s*hidden/.test(css));
+    check('seul l’onglet actif défile', /\.tabpage\s*\{[^}]*overflow-y:\s*auto/.test(css));
     check('les onglets masquent les pages inactives',
         /\.tabpage\s*\{\s*display:\s*none/.test(css));
     check('la page « duo » passe en deux colonnes', css.includes('.tabpage.duo.active'));

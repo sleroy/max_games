@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=55 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=56 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=55';
+import { SoundEngine } from './sound.js?v=56';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -1910,8 +1910,11 @@ function montrerOnglet(nom) {
         const page = tabPages[cle];
         if (page) {
             page.classList.toggle('active', cle === nom);
-            // Masquage INFaillible : on force le style en ligne (indépendant du CSS).
+            // Masquage infaillible : on force le style en ligne (indépendant du CSS).
             page.style.display = (cle === nom) ? '' : 'none';
+            if (cle === nom) {
+                page.scrollTop = 0;   // on ouvre l'onglet en haut
+            }
         }
     });
 }

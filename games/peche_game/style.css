@@ -369,6 +369,7 @@ button:disabled {
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
+    flex: 0 0 auto;
 }
 
 .tab {
@@ -391,8 +392,13 @@ button:disabled {
 
 .tabpage {
     display: none;
+    flex: 1 1 auto;
+    /* « min-height: 0 » + overflow : c'est LA zone qui défile (l'onglet actif). */
+    min-height: 0;
+    overflow-y: auto;
     flex-direction: column;
     gap: 10px;
+    padding-right: 4px;
 }
 
 .tabpage.active {
@@ -453,8 +459,6 @@ button:disabled {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
     gap: 4px 10px;
-    max-height: 42vh;
-    overflow-y: auto;
 }
 
 .touch-titre {
@@ -791,13 +795,16 @@ button, .crank {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: min(94vw, 880px);
-    max-height: 84vh;
-    overflow-y: auto;
+    width: min(94vw, 900px);
+    /* Hauteur FIXE : le panneau ne grandit plus avec le contenu (fini le long
+       défilement). Seul l'onglet actif défile → les onglets restent toujours visibles. */
+    height: min(88vh, 760px);
+    max-height: 88vh;
+    overflow: hidden;
     display: none;
     flex-direction: column;
     gap: 10px;
-    padding: 16px 18px;
+    padding: 14px 18px;
     background: rgba(8, 20, 28, 0.95);
     border: 2px solid #7fd0ff;
     border-radius: 16px;
@@ -815,6 +822,7 @@ button, .crank {
     margin: 0;
     font-size: 1.15rem;
     text-align: center;
+    flex: 0 0 auto;
 }
 
 .journal-stats {
@@ -828,7 +836,7 @@ button, .crank {
 .journal-list {
     margin: 0;
     font-size: 0.9rem;
-    max-height: 30vh;
+    max-height: 22vh;
     overflow-y: auto;
     white-space: pre-line;
     line-height: 1.4;
@@ -851,7 +859,7 @@ button, .crank {
     font-size: 0.85rem;
     line-height: 1.6;
     white-space: pre-line;
-    max-height: 26vh;
+    max-height: 20vh;
     overflow-y: auto;
 }
 
@@ -862,6 +870,10 @@ button, .crank {
     background: rgba(255, 255, 255, 0.07);
     border-radius: 8px;
     padding: 6px 8px;
+}
+
+#journalClose {
+    flex: 0 0 auto;
 }
 
 /* Boutique de bouchons (dans le carnet) */
