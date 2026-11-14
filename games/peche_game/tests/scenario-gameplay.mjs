@@ -164,9 +164,12 @@ export function run() {
     const nearFish = startFight(0, -20);
     const nearLine = G().getLineLength();
     const nearTurns = G().getStruggleTurnsNeeded();
-    checkClose('au ferrage, le fil sorti = distance du lancer', nearLine, castDistance(), 0.3);
-    checkClose('la barre part au milieu (tension 0,5)', G().getTension(), 0.5, 0.02);
-    checkClose('tours annoncés = 0,3 × fil restant', nearTurns, nearLine * 0.6 / 2, 0.5);
+    checkClose('ferrage parfait : le fil sorti = 85 % de la distance du lancer',
+        nearLine, G().getStruggleBaseLength() * 0.85, 0.7);
+    checkClose('la barre démarre à gauche du milieu (avantage joueur)',
+        G().getTension(), 0.375, 0.06);
+    checkClose('tours annoncés = (fil restant − minimum) / 2',
+        nearTurns, (nearLine - G().getStruggleBaseLength() * 0.4) / 2, 0.7);
     check('le poisson ferré est marqué « hooké »', nearFish.userData.hooked === true);
 
     const farLine = startFight(0, -90);
@@ -446,30 +449,74 @@ export function run() {
         floatMinY > -0.6 && floatMaxY < 0.6,
         floatMinY.toFixed(2) + ' -> ' + floatMaxY.toFixed(2));
 
-    group('25) La touche fait plonger le bouchon (et ne reste pas bloquée)');
+    group('25) Mode bouchon : fausses touches, vraie touche et avantage');
     resetToIdle();
     clearLilyPads();
     castTo(0, -25);
     forceBite();
     checkEqual('vue bouchon active', G().isBiteViewActive(), true);
-    check('le bouchon s’enfonce (phase « sinking »)',
-        stepUntil(() => G().getBitePhase() === 'sinking', 6), G().getBitePhase());
-    stepFor(0.2);
-    check('le bouchon descend franchement sous l’eau', G().floatGroup.position.y < -0.8,
-        G().floatGroup.position.y.toFixed(2));
-    check('le bouchon reste visible en coulant', G().getFloatOpacity() > 0.1,
-        G().getFloatOpacity().toFixed(2));
-    // On ne ferre pas : la touche est ratée, le poisson repart.
-    check('la touche ratée rend la main', stepUntil(() => state() === 'inWater', 3), state());
-    stepFor(0.8);
-    checkEqual('la vue bouchon se referme après la touche ratée',
-        G().isBiteViewActive(), false);
-    // Une nouvelle touche doit encore fonctionner parfaitement (pas d'état bloqué).
+    checkEqual('le bouchon flotte au début', G().getBitePhase(), 'floating');
+    check('la fenêtre de ferrage dépend du bouchon (anglaise = longue)',
+        G().getBiteWindow() > 0.4, G().getBiteWindow().toFixed(2));
+    check('des fausses touches se produisent avant la vraie',
+        stepUntil(() => G().getBitePhase() === 'fausse', 15), G().getBitePhase());
+    check('une vraie touche finit par arriver',
+        stepUntil(() => G().getBitePhase() === 'touche', 20), G().getBitePhase());
+    check('la touche est un enfoncement ou une remontée',
+        ['enfoncement', 'remontee'].indexOf(G().getBiteTouchType()) >= 0, G().getBiteTouchType());
+    stepFor(0.08);
+    check('le bouchon bouge vraiment (il coule ou il remonte)',
+        Math.abs(G().floatGroup.position.y - 0.1) > 0.05 || Math.abs(G().floatGroup.rotation.z) > 0.1,
+        G().floatGroup.position.y.toFixed(2) + ' / z ' + G().floatGroup.rotation.z.toFixed(2));
+    fire('biteView', 'pointerdown', { button: 0 });
+    checkEqual('ferrer au bon moment déclenche le combat', state(), 'struggle');
+    checkEqual('ferrage parfait', G().getStrikeQuality(), 'parfait');
+    check('avantage au joueur (facteur < 1)', G().getFightAdvantage() < 1,
+        G().getFightAdvantage().toFixed(2));
+    check('le panneau l’annonce', el('struggleInfo').textContent.indexOf('avantage') >= 0,
+        el('struggleInfo').textContent);
+    resetToIdle();
+
+    // Trop tôt (sur une fausse touche) : le poisson démarre avec l'avantage.
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
     forceBite();
-    checkEqual('une nouvelle touche rouvre la vue', G().isBiteViewActive(), true);
-    check('et le bouchon s’enfonce de nouveau',
-        stepUntil(() => G().getBitePhase() === 'sinking', 6), G().getBitePhase());
-    checkEqual('la caméra est bien en mode bouchon', G().getCameraMode(), 'bite');
+    check('une fausse touche arrive', stepUntil(() => G().getBitePhase() === 'fausse', 15),
+        G().getBitePhase());
+    fire('biteView', 'pointerdown', { button: 0 });
+    checkEqual('ferrer trop tôt ferre quand même', state(), 'struggle');
+    checkEqual('ferrage trop tôt', G().getStrikeQuality(), 'tot');
+    check('avantage au poisson (facteur > 1)', G().getFightAdvantage() > 1,
+        G().getFightAdvantage().toFixed(2));
+    resetToIdle();
+
+    // Trop tard (après la fenêtre) : dernière chance, le poisson a beaucoup d'avance.
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    stepUntil(() => G().getBitePhase() === 'touche', 20);
+    check('la fenêtre se referme', stepUntil(() => G().getBitePhase() === 'ratee', 3), G().getBitePhase());
+    fire('biteView', 'pointerdown', { button: 0 });
+    checkEqual('ferrer trop tard ferre quand même (dernière chance)', state(), 'struggle');
+    checkEqual('ferrage trop tard', G().getStrikeQuality(), 'tard');
+    check('avantage au poisson (facteur > 1)', G().getFightAdvantage() > 1,
+        G().getFightAdvantage().toFixed(2));
+    checkEqual('la caméra est bien en mode bouchon', G().getCameraMode(), 'normal');
+    resetToIdle();
+
+    // Si on laisse vraiment passer la touche : le poisson recrache l'hameçon.
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    stepUntil(() => G().getBitePhase() === 'touche', 20);
+    stepFor(0.6);
+    check('le poisson finit par recracher', stepUntil(() => state() === 'inWater', 3), state());
+    check('la vue bouchon se referme', stepUntil(() => G().isBiteViewActive() === false, 3),
+        G().isBiteViewActive());
+    resetToIdle();
 
     group('26) Bourriche, carnet de pêche et difficulté');
     resetToIdle();

@@ -460,9 +460,9 @@ export function forceBite() {
     return fish;
 }
 
-/** Ferre au bon moment (pendant l'enfoncement du bouchon). */
+/** Ferre au bon moment (pendant la vraie touche). */
 export function strike() {
-    stepUntil(() => G().getBitePhase() === 'sinking', 10);
+    stepUntil(() => G().getBitePhase() === 'touche', 20);
     fire('biteView', 'pointerdown', { button: 0 });
 }
 

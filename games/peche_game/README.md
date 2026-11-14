@@ -32,8 +32,18 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 ## Commandes
 
 - **Clic gauche sur l'eau** : **clique et maintiens** pour viser (une jauge de puissance oscille), puis **relâche au bon moment** : plus la puissance est forte, plus tu lances loin (le vent décale le lancer).
-- **Attendre qu'un poisson morde** : un poisson s'approche du bouchon et **mordille** (le bouchon plonge par petites tapes) avant de l'enfoncer franchement — la vue se rapproche alors et le bouchon coule.
-- **Un seul clic** pour ferrer : clique au bon moment (pendant l'enfoncement). Trop tôt → le poisson s'enfuit.
+- **Choisis ton bouchon** (menu « Bouchon » du carnet) : **Anglaise** (longue tige, très
+  sensible), **Waggler** (court, se couche sur le côté), **Pose à coulisse**,
+  **Bolognaise** (gros, peu sensible). Plus le bouchon est sensible, plus la **fenêtre de
+  ferrage** est longue… mais plus il montre de **fausses touches** !
+- **Attendre qu'un poisson morde** : le bouchon fait d'abord des **fausses touches**
+  (il plonge à moitié, remonte un peu, se couche, frémit…), puis vient **LA vraie touche**,
+  de deux types : **enfoncement complet** ou **remontée** (l'anglaise sort la moitié de sa
+  tige ; un bouchon court se couche sur le côté).
+- **Ferrer au bon moment** : clique pile pendant la vraie touche → **tu démarres avec
+  l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
+  (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.
+  Si tu laisses vraiment passer, il recrache l'hameçon.
 - **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
 - **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
@@ -63,6 +73,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   force, le poisson **apparaît par intermittence** quand il remonte près de la surface, puis
   **replonge et disparaît** ; une fois le combat **gagné**, il reste **visible**.
 - **Eau transparente et vivante** : surface animée par une houle dont l'amplitude et la vitesse suivent le vent, bouchon qui flotte sur les vagues, poissons nageant à des profondeurs différentes et remontant vers l'hameçon pour mordre.
+- **Types de bouchons** (Anglaise, Waggler, Pose à coulisse, Bolognaise) avec **sensibilité
+  à la touche**, **fausses touches**, **deux types de vraies touches** (enfoncement /
+  remontée) et **avantage au ferrage** (parfait = avantage au joueur, trop tôt/trop tard =
+  avantage au poisson).
 - **Mode bouchon** : vue rapprochée, enfoncement sous l'eau, fenêtre de ferrage à un seul essai.
 - **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
 - **Accrochage dans les nénuphars** avec risque de casser la ligne.

@@ -41,6 +41,8 @@ const tutorialStepDisplay = document.getElementById('tutorialStep');
 const tutorialNext = document.getElementById('tutorialNext');
 const tutorialClose = document.getElementById('tutorialClose');
 const tutorialOpen = document.getElementById('tutorialOpen');
+const floatSelect = document.getElementById('floatSelect');
+const floatInfo = document.getElementById('floatInfo');
 
 const sound = new SoundEngine();
 
@@ -1121,6 +1123,67 @@ floatGroup.position.copy(floatIdle);
 scene.add(floatGroup);
 
 // ---------------------------------------------------------------------------
+// Types de bouchons (flotteurs) : chacun a sa sensibilité à la touche.
+//   - plus sensible = fenêtre de ferrage plus longue, MAIS plus de fausses
+//     touches (le bouchon bouge pour un rien) ;
+//   - sur une touche en remontée : l'anglaise sort la moitié de sa tige, un
+//     bouchon court et sensible (waggler) se couche sur le côté.
+// ---------------------------------------------------------------------------
+const FLOTTEURS = [
+    { id: 'anglaise', nom: 'Anglaise', sensibilite: 1.35, remontee: 'demi-tige', longueur: 2.4,
+      couleur: 0xff5a3c, corps: 0xf4f4f4,
+      desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
+    { id: 'waggler', nom: 'Waggler', sensibilite: 1.15, remontee: 'couche', longueur: 1.6,
+      couleur: 0xffd24d, corps: 0xf4f4f4,
+      desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
+    { id: 'coulisse', nom: 'Pose à coulisse', sensibilite: 0.85, remontee: 'couche', longueur: 2.6,
+      couleur: 0xd0552a, corps: 0xf4f4f4,
+      desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
+    { id: 'bolognaise', nom: 'Bolognaise', sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
+      couleur: 0xe04a2a, corps: 0xffe066,
+      desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' }
+];
+let flotteurChoix = 'anglaise';
+
+function flotteurCourant() {
+    for (let i = 0; i < FLOTTEURS.length; i++) {
+        if (FLOTTEURS[i].id === flotteurChoix) {
+            return FLOTTEURS[i];
+        }
+    }
+    return FLOTTEURS[0];
+}
+
+function appliquerFlotteurVisuel(f) {
+    // La tige s'allonge selon le modèle (elle ressort plus ou moins de l'eau).
+    floatStick.scale.y = f.longueur / 0.5;
+    floatStick.position.y = 0.2 + f.longueur / 2;
+    floatStick.material.color.set(f.couleur);
+    floatBody.material.color.set(f.corps);
+    floatStick.userData.longueur = f.longueur;
+}
+
+function setFloatType(id) {
+    for (let i = 0; i < FLOTTEURS.length; i++) {
+        if (FLOTTEURS[i].id === id) {
+            flotteurChoix = id;
+            break;
+        }
+    }
+    const f = flotteurCourant();
+    if (floatSelect.value !== f.id) {
+        floatSelect.value = f.id;
+    }
+    floatInfo.textContent = f.desc;
+    appliquerFlotteurVisuel(f);
+    journal.bouchon = f.id;
+    saveJournal();
+}
+
+floatInfo.textContent = flotteurCourant().desc;
+appliquerFlotteurVisuel(flotteurCourant());
+
+// ---------------------------------------------------------------------------
 // Amorçage : lancer une boule de nourriture pour attirer les poissons
 // ---------------------------------------------------------------------------
 // Le joueur arme le mode avec le bouton « Nourrir », clique sur l'eau en
@@ -1485,6 +1548,9 @@ function loadJournal() {
                 ? { n: valeur, record: 0 }
                 : { n: valeur.n || 0, record: valeur.record || 0 };
         });
+        if (typeof data.bouchon === 'string') {
+            flotteurChoix = data.bouchon;
+        }
     } catch (error) {
         // Carnet illisible : on repart de zéro.
     }
@@ -1919,6 +1985,7 @@ journalButton.addEventListener('click', () => {
 });
 journalClose.addEventListener('click', hideJournal);
 difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
+floatSelect.addEventListener('change', () => setFloatType(floatSelect.value));
 effectsToggle.checked = post.enabled;
 effectsToggle.addEventListener('change', () => {
     post.enabled = effectsToggle.checked !== false;
@@ -1940,6 +2007,7 @@ calmToggle.addEventListener('change', () => {
 });
 
 loadJournal();
+setFloatType(flotteurChoix);
 renderJournal();
 
 // ---------------------------------------------------------------------------
@@ -2574,12 +2642,24 @@ let waitTimer = 0;
 let biteFish = null;
 let biteCooldown = 0;
 let biteViewActive = false;
+// Phases du mode bouchon :
+//   'floating' = le bouchon flotte (rien ne mord)
+//   'fausse'   = fausse touche (le bouchon bouge, mais ce n'est pas LE moment)
+//   'touche'   = la VRAIE touche (fenêtre de ferrage)
+//   'ratee'    = la fenêtre est passée (dernière chance de ferrer)
 let bitePhase = 'floating';
 let biteViewTimer = 0;
 let biteSinkAt = 0;
-let biteSinkTimer = 0;
-let biteViewHideTimer = -1; // fermeture différée de la vue bouchon (< 0 = aucune)
-let biteNibbleTimer = 0;    // durée du « mordillement » avant la touche franche
+let biteViewHideTimer = -1;         // fermeture différée de la vue bouchon
+let biteNibbleTimer = 0;
+let biteToucheType = 'enfoncement'; // 'enfoncement' | 'remontee'
+let biteFauxType = 'partiel';
+let biteSignauxRestants = 1;
+let biteSignalTimer = 0;
+let biteSignalDuree = 0.5;
+let biteFenetre = 0.4;              // durée de la fenêtre de ferrage
+let strikeQuality = '';             // '' | 'parfait' | 'tot' | 'tard'
+let fightAdvantage = 1;             // < 1 = avantage au joueur, > 1 = au poisson
 // Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
 // poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
 let BITE_WINDOW = 0.4;
@@ -2789,7 +2869,10 @@ function computeStrugglePos() {
     strugglePos.set(x, 0.1, z);
 }
 
-function startStruggle(fish) {
+function startStruggle(fish, facteurAvantage) {
+    // `facteurAvantage` vient du ferrage : < 1 = avantage au joueur (le poisson
+    // est proche), > 1 = avantage au poisson (il faut ramener plus de fil).
+    const avantage = (typeof facteurAvantage === 'number') ? facteurAvantage : 1;
     const size = fish.userData.size;
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
@@ -2803,7 +2886,7 @@ function startStruggle(fish) {
         floatGroup.position.x - struggleAnchor.x,
         floatGroup.position.z - struggleAnchor.z
     );
-    const startLength = Math.min(baseLength, Math.max(baseLength * 0.5, floatDist));
+    const startLength = Math.min(baseLength, Math.max(baseLength * 0.5, floatDist)) * avantage;
     struggle = {
         baseLength: baseLength,
         lineLength: startLength,
@@ -2820,7 +2903,7 @@ function startStruggle(fish) {
     tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
     // Temps limite : assez large pour jouer à la souris, mais il faut vraiment
     // ramener le poisson — et le chrono se resserre quand DIFFICULTY augmente.
-    struggleTimeLeft = Math.min(22, Math.max(6, (baseLength * 0.65) / DIFFICULTY));
+    struggleTimeLeft = Math.min(22, Math.max(6, (baseLength * 0.65) / DIFFICULTY)) * (2 - avantage);
     updateStruggleTimer();
     computeStrugglePos();
     floatGroup.position.copy(strugglePos);
@@ -2832,7 +2915,8 @@ function startStruggle(fish) {
     floatState = 'struggle';
     setDragLoosened(false);
     strugglePanel.classList.add('active');
-    struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg';
+    struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg'
+        + (avantage < 0.99 ? ' · avantage pour toi !' : (avantage > 1.01 ? ' · avantage au poisson' : ''));
     struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
     updateStruggleBar();
     fishButton.disabled = true;
@@ -2847,14 +2931,22 @@ function showBiteView(fish) {
     biteViewActive = true;
     bitePhase = 'floating';
     biteViewTimer = 0;
-    biteSinkAt = 0.7 + rand() * 0.9;
-    biteSinkTimer = 0;
-    biteNibbleTimer = 0;
+    const flotteur = flotteurCourant();
+    // Plus le bouchon est sensible, plus la fenêtre de ferrage est longue…
+    biteFenetre = BITE_WINDOW * flotteur.sensibilite;
+    // …mais plus il montre de fausses touches !
+    biteSignauxRestants = 1 + Math.floor(rand() * 2 * flotteur.sensibilite);
+    biteToucheType = rand() < 0.5 ? 'enfoncement' : 'remontee';
+    biteSinkAt = 0.6 + rand() * 0.8;
+    biteSignalTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
+    strikeQuality = '';
+    fightAdvantage = 1;
+    biteHint.textContent = 'Surveille le bouchon… des fausses touches peuvent arriver !';
     biteView.classList.add('active');
-    biteHint.textContent = 'Attends que le bouchon s’enfonce… (1 seul essai !)';
     biteHint.classList.remove('urgent');
     floatGroup.position.y = 0.1;
+    floatGroup.rotation.z = 0;
     spawnRipple(floatGroup.position);
     sound.bite();
     cameraMode = 'bite';
@@ -2869,34 +2961,59 @@ function hideBiteView() {
     biteView.classList.remove('active');
     cameraMode = 'normal';
     setFloatOpacity(1);
+    floatGroup.rotation.z = 0;
 }
 
+// Ferrage : le joueur clique. Selon le MOMENT, il obtient un avantage… ou pas !
 function hookFish() {
     if (floatState !== 'bite' || !biteViewActive) {
         return;
     }
-    if (bitePhase === 'sinking') {
-        const fish = biteFish;
+    const fish = biteFish;
+    if (bitePhase === 'touche') {
+        // Pile au bon moment : avantage au joueur (le poisson est tout près).
+        strikeQuality = 'parfait';
+        fightAdvantage = 0.85;
         biteFish = null;
-        fish.visible = true;
-        sound.reel();
-        spawnSplash(floatGroup.position);
-        hideBiteView();
-        startStruggle(fish);
-    } else if (bitePhase === 'floating' || bitePhase === 'nibbling') {
-        // Trop tôt : le poisson est effrayé et retourne dans les profondeurs.
-        if (biteFish) {
-            biteFish.userData.biting = false;
-            biteFish.visible = false;
-            punishFish(biteFish);
-            biteFish = null;
+        if (fish) {
+            fish.visible = true;
+            sound.reel();
+            spawnSplash(floatGroup.position);
+            hideBiteView();
+            startStruggle(fish, fightAdvantage);
         }
-        biteCooldown = 1.0;
-        floatState = 'inWater';
-        waitTimer = 0;
-        statusDisplay.textContent = 'Trop tôt ! Le poisson s’est enfui.';
-        hideBiteView();
+        statusDisplay.textContent = 'Ferrage parfait ! Tu démarres avec l’avantage.';
+        return;
     }
+    if (bitePhase === 'fausse' || bitePhase === 'ratee') {
+        // Trop tôt (sur une fausse touche) ou trop tard : le poisson a l'avantage.
+        strikeQuality = (bitePhase === 'fausse') ? 'tot' : 'tard';
+        fightAdvantage = (bitePhase === 'fausse') ? 1.15 : 1.3;
+        biteFish = null;
+        if (fish) {
+            fish.visible = true;
+            sound.reel();
+            spawnSplash(floatGroup.position);
+            hideBiteView();
+            startStruggle(fish, fightAdvantage);
+        }
+        statusDisplay.textContent = (strikeQuality === 'tot')
+            ? 'Trop tôt ! Le poisson a pris de l’avance…'
+            : 'Trop tard, mais ferré : le poisson a beaucoup d’avance !';
+        return;
+    }
+    // 'floating' : le bouchon n'a pas bougé → aucun poisson ferré.
+    if (biteFish) {
+        biteFish.userData.biting = false;
+        biteFish.visible = false;
+        punishFish(biteFish);
+        biteFish = null;
+    }
+    biteCooldown = 1.0;
+    floatState = 'inWater';
+    waitTimer = 0;
+    statusDisplay.textContent = 'Trop tôt ! Rien ne bougeait encore…';
+    hideBiteView();
 }
 
 function updateBiteView(dt) {
@@ -2915,39 +3032,90 @@ function updateBiteView(dt) {
         }
     }
     biteViewTimer += dt;
+    const flotteur = flotteurCourant();
     if (bitePhase === 'floating') {
-        floatGroup.position.y = 0.1 + Math.sin(biteViewTimer * 4) * 0.08;
+        // Le bouchon flotte tranquillement.
+        floatGroup.rotation.z *= 0.9;
+        floatGroup.position.y = 0.1 + Math.sin(biteViewTimer * 4) * 0.06;
         setFloatOpacity(1);
         if (biteViewTimer >= biteSinkAt) {
-            bitePhase = 'nibbling';
-            biteNibbleTimer = 0;
-            biteHint.textContent = 'Attention, il mordille…';
+            if (biteSignauxRestants > 0) {
+                // FAUSSE touche : le bouchon bouge, mais ce n'est pas LE moment.
+                biteSignauxRestants -= 1;
+                bitePhase = 'fausse';
+                biteSignalTimer = 0;
+                biteSignalDuree = 0.35 + rand() * 0.35;
+                biteFauxType = ['partiel', 'remontee', 'couche', 'tremblement'][Math.floor(rand() * 4)];
+                biteHint.textContent = 'Ça bouge… attention, ce n’est peut-être pas la vraie touche !';
+                biteHint.classList.remove('urgent');
+                spawnRipple(floatGroup.position);
+            } else {
+                // LA vraie touche : c'est maintenant qu'il faut ferrer.
+                bitePhase = 'touche';
+                biteSignalTimer = 0;
+                biteHint.textContent = (biteToucheType === 'enfoncement')
+                    ? 'MAINTENANT ! Il l’enfonce !'
+                    : 'MAINTENANT ! Il remonte !';
+                biteHint.classList.add('urgent');
+                spawnRipple(floatGroup.position);
+            }
         }
-    } else if (bitePhase === 'nibbling') {
-        // Petites tapes : le bouchon plonge un peu, plusieurs fois de suite.
-        biteNibbleTimer += dt;
-        floatGroup.position.y = 0.1 - Math.abs(Math.sin(biteNibbleTimer * 9)) * 0.18;
+    } else if (bitePhase === 'fausse') {
+        biteSignalTimer += dt;
+        const t = biteSignalTimer;
+        if (biteFauxType === 'partiel') {
+            // Enfoncement incomplet : le bouchon plonge à moitié puis remonte.
+            floatGroup.position.y = 0.1 - Math.min(0.45, t * 1.8);
+        } else if (biteFauxType === 'remontee') {
+            floatGroup.position.y = 0.1 + Math.min(0.3, t * 1.4);
+        } else if (biteFauxType === 'couche') {
+            floatGroup.rotation.z = Math.min(1.2, t * 2.6);
+            floatGroup.position.y = 0.1 + Math.min(0.15, t * 0.7);
+        } else {
+            // Tremblement (le bouchon frémit sur place).
+            floatGroup.position.y = 0.1 + Math.sin(t * 24) * 0.09;
+        }
         setFloatOpacity(1);
-        if (biteNibbleTimer >= BITE_NIBBLE_DURATION) {
-            bitePhase = 'sinking';
-            biteSinkTimer = 0;
-            biteHint.textContent = 'MAINTENANT !';
-            biteHint.classList.add('urgent');
-            spawnRipple(floatGroup.position);
-        }
-    } else if (bitePhase === 'sinking') {
-        biteSinkTimer += dt;
-        // Enfoncement bien visible : le bouchon descend franchement et RESTE
-        // visible sous l'eau (il ne s'efface pas).
-        const progress = Math.min(1, biteSinkTimer / 0.18);
-        floatGroup.position.y = 0.1 - 1.6 * progress;
-        setFloatOpacity(Math.max(0.2, 1 - progress * 0.85));
-        if (biteSinkTimer >= BITE_WINDOW) {
-            bitePhase = 'missed';
-            biteHint.textContent = 'Trop tard ! Le poisson a recraché…';
-            biteHint.classList.remove('urgent');
+        if (t >= biteSignalDuree) {
+            bitePhase = 'floating';
+            biteViewTimer = 0;
+            biteSinkAt = 0.35 + rand() * 0.5;
+            floatGroup.rotation.z = 0;
             floatGroup.position.y = 0.1;
+        }
+    } else if (bitePhase === 'touche') {
+        biteSignalTimer += dt;
+        const progress = Math.min(1, biteSignalTimer / 0.22);
+        if (biteToucheType === 'enfoncement') {
+            // Touche en enfoncement : le bouchon coule franchement.
+            floatGroup.position.y = 0.1 - 1.6 * progress;
+            setFloatOpacity(Math.max(0.2, 1 - progress * 0.85));
+        } else if (flotteur.remontee === 'couche') {
+            // Bouchon court et sensible : il se couche sur le côté.
+            floatGroup.rotation.z = Math.min(1.35, progress * 1.7);
+            floatGroup.position.y = 0.1 + 0.2 * progress;
             setFloatOpacity(1);
+        } else {
+            // Longue tige (anglaise) : la moitié du bouchon ressort de l'eau.
+            floatGroup.position.y = 0.1 + 0.55 * progress;
+            setFloatOpacity(1);
+        }
+        if (biteSignalTimer >= biteFenetre) {
+            // La fenêtre de ferrage est passée : dernière chance de cliquer.
+            bitePhase = 'ratee';
+            biteSignalTimer = 0;
+            biteHint.textContent = 'Trop tard… clique encore pour tenter !';
+            biteHint.classList.remove('urgent');
+        }
+    } else if (bitePhase === 'ratee') {
+        biteSignalTimer += dt;
+        floatGroup.rotation.z *= 0.92;
+        floatGroup.position.y = 0.1 + Math.sin(biteSignalTimer * 6) * 0.05;
+        setFloatOpacity(1);
+        if (biteSignalTimer >= 0.45) {
+            // Le poisson recrache l'hameçon : la ligne revient. On passe dans une
+            // phase TERMINÉE pour ne pas rejouer ce bloc à chaque image.
+            bitePhase = 'termine';
             if (biteFish) {
                 biteFish.userData.biting = false;
                 biteFish.visible = false;
@@ -3808,6 +3976,20 @@ window.__game = {
     hookFish: hookFish,
     getState: function () { return floatState; },
     getBitePhase: function () { return bitePhase; },
+    getBiteTouchType: function () { return biteToucheType; },
+    getBiteWindow: function () { return biteFenetre; },
+    getStrikeQuality: function () { return strikeQuality; },
+    getFightAdvantage: function () { return fightAdvantage; },
+    getFloats: function () {
+        return FLOTTEURS.map(function (f) {
+            return {
+                id: f.id, nom: f.nom, sensibilite: f.sensibilite,
+                remontee: f.remontee, longueur: f.longueur, desc: f.desc
+            };
+        });
+    },
+    getFloatType: function () { return flotteurCourant().id; },
+    setFloatType: setFloatType,
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
     startReel: startReel,
@@ -3823,6 +4005,7 @@ window.__game = {
         }
         return Math.max(0, (struggle.lineLength - struggle.minLength) / REEL_PER_TURN);
     },
+    getStruggleBaseLength: function () { return struggle ? struggle.baseLength : 0; },
     getUnitsPerTurn: function () { return REEL_PER_TURN; },
     // Simule les tours de manivelle (1 = un tour complet) pour les tests.
     turnCrank: function (turns) { crankRotationDelta += turns * TWO_PI; },

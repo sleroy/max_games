@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=42">
+    <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body>
     <div class="game-wrap">
@@ -61,6 +61,16 @@
                         <text x="112" y="90" text-anchor="middle" font-size="6.5" fill="#eaf6ff">fond : sandre, silure</text>
                     </svg>
                 </div>
+                <div class="panel-row">
+                    <label for="floatSelect">Bouchon</label>
+                    <select id="floatSelect">
+                        <option value="anglaise" selected>Anglaise (très sensible)</option>
+                        <option value="waggler">Waggler (sensible, se couche)</option>
+                        <option value="coulisse">Pose à coulisse</option>
+                        <option value="bolognaise">Bolognaise (peu sensible)</option>
+                    </select>
+                </div>
+                <div class="float-info" id="floatInfo"></div>
                 <div class="panel-row">
                     <label for="difficultySelect">Difficulté</label>
                     <select id="difficultySelect">
@@ -144,6 +154,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=42"></script>
+    <script type="module" src="script.js?v=43"></script>
 </body>
 </html>
