@@ -1,0 +1,11 @@
+Image : "Carassius auratus 2.png" (fichier assets/fish.png)
+Auteur : Ffish.asia (photo originale) / Ellicrum (detourage)
+Licence : CC BY-SA 4.0 - https://creativecommons.org/licenses/by-sa/4.0/
+Source : https://commons.wikimedia.org/wiki/File:Carassius_auratus_2.png
+Modifications : recadrage des marges transparentes et redimensionnement.
+
+Fond (assets/pond.svg) : étang dessiné en SVG vectoriel, créé pour ce jeu.
+Aucune attribution requise (œuvre originale).
+
+Bibliothèque 3D : three.js r160 (licence MIT) - https://threejs.org/
+Fichier : assets/three.module.js

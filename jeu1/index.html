@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Morpion</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Jeu de Morpion</h1>
+        
+        <!-- Sélection du mode de jeu -->
+        <div class="mode-selection" id="mode-selection">
+            <div class="mode-option">
+                <input type="radio" id="mode-2players" name="game-mode" value="2players" checked>
+                <label for="mode-2players">2 Joueurs</label>
+            </div>
+            <div class="mode-option">
+                <input type="radio" id="mode-ai" name="game-mode" value="ai">
+                <label for="mode-ai">Contre l'Ordinateur</label>
+            </div>
+        </div>
+
+        <!-- Options contre l'IA -->
+        <div class="ai-options" id="ai-options" style="display: none;">
+            <div class="difficulty-selection">
+                <label>Niveau de difficulté :</label>
+                <select id="difficulty">
+                    <option value="easy">Facile</option>
+                    <option value="medium">Moyen</option>
+                    <option value="hard">Difficile</option>
+                </select>
+            </div>
+            <div class="player-choice">
+                <label>Vous jouez :</label>
+                <div class="symbol-choice">
+                    <input type="radio" id="player-x" name="player-symbol" value="X" checked>
+                    <label for="player-x">X (commence)</label>
+                    <input type="radio" id="player-o" name="player-symbol" value="O">
+                    <label for="player-o">O (second)</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status">
+            <div id="message">C'est au tour de : <span id="current-player">X</span></div>
+        </div>
+        
+        <div class="game-board" id="game-board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        
+        <button id="reset-btn" class="reset-btn">Nouvelle Partie</button>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+/* Styles supplémentaires pour le jeu Minecraft */
+
+/* Amélioration de l'interface utilisateur */
+#inventory .inventory-slot:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #fff;
+}
+
+/* Animation pour les blocs placés/cassés */
+.block-animation {
+    animation: pop-in 0.2s ease-out;
+}
+
+@keyframes pop-in {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Indicateur de sélection */
+#crosshair {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.5; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Effet de survol pour les blocs */
+.block-icon {
+    transition: transform 0.2s ease;
+}
+
+.inventory-slot:hover .block-icon {
+    transform: rotate(5deg) scale(1.1);
+}
+
+/* Style pour le menu de démarrage */
+#menu h1 {
+    animation: title-glow 3s infinite alternate;
+}
+
+@keyframes title-glow {
+    from { text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(76, 175, 80, 0.3); }
+    to { text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5), 0 0 40px rgba(76, 175, 80, 0.6); }
+}
+
+/* Instructions animées */
+.instructions p {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Effet de chargement */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 2rem;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.loading.show {
+    opacity: 1;
+}
+
+/* Barre de vie stylisée */
+.health-bar {
+    width: 200px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #44ff44);
+    width: 100%;
+    transition: width 0.3s;
+}
+
+/* Mini-carte (optionnel) */
+.mini-map {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 150px;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.mini-map-dot {
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px white;
+}
+
+/* Effets de particules (simulés avec CSS) */
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-fade 1s forwards;
+}
+
+@keyframes particle-fade {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0); }
+}
+
+/* Style pour les messages système */
+.system-message {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.system-message.show {
+    opacity: 1;
+}
+
+/* Interface de Survie */
+#survival-ui {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.health-container, .hunger-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.label {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.health-bar, .hunger-bar {
+    width: 200px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ff0000);
+    width: 100%;
+    transition: width 0.3s, background-color 0.3s;
+}
+
+.hunger-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700, #ff8c00);
+    width: 100%;
+    transition: width 0.3s, background-color 0.3s;
+}
+
+.health-text, .hunger-text {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: right;
+}
+
+/* Animations pour les barres de survie */
+.health-fill.low {
+    background: linear-gradient(90deg, #8b0000, #ff0000) !important;
+    animation: pulse-red 1s infinite;
+}
+
+.hunger-fill.low {
+    background: linear-gradient(90deg, #8b4513, #a0522d) !important;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 5px #ff0000; }
+    50% { box-shadow: 0 0 20px #ff0000; }
+    100% { box-shadow: 0 0 5px #ff0000; }
+}
+
+/* Effet de prise de dégâts */
+.damage-flash {
+    animation: flash-red 0.3s;
+}
+
+@keyframes flash-red {
+    0% { background-color: rgba(255, 0, 0, 0.5); }
+    100% { background-color: transparent; }
+}
+
+/* Effet de faim extrême */
+.hunger-warning {
+    animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* Style pour les cœurs et pommes Minecraft */
+.heart-icon, .hunger-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.heart-icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>');
+}
+
+.hunger-icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="orange"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>');
+}
+
+/* Responsive pour les barres de survie */
+@media (max-width: 768px) {
+    #survival-ui {
+        bottom: 10px;
+        left: 10px;
+    }
+    
+    .health-bar, .hunger-bar {
+        width: 150px;
+    }
+    
+    .health-container, .hunger-container {
+        padding: 8px;
+    }
+}
+
+/* Amélioration des ombres */
+.shadow-enhanced {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+/* Style pour les blocs cassés */
+.block-broken {
+    animation: block-break 0.3s forwards;
+}
+
+@keyframes block-break {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+/* Style pour les blocs placés */
+.block-placed {
+    animation: block-place 0.3s forwards;
+}
+
+@keyframes block-place {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #inventory {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .inventory-slot {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .block-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    #stats {
+        font-size: 14px;
+    }
+    
+    .mini-map {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .mini-map-dot {
+        width: 6px;
+        height: 6px;
+    }
+}
+
+/* Style pour les effets de jour/nuit */
+.day-transition {
+    transition: background-color 10s ease;
+}
+
+.night-filter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 50, 0.3);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 10s ease;
+}
+
+.night-filter.active {
+    opacity: 1;
+}
+
+/* Style pour les effets de pluie (simulés) */
+.rain-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        transparent 50%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.1)
+    );
+    background-size: 4px 4px;
+    pointer-events: none;
+    opacity: 0;
+    animation: rain-fall 0.1s linear infinite;
+}
+
+@keyframes rain-fall {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 4px; }
+}
+
+.rain-effect.active {
+    opacity: 0.3;
+}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Pêche — 3D</title>
+    <link rel="stylesheet" href="style.css?v=27">
+</head>
+<body>
+    <div class="game-wrap">
+        <canvas id="gameCanvas"></canvas>
+        <div class="bite-view" id="biteView">
+            <div class="bite-hint" id="biteHint">Attends que le bouchon s'enfonce…</div>
+        </div>
+        <div class="hud">
+            <h1 class="hud-title">L'étang du Bois Neuf</h1>
+            <button class="sound-toggle" id="soundToggle">🔊</button>
+            <div class="hud-score">Score : <span id="score">0</span></div>
+            <div class="wind-gauge">
+                <span class="wind-label">Vent</span>
+                <div class="wind-bar"><div class="wind-fill" id="windFill"></div></div>
+                <span class="wind-arrow" id="windArrow">➤</span>
+            </div>
+            <div class="catch-message" id="catchMessage"></div>
+            <div class="struggle" id="struggle">
+                <div class="struggle-info" id="struggleInfo">Poisson</div>
+                <div class="struggle-track">
+                    <div class="struggle-marker" id="struggleMarker"></div>
+                </div>
+                <div class="struggle-timer" id="struggleTimer"></div>
+                <div class="struggle-hint" id="struggleHint">Clique vite pour ramener le poisson !</div>
+            </div>
+            <div class="hud-bottom">
+                <div class="status" id="status">Clique sur l'eau pour lancer la ligne.</div>
+                <button id="fishButton">Lancer la canne</button>
+            </div>
+            <div class="crank" id="crank">
+                <div class="crank-rotor" id="crankRotor">
+                    <div class="crank-handle"></div>
+                </div>
+                <div class="crank-center"></div>
+                <div class="crank-label">Tourne !</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('error', function (e) {
+            document.title = 'ERREUR: ' + (e.message || 'inconnue');
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            document.title = 'ERREUR PROMESSE: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+        });
+    </script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "./assets/three.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="script.js?v=27"></script>
+</body>
+</html>

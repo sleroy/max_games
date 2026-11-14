@@ -1,0 +1,16 @@
+# Dépendances
+node_modules/
+
+# Ancien squelette inutilisé
+my-game/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Divers éditeurs
+.vscode/
+.idea/

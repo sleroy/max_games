@@ -1,0 +1,327 @@
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: Arial, sans-serif;
+}
+
+.game-wrap {
+    position: fixed;
+    inset: 0;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+.hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.hud-title {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    margin: 0;
+    font-size: 1.3em;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.sound-toggle {
+    position: absolute;
+    top: 52px;
+    left: 18px;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.hud-score {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.wind-gauge {
+    position: absolute;
+    top: 52px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.wind-label {
+    font-weight: bold;
+}
+
+.wind-bar {
+    width: 90px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.wind-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, #7fd0ff, #ffe14d, #ff5a5a);
+    transition: width 0.3s;
+}
+
+.wind-arrow {
+    display: inline-block;
+    font-size: 1.2em;
+    transition: transform 0.3s;
+}
+
+.hud-bottom {
+    position: absolute;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: min(90vw, 700px);
+}
+
+.status {
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    min-height: 1.2em;
+}
+
+button {
+    pointer-events: auto;
+    padding: 10px 24px;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 10px;
+    border: 2px solid #1c2b1f;
+    background: #f4f7f2;
+    color: #1c2b1f;
+    font-weight: bold;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.struggle {
+    position: absolute;
+    left: 50%;
+    bottom: 110px;
+    transform: translateX(-50%);
+    width: min(70vw, 700px);
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.9em;
+    display: none;
+    text-align: center;
+    pointer-events: none;
+}
+
+.struggle.active {
+    display: block;
+}
+
+.struggle-info {
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.struggle-track {
+    position: relative;
+    height: 22px;
+    border-radius: 11px;
+    background: linear-gradient(to right, #3fae5a 0%, #e8c33a 55%, #d33 100%);
+    border: 2px solid #111;
+}
+
+.struggle-marker {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 8px;
+    height: 30px;
+    background: #fff;
+    border: 2px solid #111;
+    border-radius: 4px;
+    transform: translateX(-50%);
+}
+
+.struggle-timer {
+    margin-top: 6px;
+    font-weight: bold;
+    color: #ffe14d;
+}
+
+.struggle-timer.urgent {
+    color: #ff5a5a;
+    animation: timerPulse 0.3s infinite alternate;
+}
+
+@keyframes timerPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.15); }
+}
+
+.struggle-hint {
+    margin-top: 6px;
+    opacity: 0.9;
+}
+
+.catch-message {
+    position: absolute;
+    top: 12%;
+    left: 50%;
+    transform: translate(-50%, -10px);
+    padding: 12px 26px;
+    background: rgba(20, 90, 40, 0.9);
+    color: #fff;
+    font-size: 1.4em;
+    font-weight: bold;
+    border-radius: 14px;
+    border: 2px solid #bff0c8;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    white-space: nowrap;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.catch-message.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.crank {
+    position: absolute;
+    right: 34px;
+    bottom: 34px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #5a5a5a, #1a1a1a);
+    border: 3px solid #111;
+    pointer-events: auto;
+    touch-action: none;
+    display: none;
+    cursor: grab;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+.crank.active {
+    display: block;
+}
+
+.crank-rotor {
+    position: absolute;
+    inset: 0;
+}
+
+.crank-handle {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 24px;
+    height: 24px;
+    margin-left: -12px;
+    border-radius: 50%;
+    background: #e8e8e8;
+    border: 2px solid #111;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.crank-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border-radius: 50%;
+    background: #888;
+    border: 2px solid #111;
+}
+
+.crank-label {
+    position: absolute;
+    left: 50%;
+    bottom: -22px;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 0.75em;
+    font-weight: bold;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+.bite-view {
+    position: absolute;
+    inset: 0;
+    display: none;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.bite-view.active {
+    display: block;
+}
+
+.bite-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 16%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 1.4em;
+    font-weight: bold;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.bite-hint.urgent {
+    color: #ffe14d;
+    font-size: 1.9em;
+    animation: bitePulse 0.3s infinite alternate;
+}
+
+@keyframes bitePulse {
+    from { transform: translateX(-50%) scale(1); }
+    to { transform: translateX(-50%) scale(1.12); }
+}
