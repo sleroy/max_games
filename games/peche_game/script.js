@@ -38,7 +38,41 @@ let crankDragging = false;
 let crankAngle = 0;
 let crankLastAngle = 0;
 let crankRotationDelta = 0;
+let crankSoundAccum = 0;
 let biteFromReel = false;
+
+// ---------------------------------------------------------------------------
+// Moulinet : conversion « tours de manivelle ↔ longueur de fil »
+// ---------------------------------------------------------------------------
+// Échelle du décor : ~2 unités du monde ≈ 1 m (le pêcheur mesure ~3,5 unités
+// pour 1,8 m). Un moulinet réel ramène à peu près 1 m de fil par tour de
+// manivelle : ici, un tour complet ramène donc REEL_PER_TURN unités de fil.
+// Conséquence voulue : le nombre de tours nécessaires est proportionnel à la
+// distance à ramener (un long lancer demande beaucoup plus de tours).
+const REEL_PER_TURN = 2.0;
+const TWO_PI = Math.PI * 2;
+const CRANK_SOUND_PER_TURN = 0.5; // un « cliquet » sonore tous les demi-tours
+
+// Le fil sorti correspond à la barre de tension : 0 = poisson au bord de la
+// canne (barre à gauche), 1 = fil tendu au maximum, juste avant qu'il casse
+// (barre à droite). Au ferrage, la longueur de fil vaut la distance du lancer.
+const STRUGGLE_MIN_FACTOR = 0.4;
+const STRUGGLE_MAX_FACTOR = 1.6;
+const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
+
+// Tours de manivelle effectués depuis le dernier appel (puis remis à zéro).
+function consumeCrankTurns() {
+    const turns = crankRotationDelta / TWO_PI;
+    crankRotationDelta = 0;
+    if (turns > 0) {
+        crankSoundAccum += turns;
+        while (crankSoundAccum >= CRANK_SOUND_PER_TURN) {
+            crankSoundAccum -= CRANK_SOUND_PER_TURN;
+            sound.reel();
+        }
+    }
+    return turns;
+}
 
 function crankPointerAngle(event) {
     const rect = crank.getBoundingClientRect();
@@ -705,7 +739,7 @@ function startCast(target) {
 function startReel() {
     if (floatState === 'inWater') {
         floatState = 'reeling';
-        statusDisplay.textContent = 'On remonte la ligne…';
+        statusDisplay.textContent = 'On remonte la ligne… tourne la manivelle !';
     }
 }
 
@@ -756,7 +790,15 @@ function updateStruggleBar() {
 }
 
 function updateStruggleTimer() {
-    struggleTimer.textContent = '⏱ ' + struggleTimeLeft.toFixed(1).replace('.', ',') + ' s';
+    // Affiche le temps restant et le nombre de tours de manivelle encore
+    // nécessaires : comme un tour ramène REEL_PER_TURN unités, ce nombre est
+    // directement proportionnel à la longueur de fil qu'il reste à ramener.
+    let text = '⏱ ' + struggleTimeLeft.toFixed(1).replace('.', ',') + ' s';
+    if (struggle) {
+        const turns = Math.max(0, (struggle.lineLength - struggle.minLength) / REEL_PER_TURN);
+        text += ' · encore ~' + Math.ceil(turns) + ' tour' + (turns >= 1.5 ? 's' : '') + ' de manivelle';
+    }
+    struggleTimer.textContent = text;
     if (struggleTimeLeft <= 1) {
         struggleTimer.classList.add('urgent');
     } else {
@@ -781,9 +823,27 @@ const struggleAnchor = new THREE.Vector3(rodTip.x, 0, rodTip.z);
 const struggleDir = new THREE.Vector3();
 const strugglePos = new THREE.Vector3(rodTip.x, 0.1, rodTip.z);
 
-// Position du poisson le long de la ligne : proche du pêcheur quand la
-// tension est basse (barre à gauche), loin quand elle est haute (barre à droite).
+// Longueur de fil « de référence » du combat : la distance au sol entre le
+// bout de la canne et le point de lancer.
+function struggleBaseLength() {
+    return Math.hypot(castTarget.x - struggleAnchor.x, castTarget.z - struggleAnchor.z);
+}
+
+// Convertit une longueur de fil sortie en tension affichée sur la barre.
+function lineLengthToTension(length) {
+    if (!struggle || struggle.baseLength < 0.001) {
+        return 0.5;
+    }
+    return (length / struggle.baseLength - STRUGGLE_MIN_FACTOR) / STRUGGLE_SPAN;
+}
+
+// Position du poisson le long de la ligne, d'après la longueur de fil sortie :
+// il « recule » quand il tire (du fil sort) et se rapproche du pêcheur quand
+// le joueur tourne la manivelle.
 function computeStrugglePos() {
+    if (!struggle) {
+        return;
+    }
     struggleDir.set(castTarget.x - struggleAnchor.x, 0, castTarget.z - struggleAnchor.z);
     const baseDist = struggleDir.length();
     if (baseDist < 0.001) {
@@ -791,7 +851,7 @@ function computeStrugglePos() {
         return;
     }
     struggleDir.normalize();
-    const dist = baseDist * (0.4 + tension * 1.2);
+    const dist = struggle.lineLength;
     let x = struggleAnchor.x + struggleDir.x * dist;
     let z = struggleAnchor.z + struggleDir.z * dist;
     const dx = x - POND_CENTER.x;
@@ -810,16 +870,33 @@ function startStruggle(fish) {
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
     const interval = (1.8 - size * 0.4) / aggression;
+    // Longueur de fil de référence : la distance du lancer.
+    const baseLength = Math.max(4, struggleBaseLength());
+    // Fil déjà rentré pendant la remontée (touche en cours de récupération) :
+    // le combat démarre avec ce qu'il reste dehors, sans téléporter le poisson.
+    const floatDist = Math.hypot(
+        floatGroup.position.x - struggleAnchor.x,
+        floatGroup.position.z - struggleAnchor.z
+    );
+    const startLength = Math.min(baseLength, Math.max(baseLength * 0.5, floatDist));
     struggle = {
-        pullRate: (0.06 + size * 0.06) * power,
-        burstStrength: (0.03 + size * 0.04) * power,
+        baseLength: baseLength,
+        lineLength: startLength,
+        minLength: baseLength * STRUGGLE_MIN_FACTOR,
+        maxLength: baseLength * STRUGGLE_MAX_FACTOR,
+        // Le poisson reprend du fil (la ligne et la distance reculent) : une
+        // vitesse de fond, plus des « coups » brusques de temps en temps.
+        pullSpeed: Math.min(1.6, (0.4 + size * 0.6) * power),
+        burstDistance: (0.3 + size * 0.4) * power,
         burstInterval: interval,
         burstTimer: interval,
-        clickPower: 0.10
+        // Un clic = un petit coup de poignet, bien plus faible qu'un tour.
+        clickDistance: 1.2
     };
-    tension = 0.5;
-    const dist = Math.hypot(castTarget.x - angler.position.x, castTarget.z - angler.position.z);
-    struggleTimeLeft = Math.min(4, Math.max(2, 2 + dist / 35));
+    tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
+    // Temps limite, large : c'est surtout le fil trop tendu (le poisson qui
+    // prend du fil) qui fait perdre le poisson, pas le chrono.
+    struggleTimeLeft = Math.min(25, Math.max(6, baseLength * 0.7));
     updateStruggleTimer();
     computeStrugglePos();
     floatGroup.position.copy(strugglePos);
@@ -832,11 +909,11 @@ function startStruggle(fish) {
     floatState = 'struggle';
     strugglePanel.classList.add('active');
     struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg';
-    struggleHint.textContent = 'Clique vite pour ramener le poisson !';
+    struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
     updateStruggleBar();
     fishButton.disabled = false;
     fishButton.textContent = 'Ramener !';
-    statusDisplay.textContent = 'Poisson ferré ! Clique vite pour le ramener !';
+    statusDisplay.textContent = 'Poisson ferré ! Tourne la manivelle pour le ramener !';
 }
 
 function showBiteView(fish, fromReel) {
@@ -949,7 +1026,10 @@ function updateBiteView(dt) {
 
 function reelClick() {
     if (floatState === 'struggle' && struggle) {
-        tension = Math.max(0, tension - struggle.clickPower);
+        // Coup de poignet : gagne juste un peu de fil. La manivelle reste le
+        // vrai moulinet (et son apport est proportionnel à la distance).
+        struggle.lineLength = Math.max(struggle.minLength, struggle.lineLength - struggle.clickDistance);
+        tension = Math.max(0, lineLengthToTension(struggle.lineLength));
         shake = 0.06;
         sound.reel();
         updateStruggleBar();
@@ -979,7 +1059,7 @@ function endStruggle(success, timedOut) {
             punishFish(hookedFish);
             hookedFish = null;
         }
-        statusDisplay.textContent = timedOut ? 'Temps écoulé ! Le poisson s’est décroché.' : 'Le poisson s’est détaché !';
+        statusDisplay.textContent = timedOut ? 'Temps écoulé ! Le poisson s’est décroché.' : 'Fil trop tendu : le poisson s’est décroché !';
     }
     floatState = 'reeling';
 }
@@ -988,14 +1068,40 @@ function updateStruggle(dt) {
     if (floatState !== 'struggle' || !struggle) {
         return;
     }
-    // Le joueur a-t-il ramené le poisson ? (les clics mettent la tension à 0)
-    if (tension <= 0) {
+    // 1) Le joueur tourne la manivelle : chaque tour ramène REEL_PER_TURN
+    //    unités de fil (un tour ≈ 1 m), donc un long lancer demande plus de tours.
+    const reeled = consumeCrankTurns() * REEL_PER_TURN;
+    if (reeled > 0) {
+        struggle.lineLength -= reeled;
+    }
+    // 2) Le poisson tire : il reprend du fil, la ligne (et donc la distance)
+    //    recule. Il donne aussi des coups brusques de temps en temps.
+    struggle.lineLength += struggle.pullSpeed * dt;
+    struggle.burstTimer -= dt;
+    if (struggle.burstTimer <= 0) {
+        struggle.lineLength += struggle.burstDistance;
+        struggle.burstTimer = struggle.burstInterval * (0.7 + Math.random() * 0.6);
+        shake = 0.14;
+    }
+    // 3) La barre et la position du poisson suivent la longueur de fil sortie.
+    tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
+    // Fil tendu à l'extrême (barre tout à droite) : il casse, le poisson se décroche.
+    if (struggle.lineLength >= struggle.maxLength) {
+        tension = 1;
+        computeStrugglePos();
+        updateStruggleBar();
+        endStruggle(false);
+        return;
+    }
+    // Poisson ramené au bord de la canne : gagné !
+    if (struggle.lineLength <= struggle.minLength) {
         tension = 0;
+        computeStrugglePos();
         updateStruggleBar();
         endStruggle(true);
         return;
     }
-    // Temps limité : sinon le poisson se décroche.
+    // Temps limité : sinon le poisson finit par se décrocher.
     struggleTimeLeft -= dt;
     if (struggleTimeLeft <= 0) {
         struggleTimeLeft = 0;
@@ -1004,19 +1110,6 @@ function updateStruggle(dt) {
         return;
     }
     updateStruggleTimer();
-    tension += struggle.pullRate * dt;
-    struggle.burstTimer -= dt;
-    if (struggle.burstTimer <= 0) {
-        tension += struggle.burstStrength;
-        struggle.burstTimer = struggle.burstInterval * (0.7 + Math.random() * 0.6);
-        shake = 0.14;
-    }
-    if (tension >= 1) {
-        tension = 1;
-        updateStruggleBar();
-        endStruggle(false);
-        return;
-    }
     computeStrugglePos();
     updateStruggleBar();
 }
@@ -1271,9 +1364,10 @@ function updateFloat(dt, time) {
             fishButton.disabled = false;
         }
     } else if (floatState === 'reeling') {
-        const crankBoost = crankRotationDelta * 3.5;
-        crankRotationDelta = 0;
-        const step = 2.0 * dt + crankBoost;
+        // Le fil ne se rembobine qu'en tournant la manivelle : un tour complet
+        // ramène REEL_PER_TURN unités (≈ 1 m), donc le nombre de tours est
+        // proportionnel à la distance restante.
+        const step = consumeCrankTurns() * REEL_PER_TURN;
         // Le poisson est ramené jusqu'aux pieds du pêcheur.
         const shoreX = angler.position.x;
         const shoreZ = angler.position.z - 2.5;
@@ -1315,7 +1409,8 @@ function updateFloat(dt, time) {
             endCast();
         }
     }
-    crank.classList.toggle('active', floatState === 'reeling');
+    // La manivelle sert pendant l'épreuve de force ET pendant la remontée.
+    crank.classList.toggle('active', floatState === 'reeling' || floatState === 'struggle');
 }
 
 function updateLine() {
@@ -1433,7 +1528,7 @@ function animate() {
         updateRipples(dt);
         updateLine();
     }
-    crank.classList.toggle('active', floatState === 'reeling');
+    crank.classList.toggle('active', floatState === 'reeling' || floatState === 'struggle');
     if (cameraMode === 'bite') {
         camera.position.lerp(biteCamPos, 1 - Math.pow(0.0001, dt));
         cameraTarget.lerp(biteCamTarget, 1 - Math.pow(0.0001, dt));
@@ -1478,6 +1573,16 @@ window.__game = {
     getVaneRotation: function () { return vaneArrow.rotation.y; },
     getTension: function () { return tension; },
     getStruggleTimeLeft: function () { return struggleTimeLeft; },
+    getLineLength: function () { return struggle ? struggle.lineLength : 0; },
+    getStruggleTurnsNeeded: function () {
+        if (!struggle) {
+            return 0;
+        }
+        return Math.max(0, (struggle.lineLength - struggle.minLength) / REEL_PER_TURN);
+    },
+    getUnitsPerTurn: function () { return REEL_PER_TURN; },
+    // Simule les tours de manivelle (1 = un tour complet) pour les tests.
+    turnCrank: function (turns) { crankRotationDelta += turns * TWO_PI; },
     reelClick: reelClick,
     setPaused: function (value) { paused = value; },
     step: function (dt) {

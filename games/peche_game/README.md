@@ -20,8 +20,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Clic gauche sur l'eau** : lancer la ligne (le vent peut la décaler).
 - **Attendre qu'un poisson morde** : une vue rapprochée du bouchon s'affiche, puis il s'enfonce soudainement.
 - **Un seul clic** pour ferrer : clique au bon moment (pendant l'enfoncement). Trop tôt → le poisson s'enfuit.
-- **Épreuve de force** : clique vite pour faire reculer la barre et ramener le poisson.
-- **Manivelle** (en bas à droite pendant la remontée) : fais glisser la poignée en cercle pour ramener la ligne.
+- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. Un clic ne donne qu'un petit coup de poignet.
+- **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
 
 ## Fonctionnalités
@@ -31,10 +31,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - 20 poissons de 4 formes différentes, avec taille, force, agressivité et poids variables.
 - **Vent** aléatoire : déplace le bouchon, décale le lancer, fait bouger les nuages, indiqué par une **girouette 3D** et une **jauge**.
 - **Mode bouchon** : vue rapprochée, enfoncement sous l'eau, fenêtre de ferrage à un seul essai.
-- **Épreuve de force** limitée dans le temps (2 à 4 s selon la distance).
+- **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire ; temps limite proportionnel à la distance du lancer.
 - **Accrochage dans les nénuphars** avec risque de casser la ligne.
 - Les poissons perdus deviennent plus agressifs, plus rapides et plus rouges.
-- **Touches pendant la remontée** et **manivelle** pour ramener la ligne.
+- **Manivelle** (tours proportionnels à la distance) pendant l'épreuve de force et la remontée.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
 - Plein écran et HUD en surimpression.
 
