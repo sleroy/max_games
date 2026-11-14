@@ -90,7 +90,8 @@
 - [~] **Découper `script.js` (trop gros).**
   - [x] Mini-jeu de démêlage extrait dans `demelage.js` (module autonome, scénario 65).
   - [x] Mode quiver extrait dans `quiver.js` (indicateur de scion, scénario 66).
-  - [ ] Extraire à terme les données espèces / le stockage / le classement.
+  - [x] Données espèces / styles / silhouettes / touches extraites dans `especes.js`.
+  - [ ] Extraire à terme le stockage / le classement.
 - [x] **Vérifier la distribution des poissons et autoriser quelques spécimens hors norme.**
   - [x] Vérifier les tirages pondérés par abondance (`distributionAttendue`, scénario 64).
   - [x] Rares spécimens hors norme (taille/poids/combativité/agressivité), signalés

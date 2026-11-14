@@ -12,7 +12,7 @@ function read(name) {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'sound.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'sound.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sol-herbe.jpg', 'assets/ecorce.jpg', 'assets/vase.jpg', 'assets/eau-normales.jpg'].forEach(name => {

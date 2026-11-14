@@ -25,6 +25,7 @@ const FILES = {
     sound: path.join(GAME_DIR, 'sound.js'),
     demelage: path.join(GAME_DIR, 'demelage.js'),
     quiver: path.join(GAME_DIR, 'quiver.js'),
+    especes: path.join(GAME_DIR, 'especes.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -359,6 +360,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.sound, path.join(tmpDir, 'sound.js'));
     fs.copyFileSync(FILES.demelage, path.join(tmpDir, 'demelage.js'));
     fs.copyFileSync(FILES.quiver, path.join(tmpDir, 'quiver.js'));
+    fs.copyFileSync(FILES.especes, path.join(tmpDir, 'especes.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
     fs.writeFileSync(path.join(tmpDir, 'three-stub.mjs'), stub);
