@@ -193,6 +193,11 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **2,5 m** de fond (3,3 m dans les fosses) ; chaque poisson a **exactement sa taille réelle**
   (un gardon de 28 cm fait 28 cm à l'écran) et le bouchon ne s'enfonce que de quelques
   dizaines de centimètres, comme un vrai.
+- **5 lignes… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
+  ou une **remontée trop rapide** à la manivelle (avertissements « la ligne souffre », puis
+  risque croissant) **casse une ligne**. À zéro ligne, la partie s'arrête : tu saisis ton
+  **nom** et ta partie rejoint le **classement local** (onglets 🐟 Poissons / ⚖️ Poids total
+  / 🥇 Records par espèce), accessible aussi en jeu par le bouton **🏆 Classement**.
 - **Records d'espèce** : quand un poisson range dans la bourriche est plus lourd que le
   record du carnet, le message de prise passe en **doré** (« 🏆 RECORD — Carpe ! 2,4 kg 🎣 »)
   et le statut rappelle l'ancien record. Le premier poisson d'une espèce établit son record.

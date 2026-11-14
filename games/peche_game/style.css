@@ -1328,3 +1328,88 @@ body.calm .feed-gauge-target,
 body.calm .struggle-marker {
     box-shadow: none;
 }
+
+/* Panneaux superposes : fin de partie et classement local. */
+.overlay-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: min(92vw, 520px);
+    max-height: 86vh;
+    overflow-y: auto;
+    padding: 16px 18px;
+    background: rgba(10, 22, 32, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 14px;
+    color: #fff;
+    z-index: 20;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    text-align: center;
+}
+
+.overlay-panel.active {
+    display: flex;
+}
+
+.overlay-title {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.overlay-text {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.overlay-score {
+    font-size: 1rem;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.overlay-label {
+    font-size: 0.85rem;
+    text-align: left;
+    opacity: 0.9;
+}
+
+.overlay-input {
+    padding: 10px 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #08222f;
+    border: 2px solid #7fd0ff;
+    border-radius: 10px;
+}
+
+.overlay-list {
+    text-align: left;
+    font-size: 0.85rem;
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ranking-table th,
+.ranking-table td {
+    padding: 5px 6px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.ranking-table th {
+    color: #9fe6ff;
+}
+
+#lignesLabel.danger {
+    background: rgba(150, 20, 20, 0.85);
+    border-color: #ff8a75;
+}

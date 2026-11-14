@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=68 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=69 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=68';
+import { SoundEngine } from './sound.js?v=69';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -36,6 +36,18 @@ const xpLabel = document.getElementById('xpLabel');
 const depthLabel = document.getElementById('depthLabel');
 const depthMinus = document.getElementById('depthMinus');
 const depthPlus = document.getElementById('depthPlus');
+const lignesLabel = document.getElementById('lignesLabel');
+const gameOver = document.getElementById('gameOver');
+const gameOverScore = document.getElementById('gameOverScore');
+const playerName = document.getElementById('playerName');
+const saveScore = document.getElementById('saveScore');
+const restartGame = document.getElementById('restartGame');
+const showRanking = document.getElementById('showRanking');
+const rankingButton = document.getElementById('rankingButton');
+const classement = document.getElementById('classement');
+const rankingTabs = document.getElementById('rankingTabs');
+const rankingList = document.getElementById('rankingList');
+const closeRanking = document.getElementById('closeRanking');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
 const ficheTouches = document.getElementById('ficheTouches');
@@ -159,6 +171,7 @@ let crankAngle = 0;
 let crankLastAngle = 0;
 let crankRotationDelta = 0;
 let crankSoundAccum = 0;
+let crankLastMoveTime = 0;
 
 // ---------------------------------------------------------------------------
 // Moulinet : conversion « tours de manivelle ↔ longueur de fil »
@@ -233,6 +246,14 @@ crank.addEventListener('pointermove', event => {
     crankAngle += delta;
     crankLastAngle = angle;
     crankRotor.style.transform = 'rotate(' + crankAngle + 'rad)';
+    // Remonter TROP VITE fatigue la ligne : avertissement, puis risque croissant.
+    const maintenant = performance.now();
+    const ecart = Math.max(16, maintenant - crankLastMoveTime) / 1000;
+    crankLastMoveTime = maintenant;
+    const vitesse = Math.abs(delta) / ecart;             // radians / seconde
+    if (vitesse > VITESSE_MANIVELLE_MAX) {
+        avertirVitesse();
+    }
 });
 
 crank.addEventListener('pointerup', () => {
@@ -1938,6 +1959,12 @@ function addJournalEntry(weight, espece) {
     if (nouveauRecord) {
         fiche.record = Math.round(weight * 100) / 100;
     }
+    partieStats.poissons += 1;
+    partieStats.poids = Math.round((partieStats.poids + weight) * 100) / 100;
+    const ancienPartie = partieStats.records[nom] || 0;
+    if (weight > ancienPartie) {
+        partieStats.records[nom] = Math.round(weight * 100) / 100;
+    }
     saveJournal();
     renderJournal();
     return { nouveauRecord: nouveauRecord, ancienRecord: ancienRecord };
@@ -2582,6 +2609,13 @@ function cancelCast() {
 
 function releaseCast() {
     if (castState !== 'charging') {
+        return;
+    }
+    // LANCER TROP FORT : la jauge au maximum casse la ligne (et coûte une vie).
+    if (castPower >= 0.96) {
+        castState = 'idle';
+        feedGauge.classList.remove('active');
+        casserLigne('Lancer beaucoup trop fort');
         return;
     }
     castState = 'idle';
@@ -5326,6 +5360,215 @@ animate();
 // Exposé pour les tests automatisés
 // ---------------------------------------------------------------------------
 let testTime = 0;
+// ---------------------------------------------------------------------------
+// LIGNES (VIES) : on part avec 5 lignes. Un lancer trop fort ou une remontée
+// trop rapide en coûte une. À zéro : fin de partie, nom du pêcheur et
+// classement local (3 onglets : poissons, poids total, records par espèce).
+// ---------------------------------------------------------------------------
+const MAX_LIGNES = 5;
+const VITESSE_MANIVELLE_MAX = 26;      // rad/s (~4 tours/s) : au-delà, ça force
+const RANKING_KEY = 'peche_max_games_classement';
+const NOM_KEY = 'peche_max_games_nom';
+let lignesRestantes = MAX_LIGNES;
+let avertissementsVitesse = 0;
+let partieTerminee = false;
+let derniereAlerteVitesse = -10000;
+let ongletClassement = 'poissons';
+let partieStats = { poissons: 0, poids: 0, records: {} };
+
+function majLignes() {
+    if (!lignesLabel) { return; }
+    lignesLabel.textContent = '🧵 Lignes : ' + lignesRestantes + '/' + MAX_LIGNES;
+    lignesLabel.classList.toggle('danger', lignesRestantes <= 1);
+}
+
+function casserLigne(raison) {
+    if (partieTerminee) { return; }
+    lignesRestantes = Math.max(0, lignesRestantes - 1);
+    avertissementsVitesse = 0;
+    majLignes();
+    sound.escape();
+    spawnFloatingText('💥 Ligne cassée !', floatGroup.position, '#ff6b57');
+    statusDisplay.textContent = '💥 ' + raison + ' : une ligne est perdue ('
+        + lignesRestantes + ' restante' + (lignesRestantes > 1 ? 's' : '') + ').';
+    floatState = 'idle';
+    hameconDansLaVase = false;
+    fishButton.disabled = false;
+    if (hookedFish) {
+        hookedFish.userData.hooked = false;
+        hookedFish.visible = false;
+        hookedFish = null;
+    }
+    floatGroup.position.copy(floatIdle);
+    floatGroup.rotation.z = 0;
+    if (lignesRestantes <= 0) { terminerPartie(); }
+}
+
+// Remontée trop rapide : un avertissement (toutes les 0,8 s au plus), puis le
+// risque de casse augmente à chaque avertissement.
+function avertirVitesse() {
+    if (partieTerminee) { return; }
+    const maintenant = performance.now();
+    if (maintenant - derniereAlerteVitesse < 800) { return; }   // 1 alerte / 0,8 s
+    derniereAlerteVitesse = maintenant;
+    avertissementsVitesse += 1;
+    if (avertissementsVitesse <= 3) {
+        statusDisplay.textContent = '⚠️ Tu remontes trop vite ! La ligne souffre ('
+            + avertissementsVitesse + ' avertissement' + (avertissementsVitesse > 1 ? 's' : '') + ').';
+    }
+    if (rand() < 0.04 * avertissementsVitesse) {
+        casserLigne('Tu as remonté trop vite');
+    }
+}
+
+// Le classement vit en mémoire et, si le navigateur le permet, dans le stockage
+// local (il survit alors d'une session à l'autre).
+let classementLocal = [];
+try {
+    if (journalStore) {
+        const brut = journalStore.getItem(RANKING_KEY);
+        if (brut) {
+            const liste = JSON.parse(brut);
+            if (Array.isArray(liste)) { classementLocal = liste; }
+        }
+    }
+} catch (e) { classementLocal = []; }
+
+function chargerClassement() {
+    return classementLocal.slice();
+}
+
+function sauverClassement(liste) {
+    classementLocal = liste.slice(0, 50);
+    try {
+        if (journalStore) { journalStore.setItem(RANKING_KEY, JSON.stringify(classementLocal)); }
+    } catch (e) { /* stockage plein ou refusé */ }
+}
+
+function enregistrerClassement(nom) {
+    const pseudo = String(nom || '').trim().slice(0, 12) || 'Pêcheur';
+    const entree = {
+        nom: pseudo,
+        date: new Date().toISOString().slice(0, 10),
+        poissons: partieStats.poissons,
+        poids: Math.round(partieStats.poids * 100) / 100,
+        records: Object.assign({}, partieStats.records)
+    };
+    const liste = chargerClassement();
+    liste.push(entree);
+    sauverClassement(liste);
+    try { if (journalStore) { journalStore.setItem(NOM_KEY, pseudo); } } catch (e) { /* plein */ }
+    return entree;
+}
+
+function renderClassement(onglet) {
+    ongletClassement = onglet || 'poissons';
+    if (!rankingList) { return; }
+    const liste = chargerClassement();
+    let html = '';
+    if (ongletClassement === 'records') {
+        const parEspece = {};
+        liste.forEach(function (e) {
+            const rec = e.records || {};
+            Object.keys(rec).forEach(function (esp) {
+                if (!parEspece[esp] || rec[esp] > parEspece[esp].kg) {
+                    parEspece[esp] = { kg: rec[esp], nom: e.nom };
+                }
+            });
+        });
+        const especes = Object.keys(parEspece).sort(function (a, b) {
+            return parEspece[b].kg - parEspece[a].kg;
+        });
+        html = especes.length
+            ? '<table class="ranking-table"><tr><th>Espèce</th><th>Record</th><th>Pêcheur</th></tr>'
+                + especes.map(function (esp) {
+                    return '<tr><td>' + esp + '</td><td>' + fmtPoids(parEspece[esp].kg)
+                        + '</td><td>' + parEspece[esp].nom + '</td></tr>';
+                }).join('') + '</table>'
+            : '<p>Aucun record pour le moment.</p>';
+    } else {
+        const cle = ongletClassement === 'poids' ? 'poids' : 'poissons';
+        const tri = liste.slice().sort(function (a, b) { return b[cle] - a[cle]; }).slice(0, 10);
+        html = tri.length
+            ? '<table class="ranking-table"><tr><th>#</th><th>Pêcheur</th><th>'
+                + (cle === 'poids' ? 'Poids' : 'Poissons') + '</th><th>Date</th></tr>'
+                + tri.map(function (e, i) {
+                    return '<tr><td>' + (i + 1) + '</td><td>' + e.nom + '</td><td>'
+                        + (cle === 'poids' ? fmtPoids(e.poids) : e.poissons) + '</td><td>'
+                        + (e.date || '') + '</td></tr>';
+                }).join('') + '</table>'
+            : '<p>Classement vide : termine une partie pour y figurer !</p>';
+    }
+    rankingList.innerHTML = html;
+    if (rankingTabs && typeof rankingTabs.querySelectorAll === 'function') {
+        rankingTabs.querySelectorAll('.tab').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.rank === ongletClassement);
+        });
+    }
+}
+
+function ouvrirClassement() {
+    if (!classement) { return; }
+    renderClassement(ongletClassement);
+    classement.classList.add('active');
+}
+
+function fermerClassement() {
+    if (classement) { classement.classList.remove('active'); }
+}
+
+// Fin de partie : plus aucune ligne.
+function terminerPartie() {
+    partieTerminee = true;
+    floatState = 'idle';
+    strugglePanel.classList.remove('active');
+    if (!gameOver) { return; }
+    if (gameOverScore) {
+        gameOverScore.innerHTML = '🐟 <b>' + partieStats.poissons + '</b> poisson(s) · ⚖️ <b>'
+            + fmtPoids(partieStats.poids) + '</b> au total · 🏆 <b>'
+            + Object.keys(partieStats.records).length + '</b> espèce(s)';
+    }
+    if (playerName) {
+        let dernierNom = '';
+        try { if (journalStore) { dernierNom = journalStore.getItem(NOM_KEY) || ''; } } catch (e) { /* plein */ }
+        playerName.value = dernierNom;
+    }
+    gameOver.classList.add('active');
+}
+
+function recommencerPartie() {
+    lignesRestantes = MAX_LIGNES;
+    avertissementsVitesse = 0;
+    partieTerminee = false;
+    derniereAlerteVitesse = -10000;
+    partieStats = { poissons: 0, poids: 0, records: {} };
+    majLignes();
+    if (gameOver) { gameOver.classList.remove('active'); }
+    fermerClassement();
+    statusDisplay.textContent = 'Nouvelle partie : ' + MAX_LIGNES + ' lignes neuves. Bonne pêche !';
+}
+
+// --- Boutons du panneau de fin de partie et du classement ---
+if (saveScore) {
+    saveScore.addEventListener('click', function () {
+        enregistrerClassement(playerName ? playerName.value : '');
+        if (gameOver) { gameOver.classList.remove('active'); }
+        ouvrirClassement();
+    });
+}
+if (showRanking) { showRanking.addEventListener('click', ouvrirClassement); }
+if (rankingButton) { rankingButton.addEventListener('click', ouvrirClassement); }
+if (closeRanking) { closeRanking.addEventListener('click', fermerClassement); }
+if (restartGame) { restartGame.addEventListener('click', recommencerPartie); }
+if (rankingTabs) {
+    rankingTabs.addEventListener('click', function (event) {
+        const cible = event.target && event.target.dataset ? event.target.dataset.rank : '';
+        if (cible) { renderClassement(cible); }
+    });
+}
+
+majLignes();
+
 window.__game = {
     scene: scene,
     camera: camera,
@@ -5353,6 +5596,20 @@ window.__game = {
     // Styles de combat par espèce (touches + comportement) — tests et carnet.
     getStylesCombat: function () { return STYLES_COMBAT; },
     styleEspece: styleEspece,
+    // --- Lignes (vies), fin de partie et classement local ---
+    getLignes: function () { return lignesRestantes; },
+    maxLignes: MAX_LIGNES,
+    casserLigne: casserLigne,
+    getAvertissements: function () { return avertissementsVitesse; },
+    avertirVitesse: avertirVitesse,
+    getElapsed: function () { return elapsed; },
+    ouvrirClassement: ouvrirClassement,
+    isPartieTerminee: function () { return partieTerminee; },
+    recommencerPartie: recommencerPartie,
+    enregistrerClassement: enregistrerClassement,
+    getClassement: chargerClassement,
+    getPartieStats: function () { return Object.assign({}, partieStats); },
+    renderClassement: renderClassement,
     getStruggleStyle: function () { return struggle ? struggle.styleNom : ''; },
     // ÉCHELLE DU MONDE : 1 unité = 50 cm. Renvoie les mesures réelles des
     // objets (pour vérifier qu'elles restent réalistes) et la taille 3D d'un
