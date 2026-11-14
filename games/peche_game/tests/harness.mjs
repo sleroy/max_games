@@ -421,6 +421,8 @@ export function resetToIdle(maxSeconds = 200) {
             crankTurns(30);
         } else if (current === 'inWater') {
             G().startReel();
+        } else if (current === 'holding') {
+            G().storeHeldFish();   // poisson en main : on le range dans la bourriche
         }
         parkFish();
         step(0.05);

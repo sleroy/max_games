@@ -69,6 +69,20 @@ canvas {
     font-size: 1rem;
 }
 
+.pause-button {
+    position: absolute;
+    top: 52px;
+    left: 66px;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
 .hud-score {
     position: absolute;
     top: 14px;
@@ -452,6 +466,11 @@ button, .crank {
     left: calc(18px + env(safe-area-inset-left, 0px));
 }
 
+.pause-button {
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    left: calc(66px + env(safe-area-inset-left, 0px));
+}
+
 .fullscreen-button {
     top: calc(92px + env(safe-area-inset-top, 0px));
     left: calc(18px + env(safe-area-inset-left, 0px));
@@ -513,7 +532,7 @@ button, .crank {
         font-size: 1rem;
     }
 
-    .sound-toggle, .fullscreen-button {
+    .sound-toggle, .fullscreen-button, .pause-button {
         font-size: 1.05rem;
         padding: 8px 12px;
     }
@@ -565,4 +584,131 @@ button, .crank {
     .wind-gauge {
         top: calc(10px + env(safe-area-inset-top, 0px));
     }
+}
+
+/* ---------------------------------------------------------------------------
+   Carnet de pêche, bourriche et réglages
+   --------------------------------------------------------------------------- */
+
+/* Bouton « Carnet » : placé près du pêcheur par le script. */
+.journal-button {
+    position: absolute;
+    top: 70%;
+    left: 34%;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    border-radius: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: bold;
+}
+
+/* Compteur affiché près de la bourriche. */
+.bourriche-label {
+    position: absolute;
+    top: 76%;
+    left: 20%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #fff;
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* Panneau (carnet / réglages). */
+.panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 420px);
+    max-height: 84vh;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 18px;
+    background: rgba(8, 20, 28, 0.95);
+    border: 2px solid #7fd0ff;
+    border-radius: 16px;
+    color: #eaf6ff;
+    pointer-events: auto;
+    z-index: 15;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.panel.open {
+    display: flex;
+}
+
+.panel-title {
+    margin: 0;
+    font-size: 1.15rem;
+    text-align: center;
+}
+
+.journal-stats {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.journal-list {
+    margin: 0;
+    font-size: 0.9rem;
+    max-height: 30vh;
+    overflow-y: auto;
+    white-space: pre-line;
+    line-height: 1.4;
+}
+
+.journal-help {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+.panel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.95rem;
+}
+
+.panel-row select {
+    font-size: 0.95rem;
+    padding: 4px 6px;
+    border-radius: 8px;
+}
+
+.panel button {
+    margin-top: 4px;
+}
+
+/* Options d'accessibilité (activées depuis le carnet). */
+body.big-text {
+    font-size: 118%;
+}
+
+body.calm .catch-message,
+body.calm .struggle-timer.urgent,
+body.calm .bite-hint.urgent {
+    animation: none;
+}
+
+body.calm .feed-gauge-target,
+body.calm .struggle-marker {
+    box-shadow: none;
 }

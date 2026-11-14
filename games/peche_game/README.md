@@ -32,11 +32,19 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 ## Commandes
 
 - **Clic gauche sur l'eau** : lancer la ligne (le vent peut la décaler).
-- **Attendre qu'un poisson morde** : un poisson s'approche du bouchon, le fait plonger un peu (petites ondulations), puis la vue se rapproche et le bouchon s'enfonce soudainement.
+- **Attendre qu'un poisson morde** : un poisson s'approche du bouchon et **mordille** (le bouchon plonge par petites tapes) avant de l'enfoncer franchement — la vue se rapproche alors et le bouchon coule.
 - **Un seul clic** pour ferrer : clique au bon moment (pendant l'enfoncement). Trop tôt → le poisson s'enfuit.
 - **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson — cliquer ne sert plus à rien pendant le combat.**
 - **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
+- **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
+  alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
+  relâche quand la jauge passe sur le repère). Réussi → +1 point et la prise est notée
+  dans le carnet ; raté → le poisson retombe à l'eau (aucun point).
 - **Pas de nouveau poisson pendant la remontée** : tant que la ligne revient vers le bord, aucun autre poisson ne peut mordre — il faut rembobiner puis relancer la canne.
+- **📖 Carnet de pêche** (bouton à côté du pêcheur) : nombre de prises, poids total, record
+  et dernières prises (sauvegardés dans le navigateur). C'est aussi là qu'on choisit la
+  **difficulté** et les options (gros texte, animations calmes).
+- **Bouton pause** (⏸) : fige le jeu (et le bouton plein écran ⛶ en dessous).
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
 - **Bouton 🥣 Nourrir (amorçage)** : clique une fois sur le bouton pour armer le mode,
   puis **clique et maintiens** sur l'eau pour viser (une jauge de puissance s'affiche et
@@ -60,13 +68,23 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   (ou du doigt), jauge de puissance oscillante avec un repère à atteindre, lancer en arc
   influencé par le vent, puis nuage de miettes qui attire les poissons — avec une animation
   d'épaule du pêcheur.
+- **Rendu plus « photo »** : tone mapping ACES, lumière hémisphérique, ombres plus
+  propres, **cycle jour/nuit** (le soleil décrit un arc, le ciel et les couleurs
+  changent), houle de l'eau qui suit le vent.
+- **Canne vivante** : la canne **plie** quand le fil est tendu et la ligne se raidit.
+- **Poissons plus vivants** : ondulation du corps, inclinaison dans les virages,
+  sillage près de la surface, **éclaboussures** au ferrage.
+- **Décor optimisé** : arbres, roseaux et rochers en *instancing* (un seul appel de
+  dessin), ce qui laisse de la marge pour la végétation.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
+- **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
+  le navigateur (`localStorage`).
+- **Difficulté réglable** depuis le carnet : **Facile / Normal / Dur** (le poisson tire
+  plus ou moins fort, le chrono et la fenêtre de ferrage changent).
+- **Options d'accessibilité** : gros texte, animations calmes (moins de clignotements).
 - **Jouable sur téléphone et tablette** : commandes tactiles (appui/relâchement pour
-  l'amorçage, manivelle au doigt), invite à passer en paysage, interface qui respecte les
-  encoches (zones sûres) et bouton plein écran ⛶.
-- **Difficulté réglable** : une seule constante, `DIFFICULTY` en haut de `script.js`
-  (1 = facile, plus grand = plus dur), rend le poisson plus combatif et resserre le
-  chrono du combat. La fenêtre de ferrage se règle à part avec `BITE_WINDOW`.
+  l'amorçage et le lancer du poisson, manivelle au doigt), invite à passer en paysage,
+  interface qui respecte les encoches (zones sûres), bouton pause et plein écran ⛶.
 - Plein écran et HUD en surimpression.
 
 ## Structure

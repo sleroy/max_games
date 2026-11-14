@@ -210,34 +210,73 @@ export function run() {
     checkEqual('le panneau de combat est fermé', el('struggle').classList.contains('active'), false);
     checkEqual('le bouton redevient « Lancer la canne »', el('fishButton').textContent, 'Lancer la canne');
 
-    group('18) Remonter le poisson et marquer un point');
+    group('18) Remonter le poisson, puis le ranger dans la bourriche');
     const caughtFish = startFight(0, -30);
     while (state() === 'struggle') {
         crankTurns(2);
         step(1 / 60);
     }
-    // Score juste avant la dernière touche de manivelle : les scénarios
-    // précédents ont pu ramener des poissons, on mesure donc bien « +1 » ici.
-    const scoreBefore = Number(el('score').textContent) || 0;
     const toShore = distanceToShore();
     let retrieveTurns = 0;
     guard = 0;
-    while (state() !== 'idle' && guard++ < 20000) {
-        if (state() === 'reeling') {
-            crankDragTurns(0.25, 4);
-            retrieveTurns += 0.25;
-        }
+    while (state() === 'reeling' && guard++ < 20000) {
+        crankDragTurns(0.25, 4);
+        retrieveTurns += 0.25;
         step(1 / 60);
     }
-    checkEqual('la ligne est revenue au bord', state(), 'idle');
+    checkEqual('le poisson est amené au bord (en main)', state(), 'holding');
     checkClose('tours de remontée ≈ distance restante / 2', retrieveTurns, (toShore - 0.5) / 2, 2);
-    checkEqual('le score augmente d\'un point', Number(el('score').textContent) - scoreBefore, 1);
-    checkEqual('message de victoire affiché', el('catchMessage').classList.contains('show'), true);
-    check('le message donne le poids', el('catchMessage').textContent.includes('kg'), el('catchMessage').textContent);
-    checkEqual('le poisson pêché a quitté l\'étang', G().fishes.indexOf(caughtFish), -1);
-    checkEqual('un nouveau poisson apparaît (toujours 20)', G().fishes.length, FISH_COUNT);
+    check('c’est bien le poisson pêché qui est en main', G().getHeldFish() === caughtFish);
+
+    // On dose la puissance du lancer, puis on relâche.
+    const scoreBefore = Number(el('score').textContent) || 0;
+    const journalBefore = G().getJournal().total;
+    G().startFishThrow();
+    checkEqual('la jauge de lancer s’affiche', el('feedGauge').classList.contains('active'), true);
+    check('un repère indique la puissance pour la bourriche',
+        G().getFishThrowTargetPower() > 0 && G().getFishThrowTargetPower() < 1,
+        G().getFishThrowTargetPower().toFixed(2));
+    G().setFishThrowPower(G().getFishThrowTargetPower());
+    G().releaseFishThrow();
+    checkEqual('le poisson part en vol', G().getFishThrowState(), 'flying');
+    check('le lancer se termine', stepUntil(() => state() === 'idle', 3), state());
+    const landing = G().getFishThrowLanding();
+    const bourriche = G().getBourriche();
+    const inBourriche = Math.hypot(landing.x - bourriche.x, landing.z - bourriche.z) < bourriche.radius;
+    checkEqual('score +1 seulement si le poisson entre dans la bourriche',
+        Number(el('score').textContent) - scoreBefore, inBourriche ? 1 : 0);
+    checkEqual('le carnet enregistre la prise de la même façon',
+        G().getJournal().total, journalBefore + (inBourriche ? 1 : 0));
+    checkEqual('plus rien en main', G().getHeldFish(), null);
+    checkEqual('toujours 20 poissons', G().fishes.length, FISH_COUNT);
     checkEqual('on peut relancer', el('fishButton').disabled, false);
     checkEqual('manivelle cachée au repos', crankWidgetActive(), false);
+
+    // Version déterministe du rangement (indépendante du vent).
+    const caught2 = startFight(0, -30);
+    while (state() === 'struggle') {
+        crankTurns(2);
+        step(1 / 60);
+    }
+    guard = 0;
+    while (state() === 'reeling' && guard++ < 20000) {
+        crankTurns(2);
+        step(1 / 60);
+    }
+    checkEqual('deuxième poisson en main', state(), 'holding');
+    const scoreBis = Number(el('score').textContent) || 0;
+    const journalBis = G().getJournal();
+    G().storeHeldFish();
+    checkEqual('retour au repos', state(), 'idle');
+    checkEqual('un point de plus', Number(el('score').textContent) - scoreBis, 1);
+    checkEqual('une prise de plus dans le carnet', G().getJournal().total, journalBis.total + 1);
+    check('message de victoire affiché', el('catchMessage').classList.contains('show'), true);
+    check('le message donne le poids', el('catchMessage').textContent.includes('kg'), el('catchMessage').textContent);
+    checkEqual('le poisson rangé a quitté l’étang', G().fishes.indexOf(caught2), -1);
+    checkEqual('un nouveau poisson le remplace', G().fishes.length, FISH_COUNT);
+    check('le compteur de la bourriche se met à jour',
+        el('bourricheLabel').textContent.indexOf(String(G().getJournal().total)) >= 0,
+        el('bourricheLabel').textContent);
 
     group('19) Perdre le combat : le fil casse');
     const lostFish = startFight(0, -20);
@@ -408,6 +447,52 @@ export function run() {
     check('et le bouchon s’enfonce de nouveau',
         stepUntil(() => G().getBitePhase() === 'sinking', 6), G().getBitePhase());
     checkEqual('la caméra est bien en mode bouchon', G().getCameraMode(), 'bite');
+
+    group('26) Bourriche, carnet de pêche et difficulté');
+    resetToIdle();
+    checkEqual('la bourriche a un rayon connu', typeof G().getBourriche().radius, 'number');
+    checkEqual('le carnet est fermé au départ', G().isJournalOpen(), false);
+    G().showJournal();
+    checkEqual('le carnet s’ouvre', G().isJournalOpen(), true);
+    check('le carnet affiche un résumé', el('journalStats').textContent.length > 0,
+        el('journalStats').textContent);
+    G().hideJournal();
+    checkEqual('le carnet se referme', G().isJournalOpen(), false);
+
+    G().setDifficulty('facile');
+    const easy = G().getDifficulty();
+    G().setDifficulty('dur');
+    const hard = G().getDifficulty();
+    check('la difficulté change le combat', hard.difficulty > easy.difficulty,
+        easy.difficulty.toFixed(2) + ' -> ' + hard.difficulty.toFixed(2));
+    check('la difficulté change la fenêtre de ferrage', hard.biteWindow < easy.biteWindow,
+        easy.biteWindow.toFixed(2) + ' -> ' + hard.biteWindow.toFixed(2));
+    G().setDifficulty('normal');
+    checkClose('retour au réglage normal', G().getDifficulty().difficulty, 1.3, 1e-9);
+
+    // Lancer volontairement trop court : le poisson retombe à l'eau, sans point.
+    const missed = startFight(0, -30);
+    while (state() === 'struggle') {
+        crankTurns(2);
+        step(1 / 60);
+    }
+    guard = 0;
+    while (state() === 'reeling' && guard++ < 20000) {
+        crankTurns(2);
+        step(1 / 60);
+    }
+    checkEqual('poisson en main', state(), 'holding');
+    const scoreAvant = Number(el('score').textContent) || 0;
+    const journalAvant = G().getJournal().total;
+    G().startFishThrow();
+    G().setFishThrowPower(0);   // trop court : on rate la bourriche
+    G().releaseFishThrow();
+    check('fin du lancer raté', stepUntil(() => state() === 'idle', 3), state());
+    checkEqual('aucun point marqué', Number(el('score').textContent), scoreAvant);
+    checkEqual('aucune prise ajoutée au carnet', G().getJournal().total, journalAvant);
+    check('le poisson est retourné à l’eau', G().fishes.indexOf(missed) >= 0);
+    checkEqual('toujours 20 poissons', G().fishes.length, FISH_COUNT);
+    checkEqual('plus rien en main', G().getHeldFish(), null);
 }
 
 export default run;

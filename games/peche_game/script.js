@@ -20,6 +20,15 @@ const feedButton = document.getElementById('feedButton');
 const feedGauge = document.getElementById('feedGauge');
 const feedGaugeFill = document.getElementById('feedGaugeFill');
 const feedGaugeTarget = document.getElementById('feedGaugeTarget');
+const journalButton = document.getElementById('journalButton');
+const journalPanel = document.getElementById('journal');
+const journalStats = document.getElementById('journalStats');
+const journalList = document.getElementById('journalList');
+const journalClose = document.getElementById('journalClose');
+const difficultySelect = document.getElementById('difficultySelect');
+const bigTextToggle = document.getElementById('bigTextToggle');
+const calmToggle = document.getElementById('calmToggle');
+const bourricheLabel = document.getElementById('bourricheLabel');
 
 const sound = new SoundEngine();
 
@@ -93,6 +102,17 @@ if (document.documentElement
     fullscreenButton.style.display = 'none';
 }
 
+// Bouton pause : fige le jeu (très pratique pour un enfant).
+const pauseButton = document.getElementById('pauseButton');
+
+pauseButton.addEventListener('click', () => {
+    paused = !paused;
+    pauseButton.textContent = paused ? '▶' : '⏸';
+    if (paused) {
+        statusDisplay.textContent = 'Pause — appuie sur ▶ pour reprendre.';
+    }
+});
+
 // Manivelle : on la fait tourner pour ramener la ligne.
 const crank = document.getElementById('crank');
 const crankRotor = document.getElementById('crankRotor');
@@ -122,15 +142,18 @@ const STRUGGLE_MAX_FACTOR = 1.6;
 const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 
 // ---------------------------------------------------------------------------
-// Difficulté — un seul réglage à ajuster !
-//   1     = facile ; plus grand = plus dur.
-// En augmentant DIFFICULTY :
+// Difficulté — réglable depuis le carnet (Facile / Normal / Dur).
+// En augmentant la difficulté :
 //   • le poisson tire plus fort et reprend plus de fil (épreuve de force) ;
-//   • le temps de l'épreuve de force est plus court.
-// Le ferrage (fenêtre pour ferrer au bon moment) se règle à part, avec
-// BITE_WINDOW (plus bas dans le fichier).
+//   • le temps de l'épreuve de force est plus court ;
+//   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
 // ---------------------------------------------------------------------------
-const DIFFICULTY = 1.3;
+const DIFFICULTY_MODES = {
+    facile: { difficulty: 1.0, biteWindow: 0.55 },
+    normal: { difficulty: 1.3, biteWindow: 0.4 },
+    dur: { difficulty: 1.6, biteWindow: 0.32 }
+};
+let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
 
 // Tours de manivelle effectués depuis le dernier appel (puis remis à zéro).
 function consumeCrankTurns() {
@@ -1092,18 +1115,347 @@ function updateArm(dt) {
     arm.position.y = 2.1 + armSwing * 0.4;
 }
 
-// Place le bouton « Nourrir » juste à côté du pêcheur, à l'écran.
-const feedButtonAnchor = new THREE.Vector3();
+// Place les éléments du HUD « près du personnage » (boutons, compteur) : on
+// projette leur point d'ancrage 3D vers l'écran.
+const hudAnchor = new THREE.Vector3();
 
-function updateFeedButtonPosition() {
-    feedButtonAnchor.set(angler.position.x - 2.0, 2.6, angler.position.z + 0.4);
+function projectToScreen(point, element) {
     camera.updateMatrixWorld();
-    feedButtonAnchor.project(camera);
-    const x = (feedButtonAnchor.x * 0.5 + 0.5) * 100;
-    const y = (-feedButtonAnchor.y * 0.5 + 0.5) * 100;
-    feedButton.style.left = x.toFixed(2) + '%';
-    feedButton.style.top = y.toFixed(2) + '%';
+    point.project(camera);
+    element.style.left = ((point.x * 0.5 + 0.5) * 100).toFixed(2) + '%';
+    element.style.top = ((-point.y * 0.5 + 0.5) * 100).toFixed(2) + '%';
 }
+
+function updateHudAnchors() {
+    // « Nourrir » à gauche du pêcheur, « Carnet » à droite.
+    projectToScreen(hudAnchor.set(angler.position.x - 2.0, 2.6, angler.position.z + 0.4), feedButton);
+    projectToScreen(hudAnchor.set(angler.position.x + 1.9, 3.1, angler.position.z - 1.0), journalButton);
+    // Le compteur de la bourriche, juste au-dessus de la bourriche.
+    projectToScreen(hudAnchor.set(BOURRICHE_POS.x, 1.6, BOURRICHE_POS.z), bourricheLabel);
+}
+
+// ---------------------------------------------------------------------------
+// Bourriche (panier à poissons) et lancer du poisson
+// ---------------------------------------------------------------------------
+// Après avoir ramené un poisson au bord, il faut le LANCER dans la bourriche,
+// comme l'amorce : on appuie, on maintient (la puissance oscille), on relâche
+// au bon moment. Le vent décale le lancer.
+const BOURRICHE_POS = new THREE.Vector3(-12, 0.1, 13);
+const BOURRICHE_RADIUS = 1.6;      // rayon de la gueule (tolérance d'entrée)
+const FISH_THROW_MIN = 2;          // portée mini du lancer du poisson
+const FISH_THROW_MAX = 14;         // portée maxi
+const FISH_THROW_WIND = 1.6;       // influence du vent sur le lancer
+const FISH_THROW_DURATION = 0.8;   // durée du vol (s)
+const FISH_THROW_OSC = 1.6;        // vitesse d'oscillation de la jauge
+
+// La bourriche 3D : un anneau (la gueule) et un filet qui pend dans l'eau.
+const bourriche = new THREE.Group();
+const bourricheRing = new THREE.Mesh(
+    new THREE.TorusGeometry(BOURRICHE_RADIUS, 0.09, 8, 24),
+    new THREE.MeshStandardMaterial({ color: 0x9a7b46, roughness: 0.8 })
+);
+bourricheRing.rotation.x = Math.PI / 2;
+bourricheRing.position.y = 0.12;
+bourricheRing.castShadow = true;
+bourriche.add(bourricheRing);
+const bourricheNet = new THREE.Mesh(
+    new THREE.CylinderGeometry(BOURRICHE_RADIUS - 0.1, 0.8, 2.6, 16, 1, true),
+    new THREE.MeshStandardMaterial({
+        color: 0x33543c, roughness: 0.95, transparent: true, opacity: 0.9, side: THREE.DoubleSide
+    })
+);
+bourricheNet.position.y = -1.2;
+bourriche.add(bourricheNet);
+bourriche.position.copy(BOURRICHE_POS);
+scene.add(bourriche);
+
+// Poisson tenu en main, prêt à être lancé.
+let heldFish = null;
+let fishThrowState = 'idle';   // 'idle' | 'charging' | 'flying'
+let fishThrowPower = 0;
+let fishThrowTarget = 0;
+let fishThrowPhase = 0;
+let fishThrowT = 0;
+const fishThrowLanding = new THREE.Vector3();
+const fishThrowOrigin = new THREE.Vector3();
+
+// ---------------------------------------------------------------------------
+// Carnet de pêche (conservé dans le navigateur quand c'est possible)
+// ---------------------------------------------------------------------------
+const journal = { total: 0, totalWeight: 0, best: 0, last: [] };
+const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null;
+const JOURNAL_KEY = 'peche_carnet_v1';
+
+function loadJournal() {
+    if (!journalStore) {
+        return;
+    }
+    try {
+        const raw = journalStore.getItem(JOURNAL_KEY);
+        if (!raw) {
+            return;
+        }
+        const data = JSON.parse(raw);
+        journal.total = data.total || 0;
+        journal.totalWeight = data.totalWeight || 0;
+        journal.best = data.best || 0;
+        journal.last = Array.isArray(data.last) ? data.last : [];
+    } catch (error) {
+        // Carnet illisible : on repart de zéro.
+    }
+}
+
+function saveJournal() {
+    if (!journalStore) {
+        return;
+    }
+    try {
+        journalStore.setItem(JOURNAL_KEY, JSON.stringify(journal));
+    } catch (error) {
+        // Stockage indisponible : on continue sans sauvegarder.
+    }
+}
+
+function fmtKg(value) {
+    return value.toFixed(1).replace('.', ',') + ' kg';
+}
+
+function renderJournal() {
+    if (journal.total === 0) {
+        journalStats.textContent = 'Aucune prise pour l’instant… Lance la canne !';
+    } else {
+        journalStats.textContent = 'Prises : ' + journal.total
+            + ' · Poids total : ' + fmtKg(journal.totalWeight)
+            + ' · Record : ' + fmtKg(journal.best);
+    }
+    // Pas de appendChild ici : le carnet s'affiche en texte simple.
+    journalList.textContent = journal.last.length
+        ? journal.last.map(weight => '🐟 ' + fmtKg(weight)).join('\n')
+        : '';
+    bourricheLabel.textContent = '🧺 ' + journal.total;
+}
+
+function addJournalEntry(weight) {
+    journal.total += 1;
+    journal.totalWeight = Math.round((journal.totalWeight + weight) * 10) / 10;
+    if (weight > journal.best) {
+        journal.best = weight;
+    }
+    journal.last.unshift(Math.round(weight * 10) / 10);
+    if (journal.last.length > 12) {
+        journal.last.length = 12;
+    }
+    saveJournal();
+    renderJournal();
+}
+
+function showJournal() {
+    renderJournal();
+    journalPanel.classList.add('open');
+}
+
+function hideJournal() {
+    journalPanel.classList.remove('open');
+}
+
+function setDifficulty(mode) {
+    const preset = DIFFICULTY_MODES[mode] || DIFFICULTY_MODES.normal;
+    DIFFICULTY = preset.difficulty;
+    BITE_WINDOW = preset.biteWindow;
+    if (difficultySelect.value !== mode) {
+        difficultySelect.value = mode;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Lancer du poisson dans la bourriche
+// ---------------------------------------------------------------------------
+function bourricheDistance() {
+    return Math.hypot(BOURRICHE_POS.x - angler.position.x, BOURRICHE_POS.z - angler.position.z);
+}
+
+function fishThrowPowerFor(distance) {
+    return Math.max(0, Math.min(1,
+        (distance - FISH_THROW_MIN) / (FISH_THROW_MAX - FISH_THROW_MIN)));
+}
+
+// Le poisson est amené au bord : on le garde en main et on invite à le lancer.
+function startHoldingFish(fish) {
+    heldFish = fish;
+    hookedFish = null;
+    fish.userData.hooked = false;
+    fish.userData.biting = false;
+    fish.visible = true;
+    fish.scale.setScalar(fish.userData.size * 0.75);
+    fish.rotation.set(0, Math.PI, Math.PI / 2);
+    fish.position.set(angler.position.x + 1.1, 2.4, angler.position.z - 0.9);
+    floatState = 'holding';
+    floatGroup.position.copy(floatIdle);
+    fishThrowState = 'idle';
+    fishThrowTarget = fishThrowPowerFor(bourricheDistance());
+    fishButton.disabled = true;
+    fishButton.textContent = 'Lance le poisson !';
+    statusDisplay.textContent = 'Belle prise ! Lance-la dans la bourriche 🧺 (appuie, maintiens, relâche au bon moment).';
+}
+
+function setFishThrowPower(value) {
+    fishThrowPower = Math.max(0, Math.min(1, value));
+    feedGaugeFill.style.width = (fishThrowPower * 100).toFixed(0) + '%';
+}
+
+function startFishThrow() {
+    if (floatState !== 'holding' || fishThrowState !== 'idle') {
+        return;
+    }
+    fishThrowState = 'charging';
+    fishThrowPhase = 0;
+    fishThrowTarget = fishThrowPowerFor(bourricheDistance());
+    setFishThrowPower(0);
+    feedGauge.classList.add('active');
+    feedGaugeTarget.style.left = (fishThrowTarget * 100).toFixed(0) + '%';
+    ensureSound();
+    statusDisplay.textContent = 'Dose la puissance : relâche quand la jauge passe sur le repère !';
+}
+
+function computeFishThrowLanding() {
+    const dx = BOURRICHE_POS.x - angler.position.x;
+    const dz = BOURRICHE_POS.z - angler.position.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const range = FISH_THROW_MIN + fishThrowPower * (FISH_THROW_MAX - FISH_THROW_MIN);
+    fishThrowLanding.set(
+        angler.position.x + (dx / d) * range + Math.cos(wind.dir) * wind.strength * FISH_THROW_WIND,
+        0.1,
+        angler.position.z + (dz / d) * range + Math.sin(wind.dir) * wind.strength * FISH_THROW_WIND
+    );
+}
+
+function releaseFishThrow() {
+    if (fishThrowState !== 'charging') {
+        return;
+    }
+    fishThrowState = 'flying';
+    fishThrowT = 0;
+    feedGauge.classList.remove('active');
+    computeFishThrowLanding();
+    fishThrowOrigin.set(angler.position.x + 1.1, 2.6, angler.position.z - 0.9);
+    if (heldFish) {
+        heldFish.position.copy(fishThrowOrigin);
+    }
+    sound.cast();
+    statusDisplay.textContent = 'Lancer du poisson…';
+}
+
+function finishHolding() {
+    fishThrowState = 'idle';
+    feedGauge.classList.remove('active');
+    fishButton.disabled = false;
+    fishButton.textContent = 'Lancer la canne';
+    floatState = 'idle';
+    fishCaught = false;
+    escaped = false;
+    floatGroup.position.copy(floatIdle);
+}
+
+// Réussi : le poisson tombe dans la bourriche (score + carnet).
+function storeHeldFish() {
+    const fish = heldFish;
+    finishHolding();
+    heldFish = null;
+    if (!fish) {
+        return;
+    }
+    const weight = fish.userData.weight;
+    scene.remove(fish);
+    const index = fishes.indexOf(fish);
+    if (index >= 0) {
+        fishes.splice(index, 1);
+    }
+    spawnFish();
+    caughtWeight = weight;
+    score++;
+    scoreDisplay.textContent = score;
+    showCatchMessage(weight);
+    addJournalEntry(weight);
+    sound.catchFish();
+    spawnRipple(BOURRICHE_POS);
+    spawnSplash(BOURRICHE_POS);
+    statusDisplay.textContent = 'Dans la bourriche ! ' + fmtKg(weight) + ' (+1) 🧺';
+}
+
+// Raté : le poisson retombe à l'eau et repart.
+function dropHeldFish() {
+    const fish = heldFish;
+    finishHolding();
+    heldFish = null;
+    if (!fish) {
+        return;
+    }
+    fish.scale.setScalar(fish.userData.size);
+    fish.rotation.set(0, 0, 0);
+    fish.userData.depth = Math.min(fish.userData.depth, -1.2);
+    fish.position.set(fishThrowLanding.x,
+        fish.userData.depth - fish.userData.topOffset, fishThrowLanding.z);
+    fish.userData.vx = Math.cos(wind.dir) * 2;
+    fish.userData.vz = Math.sin(wind.dir) * 2;
+    spawnRipple(fishThrowLanding);
+    spawnSplash(fishThrowLanding);
+    sound.escape();
+    statusDisplay.textContent = 'Raté ! Le poisson est retombé à l’eau…';
+}
+
+function updateFishThrow(dt) {
+    if (fishThrowState === 'charging') {
+        fishThrowPhase += FISH_THROW_OSC * dt;
+        const m = ((fishThrowPhase % 2) + 2) % 2;
+        setFishThrowPower(m < 1 ? m : 2 - m);
+    } else if (fishThrowState === 'flying') {
+        fishThrowT += dt / FISH_THROW_DURATION;
+        const t = Math.min(1, fishThrowT);
+        if (heldFish) {
+            heldFish.position.set(
+                fishThrowOrigin.x + (fishThrowLanding.x - fishThrowOrigin.x) * t,
+                fishThrowOrigin.y + (fishThrowLanding.y - fishThrowOrigin.y) * t + Math.sin(Math.PI * t) * 3.2,
+                fishThrowOrigin.z + (fishThrowLanding.z - fishThrowOrigin.z) * t
+            );
+            heldFish.rotation.x += dt * 6;
+        }
+        if (fishThrowT >= 1) {
+            const inBourriche = Math.hypot(
+                fishThrowLanding.x - BOURRICHE_POS.x,
+                fishThrowLanding.z - BOURRICHE_POS.z) < BOURRICHE_RADIUS;
+            if (inBourriche) {
+                storeHeldFish();
+            } else {
+                dropHeldFish();
+            }
+        }
+    }
+}
+
+// --- Carnet : ouverture, difficulté, accessibilité -------------------------
+journalButton.addEventListener('click', () => {
+    ensureSound();
+    if (journalPanel.classList.contains('open')) {
+        hideJournal();
+    } else {
+        showJournal();
+    }
+});
+journalClose.addEventListener('click', hideJournal);
+difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
+bigTextToggle.addEventListener('change', () => {
+    if (document.body) {
+        document.body.classList.toggle('big-text', !!bigTextToggle.checked);
+    }
+});
+calmToggle.addEventListener('change', () => {
+    if (document.body) {
+        document.body.classList.toggle('calm', !!calmToggle.checked);
+    }
+});
+
+loadJournal();
+renderJournal();
 
 // ---------------------------------------------------------------------------
 // Poissons
@@ -1294,9 +1646,12 @@ let biteViewTimer = 0;
 let biteSinkAt = 0;
 let biteSinkTimer = 0;
 let biteViewHideTimer = -1; // fermeture différée de la vue bouchon (< 0 = aucune)
+let biteNibbleTimer = 0;    // durée du « mordillement » avant la touche franche
 // Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
 // poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
-const BITE_WINDOW = 0.4;
+let BITE_WINDOW = 0.4;
+// Le poisson mordille le bouchon avant de l'enfoncer : le joueur est prévenu.
+const BITE_NIBBLE_DURATION = 0.6;
 // Durée pendant laquelle on laisse « Trop tard ! » affiché après une touche
 // ratée. Comptée par la boucle de jeu (et plus courte que le temps de
 // récupération) pour ne jamais refermer une NOUVELLE touche par erreur.
@@ -1557,8 +1912,9 @@ function showBiteView(fish) {
     biteViewActive = true;
     bitePhase = 'floating';
     biteViewTimer = 0;
-    biteSinkAt = 1.2 + rand() * 1.3;
+    biteSinkAt = 0.7 + rand() * 0.9;
     biteSinkTimer = 0;
+    biteNibbleTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     biteView.classList.add('active');
     biteHint.textContent = 'Attends que le bouchon s’enfonce… (1 seul essai !)';
@@ -1592,7 +1948,7 @@ function hookFish() {
         spawnSplash(floatGroup.position);
         hideBiteView();
         startStruggle(fish);
-    } else if (bitePhase === 'floating') {
+    } else if (bitePhase === 'floating' || bitePhase === 'nibbling') {
         // Trop tôt : le poisson est effrayé et s'enfuit (un seul essai).
         if (biteFish) {
             biteFish.userData.biting = false;
@@ -1628,6 +1984,16 @@ function updateBiteView(dt) {
         floatGroup.position.y = 0.1 + Math.sin(biteViewTimer * 4) * 0.08;
         setFloatOpacity(1);
         if (biteViewTimer >= biteSinkAt) {
+            bitePhase = 'nibbling';
+            biteNibbleTimer = 0;
+            biteHint.textContent = 'Attention, il mordille…';
+        }
+    } else if (bitePhase === 'nibbling') {
+        // Petites tapes : le bouchon plonge un peu, plusieurs fois de suite.
+        biteNibbleTimer += dt;
+        floatGroup.position.y = 0.1 - Math.abs(Math.sin(biteNibbleTimer * 9)) * 0.18;
+        setFloatOpacity(1);
+        if (biteNibbleTimer >= BITE_NIBBLE_DURATION) {
             bitePhase = 'sinking';
             biteSinkTimer = 0;
             biteHint.textContent = 'MAINTENANT !';
@@ -1945,6 +2311,9 @@ function updateFish(dt, time) {
     baitInterest = false;
     fishes.forEach(fish => {
         const data = fish.userData;
+        if (fish === heldFish) {
+            return; // le poisson en main est posé par le joueur
+        }
         if (data.biting) {
             fish.position.x = floatGroup.position.x + Math.sin(time * 20) * 0.12;
             fish.position.z = floatGroup.position.z + Math.cos(time * 18) * 0.12;
@@ -2152,18 +2521,15 @@ function updateFloat(dt, time) {
             // poisson ne peut mordre (il faut relancer pour en prendre un).
         } else {
             if (hookedFish) {
-                scene.remove(hookedFish);
-                const idx = fishes.indexOf(hookedFish);
-                if (idx >= 0) {
-                    fishes.splice(idx, 1);
-                }
-                hookedFish = null;
-                spawnFish();
+                // Poisson amené au bord : on le garde en main, il faudra le
+                // lancer dans la bourriche pour le ranger.
+                startHoldingFish(hookedFish);
+            } else {
+                floatGroup.position.copy(floatIdle);
+                floatState = 'idle';
+                fishButton.disabled = false;
+                endCast();
             }
-            floatGroup.position.copy(floatIdle);
-            floatState = 'idle';
-            fishButton.disabled = false;
-            endCast();
         }
     }
     // La manivelle sert pendant l'épreuve de force ET pendant la remontée.
@@ -2206,6 +2572,11 @@ canvas.addEventListener('pointerdown', event => {
         return;
     }
     ensureSound();
+    // Poisson en main : on dose la puissance du lancer vers la bourriche.
+    if (floatState === 'holding') {
+        startFishThrow();
+        return;
+    }
     // Mode amorçage : un appui sur l'eau commence à charger la puissance.
     if (feedMode && floatState === 'idle') {
         if (feedState === 'idle') {
@@ -2244,6 +2615,10 @@ canvas.addEventListener('pointerup', event => {
     if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
         canvas.releasePointerCapture(event.pointerId);
     }
+    if (fishThrowState === 'charging') {
+        releaseFishThrow();
+        return;
+    }
     if (feedState === 'charging') {
         releaseFeed();
     }
@@ -2253,12 +2628,18 @@ canvas.addEventListener('pointercancel', event => {
     if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
         canvas.releasePointerCapture(event.pointerId);
     }
+    if (fishThrowState === 'charging') {
+        releaseFishThrow();
+    }
     cancelFeed();
 });
 
 // Filet de sécurité (téléphone) : si le relâchement n'arrive pas au canvas,
 // on le rattrape au niveau de la fenêtre.
 window.addEventListener('pointerup', () => {
+    if (fishThrowState === 'charging') {
+        releaseFishThrow();
+    }
     if (feedState === 'charging') {
         releaseFeed();
     }
@@ -2276,6 +2657,14 @@ biteView.addEventListener('pointerdown', hookFish);
 
 fishButton.addEventListener('click', () => {
     ensureSound();
+    if (floatState === 'holding') {
+        if (fishThrowState === 'charging') {
+            releaseFishThrow();
+        } else {
+            startFishThrow();
+        }
+        return;
+    }
     if (floatState === 'bite') {
         hookFish();
         return;
@@ -2300,6 +2689,14 @@ window.addEventListener('keydown', event => {
         ensureSound();
         if (feedMode) {
             return; // en mode amorçage, on lance avec la souris sur l'eau
+        }
+        if (floatState === 'holding') {
+            if (fishThrowState === 'charging') {
+                releaseFishThrow();
+            } else {
+                startFishThrow();
+            }
+            return;
         }
         if (floatState === 'bite') {
             hookFish();
@@ -2347,6 +2744,7 @@ function animate() {
         updateRod(dt);
         updateDayNight(dt);
         updateSplashes(dt);
+        updateFishThrow(dt);
         updateRipples(dt);
         updateLine();
     }
@@ -2366,7 +2764,7 @@ function animate() {
     camera.lookAt(cameraTarget);
     renderer.render(scene, camera);
     if (cameraMode === 'normal') {
-        updateFeedButtonPosition();
+        updateHudAnchors();
     }
 }
 
@@ -2426,6 +2824,31 @@ window.__game = {
     getBaitInterest: function () { return baitInterest; },
     getHookDepth: function () { return HOOK_DEPTH; },
     getFloatOpacity: function () { return floatBody.material.opacity; },
+    // Bourriche, carnet et lancer du poisson — exposé pour les tests.
+    getBourriche: function () {
+        return { x: BOURRICHE_POS.x, z: BOURRICHE_POS.z, radius: BOURRICHE_RADIUS };
+    },
+    getHeldFish: function () { return heldFish; },
+    getFishThrowState: function () { return fishThrowState; },
+    getFishThrowPower: function () { return fishThrowPower; },
+    getFishThrowTargetPower: function () { return fishThrowTarget; },
+    getFishThrowLanding: function () { return { x: fishThrowLanding.x, z: fishThrowLanding.z }; },
+    startFishThrow: startFishThrow,
+    setFishThrowPower: setFishThrowPower,
+    releaseFishThrow: releaseFishThrow,
+    storeHeldFish: storeHeldFish,
+    dropHeldFish: dropHeldFish,
+    getJournal: function () {
+        return {
+            total: journal.total, totalWeight: journal.totalWeight,
+            best: journal.best, last: journal.last.slice()
+        };
+    },
+    setDifficulty: setDifficulty,
+    getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW }; },
+    isJournalOpen: function () { return journalPanel.classList.contains('open'); },
+    showJournal: showJournal,
+    hideJournal: hideJournal,
     getChum: function () {
         return chum ? {
             x: chum.position.x,
@@ -2453,6 +2876,7 @@ window.__game = {
         updateRod(dt);
         updateDayNight(dt);
         updateSplashes(dt);
+        updateFishThrow(dt);
         updateRipples(dt);
         updateLine();
     }
