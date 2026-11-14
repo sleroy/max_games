@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=72 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=73 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=72';
+import { SoundEngine } from './sound.js?v=73';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -835,8 +835,39 @@ const waterUniforms = {
     uShallow: { value: new THREE.Color(0x5aa7b8) },
     uDeep: { value: new THREE.Color(0x103a4e) },
     uSky: { value: new THREE.Color(0xc4e2ee) },
-    uNormals: { value: makeWaterNormalTexture() }
+    uNormals: { value: makeWaterNormalTexture() },
+    uReflection: { value: null },
+    uResolution: { value: new THREE.Vector2(1280, 720) }
+    , uMirrorY: { value: 0 }
 };
+
+// ---------------------------------------------------------------------------
+// COUCHE 2 du rendu d'eau : REFLET PLANAIRE. Une caméra miroir (symétrique par
+// rapport au plan y = 0) rend la scène dans une petite cible, échantillonnée par
+// le shader et déformée par les normales. Basse résolution + une image sur deux,
+// désactivé sur mobile.
+// ---------------------------------------------------------------------------
+const waterReflectionTarget = new THREE.WebGLRenderTarget(320, 180, { depthBuffer: true });
+const waterMirrorCamera = new THREE.PerspectiveCamera(45, 16 / 9, 0.5, 400);
+const waterReflectionOn = !(typeof isMobileDevice === 'function' ? isMobileDevice() : false);
+let waterReflectionFrame = 0;
+function updateWaterReflection() {
+    if (!waterReflectionOn || !water) { return; }
+    waterReflectionFrame += 1;
+    if (waterReflectionFrame % 2 !== 0) { return; }
+    waterMirrorCamera.copy(camera);
+    waterMirrorCamera.position.y = -camera.position.y;
+    waterMirrorCamera.up.set(0, -1, 0);
+    waterMirrorCamera.lookAt(POND_CENTER.x, 0, POND_CENTER.z);
+    const precedent = (typeof renderer.getRenderTarget === 'function') ? renderer.getRenderTarget() : null;
+    const visibleAvant = water.visible;
+    water.visible = false;
+    renderer.setRenderTarget(waterReflectionTarget);
+    renderer.render(scene, waterMirrorCamera);
+    renderer.setRenderTarget(precedent);
+    water.visible = visibleAvant;
+    waterUniforms.uReflection.value = waterReflectionTarget.texture;
+}
 
 // Eau transparente avec des vagues dont l'amplitude et la vitesse suivent le
 // vent. La normale est calculée à partir du gradient de la houle (éclairage).
@@ -889,6 +920,8 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform vec3 uDeep;
         uniform vec3 uSky;
         uniform sampler2D uNormals;
+        uniform sampler2D uReflection;
+        uniform vec2 uResolution;
         uniform float uTime;
         uniform float uWind;
         uniform float uLight;
@@ -916,6 +949,12 @@ const waterMaterial = new THREE.ShaderMaterial({
             // Un peu de vaguelette : petites variations de teinte.
             col *= 0.94 + 0.06 * clamp(n.y, 0.0, 1.0);
             col = mix(col, uSky, fres * 0.45);
+            // REFLET du décor (couche 2) : distordu par les ridules.
+            if (uReflection != 0) {
+                vec2 uvRef = gl_FragCoord.xy / uResolution + vRipple.xy * 0.035;
+                vec3 reflet = texture2D(uReflection, clamp(uvRef, vec2(0.0), vec2(1.0))).rgb;
+                col = mix(col, reflet, (0.22 + fres * 0.45) * 0.9);
+            }
             // Reflets du décor (optionnels) : cube rendu de temps en temps.
             if (uReflect > 0.001) {
                 vec3 refl = reflect(-viewDir, n);
@@ -2696,7 +2735,7 @@ function releaseCast() {
         return;
     }
     // LANCER TROP FORT : la jauge au maximum casse la ligne (et coûte une vie).
-    if (castPower >= 0.96) {
+    if (castPower >= 0.995) {
         castState = 'idle';
         feedGauge.classList.remove('active');
         casserLigne('Lancer beaucoup trop fort');
@@ -5298,6 +5337,7 @@ majEtiquetteProfondeur();
 // Le jeu est initialisé : la coupe de l'eau (schéma) peut se dessiner.
 coupePrete = true;
 majCoupeProfondeur();
+waterUniforms.uResolution.value.set(window.innerWidth || 1280, window.innerHeight || 720);
 
 fishButton.addEventListener('click', () => {
     ensureSound();
@@ -5403,6 +5443,7 @@ function animate() {
         updateWeather(dt);
         updateAmbiante(dt, elapsed);
         updateReflections(dt);
+        updateWaterReflection();
         updateSplashes(dt);
         updateBubbles(dt);
         updateFishThrow(dt);
@@ -5450,7 +5491,7 @@ let testTime = 0;
 // classement local (3 onglets : poissons, poids total, records par espèce).
 // ---------------------------------------------------------------------------
 const MAX_LIGNES = 5;
-const VITESSE_MANIVELLE_MAX = 26;      // rad/s (~4 tours/s) : au-delà, ça force
+const VITESSE_MANIVELLE_MAX = 42;      // rad/s (~6,7 tours/s) : il faut vraiment forcer
 const RANKING_KEY = 'peche_max_games_classement';
 const NOM_KEY = 'peche_max_games_nom';
 let lignesRestantes = MAX_LIGNES;
@@ -5493,14 +5534,14 @@ function casserLigne(raison) {
 function avertirVitesse() {
     if (partieTerminee) { return; }
     const maintenant = performance.now();
-    if (maintenant - derniereAlerteVitesse < 800) { return; }   // 1 alerte / 0,8 s
+    if (maintenant - derniereAlerteVitesse < 1500) { return; }  // 1 alerte / 1,5 s
     derniereAlerteVitesse = maintenant;
     avertissementsVitesse += 1;
     if (avertissementsVitesse <= 3) {
         statusDisplay.textContent = '⚠️ Tu remontes trop vite ! La ligne souffre ('
             + avertissementsVitesse + ' avertissement' + (avertissementsVitesse > 1 ? 's' : '') + ').';
     }
-    if (rand() < 0.04 * avertissementsVitesse) {
+    if (rand() < Math.min(0.15, 0.02 * avertissementsVitesse)) {
         casserLigne('Tu as remonté trop vite');
     }
 }

@@ -12,7 +12,7 @@ export function run() {
     // 1) Lancer au maximum de la jauge = ligne cassée.
     resetToIdle();
     G().startCastCharge({ x: 0, y: 0, z: -25 });
-    G().setCastPower(0.99);
+    G().setCastPower(1);
     G().releaseCast();
     checkEqual('un lancer trop fort casse la ligne', G().getLignes(), 4);
     check('le jeu explique la casse', el('status').textContent.indexOf('trop fort') >= 0,
