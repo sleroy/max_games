@@ -200,6 +200,51 @@ button:disabled {
     border: 2px solid #111;
 }
 
+/* Zone dangereuse hachurée : lisible même en cas de daltonisme (forme + couleur). */
+.struggle-track::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 32%;
+    border-radius: 0 9px 9px 0;
+    background: repeating-linear-gradient(135deg,
+        rgba(255, 255, 255, 0.45) 0 5px, rgba(0, 0, 0, 0.12) 5px 10px);
+    pointer-events: none;
+}
+
+.struggle-legend {
+    margin-top: 4px;
+    font-size: 0.78em;
+    opacity: 0.9;
+}
+
+.drag-button {
+    margin-top: 8px;
+    pointer-events: auto;
+    background: rgba(20, 40, 60, 0.85);
+    border: 2px solid #7fd0ff;
+    color: #eaf6ff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 0.95em;
+    font-weight: bold;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.drag-button.active {
+    background: rgba(120, 60, 20, 0.9);
+    border-color: #ffd24d;
+    color: #fff3d0;
+}
+
+/* Le frein patine : la barre indique qu'on est en sécurité. */
+.struggle.slipping .struggle-track {
+    box-shadow: 0 0 10px rgba(255, 210, 77, 0.9);
+}
+
 .struggle-marker {
     position: absolute;
     top: -4px;

@@ -39,11 +39,22 @@ export function run() {
     checkEqual('manivelle cachée au repos', crankWidgetActive(), false);
     checkEqual('aucun combat en cours', G().getLineLength(), 0);
 
-    group('10) Lancer la ligne');
+    group('10) Lancer la ligne (au dosage)');
     resetToIdle();
     clearLilyPads();
     fire('gameCanvas', 'pointerdown', { button: 0, clientX: 640, clientY: 360 });
-    checkEqual('un clic sur l\'eau lance la ligne', state(), 'flying');
+    checkEqual('maintenir sur l’eau prépare le lancer', G().getCastState(), 'charging');
+    checkEqual('la ligne n’est pas encore lancée', state(), 'idle');
+    checkEqual('la jauge de lancer s’affiche', el('feedGauge').classList.contains('active'), true);
+    stepFor(0.2);
+    check('la puissance du lancer oscille', G().getCastPower() > 0, G().getCastPower().toFixed(2));
+    check('un repère indique la puissance pour atteindre la visée',
+        G().getCastTargetPower() > 0 && G().getCastTargetPower() < 1,
+        G().getCastTargetPower().toFixed(2));
+    G().setCastPower(G().getCastTargetPower());
+    fire('gameCanvas', 'pointerup', { button: 0 });
+    checkEqual('relâcher lance la ligne', state(), 'flying');
+    checkEqual('la jauge est refermée', el('feedGauge').classList.contains('active'), false);
     checkEqual('bouton désactivé pendant le vol', el('fishButton').disabled, true);
     checkEqual('texte d\'état', statusText(), 'Lancer…');
     stepFor(0.9, 0.05);
@@ -560,6 +571,44 @@ export function run() {
             - Math.min.apply(null, G().fishes.map(f => f.userData.longueurCm)) > 20,
         Math.min.apply(null, G().fishes.map(f => f.userData.longueurCm)) + ' à '
             + Math.max.apply(null, G().fishes.map(f => f.userData.longueurCm)) + ' cm');
+
+    group('29) Lancer au dosage et frein du moulinet');
+    resetToIdle();
+    clearLilyPads();
+    G().startCastCharge({ x: 0, y: 0, z: -70 });
+    checkEqual('la visée prépare le lancer', G().getCastState(), 'charging');
+    G().setCastPower(0.08);
+    G().releaseCast();
+    stepUntil(() => state() === 'inWater', 3);
+    const lancerCourt = castDistance();
+    resetToIdle();
+    clearLilyPads();
+    G().startCastCharge({ x: 0, y: 0, z: -70 });
+    G().setCastPower(0.95);
+    G().releaseCast();
+    stepUntil(() => state() === 'inWater', 3);
+    const lancerLoin = castDistance();
+    check('plus la puissance est forte, plus on lance loin',
+        lancerLoin > lancerCourt + 15,
+        lancerCourt.toFixed(1) + ' -> ' + lancerLoin.toFixed(1) + ' unités');
+    check('un lancer faible reste court', lancerCourt < 25, lancerCourt.toFixed(1) + ' unités');
+    resetToIdle();
+
+    // Frein : en lâchant du fil, le combat continue sans casser la ligne.
+    const grosPoisson = startFight(0, -20);
+    check('un poisson est ferré', !!grosPoisson);
+    const ligneAvant = G().getLineLength();
+    G().setDragLoosened(true);
+    checkEqual('le frein est lâché', G().isDragLoosened(), true);
+    stepFor(3);
+    checkEqual('le combat continue (la ligne n’a pas cassé)', state(), 'struggle');
+    check('le poisson reprend du fil', G().getLineLength() > ligneAvant,
+        ligneAvant.toFixed(1) + ' -> ' + G().getLineLength().toFixed(1) + ' unités');
+    check('la tension reste dans la zone sûre', G().getTension() <= 0.75,
+        G().getTension().toFixed(2));
+    G().setDragLoosened(false);
+    checkEqual('le frein est resserré', G().isDragLoosened(), false);
+    resetToIdle();
 }
 
 export default run;

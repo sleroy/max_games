@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=39">
+    <link rel="stylesheet" href="style.css?v=40">
 </head>
 <body>
     <div class="game-wrap">
@@ -77,6 +77,8 @@
                 </div>
                 <div class="struggle-timer" id="struggleTimer"></div>
                 <div class="struggle-hint" id="struggleHint">Tourne la manivelle pour ramener le poisson !</div>
+                <div class="struggle-legend">🟩 zone sûre · 🟨 attention (hachures) · ✖ la ligne casse</div>
+                <button class="drag-button" id="dragButton">🔓 Lâcher du fil</button>
             </div>
             <div class="hud-bottom">
                 <div class="status" id="status">Clique sur l'eau pour lancer la ligne.</div>
@@ -110,6 +112,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=39"></script>
+    <script type="module" src="script.js?v=40"></script>
 </body>
 </html>

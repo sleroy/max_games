@@ -31,6 +31,7 @@ const calmToggle = document.getElementById('calmToggle');
 const effectsToggle = document.getElementById('effectsToggle');
 const bourricheLabel = document.getElementById('bourricheLabel');
 const toolDock = document.getElementById('toolDock');
+const dragButton = document.getElementById('dragButton');
 
 const sound = new SoundEngine();
 
@@ -1651,6 +1652,112 @@ function updateFishThrow(dt) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Lancer de la canne au dosage (même jauge que l'amorce)
+// ---------------------------------------------------------------------------
+const CAST_MIN_RANGE = 7;      // portée mini (jauge à zéro)
+const CAST_MAX_RANGE = 52;     // portée maxi (jauge à fond)
+const CAST_OSC = 1.7;          // vitesse d'oscillation de la jauge
+
+let castState = 'idle';        // 'idle' | 'charging'
+let castPower = 0;
+let castTargetPower = 0;
+let castPhase = 0;
+const castAim = new THREE.Vector3(0, 0.1, -28);
+
+function castPowerForDistance(distance) {
+    return Math.max(0, Math.min(1,
+        (distance - CAST_MIN_RANGE) / (CAST_MAX_RANGE - CAST_MIN_RANGE)));
+}
+
+function castAimDistance() {
+    return Math.hypot(castAim.x - angler.position.x, castAim.z - angler.position.z);
+}
+
+function setCastPower(value) {
+    castPower = Math.max(0, Math.min(1, value));
+    feedGaugeFill.style.width = (castPower * 100).toFixed(0) + '%';
+}
+
+function startCastCharge(point) {
+    if (castState !== 'idle' || floatState !== 'idle' || feedMode) {
+        return;
+    }
+    castState = 'charging';
+    castPhase = 0;
+    castAim.set(point.x, 0.1, point.z);
+    castTargetPower = castPowerForDistance(castAimDistance());
+    setCastPower(0);
+    feedGauge.classList.add('active');
+    feedGaugeTarget.style.left = (castTargetPower * 100).toFixed(0) + '%';
+    ensureSound();
+    statusDisplay.textContent = 'Dose la puissance : relâche quand la jauge passe sur le repère !';
+}
+
+function moveCastAim(point) {
+    if (castState !== 'charging') {
+        return;
+    }
+    castAim.set(point.x, 0.1, point.z);
+    castTargetPower = castPowerForDistance(castAimDistance());
+    feedGaugeTarget.style.left = (castTargetPower * 100).toFixed(0) + '%';
+}
+
+function cancelCast() {
+    if (castState === 'charging') {
+        castState = 'idle';
+        feedGauge.classList.remove('active');
+        statusDisplay.textContent = 'Lancer annulé. Clique sur l’eau pour réessayer.';
+    }
+}
+
+function releaseCast() {
+    if (castState !== 'charging') {
+        return;
+    }
+    castState = 'idle';
+    feedGauge.classList.remove('active');
+    // Le point de chute dépend de la puissance choisie : c'est le geste à réussir.
+    const dx = castAim.x - angler.position.x;
+    const dz = castAim.z - angler.position.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const range = CAST_MIN_RANGE + castPower * (CAST_MAX_RANGE - CAST_MIN_RANGE);
+    startCast(new THREE.Vector3(
+        angler.position.x + (dx / d) * range, 0.1, angler.position.z + (dz / d) * range));
+}
+
+function updateCast(dt) {
+    if (castState !== 'charging') {
+        return;
+    }
+    castPhase += CAST_OSC * dt;
+    const m = ((castPhase % 2) + 2) % 2;
+    setCastPower(m < 1 ? m : 2 - m);
+}
+
+// ---------------------------------------------------------------------------
+// Frein du moulinet : on lâche du fil quand le poisson charge (la ligne ne
+// casse pas, mais le poisson reprend de la distance).
+// ---------------------------------------------------------------------------
+let dragLoosened = false;
+
+function setDragLoosened(value) {
+    dragLoosened = !!value;
+    dragButton.classList.toggle('active', dragLoosened);
+    strugglePanel.classList.toggle('slipping', dragLoosened);
+}
+
+dragButton.addEventListener('pointerdown', event => {
+    ensureSound();
+    if (dragButton.setPointerCapture && event && event.pointerId !== undefined) {
+        dragButton.setPointerCapture(event.pointerId);
+    }
+    setDragLoosened(true);
+});
+dragButton.addEventListener('pointerup', () => setDragLoosened(false));
+dragButton.addEventListener('pointercancel', () => setDragLoosened(false));
+dragButton.addEventListener('pointerleave', () => setDragLoosened(false));
+
 // --- Carnet : ouverture, difficulté, accessibilité -------------------------
 journalButton.addEventListener('click', () => {
     ensureSound();
@@ -2316,6 +2423,7 @@ function startStruggle(fish) {
     fish.userData.hooked = true;
     fish.userData.biting = false;
     floatState = 'struggle';
+    setDragLoosened(false);
     strugglePanel.classList.add('active');
     struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg';
     struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
@@ -2461,6 +2569,7 @@ function reelClick() {
 
 function endStruggle(success, timedOut) {
     strugglePanel.classList.remove('active');
+    setDragLoosened(false);
     fishButton.disabled = false;
     fishButton.textContent = 'Lancer la canne';
     struggle = null;
@@ -2503,9 +2612,18 @@ function updateStruggle(dt) {
         shake = 0.14;
     }
     // 3) La barre et la position du poisson suivent la longueur de fil sortie.
+    // 3) Frein : si on lâche du fil, le poisson reprend de la distance mais la
+    //    ligne ne casse pas (le frein patine).
+    if (dragLoosened) {
+        struggle.lineLength += 3.5 * dt;
+    }
     tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
-    // Fil tendu à l'extrême (barre tout à droite) : il casse, le poisson se décroche.
-    if (struggle.lineLength >= struggle.maxLength) {
+    if (dragLoosened) {
+        tension = Math.min(0.72, tension);
+    }
+    // Fil tendu à l'extrême (barre tout à droite) : il casse, le poisson se
+    // décroche — sauf si on a lâché du fil (le frein patine).
+    if (!dragLoosened && struggle.lineLength >= struggle.maxLength) {
         tension = 1;
         computeStrugglePos();
         updateStruggleBar();
@@ -2978,7 +3096,13 @@ canvas.addEventListener('pointermove', event => {
     const rect = canvas.getBoundingClientRect();
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    // Pendant la visée de l'amorce, on peut ajuster le point de chute.
+    // Pendant la visée (amorce ou lancer), on peut ajuster le point de chute.
+    if (castState === 'charging') {
+        const p = waterPointFromEvent(event);
+        if (p) {
+            moveCastAim(p);
+        }
+    }
     if (feedState === 'charging') {
         const p = waterPointFromEvent(event);
         if (p) {
@@ -3023,7 +3147,7 @@ canvas.addEventListener('pointerdown', event => {
     if (floatState === 'idle') {
         const p = waterPointFromEvent(event);
         if (p) {
-            startCast(p);
+            startCastCharge(p);   // on vise et on dose la puissance du lancer
         }
     } else if (floatState === 'inWater') {
         startReel();
@@ -3034,6 +3158,10 @@ canvas.addEventListener('pointerdown', event => {
 canvas.addEventListener('pointerup', event => {
     if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
         canvas.releasePointerCapture(event.pointerId);
+    }
+    if (castState === 'charging') {
+        releaseCast();
+        return;
     }
     if (fishThrowState === 'charging') {
         releaseFishThrow();
@@ -3048,6 +3176,7 @@ canvas.addEventListener('pointercancel', event => {
     if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
         canvas.releasePointerCapture(event.pointerId);
     }
+    cancelCast();
     if (fishThrowState === 'charging') {
         releaseFishThrow();
     }
@@ -3057,6 +3186,9 @@ canvas.addEventListener('pointercancel', event => {
 // Filet de sécurité (téléphone) : si le relâchement n'arrive pas au canvas,
 // on le rattrape au niveau de la fenêtre.
 window.addEventListener('pointerup', () => {
+    if (castState === 'charging') {
+        releaseCast();
+    }
     if (fishThrowState === 'charging') {
         releaseFishThrow();
     }
@@ -3077,6 +3209,10 @@ biteView.addEventListener('pointerdown', hookFish);
 
 fishButton.addEventListener('click', () => {
     ensureSound();
+    if (castState === 'charging') {
+        releaseCast();
+        return;
+    }
     if (floatState === 'holding') {
         if (fishThrowState === 'charging') {
             releaseFishThrow();
@@ -3097,7 +3233,7 @@ fishButton.addEventListener('click', () => {
         raycaster.setFromCamera(pointerNdc, camera);
         const hits = raycaster.intersectObject(water);
         if (hits.length) {
-            startCast(hits[0].point.clone());
+            startCastCharge(hits[0].point.clone());
         }
     } else if (floatState === 'inWater') {
         startReel();
@@ -3109,6 +3245,10 @@ window.addEventListener('keydown', event => {
         ensureSound();
         if (feedMode) {
             return; // en mode amorçage, on lance avec la souris sur l'eau
+        }
+        if (castState === 'charging') {
+            releaseCast();
+            return;
         }
         if (floatState === 'holding') {
             if (fishThrowState === 'charging') {
@@ -3130,7 +3270,7 @@ window.addEventListener('keydown', event => {
             raycaster.setFromCamera(pointerNdc, camera);
             const hits = raycaster.intersectObject(water);
             if (hits.length) {
-                startCast(hits[0].point.clone());
+                startCastCharge(hits[0].point.clone());
             }
         } else if (floatState === 'inWater') {
             startReel();
@@ -3165,6 +3305,7 @@ function animate() {
         updateDayNight(dt);
         updateSplashes(dt);
         updateFishThrow(dt);
+        updateCast(dt);
         updateRipples(dt);
         updateLine();
     }
@@ -3289,6 +3430,17 @@ window.__game = {
         });
     },
     poidsRealisteKilos: poidsRealisteKilos,
+    // Lancer au dosage et frein du moulinet — exposé pour les tests.
+    getCastState: function () { return castState; },
+    getCastPower: function () { return castPower; },
+    getCastTargetPower: function () { return castTargetPower; },
+    getCastAim: function () { return { x: castAim.x, z: castAim.z }; },
+    setCastPower: setCastPower,
+    startCastCharge: startCastCharge,
+    releaseCast: releaseCast,
+    cancelCast: cancelCast,
+    setDragLoosened: setDragLoosened,
+    isDragLoosened: function () { return dragLoosened; },
     setDifficulty: setDifficulty,
     getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW }; },
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },
@@ -3333,6 +3485,7 @@ window.__game = {
         updateDayNight(dt);
         updateSplashes(dt);
         updateFishThrow(dt);
+        updateCast(dt);
         updateRipples(dt);
         updateLine();
     }

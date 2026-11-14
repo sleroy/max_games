@@ -31,10 +31,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 
 ## Commandes
 
-- **Clic gauche sur l'eau** : lancer la ligne (le vent peut la décaler).
+- **Clic gauche sur l'eau** : **clique et maintiens** pour viser (une jauge de puissance oscille), puis **relâche au bon moment** : plus la puissance est forte, plus tu lances loin (le vent décale le lancer).
 - **Attendre qu'un poisson morde** : un poisson s'approche du bouchon et **mordille** (le bouchon plonge par petites tapes) avant de l'enfoncer franchement — la vue se rapproche alors et le bouchon coule.
 - **Un seul clic** pour ferrer : clique au bon moment (pendant l'enfoncement). Trop tôt → le poisson s'enfuit.
-- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson — cliquer ne sert plus à rien pendant le combat.**
+- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
 - **Manivelle** (en bas à droite pendant l'épreuve de force et la remontée) : fais glisser la poignée en cercle pour ramener la ligne. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
   alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
@@ -89,6 +89,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   3D**, sa **texture d'écailles**, ses couleurs, sa **longueur réelle** et sa
   **combativité**. Le poids est calculé avec la formule des pêcheurs
   (`poids ≈ K × longueur³ / 100 000`), et le **carnet note l'espèce** de chaque prise.
+- **Lancer au dosage** : le lancer de la canne se fait comme l'amorçage (viser, maintenir,
+  relâcher quand la jauge passe sur le repère) — un vrai geste à réussir.
+- **Frein du moulinet** : bouton « 🔓 Lâcher du fil » pendant le combat (le poisson
+  reprend de la ligne mais elle ne casse pas).
+- **Barre de tension accessible** : zone dangereuse **hachurée** + légende à symboles
+  (🟩 🟨 ✖) : lisible même en cas de daltonisme.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
