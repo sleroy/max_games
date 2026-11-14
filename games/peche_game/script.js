@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=84 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=85 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=84';
+import { SoundEngine } from './sound.js?v=85';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -949,7 +949,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         varying float vDepth;
         // Hauteur de la houle + son gradient (pour la normale).
         float waveHeight(vec2 p, float t, out vec2 grad) {
-            float amp = 0.08 * (0.5 + uWind * 1.4);
+            float amp = 0.11 * (0.5 + uWind * 1.4);
             vec2 d = normalize(uWindDir + vec2(0.0001, 0.0));
             vec2 perp = vec2(-d.y, d.x);
             float a = dot(p, d) * 0.30 - t * (1.1 + uWind * 2.6);
@@ -1030,7 +1030,7 @@ const waterMaterial = new THREE.ShaderMaterial({
             col *= mix(vec3(0.30, 0.36, 0.48), vec3(1.0), uLight);
             vec3 sunDir = normalize(vec3(0.4, 1.0, -0.6));
             vec3 halfDir = normalize(viewDir + sunDir);
-            float spec = pow(max(dot(n, halfDir), 0.0), 90.0) * (0.10 + uWind * 0.30) * uLight;
+            float spec = pow(max(dot(n, halfDir), 0.0), 90.0) * (0.16 + uWind * 0.34) * uLight;
             col += vec3(spec);
             // Eau plus transparente : on voit la moitié inférieure du bouchon et
             // le bas de ligne sous la surface.
@@ -1220,6 +1220,10 @@ for (let i = 0; i < 40; i++) {
     const z = POND_CENTER.z + Math.sin(angle) * radius;
     // Laisse dégagé l'espace devant la caméra et le pêcheur.
     if (z > 5 && Math.abs(x) < 30) {
+        continue;
+    }
+    // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
+    if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < POND_RADIUS + 4) {
         continue;
     }
     addTree(x, z, 0.8 + rand() * 0.7);
