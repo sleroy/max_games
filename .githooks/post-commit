@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# Hook post-commit : pousse automatiquement la branche courante vers origin.
+# Activé via :  git config core.hooksPath .githooks
+# ---------------------------------------------------------------------------
+set -u
+
+# Ne rien faire si aucun remote n'est configuré
+if [ -z "$(git remote)" ]; then
+    exit 0
+fi
+
+# Ne rien faire pendant un rebase / merge / amend de masse
+if [ -d "$(git rev-parse --git-dir)/rebase-merge" ] \
+   || [ -d "$(git rev-parse --git-dir)/rebase-apply" ] \
+   || [ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]; then
+    exit 0
+fi
+
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+[ -z "$branch" ] && exit 0
+
+echo "⬆️  Push automatique vers origin/$branch ..."
+if git push origin "$branch"; then
+    echo "✅ Push effectué."
+else
+    echo "⚠️  Push automatique échoué (vérifiez 'gh auth login' ou l'accès réseau)."
+fi
