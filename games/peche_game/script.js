@@ -60,6 +60,17 @@ const STRUGGLE_MIN_FACTOR = 0.4;
 const STRUGGLE_MAX_FACTOR = 1.6;
 const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 
+// ---------------------------------------------------------------------------
+// Difficulté — un seul réglage à ajuster !
+//   1     = facile ; plus grand = plus dur.
+// En augmentant DIFFICULTY :
+//   • le poisson tire plus fort et reprend plus de fil (épreuve de force) ;
+//   • le temps de l'épreuve de force est plus court.
+// Le ferrage (fenêtre pour ferrer au bon moment) se règle à part, avec
+// BITE_WINDOW (plus bas dans le fichier).
+// ---------------------------------------------------------------------------
+const DIFFICULTY = 1.3;
+
 // Tours de manivelle effectués depuis le dernier appel (puis remis à zéro).
 function consumeCrankTurns() {
     const turns = crankRotationDelta / TWO_PI;
@@ -683,7 +694,9 @@ let bitePhase = 'floating';
 let biteViewTimer = 0;
 let biteSinkAt = 0;
 let biteSinkTimer = 0;
-const BITE_WINDOW = 0.5;
+// Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
+// poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
+const BITE_WINDOW = 0.4;
 let tension = 0.5;
 let struggle = null;
 let struggleTimeLeft = 0;
@@ -886,17 +899,18 @@ function startStruggle(fish) {
         maxLength: baseLength * STRUGGLE_MAX_FACTOR,
         // Le poisson reprend du fil (la ligne et la distance reculent) : une
         // vitesse de fond, plus des « coups » brusques de temps en temps.
-        pullSpeed: Math.min(1.6, (0.4 + size * 0.6) * power),
-        burstDistance: (0.3 + size * 0.4) * power,
+        // La difficulté rend le poisson plus combatif : il tire plus fort.
+        pullSpeed: Math.min(2.0, (0.4 + size * 0.6) * power * DIFFICULTY),
+        burstDistance: (0.3 + size * 0.4) * power * DIFFICULTY,
         burstInterval: interval,
         burstTimer: interval,
         // Un clic = un petit coup de poignet, bien plus faible qu'un tour.
         clickDistance: 1.2
     };
     tension = Math.max(0, Math.min(1, lineLengthToTension(struggle.lineLength)));
-    // Temps limite, large : c'est surtout le fil trop tendu (le poisson qui
-    // prend du fil) qui fait perdre le poisson, pas le chrono.
-    struggleTimeLeft = Math.min(25, Math.max(6, baseLength * 0.7));
+    // Temps limite : assez large pour jouer à la souris, mais il faut vraiment
+    // ramener le poisson — et le chrono se resserre quand DIFFICULTY augmente.
+    struggleTimeLeft = Math.min(22, Math.max(6, (baseLength * 0.65) / DIFFICULTY));
     updateStruggleTimer();
     computeStrugglePos();
     floatGroup.position.copy(strugglePos);

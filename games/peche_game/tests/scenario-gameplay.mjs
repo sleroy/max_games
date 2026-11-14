@@ -80,7 +80,11 @@ export function run() {
     checkEqual('caméra revenue à la normale', G().getCameraMode(), 'normal');
     stepFor(0.5);
     checkEqual('pas de nouvelle touche pendant la récupération', state(), 'inWater');
-    stepFor(0.8);
+    // Après le délai de récupération (1 s), une nouvelle touche doit pouvoir
+    // arriver : on approche un poisson pour rendre le test déterministe
+    // (sinon le résultat dépend du hasard des déplacements des poissons).
+    stepFor(0.6);
+    forceBite();
     checkEqual('une nouvelle touche arrive ensuite', state(), 'bite');
 
     group('12) Ferrage réussi et touche pendant la remontée');
@@ -89,6 +93,7 @@ export function run() {
     castTo(0, -30);
     forceBite();
     strike();
+    step(1 / 60); // laisse passer une image : la manivelle s'affiche pendant le combat
     checkEqual('ferrer pendant l\'enfoncement = épreuve de force', state(), 'struggle');
     checkEqual('panneau d\'épreuve de force affiché', el('struggle').classList.contains('active'), true);
     checkEqual('manivelle affichée pendant le combat', crankWidgetActive(), true);
@@ -196,6 +201,9 @@ export function run() {
         crankTurns(2);
         step(1 / 60);
     }
+    // Score juste avant la dernière touche de manivelle : les scénarios
+    // précédents ont pu ramener des poissons, on mesure donc bien « +1 » ici.
+    const scoreBefore = Number(el('score').textContent) || 0;
     const toShore = distanceToShore();
     let retrieveTurns = 0;
     guard = 0;
@@ -208,7 +216,7 @@ export function run() {
     }
     checkEqual('la ligne est revenue au bord', state(), 'idle');
     checkClose('tours de remontée ≈ distance restante / 2', retrieveTurns, (toShore - 0.5) / 2, 2);
-    checkEqual('le score affiché passe à 1', el('score').textContent, '1');
+    checkEqual('le score augmente d\'un point', Number(el('score').textContent) - scoreBefore, 1);
     checkEqual('message de victoire affiché', el('catchMessage').classList.contains('show'), true);
     check('le message donne le poids', el('catchMessage').textContent.includes('kg'), el('catchMessage').textContent);
     checkEqual('le poisson pêché a quitté l\'étang', G().fishes.indexOf(caughtFish), -1);

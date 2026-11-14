@@ -50,6 +50,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - Les poissons perdus deviennent plus agressifs, plus rapides et plus rouges.
 - **Manivelle** (tours proportionnels à la distance) pendant l'épreuve de force et la remontée.
 - **Effets sonores** procéduraux (Web Audio API, sans fichier externe).
+- **Difficulté réglable** : une seule constante, `DIFFICULTY` en haut de `script.js`
+  (1 = facile, plus grand = plus dur), rend le poisson plus combatif et resserre le
+  chrono du combat. La fenêtre de ferrage se règle à part avec `BITE_WINDOW`.
 - Plein écran et HUD en surimpression.
 
 ## Structure
