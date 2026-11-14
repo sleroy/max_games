@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=88';
+import { SoundEngine } from './sound.js?v=89';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -511,6 +511,43 @@ document.addEventListener('gesturestart', event => event.preventDefault());
 resize();
 
 // ---------------------------------------------------------------------------
+// SOLEIL : orientation FIXE du monde (idee 2 de idees.md).
+// L'azimut se lit comme sur une boussole : 0° = nord, 90° = est, 180° = sud,
+// 270° = ouest. Le nord correspond à l'axe -z (le haut de l'écran au poste sud).
+// 225° = sud-ouest, exactement ce qu'annonce la boussole du HUD.
+// ---------------------------------------------------------------------------
+const SUN_AZIMUT = 225;
+const NOMS_AZIMUT = {
+    0: 'nord', 45: 'nord-est', 90: 'est', 135: 'sud-est',
+    180: 'sud', 225: 'sud-ouest', 270: 'ouest', 315: 'nord-ouest'
+};
+
+function azimutTexte(valeur) {
+    const normalise = ((valeur % 360) + 360) % 360;
+    return NOMS_AZIMUT[normalise] || (normalise + '°');
+}
+
+// Direction HORIZONTALE (x, z) vers le soleil pour un azimut donné.
+function directionAzimut(azimut) {
+    const a = (azimut * Math.PI) / 180;
+    return { x: Math.sin(a), z: -Math.cos(a) };
+}
+
+// Direction 3D de référence (élévation de « midi ») : sert d'état initial au
+// reflet solaire de l'eau, avant la première image.
+function directionSoleil3D(cible) {
+    const a = (SUN_AZIMUT * Math.PI) / 180;
+    const elevation = (42 * Math.PI) / 180;
+    return cible.set(
+        Math.sin(a) * Math.cos(elevation),
+        Math.sin(elevation),
+        -Math.cos(a) * Math.cos(elevation)
+    );
+}
+
+const SUN_DIRECTION = directionAzimut(SUN_AZIMUT);
+
+// ---------------------------------------------------------------------------
 // Lumières
 // ---------------------------------------------------------------------------
 // Lumière ambiante douce + lumière « ciel/sol » : les volumes sont plus naturels.
@@ -521,7 +558,7 @@ const skyLight = new THREE.HemisphereLight(0xcfe8ff, 0x3a5a3f, 0.5);
 scene.add(skyLight);
 
 const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.15);
-sunLight.position.set(40, 60, 20);
+sunLight.position.set(SUN_DIRECTION.x * 70, 73, SUN_DIRECTION.z * 70);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
 sunLight.shadow.camera.left = -70;
@@ -539,7 +576,7 @@ const sunMesh = new THREE.Mesh(
     new THREE.SphereGeometry(5, 24, 24),
     new THREE.MeshBasicMaterial({ color: 0xfff3b0 })
 );
-sunMesh.position.set(55, 55, -90);
+sunMesh.position.copy(sunLight.position).multiplyScalar(0.75);
 scene.add(sunMesh);
 
 // Halo du soleil
@@ -558,7 +595,7 @@ function makeGlowTexture() {
 }
 const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeGlowTexture(), transparent: true, depthWrite: false }));
 sunGlow.scale.set(70, 70, 1);
-sunGlow.position.set(55, 55, -90);
+sunGlow.position.copy(sunMesh.position);
 scene.add(sunGlow);
 
 // ---------------------------------------------------------------------------
@@ -577,21 +614,27 @@ function updateDayNight(dt) {
     dayPhase = (dayPhase + dt / DAY_LENGTH) % 1;
     const angle = dayPhase * Math.PI * 2;
     const daylight = Math.max(0, Math.sin(angle)); // 0 la nuit, 1 en plein jour
-    // Soleil : position, couleur et intensité.
-    sunLight.position.set(Math.cos(angle) * 70, 12 + daylight * 65, -60);
-    sunLight.intensity = 0.25 + daylight * 1.05;
+    // LUMINOSITÉ DU POSTE : le soleil est TOUJOURS au sud-ouest ; selon l'endroit
+    // où l'on pêche, on l'a dans le dos, de côté ou en plein contre-jour.
+    const exposition = expositionPoste();
+    // Soleil : azimut FIXE (sud-ouest), seule l'élévation suit le cycle du jour.
+    sunLight.position.set(SUN_DIRECTION.x * 70, 12 + daylight * 65, SUN_DIRECTION.z * 70);
+    sunLight.intensity = (0.25 + daylight * 1.05) * exposition;
     sunLight.color.copy(SUN_WARM).lerp(SUN_DAY, daylight);
     sunMesh.position.copy(sunLight.position).multiplyScalar(0.75);
     sunGlow.position.copy(sunMesh.position);
+    // La même direction pour le reflet solaire du shader d'eau (plus de valeur
+    // codée en dur : le soleil peut être ailleurs qu'au sud-ouest).
+    waterUniforms.uSunDir.value.copy(sunLight.position).normalize();
     // Ciel (dégradé), brume et fond.
     skyMat.uniforms.topColor.value.copy(SKY_TOP_NIGHT).lerp(SKY_TOP_DAY, daylight);
     skyMat.uniforms.bottomColor.value.copy(SKY_BOTTOM_NIGHT).lerp(SKY_BOTTOM_DAY, daylight);
     scene.background.copy(skyMat.uniforms.bottomColor.value);
     scene.fog.color.copy(skyMat.uniforms.bottomColor.value);
     // Lumières d'ambiance : la nuit reste assez claire pour jouer.
-    ambientLight.intensity = 0.42 + daylight * 0.22;
-    skyLight.intensity = 0.38 + daylight * 0.30;
-    waterUniforms.uLight.value = 0.35 + daylight * 0.65;
+    ambientLight.intensity = (0.42 + daylight * 0.22) * (0.94 + exposition * 0.06);
+    skyLight.intensity = (0.38 + daylight * 0.30) * (0.96 + exposition * 0.04);
+    waterUniforms.uLight.value = (0.35 + daylight * 0.65) * exposition;
 }
 
 // ---------------------------------------------------------------------------
@@ -880,6 +923,9 @@ const waterUniforms = {
     uWindDir: { value: new THREE.Vector2(1, 0) },
     uWind: { value: 0 },
     uLight: { value: 1 },
+    // Direction NORMALISÉE (du plan d'eau vers le soleil) : elle suit l'azimut
+    // fixe du soleil et son élévation, au lieu d'être codée en dur dans le shader.
+    uSunDir: { value: directionSoleil3D(new THREE.Vector3()) },
     uEnv: { value: null },
     uReflect: { value: 0 },
     uShallow: { value: new THREE.Color(0x3d7d92) },
@@ -999,6 +1045,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform float uTime;
         uniform float uWind;
         uniform float uLight;
+        uniform vec3 uSunDir;
         uniform samplerCube uEnv;
         uniform float uReflect;
         varying vec3 vWorldPos;
@@ -1036,8 +1083,7 @@ const waterMaterial = new THREE.ShaderMaterial({
             }
             // La nuit, l'eau s'assombrit (cohérent avec la lumière de la scène).
             col *= mix(vec3(0.30, 0.36, 0.48), vec3(1.0), uLight);
-            vec3 sunDir = normalize(vec3(0.4, 1.0, -0.6));
-            vec3 halfDir = normalize(viewDir + sunDir);
+            vec3 halfDir = normalize(viewDir + uSunDir);
             float spec = pow(max(dot(n, halfDir), 0.0), 90.0) * (0.16 + uWind * 0.34) * uLight;
             col += vec3(spec);
             // Eau plus transparente : on voit la moitié inférieure du bouchon et
@@ -2092,12 +2138,23 @@ scene.add(bourriche);
 //   delta = rotation autour du centre (0 = poste historique, au sud).
 // ---------------------------------------------------------------------------
 const POSTES = [
+    // `exposition` module la lumière du soleil ET la luminosité de l'eau :
+    //  - sud   : soleil dans le dos (référence, lumière franche) ;
+    //  - est   : soleil de côté (un peu plus doux) ;
+    //  - nord  : contre-jour (l'eau est plus sombre) ;
+    //  - ouest : plein soleil dans le dos (le plus lumineux).
     { id: 'sud', nom: 'Sud', delta: 0, exposition: 1.00 },
-    { id: 'est', nom: 'Est', delta: Math.PI / 2, exposition: 1.03 },
-    { id: 'nord', nom: 'Nord', delta: Math.PI, exposition: 0.92 },
-    { id: 'ouest', nom: 'Ouest', delta: -Math.PI / 2, exposition: 1.05 }
+    { id: 'est', nom: 'Est', delta: Math.PI / 2, exposition: 0.96 },
+    { id: 'nord', nom: 'Nord', delta: Math.PI, exposition: 0.90 },
+    { id: 'ouest', nom: 'Ouest', delta: -Math.PI / 2, exposition: 1.04 }
 ];
 let posteActuel = 0;
+
+// Exposition lumineuse du poste demandé (par défaut : le poste courant).
+function expositionPoste(index) {
+    const poste = POSTES[(typeof index === 'number') ? index : posteActuel];
+    return poste ? poste.exposition : 1;
+}
 
 // Positions de référence du poste SUD (les valeurs historiques du jeu). On les
 // fait tourner autour de l'étang pour obtenir les trois autres postes.
@@ -2127,8 +2184,8 @@ function majEtiquettePoste() {
         return;
     }
     const poste = POSTES[posteActuel];
-    compassDisplay.textContent = '🧭 Nord en haut · ☀️ soleil au sud-ouest · 📍 poste '
-        + poste.nom.toLowerCase();
+    compassDisplay.textContent = '🧭 Nord en haut · ☀️ soleil au ' + azimutTexte(SUN_AZIMUT)
+        + ' · 📍 poste ' + poste.nom.toLowerCase();
 }
 
 const posteBoutons = [
@@ -6200,6 +6257,21 @@ window.__game = {
     getRodBase: function () { return { x: rodBase.x, y: rodBase.y, z: rodBase.z }; },
     getCameraTarget: function () { return { x: cameraTarget.x, y: cameraTarget.y, z: cameraTarget.z }; },
     getGirouette: function () { return { x: vaneGroup.position.x, z: vaneGroup.position.z }; },
+    // Soleil directionnel et lumière du poste (idee 2) — exposés pour les tests.
+    getSoleil: function () {
+        const direction = waterUniforms.uSunDir.value;
+        return {
+            azimut: SUN_AZIMUT,
+            libelle: azimutTexte(SUN_AZIMUT),
+            direction: { x: direction.x, y: direction.y, z: direction.z },
+            position: { x: sunLight.position.x, y: sunLight.position.y, z: sunLight.position.z },
+            intensite: sunLight.intensity,
+            exposition: expositionPoste(),
+            lumiereEau: waterUniforms.uLight.value,
+            ambiance: ambientLight.intensity
+        };
+    },
+    getExpositionPoste: function (index) { return expositionPoste(index); },
     couleurEau: couleurEau,
     getFondDoubleFace: function () { return pondBottom.material.side === THREE.DoubleSide; },
     getEauCouleurs: function () {

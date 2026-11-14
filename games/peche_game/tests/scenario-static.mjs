@@ -112,6 +112,15 @@ export function run() {
     check('les textures sont chargées en local (aucun CDN)',
         script.includes("chargerTexture('ecorce.jpg'") && script.includes("chargerTexture('eau-normales.jpg'")
         && !/https?:\/\/[^'"]+\.(jpg|png)/.test(script));
+
+    group('6) Soleil directionnel (idee 2)');
+    check('l’azimut du soleil est une constante (225° = sud-ouest)',
+        script.includes('const SUN_AZIMUT = 225'));
+    check('le shader d’eau reçoit la direction du soleil (uniforme uSunDir)',
+        script.includes('uniform vec3 uSunDir') && script.includes('viewDir + uSunDir'));
+    check('plus aucune direction solaire codée en dur dans le shader',
+        !script.includes('normalize(vec3(0.4, 1.0, -0.6))'));
+
 }
 
 export default run;
