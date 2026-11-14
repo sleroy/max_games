@@ -463,8 +463,9 @@ export function run() {
         stepUntil(() => G().getBitePhase() === 'fausse', 15), G().getBitePhase());
     check('une vraie touche finit par arriver',
         stepUntil(() => G().getBitePhase() === 'touche', 45), G().getBitePhase());
-    check('la touche est un enfoncement ou une remontée',
-        ['enfoncement', 'remontee'].indexOf(G().getBiteTouchType()) >= 0, G().getBiteTouchType());
+    check('la vraie touche vient du catalogue',
+        G().getTouches().some(t => t.vrai && t.id === G().getBiteTouchId()),
+        G().getBiteTouchName() + ' (' + G().getBiteTouchType() + ')');
     stepFor(0.08);
     check('le bouchon bouge vraiment (il coule ou il remonte)',
         Math.abs(G().floatGroup.position.y - 0.1) > 0.05 || Math.abs(G().floatGroup.rotation.z) > 0.1,

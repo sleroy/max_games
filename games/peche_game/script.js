@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=48 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=49 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=48';
+import { SoundEngine } from './sound.js?v=49';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -35,6 +35,7 @@ const bourricheLabel = document.getElementById('bourricheLabel');
 const xpLabel = document.getElementById('xpLabel');
 const shopXp = document.getElementById('shopXp');
 const boutique = document.getElementById('boutique');
+const ficheTouches = document.getElementById('ficheTouches');
 const toolDock = document.getElementById('toolDock');
 const dragButton = document.getElementById('dragButton');
 const journalEspeces = document.getElementById('journalEspeces');
@@ -1809,6 +1810,27 @@ function renderBoutique() {
     boutique.innerHTML = html;
 }
 
+// Fiche « comment reconnaître les touches » : le petit livre du pêcheur.
+// On y retrouve tout le catalogue, séparé en fausses et vraies touches.
+function renderFicheTouches() {
+    if (!ficheTouches) {
+        return;
+    }
+    let html = '';
+    [false, true].forEach(function (vrai) {
+        html += '<div class="touch-titre' + (vrai ? ' vrai' : '') + '">'
+            + (vrai ? '✅ VRAIES touches — il faut ferrer !' : '❌ Fausses touches — ne ferre pas')
+            + '</div>';
+        TOUCHES.forEach(function (t) {
+            if (t.vrai !== vrai) {
+                return;
+            }
+            html += '<div class="touch-item"><b>' + t.nom + '</b><span>' + t.desc + '</span></div>';
+        });
+    });
+    ficheTouches.innerHTML = html;
+}
+
 // Un seul écouteur pour toute la boutique (les boutons sont recréés souvent).
 boutique.addEventListener('click', event => {
     const cible = event.target;
@@ -2872,8 +2894,11 @@ let biteViewTimer = 0;
 let biteSinkAt = 0;
 let biteViewHideTimer = -1;         // fermeture différée de la touche (après un raté)
 let biteNibbleTimer = 0;
-let biteToucheType = 'enfoncement'; // 'enfoncement' | 'remontee'
-let biteFauxType = 'partiel';
+let biteTouche = null;              // la VRAIE touche en cours (objet du catalogue)
+let biteFauxTouche = null;          // la fausse touche en cours
+const biteOrigine = new THREE.Vector3();  // position du bouchon au début du mouvement
+let biteRetourY = 0.1;              // hauteur du bouchon quand la fenêtre se referme
+let biteRetourRot = 0;              // inclinaison à ce moment-là
 let biteSignauxRestants = 1;
 let biteSignalTimer = 0;
 let biteSignalDuree = 0.5;
@@ -2889,6 +2914,165 @@ const BITE_NIBBLE_DURATION = 0.6;
 // ratée. Comptée par la boucle de jeu (et plus courte que le temps de
 // récupération) pour ne jamais refermer une NOUVELLE touche par erreur.
 const BITE_VIEW_LINGER = 0.7;
+// ---------------------------------------------------------------------------
+// CATALOGUE DES TOUCHES — comment bouge un VRAI bouchon
+// ---------------------------------------------------------------------------
+// Comme au bord de l'eau, le bouchon est plombé : seule sa tige dépasse. Un
+// poisson qui SOULÈVE l'appât fait monter le bouchon (« ascenseur ») ; un poisson
+// qui tire vers le fond ou de côté le fait plonger ou partir. Tant qu'il ne fait
+// que renifler, tapoter ou frôler la ligne, le bouchon ne fait que frémir :
+// CE N'EST PAS LE MOMENT de ferrer. Tout le jeu est de reconnaître le dessin…
+//
+//   forme  : dessin du mouvement (voir mouvementDeTouche)
+//   a      : amplitude (unités ; le bouchon mesure ~3,5 unités avec sa tige)
+//   duree  : durée du mouvement (s) — long = poisson calme, court = poisson vif
+//   rot    : inclinaison maximale (radians ; 1,35 ≈ couché sur le côté)
+//   derive : déplacement latéral (unités)
+//   vrai   : faut-il FERRER quand on voit ça ?
+//   famille: 'enfoncement' | 'remontee' | 'couchage' | 'derive' | 'fausse'
+//   qui    : quels poissons font ça ('tous' | 'petit' | 'gros' | 'vif')
+const TOUCHES = [
+    // ---------- FAUSSES TOUCHES : le bouchon bouge, mais ce n'est PAS le moment
+    { id: 'frisson', nom: 'Frémissement', forme: 'frisson', a: 0.5, duree: 1.4,
+      vrai: false, famille: 'fausse', qui: 'tous',
+      desc: 'Le bouchon vibre sur place sans s’enfoncer : un poisson a frôlé la ligne.' },
+    { id: 'tapote', nom: 'Tapotement', forme: 'pulse', coups: 3, a: 0.6, duree: 1.5,
+      vrai: false, famille: 'fausse', qui: 'petit',
+      desc: 'Deux ou trois petits coups secs vers le bas : il goûte l’esche et la recrache.' },
+    { id: 'danse', nom: 'Danse du bouchon', forme: 'pulse', coups: 4, a: 0.55, duree: 1.8,
+      vrai: false, famille: 'fausse', qui: 'petit',
+      desc: 'Il sautille vite et sans s’enfoncer : les ablettes attaquent l’esche.' },
+    { id: 'enfonce_partiel', nom: 'Enfoncement partiel', forme: 'sinus', a: 1.0, duree: 1.7,
+      vrai: false, famille: 'enfoncement', qui: 'tous',
+      desc: 'Il plonge à moitié, puis remonte tout seul : le poisson a lâché l’esche.' },
+    { id: 'fausse_remontee', nom: 'Fausse remontée', forme: 'montee_retour', a: 0.8, duree: 1.6,
+      vrai: false, famille: 'remontee', qui: 'tous',
+      desc: 'Il monte un peu puis se repose : l’appât a été soulevé puis relâché.' },
+    { id: 'couchage_manque', nom: 'Couchage manqué', forme: 'couchage_retour', rot: 1.2, a: 0.3, duree: 1.6,
+      vrai: false, famille: 'couchage', qui: 'tous',
+      desc: 'Il s’allonge un instant sur l’eau puis se redresse : la ligne s’est détendue.' },
+    { id: 'derive', nom: 'Dérive', forme: 'derive', a: 0.35, derive: 0.9, duree: 2.2,
+      vrai: false, famille: 'derive', qui: 'tous',
+      desc: 'Il s’en va doucement de côté sans s’enfoncer : le courant pousse la ligne.' },
+    { id: 'double_coup', nom: 'Deux coups', forme: 'double', a: 0.8, duree: 1.9,
+      vrai: false, famille: 'enfoncement', qui: 'gros',
+      desc: 'Il plonge deux fois à la même profondeur : un poisson méfiant qui essaie l’esche.' },
+    { id: 'hesitation', nom: 'Touche hésitante', forme: 'hesitation', a: 0.9, duree: 2.1,
+      vrai: false, famille: 'enfoncement', qui: 'gros',
+      desc: 'Il descend par petits à-coups, hésite, puis remonte : le poisson n’est pas décidé.' },
+    { id: 'tourne_sur_place', nom: 'Il tourne sur place', forme: 'tourner', a: 0.3, derive: 0.7, duree: 2.0,
+      vrai: false, famille: 'derive', qui: 'gros',
+      desc: 'Le bouchon décrit un petit cercle : un poisson tourne autour de l’esche.' },
+    // ---------- VRAIES TOUCHES : c'est MAINTENANT qu'il faut ferrer
+    { id: 'coulee_franche', nom: 'Coulée franche', forme: 'descente', a: 2.2, duree: 0.5,
+      vrai: true, famille: 'enfoncement', qui: 'tous',
+      desc: 'Il s’enfonce d’un coup et RESTE sous l’eau : la touche classique, à ferrer !' },
+    { id: 'ascenseur', nom: 'Ascenseur (remontée)', forme: 'montee', a: 1.8, duree: 0.6,
+      vrai: true, famille: 'remontee', qui: 'tous',
+      desc: 'Il MONTE franchement (brème, tanche) : le poisson a soulevé les plombs. Ferrer !' },
+    { id: 'coulee_lente', nom: 'Coulée lente et lourde', forme: 'descente', a: 2.2, duree: 0.85,
+      vrai: true, famille: 'enfoncement', qui: 'gros',
+      desc: 'Il descend lentement, sans s’arrêter : le gros poisson part avec l’esche.' },
+    { id: 'file_sous_leau', nom: 'Il file sous l’eau', forme: 'file', a: 2.0, derive: 0.9, duree: 0.6,
+      vrai: true, famille: 'derive', qui: 'vif',
+      desc: 'Il coule ET part de côté (perche, brochet) : le poisson détale. Ferrer vite !' },
+    { id: 'couchage_franc', nom: 'Il se couche franchement', forme: 'couchage', rot: 1.35, a: 0.35, duree: 0.6,
+      vrai: true, famille: 'couchage', qui: 'tous',
+      desc: 'Il s’allonge complètement sur le côté : le poisson part au ras de l’eau. Ferrer !' },
+    { id: 'enfoncement_sec', nom: 'Enfoncement sec', forme: 'descente', a: 2.5, duree: 0.35,
+      vrai: true, famille: 'enfoncement', qui: 'vif',
+      desc: 'Il disparaît d’un coup, très vite : un poisson vif a emporté l’esche.' },
+    { id: 'remontee_seche', nom: 'Remontée sèche', forme: 'montee', a: 2.0, duree: 0.4,
+      vrai: true, famille: 'remontee', qui: 'vif',
+      desc: 'Il ressort d’un coup, très haut : les plombs ont été soulevés d’un seul geste.' }
+];
+
+const TOUCHES_PAR_ID = {};
+TOUCHES.forEach(function (touche) { TOUCHES_PAR_ID[touche.id] = touche; });
+
+// Dessine le mouvement d'une touche : `p` va de 0 (début) à 1 (fin).
+// Renvoie un déplacement { y, rot, dx, dz }. Tout est LISSE : aucun à-coup.
+//   lisse = 0 → 1 → 0 (le bouchon revient)   tenue = 0 → 1 (il reste)
+function mouvementDeTouche(touche, p, bouchonCourt) {
+    const a = touche.a || 0;
+    const rot = touche.rot || 0;
+    const der = touche.derive || 0;
+    const lisse = Math.sin(Math.PI * p);
+    const tenue = Math.sin(Math.PI * 0.5 * p);
+    switch (touche.forme) {
+        case 'frisson':
+            return { y: -a * Math.abs(Math.sin(Math.PI * 3 * p)) * lisse };
+        case 'pulse':
+            return { y: -a * Math.abs(Math.sin(Math.PI * (touche.coups || 3) * p)) * lisse };
+        case 'sinus':
+            return { y: -a * lisse };
+        case 'double':
+            return { y: -a * Math.abs(Math.sin(Math.PI * 2 * p)) * lisse };
+        case 'hesitation':
+            return { y: -a * lisse * (0.65 + 0.35 * Math.sin(Math.PI * 3 * p)) };
+        case 'derive':
+            return { y: -a * lisse, dx: der * lisse, dz: der * 0.35 * lisse };
+        case 'tourner':
+            return { y: -a * lisse, dx: der * Math.sin(2 * Math.PI * p),
+                dz: der * (1 - Math.cos(2 * Math.PI * p)) * 0.5 };
+        case 'couchage_retour':
+            return { y: a * 0.3 * lisse, rot: rot * lisse };
+        case 'couchage':
+            return { y: a * tenue, rot: rot * tenue };
+        case 'montee':
+            if (bouchonCourt) {
+                // Un bouchon court ne peut pas « sortir sa tige » : il se couche.
+                return { y: a * 0.25 * tenue, rot: Math.min(1.35, 1.2 * tenue) };
+            }
+            return { y: a * tenue };
+        case 'montee_retour':
+            if (bouchonCourt) {
+                return { y: a * 0.2 * lisse, rot: 1.1 * lisse };
+            }
+            return { y: a * lisse };
+        case 'descente_lente':
+            return { y: -a * p * p };
+        case 'file':
+            return { y: -a * tenue, dx: der * tenue, dz: der * 0.4 * tenue };
+        case 'descente':
+        default:
+            return { y: -a * tenue };
+    }
+}
+
+// Applique un mouvement au bouchon (hauteur, inclinaison, dérive avec le vent).
+function appliquerMouvement(m) {
+    floatGroup.position.y = 0.1 + (m.y || 0);
+    floatGroup.rotation.z = m.rot || 0;
+    if (m.dx || m.dz) {
+        const c = Math.cos(wind.dir);
+        const s = Math.sin(wind.dir);
+        floatGroup.position.x = biteOrigine.x + (m.dx || 0) * c - (m.dz || 0) * s;
+        floatGroup.position.z = biteOrigine.z + (m.dx || 0) * s + (m.dz || 0) * c;
+    }
+}
+
+// Chaque poisson a ses habitudes : un petit poisson « tapote », un gros « coule »
+// lentement ou se couche, un poisson vif emporte l'esche.
+function profilPoisson(taille, agressivite) {
+    if (taille < 0.55) {
+        return 'petit';
+    }
+    return (agressivite > 1.05) ? 'vif' : 'gros';
+}
+
+// Tire une touche du catalogue : vraie ou fausse, selon le poisson.
+function choisirTouche(vrai, taille, agressivite) {
+    const profil = profilPoisson(taille, agressivite);
+    let pool = TOUCHES.filter(function (t) {
+        return t.vrai === vrai && (t.qui === 'tous' || t.qui === profil);
+    });
+    if (!pool.length) {
+        pool = TOUCHES.filter(function (t) { return t.vrai === vrai; });
+    }
+    return pool[Math.floor(rand() * pool.length)];
+}
+
 let tension = 0.5;
 let struggle = null;
 let struggleTimeLeft = 0;
@@ -3164,7 +3348,8 @@ function showBiteView(fish) {
     biteSignauxRestants = cap.fausses >= 1
         ? signauxBase
         : Math.max(1, Math.round(signauxBase * cap.fausses));
-    biteToucheType = rand() < 0.5 ? 'enfoncement' : 'remontee';
+    // Le poisson a ses habitudes : quelle « touche » aura-t-on cette fois ?
+    biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression);
     biteSinkAt = 2 + rand() * 3;       // le bouchon reste CALME plusieurs secondes
     biteSignalTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
@@ -3172,6 +3357,7 @@ function showBiteView(fish) {
     fightAdvantage = 1;
     floatGroup.position.y = 0.1;
     floatGroup.rotation.z = 0;
+    biteOrigine.copy(floatGroup.position);
     spawnRipple(floatGroup.position);
     sound.bite();
     // Vue RÉALISTE : aucun zoom. Un petit message flottant aide simplement à
@@ -3273,15 +3459,18 @@ function updateBiteView(dt) {
                 biteSignauxRestants -= 1;
                 bitePhase = 'fausse';
                 biteSignalTimer = 0;
-                biteSignalDuree = 0.9 + rand() * 0.9;
-                biteFauxType = ['partiel', 'remontee', 'couche', 'tremblement'][Math.floor(rand() * 4)];
+                // Quelle fausse touche ? (elle change à chaque fois)
+                const profil = biteFish ? biteFish.userData : { size: 0.5, aggression: 1 };
+                biteFauxTouche = choisirTouche(false, profil.size, profil.aggression);
+                biteSignalDuree = biteFauxTouche.duree;
+                biteOrigine.copy(floatGroup.position);
                 spawnFloatingText('Ça bouge…', floatGroup.position, '#ffe14d');
                 spawnRipple(floatGroup.position);
             } else {
                 // LA vraie touche : c'est maintenant qu'il faut ferrer.
                 bitePhase = 'touche';
                 biteSignalTimer = 0;
-                // LA vraie touche : le bouchon coule (ou se couche) franchement.
+                biteOrigine.copy(floatGroup.position);
                 // Un « ploc » et des ronds sur l'eau : c'est au joueur de VOIR.
                 sound.splash();
                 spawnRipple(floatGroup.position);
@@ -3289,57 +3478,45 @@ function updateBiteView(dt) {
         }
     } else if (bitePhase === 'fausse') {
         biteSignalTimer += dt;
-        const t = biteSignalTimer;
-        // Mouvement LENT et naturel : le bouchon s'enfonce (ou remonte, ou se couche)
-        // doucement, puis revient à sa place. Aucun à-coup.
-        const k = Math.sin(Math.min(1, t / biteSignalDuree) * Math.PI);
-        if (biteFauxType === 'partiel') {
-            // Enfoncement incomplet : le bouchon plonge à moitié puis remonte.
-            floatGroup.position.y = 0.1 - 0.9 * k;
-        } else if (biteFauxType === 'remontee') {
-            floatGroup.position.y = 0.1 + 0.6 * k;
-        } else if (biteFauxType === 'couche') {
-            floatGroup.rotation.z = 1.3 * k;
-            floatGroup.position.y = 0.1 + 0.25 * k;
-        } else {
-            // Tremblement : le bouchon frémit doucement sur place.
-            floatGroup.position.y = 0.1 + Math.sin(t * 12) * 0.09 * k;
-        }
+        // Le mouvement vient du CATALOGUE : chaque fausse touche a son dessin
+        // propre (frémissement, tapotement, fausse remontée, dérive, tour…).
+        const toucheFausse = biteFauxTouche || TOUCHES_PAR_ID.enfonce_partiel;
+        const p = Math.min(1, biteSignalTimer / biteSignalDuree);
+        appliquerMouvement(mouvementDeTouche(toucheFausse, p, flotteur.remontee === 'couche'));
         setFloatOpacity(1);
-        if (t >= biteSignalDuree) {
+        if (biteSignalTimer >= biteSignalDuree) {
             bitePhase = 'floating';
             biteViewTimer = 0;
             biteSinkAt = 1.5 + rand() * 2.5;   // vraie PAUSE avant le signal suivant
             floatGroup.rotation.z = 0;
-            floatGroup.position.y = 0.1;
+            floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
         }
     } else if (bitePhase === 'touche') {
         biteSignalTimer += dt;
-        const progress = Math.min(1, biteSignalTimer / 0.5);
-        if (biteToucheType === 'enfoncement') {
-            // Touche en enfoncement : le bouchon coule franchement et s'efface.
-            floatGroup.position.y = 0.1 - 2.2 * progress;
-            setFloatOpacity(Math.max(0.2, 1 - progress * 0.85));
-        } else if (flotteur.remontee === 'couche') {
-            // Bouchon court et sensible : il se couche complètement sur le côté.
-            floatGroup.rotation.z = Math.min(1.35, progress * 1.7);
-            floatGroup.position.y = 0.1 + 0.35 * progress;
-            setFloatOpacity(1);
-        } else {
-            // Longue tige (anglaise) : la moitié du bouchon ressort de l'eau.
-            floatGroup.position.y = 0.1 + 1.6 * progress;
-            setFloatOpacity(1);
-        }
+        // LA vraie touche : son dessin vient aussi du catalogue (coulée franche,
+        // ascenseur, il file sous l'eau, il se couche…).
+        const toucheVraie = biteTouche || TOUCHES_PAR_ID.coulee_franche;
+        const p = Math.min(1, biteSignalTimer / toucheVraie.duree);
+        const m = mouvementDeTouche(toucheVraie, p, flotteur.remontee === 'couche');
+        appliquerMouvement(m);
+        // Un bouchon qui coule franchement s'efface peu à peu : « il a disparu ».
+        setFloatOpacity(m.y < -0.5 ? Math.max(0.25, 1 + m.y * 0.34) : 1);
         if (biteSignalTimer >= biteFenetre) {
             // La fenêtre de ferrage est passée : dernière chance de cliquer.
             bitePhase = 'ratee';
             biteSignalTimer = 0;
+            biteRetourY = floatGroup.position.y;      // pour remonter en douceur
+            biteRetourRot = floatGroup.rotation.z;
             statusDisplay.textContent = 'Trop tard… clique encore pour tenter !';
         }
     } else if (bitePhase === 'ratee') {
         biteSignalTimer += dt;
-        floatGroup.rotation.z *= 0.92;
-        floatGroup.position.y = 0.1 + Math.sin(biteSignalTimer * 3) * 0.02;
+        // Le poisson recrache : le bouchon REMONTE en douceur jusqu'à sa place
+        // (pas de saut d'un coup, comme quand la ligne se détend).
+        const k = Math.min(1, biteSignalTimer / 0.45);
+        const doux = 1 - Math.pow(1 - k, 3);
+        floatGroup.position.y = biteRetourY + (0.1 - biteRetourY) * doux;
+        floatGroup.rotation.z = biteRetourRot * (1 - doux);
         setFloatOpacity(1);
         if (biteSignalTimer >= 0.45) {
             // Le poisson recrache l'hameçon : la ligne revient. On passe dans une
@@ -4320,8 +4497,17 @@ window.__game = {
     hookFish: hookFish,
     getState: function () { return floatState; },
     getBitePhase: function () { return bitePhase; },
-    getBiteTouchType: function () { return biteToucheType; },
+    getBiteTouchType: function () { return biteTouche ? biteTouche.famille : ''; },
+    getBiteTouchId: function () { return biteTouche ? biteTouche.id : ''; },
+    getBiteTouchName: function () { return biteTouche ? biteTouche.nom : ''; },
+    getFauxToucheId: function () { return biteFauxTouche ? biteFauxTouche.id : ''; },
     getBiteWindow: function () { return biteFenetre; },
+    // Catalogue des touches (les mouvements du bouchon) — exposé pour les tests.
+    getTouches: function () {
+        return TOUCHES.map(function (t) { return Object.assign({}, t); });
+    },
+    choisirTouche: choisirTouche,
+    mouvementDeTouche: mouvementDeTouche,
     getStrikeQuality: function () { return strikeQuality; },
     getFightAdvantage: function () { return fightAdvantage; },
     getFloats: function () {
@@ -4519,3 +4705,7 @@ window.__game = {
         updateLine();
     }
 };
+
+// La fiche des touches est construite tout à la fin : le catalogue des touches
+// est déclaré plus bas dans le fichier (on évite ainsi un accès avant création).
+renderFicheTouches();

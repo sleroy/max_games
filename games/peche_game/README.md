@@ -45,12 +45,17 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   plus la **fenêtre de ferrage** est longue… mais plus il montre de **fausses touches** !
   Les autres bouchons (à **capacités spéciales**) s'achètent avec l'**expérience**.
 - **Attendre qu'un poisson morde** : sois **patient** ! Le bouchon reste presque **immobile**
-  pendant plusieurs secondes (il suit seulement la houle), puis il fait des **fausses
-  touches** **lentes et espacées** (il plonge à moitié, remonte un peu, se couche, frémit…),
-  toujours séparées par de vraies **pauses**. Il attend alors que tu guettes le bon moment
-  pour **LA vraie touche**, franche, de deux types : **enfoncement complet** ou **remontée**
-  (l'anglaise sort la moitié de sa tige ; un bouchon court se couche sur le côté).
-  Si tu laisses passer la touche, le poisson recrache l'hameçon et des **ronds rouges
+  pendant plusieurs secondes (il suit seulement la houle), puis il bouge… et c'est **ce
+  mouvement qu'il faut lire**. Comme au bord de l'eau, le bouchon est plombé : un poisson
+  qui **soulève** l'appât le fait **monter** (« ascenseur »), un poisson qui tire le fait
+  **plonger** ou **partir de côté**. Il y a **17 touches au catalogue** — des **fausses**
+  (frémissement, tapotement, danse du bouchon, enfoncement partiel, fausse remontée,
+  couchage manqué, dérive, deux coups, touche hésitante, il tourne sur place) et les
+  **vraies** (coulée franche, ascenseur, coulée lente et lourde, il file sous l'eau, il se
+  couche franchement, enfoncement sec, remontée sèche). Chaque poisson a ses habitudes :
+  un petit poisson tapote, un gros coule lentement… Le carnet contient la **fiche
+  « Reconnaître les touches »** qui les décrit toutes : à toi de les reconnaître en vrai !
+  Si tu laisses passer LA touche, le poisson recrache l'hameçon et des **ronds rouges
   concentriques** s'écartent du bouchon pour te montrer que tu l'as **ratée**.
 - **Ferrer au bon moment** : clique pile pendant la vraie touche → **tu démarres avec
   l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
