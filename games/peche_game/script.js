@@ -5655,6 +5655,7 @@ function animate() {
         updateFeed(dt);
         updateChum(dt);
         updateRagondin(dt);
+        updateRagondin(dt);
         updateArm(dt);
         updateRod(dt);
         updateDayNight(dt);
