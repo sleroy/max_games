@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=101';
+import { SoundEngine } from './sound.js?v=102';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -5380,7 +5380,9 @@ function updateBiteView(dt) {
                 biteFauxTouche = choisirTouche(false, profil.size, profil.aggression, biteStyle);
                 biteSignalDuree = dureeTouche(biteFauxTouche);
                 biteOrigine.copy(floatGroup.position);
-                spawnFloatingText('Ça bouge…', floatGroup.position, '#ffe14d');
+                // AUCUN texte ici : le joueur doit lire le mouvement du bouchon.
+                // Le seul message d'approche autorisé est « Un poisson s'approche… »
+                // (affiché au début de la touche, dans showBiteView).
                 // Deux ronds sur l'eau : le mouvement se repère de loin.
                 spawnRipple(floatGroup.position);
                 spawnRipple(floatGroup.position);

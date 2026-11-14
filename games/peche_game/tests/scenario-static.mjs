@@ -201,6 +201,10 @@ export function run() {
         /\.hud-compass\s*\{[^}]*top:\s*calc\(90px/.test(css));
     check('l’avertissement de remontée trop rapide est une popup 3D',
         script.includes('Trop vite !') && script.includes('spawnFloatingText'));
+    check('le message interdit « Ça bouge » n’est jamais affiché',
+        !script.includes('Ça bouge') && !script.includes('Ca bouge'));
+    check('le seul message d’approche est « Un poisson s’approche »',
+        script.includes('Un poisson s’approche'));
 
 }
 

@@ -85,7 +85,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   faut lire**. Avant LA bonne touche, le poisson en fait **2 ou 3 fausses**, brèves elles
   aussi (0,4 à 0,7 s) : chacune
   a **son dessin propre** (vitesse, fréquence des petits coups, **inclinaison** et **dérive**
-  différentes), avec un « Ça bouge… » et **deux ronds sur l'eau** pour les repérer de loin.
+  différentes), avec **deux ronds sur l'eau** pour les repérer de loin.
   Comme au bord de l'eau, le bouchon est plombé : un poisson
   qui **soulève** l'appât le fait **monter** (« ascenseur »), un poisson qui tire le fait
   **plonger** ou **partir de côté**. Il y a **18 touches au catalogue** — des **fausses**
@@ -163,7 +163,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Vue réaliste** (plus aucun zoom) : on surveille son **bouchon de loin**, comme au bord
   de l'eau, et c'est à l'œil (et à l'oreille : le « ploc » du bouchon) qu'on repère la
   **vraie touche**. Des **messages flottants** dans la scène 3D disent ce qui se passe
-  (« Un poisson s'approche… », « Ça bouge… », « FERRÉ ! », « Trop tôt ! ») et, quand une
+  (« Un poisson s'approche… », « FERRÉ ! », « Trop tôt ! ») et, quand une
   touche est **ratée**, des **ronds rouges concentriques** s'écartent du bouchon. Le bouchon
   a été un peu **agrandi** (et ses mouvements amplifiés) pour rester lisible de la berge.
 - **Épreuve de force** : on ramène le fil à la manivelle (un tour ≈ 1 m), le poisson reprend du fil quand il tire — la résistance suit sa taille, sa combativité et son agressivité, et il finit par se fatiguer ; temps limite proportionnel à la distance du lancer.
