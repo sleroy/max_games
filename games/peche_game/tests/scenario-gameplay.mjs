@@ -493,6 +493,17 @@ export function run() {
     check('le poisson est retourné à l’eau', G().fishes.indexOf(missed) >= 0);
     checkEqual('toujours 20 poissons', G().fishes.length, FISH_COUNT);
     checkEqual('plus rien en main', G().getHeldFish(), null);
+
+    group('27) Effets visuels (post-traitement maison)');
+    const fx = G().getVisualEffects();
+    checkEqual('post-traitement ignoré sans vrai moteur de rendu (tests)', fx.supported, false);
+    G().setVisualEffects(false);
+    checkEqual('on peut désactiver les effets', G().getVisualEffects().enabled, false);
+    G().setVisualEffects(true);
+    checkEqual('on peut les réactiver', G().getVisualEffects().enabled, true);
+    check('réglages de bloom et vignette cohérents', fx.bloom > 0 && fx.vignette > 0,
+        fx.bloom + ' / ' + fx.vignette);
+    G().setVisualEffects(false);
 }
 
 export default run;

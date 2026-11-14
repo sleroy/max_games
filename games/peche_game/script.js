@@ -28,7 +28,9 @@ const journalClose = document.getElementById('journalClose');
 const difficultySelect = document.getElementById('difficultySelect');
 const bigTextToggle = document.getElementById('bigTextToggle');
 const calmToggle = document.getElementById('calmToggle');
+const effectsToggle = document.getElementById('effectsToggle');
 const bourricheLabel = document.getElementById('bourricheLabel');
+const toolDock = document.getElementById('toolDock');
 
 const sound = new SoundEngine();
 
@@ -224,6 +226,146 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+// ---------------------------------------------------------------------------
+// Post-traitement maison (aucune dépendance) : léger « bloom » + vignette.
+// On rend la scène dans une cible, on isole les hautes lumières, on les floute
+// puis on recompose à l'écran. Désactivé par défaut sur mobile (performance).
+// ---------------------------------------------------------------------------
+const post = { enabled: !isMobileDevice, strength: 0.45, vignette: 0.30 };
+const postSupported = !!(renderer.capabilities && renderer.setRenderTarget
+    && renderer.getRenderTarget && renderer.setSize);
+
+const postScene = new THREE.Scene();
+const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
+postQuad.frustumCulled = false;
+postScene.add(postQuad);
+
+let sceneTarget = null;
+let brightTarget = null;
+let blurTargetA = null;
+let blurTargetB = null;
+
+function makePostTarget(w, h) {
+    return new THREE.WebGLRenderTarget(Math.max(2, w), Math.max(2, h), {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        depthBuffer: false,
+        stencilBuffer: false
+    });
+}
+
+function resizePost(width, height) {
+    if (!postSupported) {
+        return;
+    }
+    const ratio = (renderer.getPixelRatio && renderer.getPixelRatio()) || 1;
+    const fullW = Math.floor(width * ratio);
+    const fullH = Math.floor(height * ratio);
+    const halfW = Math.floor(fullW / 2);
+    const halfH = Math.floor(fullH / 2);
+    if (sceneTarget) sceneTarget.dispose();
+    if (brightTarget) brightTarget.dispose();
+    if (blurTargetA) blurTargetA.dispose();
+    if (blurTargetB) blurTargetB.dispose();
+    sceneTarget = makePostTarget(fullW, fullH);
+    brightTarget = makePostTarget(halfW, halfH);
+    blurTargetA = makePostTarget(halfW, halfH);
+    blurTargetB = makePostTarget(halfW, halfH);
+}
+
+const POST_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+
+const brightMaterial = new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: null }, uThreshold: { value: 0.8 } },
+    vertexShader: POST_VERTEX,
+    fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float uThreshold;
+        varying vec2 vUv;
+        void main() {
+            vec3 c = texture2D(tDiffuse, vUv).rgb;
+            float l = dot(c, vec3(0.299, 0.587, 0.114));
+            float k = max(0.0, l - uThreshold) / max(0.0001, 1.0 - uThreshold);
+            gl_FragColor = vec4(c * k, 1.0);
+        }`
+});
+brightMaterial.toneMapped = false;
+
+const blurMaterial = new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: null }, uDir: { value: new THREE.Vector2(1, 0) } },
+    vertexShader: POST_VERTEX,
+    fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform vec2 uDir;
+        varying vec2 vUv;
+        void main() {
+            vec3 sum = texture2D(tDiffuse, vUv).rgb * 0.24;
+            sum += texture2D(tDiffuse, vUv - uDir).rgb * 0.20;
+            sum += texture2D(tDiffuse, vUv + uDir).rgb * 0.20;
+            sum += texture2D(tDiffuse, vUv - uDir * 2.0).rgb * 0.12;
+            sum += texture2D(tDiffuse, vUv + uDir * 2.0).rgb * 0.12;
+            sum += texture2D(tDiffuse, vUv - uDir * 3.0).rgb * 0.06;
+            sum += texture2D(tDiffuse, vUv + uDir * 3.0).rgb * 0.06;
+            gl_FragColor = vec4(sum, 1.0);
+        }`
+});
+blurMaterial.toneMapped = false;
+
+const compositeMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+        tDiffuse: { value: null },
+        tBloom: { value: null },
+        uBloom: { value: post.strength },
+        uVignette: { value: post.vignette }
+    },
+    vertexShader: POST_VERTEX,
+    fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform sampler2D tBloom;
+        uniform float uBloom;
+        uniform float uVignette;
+        varying vec2 vUv;
+        void main() {
+            vec3 col = texture2D(tDiffuse, vUv).rgb;
+            col += texture2D(tBloom, vUv).rgb * uBloom;
+            // Vignette douce pour attirer l'œil au centre.
+            float v = smoothstep(0.9, 0.35, length(vUv - 0.5));
+            col *= mix(1.0 - uVignette, 1.0, v);
+            gl_FragColor = vec4(col, 1.0);
+            #include <colorspace_fragment>
+        }`
+});
+// Le tone mapping est déjà appliqué dans la cible : on ne le refait pas.
+compositeMaterial.toneMapped = false;
+
+function renderWithPost() {
+    renderer.setRenderTarget(sceneTarget);
+    renderer.render(scene, camera);
+
+    postQuad.material = brightMaterial;
+    brightMaterial.uniforms.tDiffuse.value = sceneTarget.texture;
+    renderer.setRenderTarget(brightTarget);
+    renderer.render(postScene, postCamera);
+
+    postQuad.material = blurMaterial;
+    blurMaterial.uniforms.tDiffuse.value = brightTarget.texture;
+    blurMaterial.uniforms.uDir.value.set(1 / blurTargetA.width, 0);
+    renderer.setRenderTarget(blurTargetA);
+    renderer.render(postScene, postCamera);
+
+    blurMaterial.uniforms.tDiffuse.value = blurTargetA.texture;
+    blurMaterial.uniforms.uDir.value.set(0, 1 / blurTargetB.height);
+    renderer.setRenderTarget(blurTargetB);
+    renderer.render(postScene, postCamera);
+
+    postQuad.material = compositeMaterial;
+    compositeMaterial.uniforms.tDiffuse.value = sceneTarget.texture;
+    compositeMaterial.uniforms.tBloom.value = blurTargetB.texture;
+    renderer.setRenderTarget(null);
+    renderer.render(postScene, postCamera);
+}
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fd3ea);
 scene.fog = new THREE.Fog(0x9fd3ea, 90, 260);
@@ -259,6 +401,7 @@ function resize() {
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    resizePost(w, h);
 }
 window.addEventListener('resize', resize);
 // Le navigateur mobile met parfois un instant à recalculer la taille : on insiste.
@@ -352,6 +495,77 @@ function updateDayNight(dt) {
     ambientLight.intensity = 0.42 + daylight * 0.22;
     skyLight.intensity = 0.38 + daylight * 0.30;
     waterUniforms.uLight.value = 0.35 + daylight * 0.65;
+}
+
+// ---------------------------------------------------------------------------
+// Éclairage d'environnement (IBL) : reflets crédibles sur les matériaux PBR.
+// On fabrique un petit « ciel » et on le convertit en carte d'environnement.
+// ---------------------------------------------------------------------------
+function buildEnvironment() {
+    if (!postSupported || typeof THREE.PMREMGenerator !== 'function') {
+        return;
+    }
+    try {
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        const envScene = new THREE.Scene();
+        envScene.add(new THREE.Mesh(
+            new THREE.SphereGeometry(80, 16, 12),
+            new THREE.ShaderMaterial({
+                side: THREE.BackSide,
+                uniforms: {
+                    topColor: { value: new THREE.Color(0x8fc4ee) },
+                    bottomColor: { value: new THREE.Color(0x5d6b4a) }
+                },
+                vertexShader: 'varying vec3 vP; void main() { vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+                fragmentShader: 'uniform vec3 topColor; uniform vec3 bottomColor; varying vec3 vP; void main() { float h = normalize(vP).y; gl_FragColor = vec4(mix(bottomColor, topColor, max(h, 0.0)), 1.0); }'
+            })
+        ));
+        const envSun = new THREE.Mesh(
+            new THREE.SphereGeometry(7, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        envSun.position.set(24, 40, -30);
+        envScene.add(envSun);
+        scene.environment = pmrem.fromScene(envScene, 0.05).texture;
+        pmrem.dispose();
+    } catch (error) {
+        // Pas d'environnement disponible : l'éclairage direct suffit.
+    }
+}
+
+buildEnvironment();
+
+// ---------------------------------------------------------------------------
+// Qualité automatique : si les images baissent, on réduit la résolution.
+// ---------------------------------------------------------------------------
+const QUALITY_MAX = isMobileDevice ? 1.5 : 2;
+const QUALITY_MIN = 0.75;
+let qualityRatio = Math.min(window.devicePixelRatio || 1, QUALITY_MAX);
+let qualityAccum = 0;
+let qualityFrames = 0;
+
+function updateQuality(dt) {
+    if (!renderer.setPixelRatio || !renderer.getPixelRatio) {
+        return;
+    }
+    qualityAccum += dt;
+    qualityFrames += 1;
+    if (qualityAccum < 2.5) {
+        return;
+    }
+    const fps = qualityFrames / qualityAccum;
+    qualityAccum = 0;
+    qualityFrames = 0;
+    const ratioMax = Math.min(window.devicePixelRatio || 1, QUALITY_MAX);
+    if (fps < 45 && qualityRatio > QUALITY_MIN) {
+        qualityRatio = Math.max(QUALITY_MIN, qualityRatio - 0.25);
+        renderer.setPixelRatio(qualityRatio);
+        resize();
+    } else if (fps > 57 && qualityRatio < ratioMax) {
+        qualityRatio = Math.min(ratioMax, qualityRatio + 0.25);
+        renderer.setPixelRatio(qualityRatio);
+        resize();
+    }
 }
 
 // Nuages
@@ -1115,23 +1329,15 @@ function updateArm(dt) {
     arm.position.y = 2.1 + armSwing * 0.4;
 }
 
-// Place les éléments du HUD « près du personnage » (boutons, compteur) : on
-// projette leur point d'ancrage 3D vers l'écran.
-const hudAnchor = new THREE.Vector3();
-
-function projectToScreen(point, element) {
-    camera.updateMatrixWorld();
-    point.project(camera);
-    element.style.left = ((point.x * 0.5 + 0.5) * 100).toFixed(2) + '%';
-    element.style.top = ((-point.y * 0.5 + 0.5) * 100).toFixed(2) + '%';
-}
-
-function updateHudAnchors() {
-    // « Nourrir » à gauche du pêcheur, « Carnet » à droite.
-    projectToScreen(hudAnchor.set(angler.position.x - 2.0, 2.6, angler.position.z + 0.4), feedButton);
-    projectToScreen(hudAnchor.set(angler.position.x + 1.9, 3.1, angler.position.z - 1.0), journalButton);
-    // Le compteur de la bourriche, juste au-dessus de la bourriche.
-    projectToScreen(hudAnchor.set(BOURRICHE_POS.x, 1.6, BOURRICHE_POS.z), bourricheLabel);
+// La barre d'outils du pêcheur (Nourrir / Carnet / compteur) reste à un endroit
+// FIXE, en bas à gauche (juste à côté du pêcheur), et disparaît pendant
+// l'action (ferrage, combat, remontée, lancer) pour ne rien masquer.
+function updateToolDock() {
+    const resting = floatState === 'idle' || floatState === 'inWater';
+    const visible = resting && cameraMode === 'normal';
+    toolDock.classList.toggle('hidden', !visible);
+    // On ne peut amorcer qu'au repos, sans ligne à l'eau.
+    feedButton.disabled = floatState !== 'idle';
 }
 
 // ---------------------------------------------------------------------------
@@ -1232,7 +1438,7 @@ function renderJournal() {
     journalList.textContent = journal.last.length
         ? journal.last.map(weight => '🐟 ' + fmtKg(weight)).join('\n')
         : '';
-    bourricheLabel.textContent = '🧺 ' + journal.total;
+    bourricheLabel.textContent = '🧺 Bourriche : ' + journal.total;
 }
 
 function addJournalEntry(weight) {
@@ -1443,6 +1649,10 @@ journalButton.addEventListener('click', () => {
 });
 journalClose.addEventListener('click', hideJournal);
 difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
+effectsToggle.checked = post.enabled;
+effectsToggle.addEventListener('change', () => {
+    post.enabled = effectsToggle.checked !== false;
+});
 bigTextToggle.addEventListener('change', () => {
     if (document.body) {
         document.body.classList.toggle('big-text', !!bigTextToggle.checked);
@@ -2762,10 +2972,20 @@ function animate() {
         camera.position.y += Math.cos(elapsed * 55) * shake;
     }
     camera.lookAt(cameraTarget);
-    renderer.render(scene, camera);
-    if (cameraMode === 'normal') {
-        updateHudAnchors();
+    if (post.enabled && postSupported && sceneTarget) {
+        try {
+            renderWithPost();
+        } catch (error) {
+            // Filet de sécurité : on revient au rendu direct.
+            post.enabled = false;
+            renderer.setRenderTarget(null);
+            renderer.render(scene, camera);
+        }
+    } else {
+        renderer.render(scene, camera);
     }
+    updateQuality(dt);
+    updateToolDock();
 }
 
 animate();
@@ -2849,6 +3069,17 @@ window.__game = {
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },
     showJournal: showJournal,
     hideJournal: hideJournal,
+    // Effets visuels (post-traitement maison) — exposé pour les tests.
+    setVisualEffects: function (value) {
+        post.enabled = !!value;
+        effectsToggle.checked = !!value;
+    },
+    getVisualEffects: function () {
+        return {
+            enabled: post.enabled, supported: postSupported,
+            bloom: post.strength, vignette: post.vignette
+        };
+    },
     getChum: function () {
         return chum ? {
             x: chum.position.x,

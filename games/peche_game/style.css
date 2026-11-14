@@ -355,21 +355,24 @@ button:disabled {
     to { transform: translateX(-50%) scale(1.12); }
 }
 
-/* Bouton « Nourrir » (amorçage) — placé à côté du pêcheur par le script */
+/* Bouton « Nourrir » (amorçage) — dans la barre d'outils, à côté du pêcheur */
 .feed-button {
-    position: absolute;
-    top: 70%;
-    left: 26%;
-    transform: translate(-50%, -50%);
+    position: static;
     pointer-events: auto;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.4);
     color: #fff;
-    border-radius: 8px;
-    padding: 6px 10px;
+    border-radius: 10px;
+    padding: 7px 12px;
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: bold;
+    white-space: nowrap;
+}
+
+.feed-button:disabled {
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .feed-button.active {
@@ -382,7 +385,7 @@ button:disabled {
 .feed-gauge {
     position: absolute;
     left: 50%;
-    bottom: 96px;
+    top: calc(96px + env(safe-area-inset-top, 0px));
     transform: translateX(-50%);
     width: min(70vw, 520px);
     display: none;
@@ -390,6 +393,7 @@ button:disabled {
     align-items: center;
     gap: 6px;
     pointer-events: none;
+    z-index: 8;
 }
 
 .feed-gauge.active {
@@ -499,10 +503,6 @@ button, .crank {
     bottom: calc(110px + env(safe-area-inset-bottom, 0px));
 }
 
-.feed-gauge {
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-}
-
 /* Invite à tourner le téléphone (le jeu se joue en paysage). */
 .rotate-hint {
     position: absolute;
@@ -542,6 +542,21 @@ button, .crank {
         padding: 9px 14px;
     }
 
+    .journal-button {
+        font-size: 1rem;
+        padding: 9px 14px;
+    }
+
+    /* La jauge passe au-dessus de la barre d'outils. */
+    .feed-gauge {
+        width: min(58vw, 340px);
+        top: auto;
+        bottom: calc(210px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Statut + bouton : on laisse la place à la barre d'outils (gauche) et à
+       la manivelle (droite) — largeur fixée plus bas dans ce bloc. */
+
     button {
         padding: 12px 26px;
         font-size: 1.05em;
@@ -563,7 +578,7 @@ button, .crank {
     }
 
     .hud-bottom {
-        width: 92vw;
+        width: min(40vw, 330px);
     }
 }
 
@@ -590,35 +605,47 @@ button, .crank {
    Carnet de pêche, bourriche et réglages
    --------------------------------------------------------------------------- */
 
-/* Bouton « Carnet » : placé près du pêcheur par le script. */
+/* Bouton « Carnet » et compteur — dans la barre d'outils */
 .journal-button {
-    position: absolute;
-    top: 70%;
-    left: 34%;
-    transform: translate(-50%, -50%);
+    position: static;
     pointer-events: auto;
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.4);
     color: #fff;
     border-radius: 10px;
-    padding: 6px 12px;
+    padding: 7px 12px;
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: bold;
+    white-space: nowrap;
 }
 
-/* Compteur affiché près de la bourriche. */
-.bourriche-label {
+/* Barre d'outils du pêcheur : fixe, en bas à gauche, jamais pendant l'action. */
+.tool-dock {
     position: absolute;
-    top: 76%;
-    left: 20%;
-    transform: translate(-50%, -50%);
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 6;
+}
+
+.tool-dock.hidden {
+    display: none;
+}
+
+/* Compteur affiché à côté du pêcheur. */
+.bourriche-label {
+    position: static;
     pointer-events: none;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.35);
     color: #fff;
     border-radius: 10px;
-    padding: 2px 8px;
+    padding: 3px 9px;
     font-size: 0.9rem;
     font-weight: bold;
     white-space: nowrap;

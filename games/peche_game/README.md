@@ -69,8 +69,17 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   influencé par le vent, puis nuage de miettes qui attire les poissons — avec une animation
   d'épaule du pêcheur.
 - **Rendu plus « photo »** : tone mapping ACES, lumière hémisphérique, ombres plus
-  propres, **cycle jour/nuit** (le soleil décrit un arc, le ciel et les couleurs
-  changent), houle de l'eau qui suit le vent.
+  propres, **éclairage d'environnement (IBL)** pour de vrais reflets sur les matériaux,
+  **cycle jour/nuit** (le soleil décrit un arc, le ciel et les couleurs changent), houle
+  de l'eau qui suit le vent.
+- **Effets visuels** : post-traitement maison (léger « bloom » + vignette), activable ou
+  non depuis le carnet, **désactivé par défaut sur mobile** et **désactivé
+  automatiquement** si le rendu échoue.
+- **Qualité automatique** : la résolution s'adapte toute seule si les images baissent
+  (et remonte quand ça va mieux) → 60 images/s visées.
+- **Interface rangée** : la barre d'outils du pêcheur (🥣 Nourrir, 📖 Carnet, compteur)
+  est **fixe en bas à gauche**, à côté du pêcheur, et **disparaît pendant l'action**
+  (ferrage, combat, remontée, lancer) pour ne rien masquer.
 - **Canne vivante** : la canne **plie** quand le fil est tendu et la ligne se raidit.
 - **Poissons plus vivants** : ondulation du corps, inclinaison dans les virages,
   sillage près de la surface, **éclaboussures** au ferrage.
