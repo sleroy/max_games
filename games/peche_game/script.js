@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=90';
+import { SoundEngine } from './sound.js?v=91';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2701,10 +2701,13 @@ function rendreCarteEtang() {
     // L'eau : des BANDES DE PROFONDEUR calculées avec le VRAI relief (plus c'est
     // foncé, plus c'est profond) — la carte sert vraiment à choisir où lancer.
     const TEINTES = ['#74c6e0', '#5cb4d2', '#48a2c4', '#3790b3', '#2b7ea1', '#216b8e', '#18597a', '#124a67'];
-    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1) + '" fill="' + TEINTES[0] + '"/>';
-    // Le VRAI contour (généré) par-dessus le rayon nominal, pour montrer la forme.
+    // Cercle de RÉFÉRENCE (rayon nominal 55) : pointillé discret, il sert à
+    // comparer la forme réelle au cercle théorique.
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * ech).toFixed(1)
+        + '" fill="none" stroke="#eaf6ff" stroke-width="0.35" stroke-dasharray="1 2" opacity="0.5"/>';
+    // L'eau : le VRAI contour généré, rempli de la teinte de surface.
     svg += '<path class="contour-etang" d="' + cheminContour(1)
-        + '" fill="none" stroke="#eaf6ff" stroke-width="1" opacity="0.9"/>';
+        + '" fill="' + TEINTES[0] + '" stroke="#eaf6ff" stroke-width="0.8" opacity="0.95"/>';
     for (let i = 1; i < TEINTES.length; i++) {
         const prof = FOND_BORD + (i / TEINTES.length) * (FOND_CENTRE - FOND_BORD);
         const frac = (prof - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
@@ -2772,6 +2775,8 @@ function rendreCarteEtang() {
             + zone.couleur + '"></span>' + zone.nom + ' : ' + (noms.join(', ') || '—') + '</div>';
     });
     legende += '</div>';
+    legende += '<div class="map-zone">⭕ Cercle pointillé : rayon nominal (55 unités) — '
+        + 'le trait clair est le vrai contour de l’étang.</div>';
     // Profondeur à l'endroit du bouchon (et profondeur de l'hameçon).
     if (floatState !== 'idle') {
         const profLocale = profondeurLocale(floatGroup.position.x, floatGroup.position.z);
