@@ -39,10 +39,11 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 ## Commandes
 
 - **Clic gauche sur l'eau** : **clique et maintiens** pour viser (une jauge de puissance oscille), puis **relâche au bon moment** : plus la puissance est forte, plus tu lances loin (le vent décale le lancer).
-- **Choisis ton bouchon** (menu « Bouchon » du carnet) : **Anglaise** (longue tige, très
-  sensible), **Waggler** (court, se couche sur le côté), **Pose à coulisse**,
-  **Bolognaise** (gros, peu sensible). Plus le bouchon est sensible, plus la **fenêtre de
-  ferrage** est longue… mais plus il montre de **fausses touches** !
+- **Choisis ton bouchon** (liste « Bouchon **équipé** » ou **boutique** du carnet) :
+  **Anglaise** (longue tige, très sensible), **Waggler** (court, se couche sur le côté),
+  **Pose à coulisse**, **Bolognaise** (gros, peu sensible). Plus le bouchon est sensible,
+  plus la **fenêtre de ferrage** est longue… mais plus il montre de **fausses touches** !
+  Les autres bouchons (à **capacités spéciales**) s'achètent avec l'**expérience**.
 - **Attendre qu'un poisson morde** : le bouchon fait d'abord des **fausses touches**
   (il plonge à moitié, remonte un peu, se couche, frémit…), puis vient **LA vraie touche**,
   de deux types : **enfoncement complet** ou **remontée** (l'anglaise sort la moitié de sa
@@ -61,6 +62,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **📖 Carnet de pêche** (bouton à côté du pêcheur) : nombre de prises, poids total, record
   et dernières prises (sauvegardés dans le navigateur). C'est aussi là qu'on choisit la
   **difficulté** et les options (gros texte, animations calmes).
+- **⭐ Expérience (XP) et 🎣 boutique de bouchons** : chaque poisson rangé dans la
+  bourriche rapporte de l'**expérience** (plus le poisson est lourd, plus il rapporte).
+  Dans le carnet, la **boutique** permet d'**acheter** des bouchons aux **capacités
+  spéciales** : **Plume d'oie lumineuse** (visible la nuit), **Bouchon truqué** (beaucoup
+  moins de fausses touches), **Waggler plombé** (combat plus long, poisson moins combatif)
+  et **Bouchon du maître** (polyvalent + 50 % d'expérience). On équipe un bouchon d'un clic
+  et l'expérience comme les bouchons achetés sont **sauvegardés** dans le navigateur.
 - **Bouton pause** (⏸) : fige le jeu (et le bouton plein écran ⛶ en dessous).
 - **Bouton son** (🔊) : couper / réactiver les effets sonores.
 - **Bouton 🥣 Nourrir (amorçage)** : clique une fois sur le bouton pour armer le mode,

@@ -1168,21 +1168,21 @@ const FLOTTEURS = [
       desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
     { id: 'bolognaise', nom: 'Bolognaise', prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 3.2,
       couleur: 0xe04a2a, corps: 0xffe066,
-      desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' }
+      desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' },
     // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
-    { id: 'plume', nom: 'Plume d’oie lumineuse', prix: 45, remontee: 'couche', longueur: 2.0,
+    { id: 'plume', nom: 'Plume d’oie lumineuse', prix: 40, remontee: 'couche', longueur: 2.0,
       couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
       capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
       desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
-    { id: 'truque', nom: 'Bouchon truqué', prix: 80, remontee: 'couche', longueur: 1.8,
+    { id: 'truque', nom: 'Bouchon truqué', prix: 70, remontee: 'couche', longueur: 1.8,
       couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
       capacite: { fausses: 0.55 }, sensibilite: 1.2,
       desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
-    { id: 'plombee', nom: 'Waggler plombé', prix: 120, remontee: 'couche', longueur: 1.9,
+    { id: 'plombee', nom: 'Waggler plombé', prix: 110, remontee: 'couche', longueur: 1.9,
       couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
       capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
       desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
-    { id: 'maitre', nom: 'Bouchon du maître', prix: 250, remontee: 'demi-tige', longueur: 2.8,
+    { id: 'maitre', nom: 'Bouchon du maître', prix: 200, remontee: 'demi-tige', longueur: 2.8,
       couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
       capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
       sensibilite: 1.25,
@@ -1219,13 +1219,12 @@ function appliquerFlotteurVisuel(f) {
 }
 
 function setFloatType(id) {
-    for (let i = 0; i < FLOTTEURS.length; i++) {
-        if (FLOTTEURS[i].id === id) {
-            flotteurChoix = id;
-            break;
-        }
+    const f = trouverFlotteur(id);
+    // Un bouchon inconnu, ou pas encore acheté, ne peut pas être équipé.
+    if (!f || !bouchonPossede(f.id)) {
+        return;
     }
-    const f = flotteurCourant();
+    flotteurChoix = f.id;
     if (floatSelect.value !== f.id) {
         floatSelect.value = f.id;
     }
@@ -1700,6 +1699,9 @@ function renderJournal() {
     bourricheLabel.textContent = '🧺 Bourriche : ' + journal.total;
     xpLabel.textContent = '⭐ ' + journal.experience + ' XP';
     shopXp.textContent = '⭐ ' + journal.experience + ' XP';
+    // Le carnet a changé (XP, prises…) : la boutique doit se rafraîchir aussi,
+    // sinon les boutons d'achat restent grisés alors qu'on a assez d'expérience.
+    renderBoutique();
 }
 
 function addJournalEntry(weight, espece) {
@@ -1732,7 +1734,8 @@ function addJournalEntry(weight, espece) {
 // court, visible la nuit…).
 
 function xpPourPrise(poids) {
-    const brut = 4 + (poids || 0) * 8;
+    // Courbe douce : la racine évite qu'un très gros poisson achète tout d'un coup.
+    const brut = 5 + Math.sqrt(Math.max(0, poids || 0)) * 12;
     return Math.max(3, Math.round(brut * capaciteBouchon().xp));
 }
 
