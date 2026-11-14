@@ -44,9 +44,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **Pose à coulisse**, **Bolognaise** (gros, peu sensible). Plus le bouchon est sensible,
   plus la **fenêtre de ferrage** est longue… mais plus il montre de **fausses touches** !
   Les autres bouchons (à **capacités spéciales**) s'achètent avec l'**expérience**.
-- **Attendre qu'un poisson morde** : le bouchon reste presque **immobile** quelques
-  secondes (il suit seulement la houle), puis il bouge **vite** — et c'est **ce mouvement
-  qu'il faut lire**. Avant LA bonne touche, le poisson en fait **2 ou 3 fausses** : chacune
+- **Attendre qu'un poisson morde** : le bouchon reste presque **immobile** (il suit
+  seulement la houle) pendant **3 à 8 s** — et la pause entre deux mouvements peut durer
+  jusqu'à **8 s** : c'est la patience du pêcheur. Puis il bouge **d'un coup**, en **0,1 à
+  0,3 s** comme un vrai bouchon qui disparaît sous l'eau, et c'est **ce mouvement qu'il
+  faut lire**. Avant LA bonne touche, le poisson en fait **2 ou 3 fausses**, brèves elles
+  aussi (0,4 à 0,7 s) : chacune
   a **son dessin propre** (vitesse, fréquence des petits coups, **inclinaison** et **dérive**
   différentes), avec un « Ça bouge… » et **deux ronds sur l'eau** pour les repérer de loin.
   Comme au bord de l'eau, le bouchon est plombé : un poisson

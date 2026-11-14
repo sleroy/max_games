@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=59 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=60 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=59';
+import { SoundEngine } from './sound.js?v=60';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -3377,7 +3377,7 @@ const TOUCHES = [
     { id: 'couchage_franc', nom: 'Il se couche franchement', forme: 'couchage', rot: 1.35, a: 0.35, duree: 0.52,
       vrai: true, famille: 'couchage', qui: 'tous',
       desc: 'Il s’allonge complètement sur le côté : le poisson part au ras de l’eau. Ferrer !' },
-    { id: 'enfoncement_sec', nom: 'Enfoncement sec', forme: 'descente', a: 2.5, rot: 0.12, duree: 0.35,
+    { id: 'enfoncement_sec', nom: 'Enfoncement sec', forme: 'descente', a: 2.5, rot: 0.12, duree: 0.45,
       vrai: true, famille: 'enfoncement', qui: 'vif',
       desc: 'Il disparaît d’un coup, très vite : un poisson vif a emporté l’esche.' },
     { id: 'remontee_seche', nom: 'Remontée sèche', forme: 'montee', a: 2.0, rot: 0.12, duree: 0.4,
@@ -3393,12 +3393,15 @@ TOUCHES.forEach(function (touche) { TOUCHES_PAR_ID[touche.id] = touche; });
 
 // Vitesse globale des touches : réglage unique qui accélère (ou ralentit) TOUS
 // les mouvements du bouchon. < 1 = plus rapide. Les dessins restent les mêmes.
-// 0.6 : un bouchon réagit VITE (quelques dixièmes de seconde), comme au bord de
-// l'eau — assez rapide pour surprendre, assez lent pour rester lisible.
-const VITESSE_TOUCHES = 0.55;
+// 0.32 : le bouchon RÉAGIT COMME EN VRAI — une touche se joue en 0,1 à 0,25 s,
+// un simple tapotement en un demi-seconde. C'est la PAUSE entre deux mouvements
+// qui est longue (jusqu'à 8 s), pas le mouvement lui-même.
+const VITESSE_TOUCHES = 0.32;
 
 function dureeTouche(touche) {
-    return Math.max(0.25, (touche.duree || 1) * VITESSE_TOUCHES);
+    // Plancher très bas : une vraie touche doit pouvoir se jouer en ~0,1 s,
+    // exactement comme un bouchon qui disparaît sous l'eau.
+    return Math.max(0.1, (touche.duree || 1) * VITESSE_TOUCHES);
 }
 
 // Dessine le mouvement d'une touche : `p` va de 0 (début) à 1 (fin).
@@ -3799,7 +3802,7 @@ function showBiteView(fish) {
     } else {
         biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression);
     }
-    biteSinkAt = 2 + rand() * 1.2;     // une pause courte : ça peut bouger d'un instant à l'autre
+    biteSinkAt = 3 + rand() * 5;       // longue attente possible (3 à 8 s) avant le 1er signal
     biteSignalTimer = 0;
     biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
     strikeQuality = '';
@@ -3939,7 +3942,7 @@ function updateBiteView(dt) {
         if (biteSignalTimer >= biteSignalDuree) {
             bitePhase = 'floating';
             biteViewTimer = 0;
-            biteSinkAt = 1.1 + rand() * 0.9;   // vraie (mais courte) pause avant le signal suivant
+            biteSinkAt = 2 + rand() * 6;       // la pause peut être longue (2 à 8 s) avant le signal suivant
             floatGroup.rotation.z = 0;
             floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
         }

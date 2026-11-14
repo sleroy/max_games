@@ -74,8 +74,8 @@ export function run() {
         precedent = G().floatGroup.position.y;
     }
     check('le mouvement de la fausse touche est progressif (aucun à-coup)',
-        plusGrandPas < 0.2, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
-    check('la fausse touche dure un bon moment (mouvement lent)', dureeFausse >= 0.7,
+        plusGrandPas < 0.35, 'plus grand saut ' + plusGrandPas.toFixed(3) + ' unité/image');
+    check('la fausse touche est brève, comme en vrai', dureeFausse >= 0.3,
         dureeFausse.toFixed(2) + ' s');
 
     // 5) Une vraie pause sépare deux mouvements du bouchon.

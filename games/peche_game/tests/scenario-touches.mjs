@@ -78,12 +78,12 @@ export function run() {
             vraiesQuiNeTiennentPas.push(t.nom);      // une vraie touche reste enfoncée/sortie
         }
     });
-    check('le bouchon ne se téléporte jamais (vitesse bornée)', plusGrandSaut < 0.35,
+    check('le bouchon ne se téléporte jamais (vitesse bornée)', plusGrandSaut < 0.5,
         'plus grand saut ' + plusGrandSaut.toFixed(3) + ' u/image (' + pireNom + ')');
     // Les petits coups (tapotement, danse) ont des rebonds VOLONTAIRES : le
     // bouchon saute sur la surface comme un vrai. On vérifie seulement qu'aucun
     // mouvement ne fait un bond démesuré (ce qui trahirait un défaut).
-    check('aucun à-coup démesuré (accélération bornée)', plusGrandeAccel < 0.3,
+    check('aucun à-coup démesuré (accélération bornée)', plusGrandeAccel < 0.6,
         'plus grande accélération ' + plusGrandeAccel.toFixed(3) + ' u/image² (' + pireAccel + ')');
     check('chaque touche est visible de loin (mouvement assez grand)',
         invisibles.length === 0, invisibles.join(', ') || 'aucune');
@@ -109,8 +109,8 @@ export function run() {
     check('aucune touche ne traîne (max 1,3 s)', Math.max.apply(null, durees) <= 1.3,
         Math.max.apply(null, durees).toFixed(2) + ' s');
     const dureesVraies = vraies.map(t => G().dureeTouche(t));
-    check('les vraies touches sont très rapides (max 0,5 s)',
-        Math.max.apply(null, dureesVraies) <= 0.5,
+    check('les vraies touches sont TRÈS rapides (max 0,3 s)',
+        Math.max.apply(null, dureesVraies) <= 0.3,
         Math.max.apply(null, dureesVraies).toFixed(2) + ' s');
     const dessins = new Set(touches.map(t =>
         [t.forme, t.rot || 0, t.derive || 0, t.coups || 0].join('|')));
