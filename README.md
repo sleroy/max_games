@@ -45,6 +45,13 @@ python3 -m http.server 8000
 # puis ouvrir http://127.0.0.1:8000/
 ```
 
+Pour le jeu de pêche, le plus simple est de lancer son petit script : il démarre le
+serveur **et** ouvre le navigateur automatiquement.
+
+```bash
+games/peche_game/launch.sh
+```
+
 Les autres jeux fonctionnent aussi en ouvrant simplement leur fichier `index.html`.
 
 ## Déploiement (GitHub Pages)

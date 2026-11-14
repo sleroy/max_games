@@ -4,7 +4,21 @@ Un jeu de pêche en 3D réalisé avec [three.js](https://threejs.org/).
 
 ## Lancer le jeu
 
-Le jeu doit être servi par un serveur HTTP (modules ES + WebGL nécessitent une origine `http://`).
+Le plus simple, pour jouer tout de suite :
+
+```bash
+./launch.sh
+```
+
+Ce petit script démarre un serveur local **et ouvre le navigateur automatiquement**
+(il choisit aussi un port libre s'il y en a déjà un d'occupé).
+Pour arrêter le jeu : `Ctrl+C`.
+
+> Sur certaines distributions, un double-clic sur `launch.sh` le lance directement
+> dans un terminal.
+
+Sinon, à la main (le jeu doit être servi par un serveur HTTP : modules ES + WebGL
+nécessitent une origine `http://`) :
 
 ```bash
 cd peche_game
@@ -46,6 +60,7 @@ peche_game/
 ├── style.css           # Styles (plein écran, manivelle, barres…)
 ├── script.js           # Logique 3D du jeu (three.js)
 ├── sound.js            # Moteur audio procédural
+├── launch.sh           # Lance le serveur local + ouvre le navigateur
 ├── assets/
 │   ├── three.module.js # three.js r160 (MIT)
 │   ├── fish.png        # Image 2D (ancienne version)

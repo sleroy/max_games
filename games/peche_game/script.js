@@ -1558,6 +1558,7 @@ window.__game = {
     fishes: fishes,
     floatGroup: floatGroup,
     rodTip: rodTip,
+    angler: angler,
     makeFish: makeFish,
     lilyPads: lilyPads,
     startCast: startCast,
