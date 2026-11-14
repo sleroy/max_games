@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=74 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=75 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=74';
+import { SoundEngine } from './sound.js?v=75';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -837,6 +837,7 @@ const waterUniforms = {
     uSky: { value: new THREE.Color(0xc4e2ee) },
     uNormals: { value: makeWaterNormalTexture() },
     uReflection: { value: null },
+    uReflectOn: { value: 0 },
     uResolution: { value: new THREE.Vector2(1280, 720) }
     , uMirrorY: { value: 0 }
 };
@@ -849,7 +850,9 @@ const waterUniforms = {
 // ---------------------------------------------------------------------------
 const waterReflectionTarget = new THREE.WebGLRenderTarget(320, 180, { depthBuffer: true });
 const waterMirrorCamera = new THREE.PerspectiveCamera(45, 16 / 9, 0.5, 400);
-const waterReflectionOn = !(typeof isMobileDevice === 'function' ? isMobileDevice() : false);
+// OPT-IN : le reflet planaire est désactivé tant qu'il n'est pas validé à l'œil
+// (une texture de reflet non initialisée est BLANCHE dans three.js -> eau blanche).
+let waterReflectionOn = false;
 let waterReflectionFrame = 0;
 function updateWaterReflection() {
     if (!waterReflectionOn || !water) { return; }
@@ -867,6 +870,7 @@ function updateWaterReflection() {
     renderer.setRenderTarget(precedent);
     water.visible = visibleAvant;
     waterUniforms.uReflection.value = waterReflectionTarget.texture;
+    waterUniforms.uReflectOn.value = 1;   // le sampler est prêt
 }
 
 // Eau transparente avec des vagues dont l'amplitude et la vitesse suivent le
@@ -921,6 +925,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform vec3 uSky;
         uniform sampler2D uNormals;
         uniform sampler2D uReflection;
+        uniform float uReflectOn;
         uniform vec2 uResolution;
         uniform float uTime;
         uniform float uWind;
@@ -950,10 +955,10 @@ const waterMaterial = new THREE.ShaderMaterial({
             col *= 0.94 + 0.06 * clamp(n.y, 0.0, 1.0);
             col = mix(col, uSky, fres * 0.45);
             // REFLET du décor (couche 2) : distordu par les ridules.
-            if (uReflection != 0) {
+            if (uReflectOn > 0.5) {
                 vec2 uvRef = gl_FragCoord.xy / uResolution + vRipple.xy * 0.035;
                 vec3 reflet = texture2D(uReflection, clamp(uvRef, vec2(0.0), vec2(1.0))).rgb;
-                col = mix(col, reflet, (0.22 + fres * 0.45) * 0.9);
+                col = mix(col, reflet, 0.15 + fres * 0.25);
             }
             // Reflets du décor (optionnels) : cube rendu de temps en temps.
             if (uReflect > 0.001) {
