@@ -153,6 +153,9 @@ export function run() {
 
     // --- La COUPE DE L'EAU : le visuel du réglage de profondeur ---
     resetToIdle();
+    clearLilyPads();
+    castTo(0, -40);                               // au centre : 2,5 m d'eau
+    resetToIdle();
     G().setFloatType('coulisse');
     G().setProfondeur(1.5);
     const hautHamecon = parseFloat(el('depthHook').style.top);

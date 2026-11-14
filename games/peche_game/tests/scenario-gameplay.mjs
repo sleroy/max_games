@@ -833,6 +833,31 @@ export function run() {
     check('à 2 tours/s, le combat dure plus d’une seconde', tempsCombat > 1,
         tempsCombat.toFixed(2) + ' s');
     resetToIdle();
+    group('48) Remontée automatique de la ligne : expliquée, plus de mystère');
+    resetToIdle();
+    clearLilyPads();
+    // Aucun poisson ne doit pouvoir mordre pendant ce test : on les met tous
+    // « en train de mordre » (ils sont alors ignorés par la détection).
+    G().fishes.forEach(function (f) { f.userData.biting = true; });
+    castTo(0, -25);
+    // Le vent ne fait pas fuir le bouchon au large (la ligne est tenue).
+    const x0 = G().floatGroup.position.x;
+    const z0 = G().floatGroup.position.z;
+    stepFor(15);
+    const derive = Math.hypot(G().floatGroup.position.x - x0, G().floatGroup.position.z - z0);
+    check('le bouchon reste autour du point de lancer (vent limité)', derive <= 4.5,
+        derive.toFixed(2) + ' unités de dérive en 15 s');
+    checkEqual('toujours en train d’attendre', state(), 'inWater');
+    // 3 secondes avant la remontée de sécurité, le jeu prévient.
+    stepFor(2.6);
+    check('le jeu prévient avant la remontée automatique',
+        el('status').textContent.indexOf('TOUTE SEULE') >= 0, el('status').textContent);
+    stepFor(3.2);
+    check('la ligne remonte toute seule', state() !== 'inWater', state());
+    check('le jeu explique pourquoi la ligne revient',
+        el('status').textContent.indexOf('Aucun poisson') >= 0, el('status').textContent);
+    G().fishes.forEach(function (f) { f.userData.biting = false; });
+    resetToIdle();
 }
 
 export default run;

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=67 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=68 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=67';
+import { SoundEngine } from './sound.js?v=68';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -3446,6 +3446,7 @@ let fishCaught = false;
 let castT = 0;
 let waitTimer = 0;
 let reelIdle = 0;                // secondes sans toucher la manivelle pendant la remontée
+let avertiRemontee = false;      // a-t-on prévenu de la remontée automatique ?
 let hameconDansLaVase = false;   // hameçon posé dans la vase (profondeur trop grande)
 let depuisLancement = 99;        // temps écoulé depuis que le bouchon s'est posé
 let biteFish = null;
@@ -3702,7 +3703,7 @@ let snagFreed = false;
 const castStart = new THREE.Vector3();
 const castTarget = new THREE.Vector3();
 const CAST_DURATION = 0.8;
-const MAX_WAIT = 12;
+const MAX_WAIT = 20;        // sans poisson, la ligne remonte toute seule (securite)
 
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
 // du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
@@ -3762,12 +3763,15 @@ function updateCrankVisibility() {
     crank.classList.toggle('active', CRANK_STATES.indexOf(floatState) >= 0);
 }
 
-function startReel() {
+function startReel(automatique) {
     if (floatState === 'inWater') {
         floatState = 'reeling';
         reelIdle = 0;
         hameconDansLaVase = false;
-        statusDisplay.textContent = 'On remonte la ligne… (le bouchon est toujours à l’eau : un poisson peut encore mordre !)';
+        avertiRemontee = false;
+        statusDisplay.textContent = automatique
+            ? 'Aucun poisson en ' + MAX_WAIT + ' s : la ligne a été remontée TOUTE SEULE. Relance (ou amorce pour attirer les poissons !).'
+            : 'On remonte la ligne… (le bouchon est toujours à l’eau : un poisson peut encore mordre !)';
     }
 }
 
@@ -4886,6 +4890,15 @@ function updateFloat(dt, time) {
         // de la patience avant qu'un poisson s'intéresse à l'appât.
         floatGroup.position.x += Math.cos(wind.dir) * wind.strength * 0.6 * dt;
         floatGroup.position.z += Math.sin(wind.dir) * wind.strength * 0.6 * dt;
+        // Le vent fait dériver le bouchon… mais la ligne est TENUE : il ne peut
+        // pas s'en aller à l'autre bout de l'étang (2 m maximum autour du posé).
+        const deriveX = floatGroup.position.x - castTarget.x;
+        const deriveZ = floatGroup.position.z - castTarget.z;
+        const derive = Math.hypot(deriveX, deriveZ);
+        if (derive > 4) {
+            floatGroup.position.x = castTarget.x + (deriveX / derive) * 4;
+            floatGroup.position.z = castTarget.z + (deriveZ / derive) * 4;
+        }
         const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
         floatGroup.position.y = 0.1 + houle;
         depuisLancement += dt;
@@ -4910,7 +4923,16 @@ function updateFloat(dt, time) {
             nibblePhase = 0;
             nibbleRippleTimer = 0;
         }
+        // Un poisson qui renifle l'esche fait patienter plus longtemps.
+        if (baitInterest) {
+            waitTimer = Math.min(waitTimer, MAX_WAIT - 6);
+        }
         waitTimer += dt;
+        // Trois secondes avant la remontée automatique : on prévient le joueur.
+        if (waitTimer > MAX_WAIT - 3 && !avertiRemontee) {
+            avertiRemontee = true;
+            statusDisplay.textContent = 'Toujours rien… la ligne va remonter TOUTE SEULE dans 3 s (tourne la manivelle pour la ramener, ou relance).';
+        }
         // Un tour de manivelle pendant l'attente : on ramène la ligne (pour
         // relancer ailleurs). La manivelle ne sert donc pas qu'au combat.
         if (consumeCrankTurns() > 0) {
@@ -4924,7 +4946,7 @@ function updateFloat(dt, time) {
             if (fish) {
                 showBiteView(fish);
             } else if (waitTimer > MAX_WAIT) {
-                startReel();
+                startReel(true);
             }
         }
     } else if (floatState === 'bite') {
