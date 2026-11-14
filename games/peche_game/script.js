@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=80 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=81 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=80';
+import { SoundEngine } from './sound.js?v=81';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -172,6 +172,9 @@ let crankLastAngle = 0;
 let crankRotationDelta = 0;
 let crankSoundAccum = 0;
 let crankLastMoveTime = 0;
+let crankSpeedRad = 0;
+let crankSpeedWindow = 0;
+let crankSpeedStrikes = 0;
 
 // ---------------------------------------------------------------------------
 // Moulinet : conversion « tours de manivelle ↔ longueur de fil »
@@ -246,13 +249,27 @@ crank.addEventListener('pointermove', event => {
     crankAngle += delta;
     crankLastAngle = angle;
     crankRotor.style.transform = 'rotate(' + crankAngle + 'rad)';
-    // Remonter TROP VITE fatigue la ligne : avertissement, puis risque croissant.
+    // Remonter TROP VITE fatigue la ligne — mais on mesure une MOYENNE sur une
+    // fenêtre de 0,6 s, et il faut DEUX fenêtres de suite trop rapides : un coup
+    // de poignet ne suffit pas, il faut vraiment enchaîner les tours.
     const maintenant = performance.now();
-    const ecart = Math.max(16, maintenant - crankLastMoveTime) / 1000;
+    const ecart = Math.max(8, maintenant - crankLastMoveTime) / 1000;
     crankLastMoveTime = maintenant;
-    const vitesse = Math.abs(delta) / ecart;             // radians / seconde
-    if (vitesse > VITESSE_MANIVELLE_MAX) {
-        avertirVitesse();
+    crankSpeedRad += Math.abs(delta);
+    crankSpeedWindow += ecart;
+    if (crankSpeedWindow >= 0.6) {
+        const toursParSeconde = (crankSpeedRad / TWO_PI) / crankSpeedWindow;
+        crankSpeedRad = 0;
+        crankSpeedWindow = 0;
+        if (toursParSeconde > VITESSE_MANIVELLE_MAX) {
+            crankSpeedStrikes += 1;
+            if (crankSpeedStrikes >= 2) {
+                crankSpeedStrikes = 0;
+                avertirVitesse();
+            }
+        } else {
+            crankSpeedStrikes = 0;
+        }
     }
 });
 
@@ -5564,7 +5581,7 @@ let testTime = 0;
 // classement local (3 onglets : poissons, poids total, records par espèce).
 // ---------------------------------------------------------------------------
 const MAX_LIGNES = 5;
-const VITESSE_MANIVELLE_MAX = 42;      // rad/s (~6,7 tours/s) : il faut vraiment forcer
+const VITESSE_MANIVELLE_MAX = 4.0;     // tours/s EN MOYENNE sur 0,6 s (il faut enchaîner)
 const RANKING_KEY = 'peche_max_games_classement';
 const NOM_KEY = 'peche_max_games_nom';
 let lignesRestantes = MAX_LIGNES;
@@ -5614,7 +5631,7 @@ function avertirVitesse() {
         statusDisplay.textContent = '⚠️ Tu remontes trop vite ! La ligne souffre ('
             + avertissementsVitesse + ' avertissement' + (avertissementsVitesse > 1 ? 's' : '') + ').';
     }
-    if (rand() < Math.min(0.15, 0.02 * avertissementsVitesse)) {
+    if (rand() < Math.min(0.10, 0.015 * avertissementsVitesse)) {
         casserLigne('Tu as remonté trop vite');
     }
 }
