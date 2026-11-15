@@ -18,13 +18,13 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 // Modules extraits (tout ce qui n'est pas l'orchestrateur).
 const MODULES = [
     'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
-    'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js'
+    'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js'
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 5194;
+const PLAFOND_SCRIPT = 5057;
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;
@@ -65,6 +65,7 @@ export function run() {
         'ondulations.js': 'export function creerOndulations(',
         'bourriche.js': 'export function creerBourriche(',
         'combat.js': 'export function creerCombat(',
+        'vie.js': 'export function creerVie(',
         'meteo.js': 'export function creerMeteo(',
         'placement.js': 'export function creerPlacement(',
         'bouchons.js': 'export function creerBouchons(',

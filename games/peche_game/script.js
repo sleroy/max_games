@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=158';
+import { SoundEngine } from './sound.js?v=159';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -33,6 +33,7 @@ import { creerLigne } from './ligne.js?v=155';
 import { creerBouchons } from './bouchons.js?v=156';
 import { creerPlacement } from './placement.js?v=157';
 import { creerMeteo } from './meteo.js?v=158';
+import { creerVie } from './vie.js?v=159';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -72,6 +73,7 @@ lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v
 lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
 lienEtat('bateauGroupe', function () { return bateauGroupe; }, function (v) { bateauGroupe = v; });
 lienEtat('bateauRame', function () { return bateauRame; }, function (v) { bateauRame = v; });
+lienEtat('birds', function () { return birds; }, function (v) { birds = v; });
 lienEtat('biteCooldown', function () { return biteCooldown; }, function (v) { biteCooldown = v; });
 lienEtat('biteFauxTouche', function () { return biteFauxTouche; }, function (v) { biteFauxTouche = v; });
 lienEtat('biteFenetre', function () { return biteFenetre; }, function (v) { biteFenetre = v; });
@@ -91,6 +93,7 @@ lienEtat('biteViewTimer', function () { return biteViewTimer; }, function (v) { 
 lienEtat('bouchonPossede', function () { return bouchonPossede; }, function (v) { bouchonPossede = v; });
 lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
 lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
+lienEtat('bubbles', function () { return bubbles; }, function (v) { bubbles = v; });
 lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
 lienEtat('cameraViewActive', function () { return cameraViewActive; }, function (v) { cameraViewActive = v; });
 lienEtat('cancelCast', function () { return cancelCast; }, function (v) { cancelCast = v; });
@@ -153,6 +156,7 @@ lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish =
 lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
 lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuDemelage = v; });
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
+lienEtat('libellules', function () { return libellules; }, function (v) { libellules = v; });
 lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
 lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
 lienEtat('lineGeometry', function () { return lineGeometry; }, function (v) { lineGeometry = v; });
@@ -178,6 +182,7 @@ lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle =
 lienEtat('renderBoutique', function () { return renderBoutique; }, function (v) { renderBoutique = v; });
 lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v; });
 lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
+lienEtat('sauteur', function () { return sauteur; }, function (v) { sauteur = v; });
 lienEtat('scionChoix', function () { return scionChoix; }, function (v) { scionChoix = v; });
 lienEtat('score', function () { return score; }, function (v) { score = v; });
 lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
@@ -2558,157 +2563,15 @@ const {
     POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound
 });
 
-// ---------------------------------------------------------------------------
-// Vie ambiante : oiseaux, libellules et poisson qui saute.
-// ---------------------------------------------------------------------------
-const birds = [];
-for (let i = 0; i < 3; i++) {
-    const bird = new THREE.Group();
-    const corps = new THREE.Mesh(
-        new THREE.SphereGeometry(0.35, 8, 6),
-        new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.9 })
-    );
-    corps.scale.set(1.8, 0.7, 0.8);
-    bird.add(corps);
-    const ailes = [];
-    for (let c = -1; c <= 1; c += 2) {
-        const aile = new THREE.Mesh(
-            new THREE.PlaneGeometry(2.2, 0.9),
-            new THREE.MeshStandardMaterial({ color: 0x33333d, roughness: 0.9, side: THREE.DoubleSide })
-        );
-        aile.position.set(0, 0.1, c * 1.1);
-        bird.add(aile);
-        ailes.push({ mesh: aile, cote: c });
-    }
-    bird.userData.ailes = ailes;
-    bird.userData.phase = i * 2.1;
-    scene.add(bird);
-    birds.push(bird);
-}
-
-const libellules = [];
-for (let i = 0; i < 3; i++) {
-    const lib = new THREE.Group();
-    const corps = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5),
-        new THREE.MeshStandardMaterial({ color: 0x2f6f8f, roughness: 0.6 })
-    );
-    corps.rotation.z = Math.PI / 2;
-    lib.add(corps);
-    for (let c = -1; c <= 1; c += 2) {
-        lib.add(new THREE.Mesh(
-            new THREE.PlaneGeometry(0.9, 0.28),
-            new THREE.MeshStandardMaterial({
-                color: 0xd9f2ff, transparent: true, opacity: 0.65, side: THREE.DoubleSide
-            })
-        ));
-    }
-    lib.userData.phase = i * 1.7;
-    scene.add(lib);
-    libellules.push(lib);
-}
-
-// Poisson qui saute hors de l'eau (un seul, réutilisé).
-const sauteur = new THREE.Group();
-sauteur.add(new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 10, 8),
-    new THREE.MeshStandardMaterial({ color: 0xb9c6c0, roughness: 0.4, metalness: 0.3 })
-));
-sauteur.visible = false;
-scene.add(sauteur);
-let sautT = -1;
-let sautTimer = 26;
-let oiseauTimer = 14;
-
-function updateAmbiante(dt, time) {
-    for (let i = 0; i < birds.length; i++) {
-        const bird = birds[i];
-        const p = bird.userData.phase;
-        bird.position.set(
-            Math.cos(time * 0.06 + p) * 70,
-            24 + Math.sin(time * 0.3 + p) * 2.5,
-            -60 + Math.sin(time * 0.06 + p) * 45);
-        bird.rotation.y = -time * 0.06 - p + Math.PI / 2;
-        const battement = Math.sin(time * 9 + p) * 0.7;
-        bird.userData.ailes.forEach(a => { a.mesh.rotation.x = a.cote * (0.2 + battement); });
-    }
-    for (let i = 0; i < libellules.length; i++) {
-        const lib = libellules[i];
-        const p = lib.userData.phase;
-        lib.position.set(
-            POND_CENTER.x + Math.sin(time * 0.9 + p) * 14 + Math.sin(time * 3.1 + p) * 1.5,
-            1.2 + Math.sin(time * 2.3 + p) * 0.5,
-            POND_CENTER.z + 18 + Math.cos(time * 0.7 + p * 1.3) * 9);
-        lib.rotation.y = Math.sin(time * 2 + p) * 0.6;
-    }
-    if (sautT < 0) {
-        sautTimer -= dt;
-        if (sautTimer <= 0) {
-            sautTimer = 24 - weatherPluie * 8;
-            sautT = 0;
-            sauteur.position.set(POND_CENTER.x + 8, 0.1, POND_CENTER.z + 22);
-            sauteur.visible = true;
-            sound.jump();
-            spawnRipple(sauteur.position);
-        }
-    } else {
-        sautT += dt;
-        const duree = 1.1;
-        const t = Math.min(1, sautT / duree);
-        sauteur.position.y = 0.1 + Math.sin(Math.PI * t) * 2.6;
-        sauteur.rotation.x = -Math.sin(Math.PI * t) * 1.2;
-        if (sautT >= duree) {
-            sautT = -1;
-            sauteur.visible = false;
-            sound.retombe();
-            spawnRipple(sauteur.position);
-        }
-    }
-    oiseauTimer -= dt;
-    if (oiseauTimer <= 0) {
-        oiseauTimer = 16 + weatherPluie * 10;
-        if (weatherPluie < 0.4) {
-            sound.birds();
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Bulles : le seul indice de la présence des poissons sous l'eau.
-// ---------------------------------------------------------------------------
-const bubbles = [];
-const bubbleGeo = new THREE.SphereGeometry(0.06, 6, 6);
-const bubbleMat = new THREE.MeshBasicMaterial({
-    color: 0xdff3ff, transparent: true, opacity: 0.65, depthWrite: false
+let birds;
+let libellules;
+let sauteur;
+let bubbles;
+const {
+    updateAmbiante, spawnBubbles, updateBubbles
+} = creerVie({
+    scene, POND_CENTER, sound
 });
-
-function spawnBubbles(position, count) {
-    if (bubbles.length > 70) {
-        return;
-    }
-    for (let i = 0; i < count; i++) {
-        const bulle = new THREE.Mesh(bubbleGeo, bubbleMat);
-        bulle.position.set(
-            position.x + ((i * 7) % 3 - 1) * 0.16,
-            Math.max(-3.4, position.y),
-            position.z + ((i * 5) % 3 - 1) * 0.16);
-        bulle.userData.vy = 0.7 + (i % 3) * 0.25;
-        scene.add(bulle);
-        bubbles.push({ mesh: bulle, t: 0 });
-    }
-}
-
-function updateBubbles(dt) {
-    for (let i = bubbles.length - 1; i >= 0; i--) {
-        const b = bubbles[i];
-        b.t += dt;
-        b.mesh.position.y += b.mesh.userData.vy * dt;
-        if (b.mesh.position.y > 0.05 || b.t > 2.4) {
-            scene.remove(b.mesh);
-            bubbles.splice(i, 1);
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Poissons : population, fabrique 3D, bancs et spécimens — module dédié.
