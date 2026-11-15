@@ -17,7 +17,7 @@ export function creerBateau(deps) {
         rodBase, POSTE_ROD_TIP, rodTip, POSTE_BOURRICHE, BOURRICHE_POS, POSTE_GIROUETTE,
         vaneGroup, POSTE_CAM_POS, NORMAL_CAM_POS, POSTE_CAM_TARGET, NORMAL_CAM_TARGET, rodPivot,
         rodGroup, rodTipVisual, floatIdle, floatGroup, bourriche, resetCameraView, feedAim,
-        majCoupeProfondeur, renderCartePlacement
+        majCoupeProfondeur, renderCartePlacement, obstacles
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -166,15 +166,47 @@ export function creerBateau(deps) {
         // Les bornes se calculent au rayon de l'ANGLE D'ARRIVÉE (et non de départ) : le
         // contour varie de 71 à 104 unités, et un coup de rame qui tourne beaucoup
         // pouvait sinon amener la barque à moins de 10 unités du centre, voire au-delà.
-        const nouvelAngle = etat.emplacementAngle + deltaAngle;
-        const rayon = rayonEtang(nouvelAngle);
-        let marge = etat.emplacementMarge + deltaMarge;
-        marge = Math.max(BATEAU_MIN_CENTRE - rayon, Math.min(-BATEAU_MARGE_BORD, marge));
-        const ok = placerALAngle(nouvelAngle, marge, -1, true);
-        if (ok) {
-            etat.spawnRipple({ x: angler.position.x, y: 0, z: angler.position.z });
+        const avant = { angle: etat.emplacementAngle, marge: etat.emplacementMarge,
+            x: etat.bateauGroupe.position.x, z: etat.bateauGroupe.position.z };
+        // `part` = fraction du coup de rame réellement donné (1 = plein, 0,4 = freiné).
+        const viser = function (part) {
+            const angle = avant.angle + deltaAngle * part;
+            const rayon = rayonEtang(angle);
+            const marge = Math.max(BATEAU_MIN_CENTRE - rayon,
+                Math.min(-BATEAU_MARGE_BORD, avant.marge + deltaMarge * part));
+            return placerALAngle(angle, marge, -1, true);
+        };
+        const ok = viser(1);
+        if (!ok) { return false; }
+        // OBSTACLES : la coque s'arrête contre un ouvrage, et ralentit dans les joncs. On teste
+        // plusieurs points du trajet (un grand coup de rame ne traverse pas un obstacle).
+        const departLibre = !obstacles.heurtBarque(avant.x, avant.z)
+            || obstacles.heurtBarque(avant.x, avant.z).effet !== 'arret';
+        const heurt = heurtSurTrajet(avant.x, avant.z, etat.bateauGroupe.position.x, etat.bateauGroupe.position.z);
+        if (heurt && heurt.effet === 'arret' && departLibre) {
+            viser(0);   // la barque reste où elle était
+            etat.spawnRipple({ x: heurt.obstacle.x, y: 0, z: heurt.obstacle.z });
+            statusDisplay.textContent = '💥 La barque heurte ' + heurt.obstacle.nom + ' : impossible de passer !';
+            return false;
         }
-        return ok;
+        if (heurt && heurt.effet === 'ralenti') {
+            viser(0.4);   // freinée : 40 % du coup de rame
+            statusDisplay.textContent = '🌿 Les joncs freinent la barque…';
+        }
+        etat.spawnRipple({ x: angler.position.x, y: 0, z: angler.position.z });
+        return true;
+    }
+
+    // Premier obstacle touché par la coque entre deux points ('arret' l'emporte sur 'ralenti').
+    function heurtSurTrajet(x0, z0, x1, z1) {
+        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 1.5));
+        let ralenti = null;
+        for (let i = 1; i <= n; i++) {
+            const h = obstacles.heurtBarque(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n);
+            if (h && h.effet === 'arret') { return h; }
+            if (h) { ralenti = h; }
+        }
+        return ralenti;
     }
 
     // --- Commandes TACTILES de la barque ---------------------------------------

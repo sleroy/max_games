@@ -230,6 +230,7 @@ export function run() {
     G().recommencerPartie();
 
     attraction(O);
+    collisions(O);
 }
 
 /** Densité (poissons / unité²) de l'espèce près de ses obstacles, moyennée sur 4 instants de simulation. */
@@ -323,3 +324,111 @@ function attraction(O) {
 }
 
 export default run;
+
+/** Place la barque à `recul` unités de l'obstacle, sur l'axe centre → obstacle. */
+function placerBarqueDevant(o, recul) {
+    if (!G().isBateau()) { G().embarquerBateau(); }
+    let ecart = o.angle - G().getEmplacement().angle;
+    while (ecart > Math.PI) { ecart -= Math.PI * 2; }
+    while (ecart < -Math.PI) { ecart += Math.PI * 2; }
+    G().deplacerBateau(ecart, 0);
+    const centre = G().getPondCenter();
+    const distObstacle = Math.hypot(o.x - centre.x, o.z - centre.z);
+    const marge = distObstacle - recul - G().getRayonEtang(o.angle);
+    G().deplacerBateau(0, marge - G().getEmplacement().marge);
+}
+
+/** Rame vers la berge, pas à pas : renvoie ce qui s'est passé. */
+function ramerVersLaBerge(O, max) {
+    const trace = { pas: 0, bloque: false, distanceMin: Infinity, ralenti: false, plusPetitPas: Infinity };
+    let dernier = G().getBateau();
+    for (let i = 0; i < max; i++) {
+        const ok = G().deplacerBateau(0, 2.4);
+        const b = G().getBateau();
+        const deplace = Math.hypot(b.x - dernier.x, b.z - dernier.z);
+        if (!ok) { trace.bloque = true; break; }
+        if (deplace < 0.01) { break; }          // borne de l'étang : rien ne bouge
+        trace.pas++;
+        trace.plusPetitPas = Math.min(trace.plusPetitPas, deplace);
+        const touche = O.heurtBarque(b.x, b.z);
+        if (touche && touche.effet === 'ralenti') { trace.ralenti = true; }
+        O.liste.forEach(function (o) {
+            o.cercles.forEach(function (c) {
+                if (c.barque === false || !o.barque || o.barque !== 'arret') { return; }
+                trace.distanceMin = Math.min(trace.distanceMin, distance2D(b, c) - c.r);
+            });
+        });
+        dernier = b;
+    }
+    return trace;
+}
+
+function collisions(O) {
+    group('73d) Obstacles : la barque bute dessus, le lancer retombe dessus');
+    G().recommencerPartie();
+    resetToIdle();
+    assurerBarque();
+    G().placerAuPoste(0);
+
+    // --- Barque : arrêtée par les ouvrages, ralentie par les joncs ---
+    const arret = O.liste.filter(o => o.barque === 'arret');
+    arret.forEach(function (o) {
+        G().placerAuPoste(0);
+        placerBarqueDevant(o, 16);
+        const avant = G().getBateau();
+        check(o.id + ' : la barque est au large, en eau libre', O.heurtBarque(avant.x, avant.z) === null);
+        const trace = ramerVersLaBerge(O, 30);
+        check(o.id + ' : la barque est ARRÊTÉE (le coup de rame est refusé)', trace.bloque,
+            trace.pas + ' pas réussis');
+        check(o.id + ' : elle ne traverse jamais l’obstacle (coque ≥ ' + O.RAYON_BARQUE + ' du bord)',
+            trace.distanceMin >= O.RAYON_BARQUE - 0.2, trace.distanceMin.toFixed(2) + ' de jeu');
+        check(o.id + ' : le message nomme l’obstacle',
+            el('status').textContent.indexOf(o.nom) >= 0, el('status').textContent);
+        const fin = G().getBateau();
+        check(o.id + ' : elle ne bouge plus, même en insistant',
+            G().deplacerBateau(0, 2.4) === false && distance2D(fin, G().getBateau()) < 0.01);
+        // On peut s'en éloigner (reculer vers le centre) : la barque n'est pas coincée.
+        check(o.id + ' : on peut reculer vers le centre', G().deplacerBateau(0, -6) === true);
+    });
+    check('6 types d’ouvrages arrêtent la barque', new Set(arret.map(o => o.type)).size === 6,
+        [...new Set(arret.map(o => o.type))].join(', '));
+
+    const joncs = O.liste.find(o => o.type === 'joncs');
+    G().placerAuPoste(0);
+    placerBarqueDevant(joncs, 14);
+    const libre = ramerVersLaBerge(O, 3);
+    check('en eau libre, un coup de rame avance de ≈ 2,4', libre.plusPetitPas > 2, libre.plusPetitPas.toFixed(2));
+    const dedans = ramerVersLaBerge(O, 30);
+    check('les joncs ralentissent la barque (sans l’arrêter)', dedans.ralenti && dedans.plusPetitPas < 1.4,
+        'plus petit pas ' + dedans.plusPetitPas.toFixed(2));
+    check('… et le message parle des joncs', el('status').textContent.indexOf('joncs') >= 0, el('status').textContent);
+    const douve = O.liste.find(o => o.type === 'douve');
+    check('la douve ne bloque pas la barque (elle est sur la rive)', O.heurtBarque(douve.x, douve.z) === null);
+    G().quitterBateau();
+    G().placerAuPoste(0);
+    resetToIdle();
+
+    // --- Lancer : refusé sur un ouvrage, accroché sur une souche ou des joncs ---
+    G().setFloatType('anglaise');
+    G().setProfondeur(2.5);
+    O.liste.filter(o => o.bloqueLancer).forEach(function (o) {
+        const c = o.cercles.find(x => x.eau);
+        resetToIdle();
+        const etatApres = lancerSur(c.x, c.z);
+        check(o.id + ' : le lancer sur ' + o.nom + ' est refusé (la ligne reste au repos)', etatApres === 'idle', etatApres);
+        check(o.id + ' : le message explique pourquoi', el('status').textContent.indexOf('retombe sur ' + o.nom) >= 0,
+            el('status').textContent);
+    });
+    ['souche', 'joncs', 'epave', 'pieux'].forEach(function (type) {
+        const o = O.liste.find(x => x.type === type);
+        resetToIdle();
+        const etatApres = lancerSur(o.cercles[0].x, o.cercles[0].z);
+        check(o.id + ' : le lancer pile dessus accroche (pas de lancer refusé)', etatApres === 'snag', etatApres);
+        resetToIdle();
+    });
+    resetToIdle();
+    const libreX = O.liste.find(o => o.type === 'roches');
+    check('une eau libre n’est pas bloquée', O.lancerBloque({ x: 0, z: -71 }) === null
+        && O.accrocheEn({ x: 0, z: -71 }) === null && !!libreX);
+    G().recommencerPartie();
+}

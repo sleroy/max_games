@@ -12,7 +12,7 @@ export function creerCycleLigne(deps) {
         canvas, camera, water, totalLignes, castStart, rodTipVisual, castTarget, wind,
         POND_CENTER, rayonEtang, updateToolDock, risqueEmmelement, fishButton, statusDisplay,
         sound, fermerPanneauCombat, setDragLoosened, crank, feedButton, MAX_WAIT, BITE_RADIUS,
-        fishes, scoreDisplay, fmtPoids
+        fishes, scoreDisplay, fmtPoids, obstacles
     } = deps;
 
     etat.raycaster = new THREE.Raycaster();
@@ -45,6 +45,13 @@ export function creerCycleLigne(deps) {
         if (wd > maxR) {
             castTarget.x = POND_CENTER.x + (wdx / wd) * maxR;
             castTarget.z = POND_CENTER.z + (wdz / wd) * maxR;
+        }
+        // Le lancer retombe SUR un ouvrage (ponton, écluse, roches) : refusé, la ligne reste au repos.
+        const bloque = obstacles.lancerBloque(castTarget);
+        if (bloque) {
+            statusDisplay.textContent = 'Le lancer retombe sur ' + bloque.nom + ' ! Vise l’eau libre.';
+            etat.spawnFloatingText('Lancer bloqué !', castTarget, '#ffb347');
+            return;
         }
         etat.castT = 0;
         etat.fishCaught = false;
