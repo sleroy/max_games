@@ -1707,6 +1707,7 @@ body.calm .struggle-marker {
     display: none;
 }
 
+.feed-gauge.active ~ .hud-bottom,
 .tool-dock.ouvert ~ .hud-bottom,
 .camera-controls:not([hidden]) ~ .hud-bottom {
     visibility: hidden;
@@ -1791,5 +1792,97 @@ body.calm .struggle-marker {
 
     .hud > .depth-panel .depth-cross {
         height: 60px;
+    }
+}
+
+
+.struggle.snagging .drag-button {
+    display: none;
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+    .hud {
+        --depth-width: clamp(120px, 29vw, 180px);
+        --crank-size: clamp(76px, 36vh, 120px);
+        --play-lane-start: calc(var(--depth-width) + 16px + env(safe-area-inset-left, 0px));
+        --play-lane-end: calc(8px + env(safe-area-inset-right, 0px));
+    }
+
+    .hud:has(.crank.active) {
+        --play-lane-end: calc(var(--crank-size) + 16px + env(safe-area-inset-right, 0px));
+    }
+
+    .hud > .depth-panel {
+        width: var(--depth-width);
+    }
+
+    .feed-gauge,
+    .struggle,
+    .hud-bottom,
+    .hud:has(.crank.active) .hud-bottom {
+        left: var(--play-lane-start);
+        right: var(--play-lane-end);
+        width: auto;
+        transform: none;
+    }
+
+    .feed-gauge,
+    .struggle {
+        top: calc(60px + env(safe-area-inset-top, 0px));
+        bottom: auto;
+    }
+
+    .feed-gauge {
+        max-width: 360px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #102a36ee;
+    }
+
+    .feed-gauge-label {
+        white-space: normal;
+        text-align: center;
+    }
+
+    .struggle {
+        max-width: 420px;
+        padding: 6px 8px;
+        font-size: 0.82rem;
+        background: #102a36ee;
+    }
+
+    .struggle-info {
+        margin-bottom: 5px;
+    }
+
+    .struggle-track {
+        height: 13px;
+    }
+
+    .struggle-marker {
+        top: -3px;
+        height: 17px;
+    }
+
+    .struggle-timer {
+        margin-top: 4px;
+    }
+
+    .struggle-legend,
+    .struggle:not(.snagging) .struggle-hint {
+        display: none;
+    }
+
+    .drag-button {
+        min-height: 44px;
+        margin-top: 4px;
+        padding: 4px 8px;
+    }
+
+    .crank {
+        right: calc(8px + env(safe-area-inset-right, 0px));
+        bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+        width: var(--crank-size);
+        height: var(--crank-size);
     }
 }

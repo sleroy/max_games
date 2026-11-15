@@ -3,8 +3,8 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=119';
-import { creerJeuDemelage } from './demelage.js?v=118';
+import { SoundEngine } from './sound.js?v=120';
+import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
 import { creerClassement } from './classement.js';
@@ -5603,14 +5603,14 @@ function startStruggle(fish, facteurAvantage) {
     floatState = 'struggle';
     setDragLoosened(false);
     strugglePanel.classList.add('active');
-    struggleInfo.textContent = 'Taille ' + size.toFixed(1) + ' · force ' + power.toFixed(1) + ' · agressivité ' + aggression.toFixed(1) + ' · ' + fish.userData.weight.toFixed(1).replace('.', ',') + ' kg'
-        + ' · ' + style.nom
-        + (avantage < 0.99 ? ' · avantage pour toi !' : (avantage > 1.01 ? ' · avantage au poisson' : ''));
+    strugglePanel.classList.remove('snagging');
+    struggleInfo.textContent = (fish.userData.espece || 'Poisson') + ' · ' + fmtPoids(fish.userData.weight) + ' kg'
+        + (avantage < 0.99 ? ' · avantage pour toi' : (avantage > 1.01 ? ' · avantage au poisson' : ''));
     struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
     updateStruggleBar();
     fishButton.disabled = true;
     fishButton.hidden = true;
-    statusDisplay.textContent = 'Poisson ferré ! Tourne la manivelle pour le ramener !';
+    statusDisplay.textContent = 'Tourne la manivelle !';
 }
 
 // Cherche un carnassier libre assez proche du bouchon pendant la remontée.
@@ -6007,7 +6007,7 @@ function updateStruggle(dt) {
     struggle.lateral = (struggle.lateral || 0) * Math.max(0, 1 - dt * 1.6);
     if (!struggle.fatigueShown && struggle.elapsed > Math.min(2.5, endurance * 0.35)) {
         struggle.fatigueShown = true;
-        statusDisplay.textContent = 'Le poisson se fatigue… c’est le moment de tourner plus vite !';
+        statusDisplay.textContent = 'Le poisson fatigue. Tourne plus vite !';
     }
     // 3) La barre et la position du poisson suivent la longueur de fil sortie.
     // 3) Frein : si on lâche du fil, le poisson reprend de la distance mais la
@@ -6101,6 +6101,7 @@ function startSnag(mode) {
     };
     snagIndicePret = null;
     strugglePanel.classList.add('active');
+    strugglePanel.classList.add('snagging');
     sound.snag();
     struggleInfo.textContent = dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
     struggleTimer.textContent = '';

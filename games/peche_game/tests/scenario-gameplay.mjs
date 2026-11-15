@@ -117,7 +117,7 @@ export function run() {
     checkEqual('manivelle affichée pendant le combat', crankWidgetActive(), true);
     checkEqual('caméra de nouveau normale', G().getCameraMode(), 'normal');
     checkEqual('vue bouchon refermée', G().isBiteViewActive(), false);
-    check('le panneau annonce le poisson', el('struggleInfo').textContent.startsWith('Taille '),
+    check('le panneau annonce le poisson', el('struggleInfo').textContent.includes(' kg'),
         el('struggleInfo').textContent);
     check('le panneau indique le nombre de tours',
         el('struggleTimer').textContent.includes('de manivelle'), el('struggleTimer').textContent);
