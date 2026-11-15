@@ -16,3 +16,6 @@ node_modules/
 
 # Artefacts de test locaux (les jeux vivent UNIQUEMENT dans games/)
 /peche_game/
+
+# État local de l'agent IA (mémoire + journaux de boucle)
+/.opencode/

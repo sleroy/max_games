@@ -3,12 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=131';
+import { SoundEngine } from './sound.js?v=132';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=131';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=132';
 import { creerClassement } from './classement.js';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=131';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=132';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -6236,20 +6236,38 @@ function updateBiteView(dt) {
     }
 }
 
-// Le clic ne sert plus qu'à dégager la ligne des nénuphars : pendant l'épreuve
-// de force, seul le moulinet (la manivelle) fait revenir le poisson.
+// Déclencher un poisson/une ligne accrochée : le clic ne sert QUE à sortir d'un
+// accrochage (nénuphars ou vase). Pendant l'épreuve de force, seul le moulinet
+// (la manivelle) fait revenir le poisson.
+// Un clic UTILE : la ligne se détend d'un cran. La vase ne peut en encaisser
+// qu'un toutes les clickCooldown secondes (0 côté nénuphars).
+function appliquerClicUtile() {
+    if (!snag) { return; }
+    tension = Math.max(0, tension - snag.clickPower);
+    snag.lastClick = snag.elapsed;
+    snag.clicsUtiles += 1;
+}
+
+function snagPret() {
+    if (!snag) { return false; }
+    return snag.clickCooldown <= 0
+        || (snag.elapsed - snag.lastClick) >= snag.clickCooldown;
+}
+
 function reelClick() {
     if (floatState === 'snag' && snag) {
         snag.clics += 1;
         // LA VASE EST TENACE : un clic n'est efficace qu'après un temps de
         // récupération (la ligne doit se détendre). Les nénuphars, eux, n'ont
         // pas de temps de récupération (clickCooldown = 0).
-        const pret = snag.clickCooldown <= 0
-            || (snag.elapsed - snag.lastClick) >= snag.clickCooldown;
-        if (pret) {
-            tension = Math.max(0, tension - snag.clickPower);
-            snag.lastClick = snag.elapsed;
-            snag.clicsUtiles += 1;
+        // Un clic arrivé un poil trop tôt n'est plus PERDU : il est mis en
+        // attente et s'appliquera dès que la ligne est prête (voir updateSnag).
+        // Sans ça, un enfant qui cliquait au bon rythme voyait ses clics
+        // ignorés et perdait sa ligne.
+        if (snagPret()) {
+            appliquerClicUtile();
+        } else {
+            snag.enAttente = true;
         }
         shake = 0.06;
         sound.reel();
@@ -6385,12 +6403,17 @@ function startSnag(mode) {
     //    tension monte et la ligne casse.
     snag = dansLaVase ? {
         dansLaVase: true,
-        pullRate: 0.10,
-        burstStrength: 0.10,
+        // La vase tire un peu moins fort qu'avant : ses à-coups rendaient la
+        // sortie injuste (on pouvait perdre la ligne en cliquant correctement).
+        pullRate: 0.08,
+        burstStrength: 0.08,
         burstInterval: 0.9,
         burstTimer: 0.9,
-        clickPower: 0.10,
+        // Chaque clic utile détend un peu plus la ligne qu'avant : la sortie de
+        // vase dure ~3 s de clics réguliers au lieu de ~4 s.
+        clickPower: 0.12,
         clickCooldown: 0.32,
+        enAttente: false,       // clic arrivé trop tôt : gardé, pas perdu
         elapsed: 0,
         lastClick: -1,
         clics: 0,
@@ -6403,6 +6426,7 @@ function startSnag(mode) {
         burstTimer: 1.1,
         clickPower: 0.10,
         clickCooldown: 0,
+        enAttente: false,
         elapsed: 0,
         lastClick: -1,
         clics: 0,
@@ -6440,9 +6464,11 @@ function majIndiceSnag() {
         return;
     }
     snagIndicePret = pret;
+    // Le clic n'est jamais perdu (il attend son tour) : on encourage au lieu de
+    // gronder le joueur.
     struggleHint.textContent = pret
         ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
-        : 'Trop tôt : laisse le fil se détendre…';
+        : 'La ligne se détend… ton clic est gardé, continue !';
     if (fishButton.classList) {
         fishButton.classList.toggle('cooldown', !pret);
     }
@@ -6484,6 +6510,13 @@ function updateSnag(dt) {
         return;
     }
     snag.elapsed += dt;
+    // Clic mis en attente : il part dès que la ligne a eu le temps de se
+    // détendre. Le rythme (~3 clics/s) reste obligatoire, mais plus aucun clic
+    // n'est perdu.
+    if (snag.enAttente && snagPret()) {
+        snag.enAttente = false;
+        appliquerClicUtile();
+    }
     if (tension <= 0) {
         tension = 0;
         updateStruggleBar();
@@ -7391,10 +7424,22 @@ canvas.addEventListener('pointerdown', event => {
         tendreLigneAuLancer();
         return;
     }
-    // RAGONDIN : un clic SUR LUI le chasse (et ne ferre jamais un poisson).
-    if (ragondin && clicSurRagondin(event)) {
-        hitRagondin();
-        return;
+    // RAGONDIN : le chasser ne doit JAMAIS gêner la pêche. Il ne capte donc le
+    // clic que lorsque la ligne ne fait rien (au repos) ou qu'elle est
+    // simplement posée à l'eau. Pendant un ferrage, un combat, une remontée ou
+    // un accrochage, le clic garde son rôle habituel.
+    if (ragondin && (floatState === 'idle' || floatState === 'inWater')) {
+        if (clicSurRagondin(event)) {
+            hitRagondin();
+            return;
+        }
+        // Clic à côté pendant qu'il rôde : on ne LANCE pas la ligne par
+        // accident. C'était le vrai problème : viser le ragondin et rater
+        // faisait partir le bouchon.
+        if (floatState === 'idle') {
+            statusDisplay.textContent = '🐀 Le ragondin est là : vise-le (3 clics) avant de relancer.';
+            return;
+        }
     }
     // Poisson en main : on dose la puissance du lancer vers la bourriche.
     if (floatState === 'holding') {
@@ -7700,9 +7745,42 @@ function hitRagondin() {
     return false;
 }
 
+// Zone de clic GÉNÉREUSE autour du ragondin (en pixels CSS). Le modèle 3D est
+// petit et l'animal bouge : exiger un clic pile sur lui rendait la chasse
+// pénible (surtout au doigt). On accepte donc un clic « à côté ».
+const RAGONDIN_CLIC_RADIUS = 70;
+
+/** Position du ragondin À L'ÉCRAN (pixels CSS), ou null s'il est derrière nous. */
+function ragondinALEcran() {
+    if (!ragondin) { return null; }
+    const rect = canvas.getBoundingClientRect();
+    const centre = ragondin.position.clone();
+    centre.y += 0.35;                       // le corps, pas les pattes
+    const projete = centre.project(camera);
+    if (projete.z > 1) {                    // derrière la caméra
+        return null;
+    }
+    return {
+        x: rect.left + (projete.x * 0.5 + 0.5) * rect.width,
+        y: rect.top + (-projete.y * 0.5 + 0.5) * rect.height
+    };
+}
+
 function clicSurRagondin(event) {
     if (!ragondin) { return false; }
     const rect = canvas.getBoundingClientRect();
+    // 1) Test à l'écran : la distance au ragondin PROJETÉ. Il ne dépend ni de la
+    //    taille du modèle ni de l'inclinaison de la caméra.
+    const ecran = ragondinALEcran();
+    if (ecran) {
+        const dx = event.clientX - ecran.x;
+        const dy = event.clientY - ecran.y;
+        if (dx * dx + dy * dy <= RAGONDIN_CLIC_RADIUS * RAGONDIN_CLIC_RADIUS) {
+            return true;
+        }
+    }
+    // 2) Test 3D exact : si le clic tombe vraiment sur le modèle, on le prend
+    //    aussi (utile quand il sort du cadre de la zone d'écran).
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointerNdc, camera);
@@ -7714,8 +7792,13 @@ function updateRagondin(dt) {
         if (!ragondinAuto) { return; }
         ragondinTimer -= dt;
         if (ragondinTimer <= 0) {
-            // On ne le fait sortir que s'il y a réellement un poisson à voler.
-            if (score > 0 && floatState !== 'struggle' && floatState !== 'bite') {
+            // Il ne sort que s'il y a réellement un poisson à voler, et
+            // SEULEMENT quand le joueur ne fait rien (au repos) ou quand le
+            // bouchon est déjà à l'eau. Rien pendant un lancer, un ferrage, une
+            // épreuve de force ou un accrochage : sa visite ne doit pas tomber
+            // au milieu d'une action.
+            const momentCalme = floatState === 'idle' || floatState === 'inWater';
+            if (score > 0 && momentCalme) {
                 if (spawnRagondin()) { ragondinTimer = 45 + rand() * 30; }
             } else {
                 ragondinTimer = 8 + rand() * 5;   // on revérifie bientôt
@@ -8357,6 +8440,16 @@ window.__game = {
     getRagondin: function () {
         return ragondin ? { x: ragondin.position.x, z: ragondin.position.z, hits: ragondinHits } : null;
     },
+    // Un clic à (x, y) en pixels toucherait-il le ragondin ? (zone généreuse)
+    clicSurRagondinAt: function (x, y) {
+        return clicSurRagondin({ clientX: x, clientY: y });
+    },
+    // Position À L'ÉCRAN du ragondin (pixels CSS) : utile aux tests.
+    getRagondinEcran: function () {
+        const ecran = ragondinALEcran();
+        return ecran ? { x: ecran.x, y: ecran.y, devant: true }
+            : { x: 0, y: 0, devant: false };
+    },
     getRagondinTimer: function () { return ragondinTimer; },
     setRagondinTimer: function (v) { ragondinTimer = v; },
     setRagondinAuto: function (value) { ragondinAuto = !!value; },
@@ -8632,6 +8725,7 @@ window.__game = {
             lastClick: snag.lastClick,
             pret: snag.clickCooldown <= 0
                 || (snag.elapsed - snag.lastClick) >= snag.clickCooldown,
+            enAttente: !!snag.enAttente,
             clics: snag.clics,
             clicsUtiles: snag.clicsUtiles
         };

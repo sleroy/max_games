@@ -62,14 +62,28 @@ export function run() {
         apresSpam.clicsUtiles + ' clic(s) utile(s) sur ' + apresSpam.clics);
     check('la tension n’a pas disparu', apresSpam.tension > 0.2,
         apresSpam.tension.toFixed(2));
+    checkEqual('un clic trop rapide est GARDÉ, pas perdu',
+        apresSpam.enAttente, true);
 
-    // Un clic juste après : le jeu demande de laisser le fil se détendre.
+    // Un clic juste après : le jeu explique qu'il est gardé (pas « trop tôt »).
     fire('fishButton', 'click');
     check('le bouton signale le temps de récupération',
         el('fishButton').classList.contains('cooldown'), true);
-    check('le message dit d’attendre',
-        el('struggleHint').textContent.indexOf('Trop tôt') >= 0,
+    check('le message rassure : le clic est gardé',
+        el('struggleHint').textContent.indexOf('gardé') >= 0,
         el('struggleHint').textContent);
+    const avantAttente = G().getSnag();
+    step(0.35);
+    const apresAttente = G().getSnag();
+    check('le clic gardé finit par compter',
+        apresAttente.clicsUtiles > avantAttente.clicsUtiles,
+        avantAttente.clicsUtiles + ' -> ' + apresAttente.clicsUtiles);
+    checkEqual('plus rien en attente une fois le clic passé',
+        apresAttente.enAttente, false);
+    // Le clic gardé vient d'être consommé : la ligne doit de nouveau se détendre.
+    checkEqual('il faut de nouveau attendre entre deux clics utiles',
+        el('fishButton').classList.contains('cooldown'), true);
+    // Sans nouveau clic, la ligne se détend et le bouton redevient prêt.
     step(0.35);
     checkEqual('après le temps de récupération, le bouton redevient prêt',
         el('fishButton').classList.contains('cooldown'), false);

@@ -2,7 +2,10 @@
 // Scénario 14 : le RAGONDIN VOLEUR (aléa rare, 3 clics, jamais confondu avec
 // le ferrage).
 // ---------------------------------------------------------------------------
-import { group, check, checkEqual, G, el, resetToIdle, stepFor, fire } from './harness.mjs';
+import {
+    group, check, checkEqual, G, el, resetToIdle, stepFor, fire,
+    state, step, castTo, startFight, clearLilyPads
+} from './harness.mjs';
 
 export function run() {
     group('50) Le ragondin voleur');
@@ -85,6 +88,58 @@ export function run() {
     checkEqual('la bannière s’éteint après le vol automatique',
         el('ragondinAlert').classList.contains('active'), false);
     G().setRagondinAuto(false);
+
+    // 6) Il ne sort QUE quand on ne fait rien ou quand le bouchon est à l'eau.
+    //    Rien pendant un ferrage ni une épreuve de force.
+    G().effrayerRagondin();
+    resetToIdle();
+    clearLilyPads();
+    G().setScore(5);
+    castTo(0, -25);                            // bouchon à l'eau
+    checkEqual('bouchon à l’eau', state(), 'inWater');
+    G().setRagondinAuto(true);
+    G().setRagondinTimer(0.01);
+    stepFor(0.1);
+    checkEqual('il peut sortir quand le bouchon est à l’eau',
+        G().isRagondinActive(), true);
+    G().effrayerRagondin();
+
+    // Pendant une épreuve de force : il reste caché.
+    startFight(0, -25);
+    checkEqual('épreuve de force en cours', state(), 'struggle');
+    G().setRagondinTimer(0.01);
+    stepFor(0.2);
+    checkEqual('aucun ragondin pendant une épreuve de force',
+        G().isRagondinActive(), false);
+    G().setRagondinAuto(false);
+    resetToIdle();
+
+    // 7) Chasser le ragondin ne gêne JAMAIS la pêche : un clic à côté de lui
+    //    ne lance pas la ligne (c'était le vrai problème).
+    G().effrayerRagondin();
+    resetToIdle();
+    G().setScore(1);
+    G().spawnRagondin();
+    step(1 / 60);                              // une image : caméra à jour
+    const ecran = G().getRagondinEcran();
+    check('le ragondin est bien visible à l’écran',
+        !!ecran && ecran.devant, JSON.stringify(ecran));
+    checkEqual('un clic SUR lui le touche', G().clicSurRagondinAt(ecran.x, ecran.y), true);
+    checkEqual('un clic à 200 px ne le touche pas',
+        G().clicSurRagondinAt(ecran.x + 200, ecran.y), false);
+
+    // Un clic à côté, alors que la ligne est au repos : on ne lance PAS.
+    fire('gameCanvas', 'pointerdown', { button: 0, clientX: 5, clientY: 5 });
+    checkEqual('un clic à côté ne lance pas la ligne', state(), 'idle');
+    check('le jeu dit de viser le ragondin',
+        el('status').textContent.indexOf('ragondin') >= 0,
+        el('status').textContent);
+    // Un clic SUR lui le chasse, sans rien lancer.
+    fire('gameCanvas', 'pointerdown', { button: 0, clientX: ecran.x, clientY: ecran.y });
+    check('un clic sur lui compte', G().getRagondin().hits >= 1,
+        G().getRagondin().hits);
+    checkEqual('un clic sur lui ne lance pas la ligne non plus', state(), 'idle');
+    G().effrayerRagondin();
     resetToIdle();
 }
 
