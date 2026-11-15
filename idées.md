@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v143**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v144**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -510,6 +510,15 @@ vient de là, pas du nombre de fonctionnalités.
   ratée. Code **copié tel quel** (mêmes tirages, mêmes poids) ; `horsNormeChance`
   exposé par un lecteur car c'est un nombre. `script.js` : 9 306 → **8 753** lignes,
   cliquet abaissé à 8 800. Vérifié : 20 poissons, 7 espèces, 1 hors norme.
+- [x] **Modules suivants extraits (v144)** : `bourriche.js` (66 l.),
+  `ondulations.js` (~60 l.), `messages.js` (126 l.), `splashes.js` (~50 l.).
+  `script.js` : 8 754 → **8 557** lignes.
+- [ ] **Blocage identifié, plan écrit** : les blocs restants (`combat`,
+  `comportement`, `bateau`, `boutique`, `fiches`, `lancerPoisson`, `frein`,
+  `amorcage`, `carnetUI`, `meteo`, `vie`) **modifient des `let` de `script.js`** :
+  un module n'en aurait qu'une copie morte. Déblocage = créer **`etat.js`**
+  (objet mutable partagé), renommer ces variables en `etat.x`, puis reprendre les
+  extractions. Tableau exact des variables par module dans `docs/modules.md` §8.
 
 Un module = une responsabilité, avec **injection de dépendances** comme le font
 déjà `demelage.js` et `quiver.js` (`creerXxx({ canvas, panel, … })`) : aucun accès

@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v143**
+> Dernière mise à jour : **2026-11-15** · jeu **v144**
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -39,9 +39,13 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 
 | Module | Rôle | Lignes | Propriétaire / à qui le modifier |
 |---|---|---|---|
-| `script.js` | Orchestrateur : scène 3D, boucle, entrées, câblage | ~8 750 | **Personne en parallèle** — à réduire |
+| `script.js` | Orchestrateur : scène 3D, boucle, entrées, câblage | ~8 550 | **Personne en parallèle** — à réduire |
 | `environnement.js` | Étang : centre, contour, relief/fosses, profondeur, fond 3D | 151 | Monde (à faire seul) |
 | `poissons.js` | Population : fabrique 3D, bancs, spécimens hors norme, respawn | 619 | Poissons / contenu |
+| `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
+| `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
+| `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |
+| `splashes.js` | Éclaboussures (ferrage, amorce) | ~50 | Effets |
 | `sound.js` | Moteur audio (samples + synthèse) | 798 | Audio |
 | `portraits.js` | Portraits 2D des espèces (fond transparent) | 282 | Combat / UI |
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
@@ -51,7 +55,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
 | `carnet.js` | Persistance du carnet (localStorage) | 88 | Persistance |
 
-**Somme ≈ 11 900 lignes**, dont **~74 % encore dans `script.js`**.
+**Somme ≈ 11 700 lignes**, dont **~73 % encore dans `script.js`**.
 
 ## 4. Découpage à faire (ordre = valeur pour le parallélisme)
 
@@ -103,7 +107,7 @@ lignes différentes **sans se rencontrer**.
 `tests/scenario-modules.mjs` échoue si :
 
 - un module dépasse **800 lignes** ;
-- `script.js` dépasse son plafond courant (**ratchet** à 8 800 en v143 : il ne peut que baisser —
+- `script.js` dépasse son plafond courant (**ratchet** à 8 600 en v144 : il ne peut que baisser —
   le passer à la baisse à chaque extraction, ce qui empêche de regonfler le fichier) ;
 - un module importe `script.js` (cycle) ;
 - un module du dossier n'est pas listé dans ce document ;
@@ -114,3 +118,74 @@ lignes différentes **sans se rencontrer**.
 Le développement reste **sans build** (modules ES natifs + `importmap`). Un
 `esbuild` optionnel produira un `dist/` minifié + hash pour GitHub Pages, sans
 jamais devenir une dépendance pour développer ou tester.
+
+
+## 8. État au 2026-11-15 (v144) — et le blocage identifié
+
+**Fait** : `decor.js`, `environnement.js`, `poissons.js`, `bourriche.js`,
+`ondulations.js`, `messages.js`, `splashes.js`, `meteo.js`*(voir note)*.
+`script.js` est passé de **9 581 à ~8 550 lignes**.
+
+### 8.1 Pourquoi les modules suivants ne peuvent pas être extraits tels quels
+
+Un module reçoit ses dépendances **par valeur** au moment de sa création. Or les
+blocs restants **modifient des `let` de `script.js`** (`tension`, `floatState`,
+`castSwing`, `experiencePartie`…). Un module n'en aurait qu'une copie morte, et
+l'affectation lèverait même une erreur (« assignment to constant »). L'extracteur
+refuse donc ces blocs — c'est volontaire.
+
+Variables d'état à déplacer, par module (mesuré automatiquement) :
+
+| Module restant | Variables mutées (état partagé) |
+|---|---|
+| `bateau.js` | `rodBend`, `castSwing`, `castYawAngler`, `castYawRod`, `anglerYawBase`, `rodYawBase`, `posteActuel`, `emplacementLibre` |
+| `boutique.js` | `flotteurChoix`, `experiencePartie` |
+| `fiches.js` | `especeIndex`, `DIFFICULTY`, `tangleChance`, `BITE_WINDOW` |
+| `lancerPoisson.js` | `floatState`, `heldFish`, `fishThrowState`, `fishThrowPower`, `fishThrowTarget`, `fishThrowPhase`, `fishThrowT`, `bourricheCount` |
+| `lancerCanne.js` | `castSwing`, `castYawAngler`, `castYawRod` |
+| `frein.js` | `techniqueCourante` |
+| `combat.js` | `portraitEspeceCourante`, `avantageFerrage`, `cameraMode`, `floatState`, `fishCaught`, `waitTimer`, `biteFish`, `biteCooldown`, … (≈ 15) |
+| `comportement.js` | `floatState`, `castT`, `waitTimer`, `reelIdle`, `hameconDansLaVase`, `depuisLancement`, `biteCooldown`, `baitInterest`, … (≈ 12) |
+| `amorcage.js` | `amorceDepartRestante` |
+| `carnetUI.js` | `especeIndex`, `partieStats`, … |
+
+### 8.2 Le déblocage : `etat.js` (prochaine étape, dans cet ordre)
+
+1. **Créer `etat.js`** : un objet **mutable partagé**, une seule source de vérité.
+
+   ```js
+   export const etat = {
+       tension: 0, struggle: 0, floatState: 'idle', castT: 0,
+       castSwing: 0, castYawAngler: 0, castYawRod: 0, techniqueCourante: 'bouchon',
+       experiencePartie: 0, flotteurChoix: null, especeIndex: 0,
+       // … une ligne par variable du tableau ci-dessus
+   };
+   ```
+
+2. **Renommer** ces variables dans `script.js` : `tension` → `etat.tension`
+   (remplacement par mot entier, **jamais** dans les chaînes de caractères), et
+   supprimer les `let` correspondantes.
+3. **Les modules importent `etat.js`** (`import { etat } from './etat.js'`) : c'est
+   la seule exception au « pas de globales », et elle est explicite et testable.
+4. **Garde-fou à ajouter** dans `scenario-modules.mjs` : `etat.js` est le seul
+   module autorisé à être importé par plusieurs ; aucun module ne crée son propre
+   état dupliqué.
+5. **Un module par livraison**, tests verts à chaque fois.
+
+> Prérequis indispensable : `combat.js` et `comportement.js` (les deux plus gros
+> blocs restants, ~670 et ~580 lignes) ne peuvent PAS être extraits avant `etat.js`.
+
+### 8.3 Note sur `meteo.js` / `vie.js`
+
+Extraits puis **annulés** : ces blocs déclarent en leur sein des `let` lues plus
+loin dans `script.js` (`weatherRafales`, `modeBrouillard`…). Ils rentreront dans
+l'ordre après `etat.js`, comme les autres.
+
+### 8.4 Nouveauté de l'outillage
+
+- `tests/../extract.py` (hors dépôt, réutilisable) : extraction mécanique
+  (bloc verbatim → module + injection + destructuring), **refuse** les blocs qui
+  mutent une dépendance, et signale les dépendances déclarées après le bloc
+  (risque d'accès avant initialisation).
+- Le harnais réécrit désormais l'import `three` de **tout** module copié
+  (liste découverte, plus figée).
