@@ -1904,6 +1904,50 @@ body.calm .struggle-marker {
     }
 }
 
+.quick-feed {
+    position: absolute;
+    top: calc(60px + env(safe-area-inset-top, 0px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    z-index: 8;
+    display: grid;
+    place-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background: #102a36;
+    border: 1px solid #7896a0;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1.12;
+}
+
+.quick-feed > :last-child {
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.quick-feed[aria-pressed="true"] {
+    background: #294c35;
+    border-color: #aee6b6;
+}
+
+.quick-feed[hidden],
+.hud > .depth-panel[hidden],
+.hud:has(.tool-dock.ouvert) .quick-feed {
+    display: none;
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+    .hud:has(.depth-panel[hidden]) {
+        --play-lane-start: calc(8px + env(safe-area-inset-left, 0px));
+    }
+
+    .hud:has(.quick-feed:not([hidden])) {
+        --play-lane-start: calc(60px + env(safe-area-inset-left, 0px));
+    }
+}
+
 /* Le contenu de placement peut défiler. Les trois actions restent en vue. */
 #accueil {
     max-height: calc(100% - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
@@ -1939,7 +1983,7 @@ body.calm .struggle-marker {
     color: #152b20;
 }
 
-.hud:has(#accueil.active) > :is(.hud-top, .depth-panel, .hud-bottom) {
+.hud:has(#accueil.active) > :is(.hud-top, .depth-panel, .quick-feed, .hud-bottom) {
     visibility: hidden;
 }
 

@@ -4,8 +4,8 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual, checkClose,
-    G, el, fire, state, stepFor, stepUntil,
-    resetToIdle, parkFish, clearLilyPads, castTo
+    G, el, fire, state, step, stepFor, stepUntil,
+    resetToIdle, parkFish, clearLilyPads
 } from './harness.mjs';
 
 export function run() {
@@ -95,14 +95,28 @@ export function run() {
     group('35) On peut amorcer MÊME avec la ligne à l’eau');
     resetToIdle();
     clearLilyPads();
-    checkEqual('la ligne est à l’eau', castTo(0, -25), 'inWater');
-    G().setFeedMode(true);
+    step(0.02);
+    checkEqual('le réglage de profondeur est visible avant le lancer', el('depthPanel').hidden, false);
+    checkEqual('le bouton rond est caché avant le lancer', el('quickFeedButton').hidden, true);
+    parkFish();
+    G().startCast({ x: 0, y: 0, z: -25 });
+    checkEqual('le panneau se cache dès que le lancer part', el('depthPanel').hidden, true);
+    checkEqual('le bouton attend que la ligne touche l’eau', el('quickFeedButton').hidden, true);
+    check('la ligne arrive à l’eau', stepUntil(() => state() === 'inWater', 3), state());
+    checkEqual('le bouton rond apparaît quand la ligne est à l’eau', el('quickFeedButton').hidden, false);
+    checkEqual('le bouton rond affiche le stock restant', el('quickFeedCount').textContent, '2');
+    fire('quickFeedButton', 'click');
     checkEqual('amorçage possible pendant la pêche', G().isFeedMode(), true);
     check('le jeu invite à viser', el('status').textContent.includes('Amorçage'),
         el('status').textContent);
-    G().setFeedMode(false);
+    checkEqual('le bouton indique que l’amorce est prête', el('quickFeedButton').getAttribute('aria-pressed'), 'true');
+    fire('quickFeedButton', 'click');
+    checkEqual('une deuxième pression annule l’amorçage', G().isFeedMode(), false);
     resetToIdle();
+    step(0.02);
     checkEqual('retour au repos', state(), 'idle');
+    checkEqual('le widget revient après la remontée', el('depthPanel').hidden, false);
+    checkEqual('le bouton rond est de nouveau masqué', el('quickFeedButton').hidden, true);
 }
 
 export default run;

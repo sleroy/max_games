@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=124">
+    <link rel="stylesheet" href="style.css?v=125">
 </head>
 <body>
     <div class="game-wrap">
@@ -53,6 +53,10 @@
                 <div class="depth-hint" id="depthHint">Fond ici : —</div>
                 <div class="depth-range" id="depthRange">Bouchon : —</div>
             </section>
+            <button class="quick-feed" id="quickFeedButton" hidden
+                aria-label="Amorcer, 3 boules restantes" aria-pressed="false">
+                <span aria-hidden="true">🥣</span><span id="quickFeedCount" aria-hidden="true">3</span>
+            </button>
             <div class="tool-dock" id="toolDock">
                 <div class="tool-actions">
                     <button id="pauseButton">⏸ Pause</button>
@@ -318,6 +322,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=124"></script>
+    <script type="module" src="script.js?v=125"></script>
 </body>
 </html>

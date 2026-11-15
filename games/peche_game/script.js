@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=124';
+import { SoundEngine } from './sound.js?v=125';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -25,6 +25,9 @@ const windArrow = document.getElementById('windArrow');
 const soundToggle = document.getElementById('soundToggle');
 const lineSelect = document.getElementById('lineSelect');
 const feedButton = document.getElementById('feedButton');
+const depthPanel = document.getElementById('depthPanel');
+const quickFeedButton = document.getElementById('quickFeedButton');
+const quickFeedCount = document.getElementById('quickFeedCount');
 const feedGauge = document.getElementById('feedGauge');
 const feedGaugeFill = document.getElementById('feedGaugeFill');
 const feedGaugeTarget = document.getElementById('feedGaugeTarget');
@@ -2516,8 +2519,12 @@ function updateToolDock() {
     const resting = (floatState === 'idle' || floatState === 'inWater') && cameraMode === 'normal';
     cameraButton.disabled = !resting || paused;
     feedButton.disabled = !resting || paused || stockAmorce() === 0;
+    depthPanel.hidden = floatState !== 'idle';
+    quickFeedButton.hidden = floatState !== 'inWater' || cameraViewActive;
+    quickFeedButton.disabled = feedButton.disabled || feedState !== 'idle';
     lineSelect.disabled = floatState !== 'idle' || castState !== 'idle';
-    updateDepthButtons(bornesProfondeur(), resting && !paused && !cameraViewActive && castState === 'idle');
+    updateDepthButtons(bornesProfondeur(),
+        floatState === 'idle' && !paused && !cameraViewActive && castState === 'idle');
     sonarButton.disabled = !sonarBuoy.visible && (!resting || paused);
     if (cameraViewActive && !resting) { setCameraView(false); }
 }
@@ -3327,7 +3334,13 @@ function stockAmorce() {
 }
 
 function majAmorce() {
-    feedButton.textContent = (feedMode ? '🥣 Amorce prête' : '🥣 Amorce') + ' (' + stockAmorce() + ')';
+    const stock = stockAmorce();
+    feedButton.textContent = (feedMode ? '🥣 Amorce prête' : '🥣 Amorce') + ' (' + stock + ')';
+    quickFeedCount.textContent = String(stock);
+    const action = feedMode ? 'Annuler l’amorçage' : 'Amorcer';
+    quickFeedButton.setAttribute('aria-label',
+        action + ', ' + stock + (stock === 1 ? ' boule restante' : ' boules restantes'));
+    quickFeedButton.setAttribute('aria-pressed', String(feedMode));
 }
 
 function stockFil(id) {
@@ -5397,6 +5410,7 @@ function startCast(target) {
     // l'esche « à la volée » dès que le bouchon touche l'eau.
     biteCooldown = 0;
     floatState = 'flying';
+    updateToolDock();
     const peutEmmeler = risqueEmmelement() > 0;
     fishButton.disabled = !peutEmmeler;
     fishButton.hidden = !peutEmmeler;
@@ -7113,16 +7127,22 @@ window.addEventListener('pointerup', () => {
 // Au doigt, l'appui long ne doit pas ouvrir le menu contextuel du navigateur.
 canvas.addEventListener('contextmenu', event => event.preventDefault());
 
-feedButton.addEventListener('click', () => {
+function toggleAmorcage() {
     ensureSound();
     setFeedMode(!feedMode);
     fermerOutils();
+}
+
+feedButton.addEventListener('click', toggleAmorcage);
+quickFeedButton.addEventListener('click', () => {
+    if (floatState === 'inWater' && !paused && !cameraViewActive && feedState === 'idle') {
+        toggleAmorcage();
+    }
 });
 
-// Les commandes restent visibles même quand la ligne est occupée.
+// La profondeur se règle avant le lancer.
 function clickDepth(delta) {
-    if (paused || cameraViewActive || castState !== 'idle'
-            || (floatState !== 'idle' && floatState !== 'inWater')) { return; }
+    if (paused || cameraViewActive || castState !== 'idle' || floatState !== 'idle') { return; }
     ensureSound();
     setProfondeur(profondeurLigne + delta);
 }
@@ -8429,6 +8449,7 @@ window.__game = {
         updateFloatingTexts(dt);
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
+        updateToolDock();
     }
 };
 

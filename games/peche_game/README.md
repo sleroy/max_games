@@ -52,7 +52,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   carrière** (boutique), les **bouchons achetés** et le **classement** sont conservés.
 - **Interface** : la barre compacte du haut regroupe le menu, le score, les lignes et
   un indicateur de vent (force et direction). À gauche, la coupe de l’eau
-  montre le fond et l’hameçon. Règle la profondeur avec **−** et **+**.
+  montre le fond et l’hameçon avant le lancer. Règle la profondeur avec **−**
+  et **+**. Une fois la ligne à l’eau, le bouton rond **🥣** apparaît à sa
+  place et indique le nombre de boules restantes.
 - **Sonar flottant** : débloque-le pour **150 XP carrière** dans **Carnet →
   Boutique**. **Menu → Poser le sonar** le place au bouchon ou près de ta
   berge. Le radar indique les poissons dans un rayon de **12 m**. Tu peux
