@@ -254,31 +254,36 @@
 - [~] **Performances** : suite complète verte et chargement vérifié dans Chromium ;
   **reste à mesurer sur un téléphone réel** (maillage 40×128 + 58 poissons).
 
-### 14.2 Obstacles aquatiques et semi-aquatiques (à modéliser en 3D)
+### 14.2 Obstacles aquatiques et semi-aquatiques (à modéliser en 3D) — **livré en v174 → v178**
 
-Aujourd'hui l'eau ne contient que des **nénuphars** et des **roseaux**. À ajouter :
+Aujourd'hui l'eau ne contient que des **nénuphars** et des **roseaux**. Ajoutés (module `obstacles.js`,
+12 obstacles, géométrie et textures **générées en code**, aucune image) :
 
-- [ ] **Ponton** sur un côté de l'étang (semi-aquatique) : planches de bois sur
-  pilotis, accessible depuis la berge — un poste de pêche confortable.
-- [ ] **Écluse** (ouvrage de maçonnerie) sur un côté : portes, bajoyers, échelle.
-- [ ] **Douve / chenal** : bras d'eau étroit qui prolonge l'étang.
-- [ ] **Roches aquatiques à moitié émergées** : groupes de blocs arrondis, mouillés
-  en bas, secs et clairs en haut.
-- [ ] **Arbres immergés** (souches et branches mortes sous la surface).
-- [ ] **Autres idées** : pieux de bois, cageot/épave, touffe de joncs en îlot.
+- [x] **Ponton** (v174, poste en v178) : planches sur pilotis, côté sud-est. **C'est aussi un poste de pêche** :
+  clic sur son repère brun de la carte d'accueil, le pêcheur se tient sur le plancher, à 10,5 unités de la berge.
+- [x] **Écluse** (v174) : deux bajoyers en pierre, portes fermées en V, échelle de fer, sas à fleur de berge (sud-ouest).
+- [x] **Douve / chenal** (v174) : canal de 27 unités de long qui part de la berge nord-est et se jette dans l'étang
+  par un petit seuil de pierre. ⚠ Version **simplifiée** : l'eau du canal est un plan posé sur la rive (le contour
+  de l'étang n'est pas modifié) ; on ne peut ni y ramer ni y lancer. Elle attire tanches et carassins à son embouchure.
+- [x] **Roches aquatiques à moitié émergées** (v174) : 3 groupes de 5 blocs arrondis, sombres et mouillés en bas,
+  clairs et secs en haut.
+- [x] **Arbres immergés** (v174) : 2 souches dont le tronc affleure, avec des branches mortes, les unes sous l'eau,
+  les autres qui crèvent la surface.
+- [x] **Autres idées** (v174) : pieux de bois (1 groupe de 5), cageots/épave (3 caisses + 2 planches), 2 îlots de joncs.
 
-Deux rôles de jeu, comme demandé :
+Trois rôles de jeu :
 
-- [ ] **Accrochage** : certains obstacles coincent l'hameçon exactement comme la
-  vase ou les nénuphars (mini-jeu de dégagement), avec leur propre difficulté et
-  leur propre message (« Ligne accrochée à la souche ! »).
-- [ ] **Attraction de poissons** : certains obstacles attirent **un type de poisson**
-  autour d'eux (arbre immergé → brochet/black-bass en embuscade ; roches → perche ;
-  ponton → gardons à l'ombre). À relier aux `COMPORTEMENTS` d'`especes.js`.
-- [ ] **Collision avec la barque** : les obstacles doivent arrêter ou ralentir la
-  barque (sinon on la traverse), et bloquer le lancer.
-- [ ] **Tests** : placement déterministe, accrochage, attraction par espèce,
-  non-chevauchement avec les postes de berge et la zone de la bourriche.
+- [x] **Accrochage** (v175) : mêmes mini-jeu et même module (`accrochage.js`) que la vase et les nénuphars.
+  Facile : pieux, joncs. Moyenne : ponton (« Ligne accrochée aux pilotis du ponton ! »), roches
+  (« Hameçon coincé entre les roches ! »). Difficile : souche (« Ligne accrochée à la souche ! »), épave, écluse.
+- [x] **Attraction de poissons** (v176) : souche → brochet / black-bass ; roches → perche ; ponton → gardon ;
+  joncs → brochet + gardon ; écluse → chevesne ; pieux → rotengle ; épave → carassin ; douve → tanche / carassin.
+  Reliée aux `COMPORTEMENTS` d'`especes.js` : la zone de vie (`homeX/homeZ`) du banc ou du poisson est déplacée sur
+  l'obstacle. Le premier banc de chaque espèce est toujours attiré, les suivants une fois sur deux (≈ la moitié des 58 poissons).
+- [x] **Collision avec la barque** (v177) : arrêt contre le ponton, l'écluse, les roches, les souches, les pieux, l'épave ;
+  les joncs freinent (40 % du coup de rame). Le lancer qui retombe sur un ponton, une écluse ou des roches est refusé.
+- [x] **Tests** : `tests/scenario-obstacles.mjs` (~ 260 vérifications) : placement déterministe, non-chevauchement
+  (postes, bourriche, départ, embarquement, fosses, nénuphars), accrochage, attraction, collision, ponton-poste.
 
 > Les **types de fond** (sable, gravier, vase, roche, herbier — section 14.3) jouent
 > le même rôle d'attraction par espèce : les deux idées vont ensemble.
@@ -348,6 +353,33 @@ Voir la section **11** (elle reste la référence) : bug d'affichage des bouchon
 suppression du retour automatique de la ligne, sons non branchés (`playTonnerre`,
 `playPas`, `playClic`, `playFilTendu`, `playSaut`), captures d'écran du README,
 bruitages à remplacer, banc d'origine à rejoindre après une capture.
+
+### 14.7 Bug — le sonar doit être LANCÉ comme une amorce
+
+Aujourd'hui le sonar (150 XP, `sonar.js`) n'est pas lancé : un clic sur **📡** le
+**téléporte** à une position **calculée** (`rayonEtang(angle) − 4` depuis la berge,
+`+8` vers le centre depuis la barque), puis le rend visible. Le joueur **ne choisit
+pas** où il tombe, il n'y a **ni visée, ni puissance, ni arc, ni plouf**, et depuis
+l'ajout des obstacles (14.2) la bouée peut atterrir dans une roche ou sur la ligne.
+
+- [ ] **Même geste que l'amorce** : clic sur **📡** → mode visée, **maintien pour
+  doser la puissance** (même jauge que l'amorce), relâchement → la bouée part de la
+  main du pêcheur en **arc**, **plouf**, puis flotte et commence à pinger.
+- [ ] **Réutiliser `amorcage.js`**, ne pas dupliquer : extraire le geste de lancer
+  (charge → `computeFeedLanding` → `releaseFeed` → `landFeed`) en fonction commune,
+  utilisée par les deux (amorce et sonar).
+- [ ] **Le sonar tombe là où il tombe** : le radar de 12 m se centre sur le point
+  d'impact réel, pas sur une position imposée. Viser loin = radar loin.
+- [ ] **Pas de ping avant le plouf** : le scan démarre seulement quand la bouée a
+  touché l'eau (le `sonarDernierPing = -Infinity` actuel fait pinger dès le clic).
+- [ ] **Mêmes règles d'accès** qu'aujourd'hui : seulement ligne au repos (`idle` /
+  `inWater`) et hors combat / emmêlement ; depuis la barque, le lancer suit la même
+  règle (direction de la caméra, pas « vers le centre » en dur).
+- [ ] **Ranger** le sonar reste immédiat (clic sur 📡 quand il flotte).
+- [ ] **Tests** (scénario 71 à étendre) : charger/relâcher produit un point d'impact
+  **dans la direction visée** et **fonction de la puissance** (pas de position fixe) ;
+  aucun ping avant le plouf ; ping après l'impact ; sonar refusé en combat /
+  emmêlement ; lancer possible depuis la barque ; `Ranger` immédiat.
 
 ## Scénarios de test ajoutés (v131–v139)
 
@@ -550,8 +582,8 @@ direct aux variables globales, donc testable sans navigateur.
 - [ ] `boutique.js` — XP, achats, rendu de la boutique (bouchons, scions, esches).
 - [ ] `hud.js` — compteurs, panneaux, messages, infobulles, mise en page.
 - [ ] `bateau.js` — modèle, textures générées, déplacement, pad tactile.
-- [ ] `obstacles.js` — ponton, roches, arbres immergés (section 14.2), avec leur
-  accrochage et leur attraction de poissons.
+- [x] `obstacles.js` — ponton, roches, arbres immergés (section 14.2), avec leur
+  accrochage et leur attraction de poissons (v174 → v178, 671 lignes).
 
 ### 16.3 Règles de découpage (pour rester peu coûteux)
 
