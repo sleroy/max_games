@@ -65,6 +65,11 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Remontée trop rapide** : l'avertissement s'affiche en **popup 3D près du
   bouchon** (« ⚠️ Trop vite ! »), comme « FERRÉ ! » ou « Trop tôt ! », en plus du
   message de statut.
+- **Ragondin voleur** : il apparaît près de la bourriche après **18–30 s** de
+  partie (puis toutes les **45–75 s**) s'il y a un poisson à voler. Une **bannière
+  HUD** « 🐀 RAGONDIN ! », un popup 3D, ses sons et un message préviennent le
+  joueur. **3 clics sur lui** le chassent ; sinon il **vole un poisson** : score
+  et bourriche diminuent.
 - **Attaque de carnassier** : en ramenant un **petit poisson** (gardon, rotengle,
   ablette, goujon, carassin), si un **brochet / sandre / perche / black-bass**
   passe près de la ligne, il **attaque**, la petite proie s'échappe et le

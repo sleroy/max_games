@@ -380,6 +380,7 @@ export async function loadGame() {
     game.setTangleChance(0);       // les casts des tests ne s'emmêlent pas
     game.setHorsNormeChance(0);    // monde de test sans spécimen hors norme
     game.setTechnique('bouchon');  // les tests historiques pêchent au bouchon
+    game.setRagondinAuto(false);  // le ragondin ne surgit pas dans les tests
     return game;
 }
 

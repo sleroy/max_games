@@ -38,9 +38,13 @@
 
 ## 4. Vie du bord de l'eau
 
-- [x] **Ragondin voleur, très rare.**
-  Apparaît près de la bourriche, 3 clics sur lui pour le chasser, clic prioritaire sur
-  le ferrage (scénario 50).
+- [x] **Ragondin voleur, rare mais visible.**
+  - [x] Apparaît près de la bourriche après 18–30 s de partie (puis 45–75 s),
+    uniquement s'il y a un poisson à voler.
+  - [x] Alerte popup 3D « 🐀 RAGONDIN ! » + bannière HUD + sons + message.
+  - [x] 3 clics sur lui pour le chasser, sans jamais ferrer un poisson.
+  - [x] S'il n'est pas chassé, il vole un poisson : **score et bourriche** diminuent.
+  - [x] Test du cycle automatique timer → apparition → vol.
 - [x] **Deux techniques de pêche : bouchon ou quiver.**
   - [x] Choix de la technique avant de jouer (bouchon / quiver), mémorisé dans le carnet.
   - [x] En quiver : pas de bouchon, touches lisibles sur le **scion** de la canne (indicateur 2D + canne 3D).

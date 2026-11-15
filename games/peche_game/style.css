@@ -229,6 +229,46 @@ button:disabled {
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
+/* Alerte permanente tant que le ragondin est là (visible même s'il est hors champ). */
+.ragondin-alert {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    z-index: 9;
+    padding: 8px 16px;
+    background: rgba(112, 54, 8, 0.96);
+    border: 2px solid #ffb347;
+    border-radius: 12px;
+    color: #fff4d6;
+    font-weight: bold;
+    font-size: 0.95rem;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 0 18px rgba(255, 179, 71, 0.55);
+    animation: ragondin-pulse 0.7s ease-in-out infinite alternate;
+}
+
+.ragondin-alert.active {
+    display: block;
+}
+
+@keyframes ragondin-pulse {
+    from { box-shadow: 0 0 10px rgba(255, 179, 71, 0.35); }
+    to { box-shadow: 0 0 24px rgba(255, 179, 71, 0.85); }
+}
+
+@media (max-width: 820px), (max-height: 430px) {
+    .ragondin-alert {
+        top: 150px;
+        font-size: 0.78rem;
+        white-space: normal;
+        width: min(90vw, 360px);
+    }
+}
+
 .catch-message.show {
     opacity: 1;
     transform: translate(-50%, 0);

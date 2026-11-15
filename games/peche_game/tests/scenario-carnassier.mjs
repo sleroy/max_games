@@ -16,18 +16,21 @@ export function run() {
     clearLilyPads();
 
     // 1) On ferre une petite proie et on gagne son combat.
-    const proie = startFight(0, -25);
+    startFight(0, -25);
+    let guard = 0;
+    while (state() === 'struggle' && guard++ < 20000) {
+        crankTurns(2);
+        step(1 / 60);
+    }
+    // Le poisson réellement ferré peut être choisi par le système d'amorçage :
+    // on le personnalise une fois la lutte gagnée, avant la remontée.
+    const proie = G().getHookedFish();
     proie.userData.especeId = 'gardon';
     proie.userData.espece = 'Gardon';
     proie.userData.size = 0.3;
     proie.userData.power = 0.6;
     proie.userData.aggression = 0.7;
     proie.userData.weight = 0.3;
-    let guard = 0;
-    while (state() === 'struggle' && guard++ < 20000) {
-        crankTurns(2);
-        step(1 / 60);
-    }
     checkEqual('la petite proie est ramenée', state(), 'reeling');
     checkEqual('l’hameçon porte bien la petite proie', G().getHookedEspece(), 'gardon');
 
@@ -97,14 +100,15 @@ export function run() {
     // 5) Une espèce qui n'est PAS une petite proie n'est jamais attaquée.
     resetToIdle();
     G().demarrerJeu();
-    const carpe = startFight(0, -25);
-    carpe.userData.especeId = 'carpe';
-    carpe.userData.espece = 'Carpe';
+    startFight(0, -25);
     guard = 0;
     while (state() === 'struggle' && guard++ < 20000) {
         crankTurns(2);
         step(1 / 60);
     }
+    const carpe = G().getHookedFish();
+    carpe.userData.especeId = 'carpe';
+    carpe.userData.espece = 'Carpe';
     checkEqual('une carpe est ramenée', state(), 'reeling');
     checkEqual('l’hameçon porte la carpe', G().getHookedEspece(), 'carpe');
     const predateurCarpe = G().fishes.find(function (fish) {

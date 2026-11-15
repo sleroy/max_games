@@ -72,6 +72,7 @@ const tangleTimer = document.getElementById('tangleTimer');
 const tangleProgress = document.getElementById('tangleProgress');
 const tangleMessage = document.getElementById('tangleMessage');
 const tangleGiveUp = document.getElementById('tangleGiveUp');
+const ragondinAlert = document.getElementById('ragondinAlert');
 const techniqueSelect = document.getElementById('techniqueSelect');
 const quiverPanel = document.getElementById('quiverPanel');
 const quiverCanvas = document.getElementById('quiverCanvas');
@@ -7495,9 +7496,12 @@ let paused = false;
 // ferrage, donc impossible de ferrer en le chassant.
 const RAGONDIN_CLICS = 3;
 let ragondin = null;
-let ragondinTimer = 80 + rand() * 70;
+// Première visite plus tôt (18–30 s) : le joueur doit pouvoir la voir.
+// Seulement s'il y a un poisson à voler (score > 0).
+let ragondinTimer = 18 + rand() * 12;
 let ragondinHits = 0;
 let ragondinVolTimer = 0;   // secondes restantes avant le vol
+let ragondinAuto = true;    // désactivable par les tests
 
 function makeRagondin() {
     const group = new THREE.Group();
@@ -7524,7 +7528,9 @@ function makeRagondin() {
 function spawnRagondin() {
     if (ragondin || partieTerminee) { return null; }
     const modele = makeRagondin();
-    modele.position.set(BOURRICHE_POS.x + 4, 0, BOURRICHE_POS.z - 2);
+    // Tout près de la bourriche (et face au pêcheur) : il est visible.
+    modele.position.set(BOURRICHE_POS.x + 2.2, 0, BOURRICHE_POS.z + 1.2);
+    modele.scale.setScalar(1.8);   // ~50 cm à l'échelle du monde : bien visible
     modele.rotation.y = Math.PI;
     scene.add(modele);
     ragondinHits = 0;
@@ -7532,18 +7538,33 @@ function spawnRagondin() {
     ragondin = modele;
     ensureSound();
     sound.ragondinArrive();
+    if (ragondinAlert) { ragondinAlert.classList.add('active'); }
+    spawnFloatingText('🐀 RAGONDIN !',
+        new THREE.Vector3(BOURRICHE_POS.x + 5, BOURRICHE_POS.y, BOURRICHE_POS.z),
+        '#ffb347');
     statusDisplay.textContent = '🐀 Un RAGONDIN rôde près de ta bourriche ! Clique 3 fois sur lui pour le chasser (sinon il vole un poisson).';
     return modele;
 }
 
 function volerUnPoissonRagondin() {
     if (!ragondin) { return false; }
+    let pris = false;
+    if (bourricheCount > 0) {
+        bourricheCount -= 1;
+        pris = true;
+    }
     if (score > 0) {
         score -= 1;
         scoreDisplay.textContent = score;
+        pris = true;
+    }
+    if (bourricheLabel) {
+        bourricheLabel.textContent = '🧺 Bourriche : ' + bourricheCount;
     }
     spawnFloatingText('🐀 Il a volé un poisson !', BOURRICHE_POS, '#ff6b57');
-    statusDisplay.textContent = '🐀 Trop tard : le ragondin a volé un poisson et s’est échappé !';
+    statusDisplay.textContent = pris
+        ? '🐀 Trop tard : le ragondin a volé un poisson de la bourriche et s’est échappé !'
+        : '🐀 Le ragondin est reparti sans rien voler…';
     sound.ragondinRonge(8);
     sound.escape();
     effrayerRagondin();
@@ -7556,7 +7577,8 @@ function effrayerRagondin() {
     ragondin = null;
     sound.ragondinMusiqueStop();
     ragondinHits = 0;
-    ragondinTimer = 160 + rand() * 140;
+    if (ragondinAlert) { ragondinAlert.classList.remove('active'); }
+    ragondinTimer = 45 + rand() * 30;
 }
 
 function hitRagondin() {
@@ -7587,10 +7609,15 @@ function clicSurRagondin(event) {
 
 function updateRagondin(dt) {
     if (!ragondin) {
+        if (!ragondinAuto) { return; }
         ragondinTimer -= dt;
         if (ragondinTimer <= 0) {
-            ragondinTimer = 160 + rand() * 140;
-            if (score > 0 && floatState !== 'struggle' && floatState !== 'bite') { spawnRagondin(); }
+            // On ne le fait sortir que s'il y a réellement un poisson à voler.
+            if (score > 0 && floatState !== 'struggle' && floatState !== 'bite') {
+                if (spawnRagondin()) { ragondinTimer = 45 + rand() * 30; }
+            } else {
+                ragondinTimer = 8 + rand() * 5;   // on revérifie bientôt
+            }
         }
         return;
     }
@@ -7607,13 +7634,6 @@ function updateRagondin(dt) {
     if (ragondinVolTimer <= 0) {
         volerUnPoissonRagondin();
         return;
-    }
-    if (false) {
-        if (score > 0) { score -= 1; scoreDisplay.textContent = score; }
-        spawnFloatingText('🐀 Il a volé un poisson !', BOURRICHE_POS, '#ff6b57');
-        statusDisplay.textContent = '🐀 Trop tard : le ragondin a volé un poisson et s’est échappé !';
-        sound.escape();
-        effrayerRagondin();
     }
 }
 
@@ -8033,7 +8053,8 @@ function reinitialiserPartie() {
     if (ragondin) { effrayerRagondin(); }
     ragondinHits = 0;
     ragondinVolTimer = 0;
-    ragondinTimer = Math.max(ragondinTimer, 120);
+    ragondinTimer = 18 + rand() * 12;
+    if (ragondinAlert) { ragondinAlert.classList.remove('active'); }
 
     // --- Compteurs de la PARTIE (le carnet/XP persistants ne bougent pas) ---
     score = 0;
@@ -8236,10 +8257,20 @@ window.__game = {
     },
     getRagondinTimer: function () { return ragondinTimer; },
     setRagondinTimer: function (v) { ragondinTimer = v; },
+    setRagondinAuto: function (value) { ragondinAuto = !!value; },
+    isRagondinAuto: function () { return ragondinAuto; },
     setRagondinVolDans: function (sec) { if (ragondin) { ragondinVolTimer = sec; } },
     volerUnPoissonRagondin: volerUnPoissonRagondin,
     getScore: function () { return score; },
+    setScore: function (value) {
+        score = Math.max(0, Math.floor(Number(value) || 0));
+        if (scoreDisplay) { scoreDisplay.textContent = score; }
+    },
     getBourricheCount: function () { return bourricheCount; },
+    setBourricheCount: function (value) {
+        bourricheCount = Math.max(0, Math.floor(Number(value) || 0));
+        if (bourricheLabel) { bourricheLabel.textContent = '🧺 Bourriche : ' + bourricheCount; }
+    },
     demarrerJeu: demarrerJeu,
     afficherAccueil: afficherAccueil,
     setTechnique: setTechnique,
@@ -8709,6 +8740,7 @@ window.__game = {
         updateFloat(dt, testTime);
         updateFeed(dt);
         updateChum(dt);
+        updateRagondin(dt);
         updateCastAnimation(dt);
         updateArm(dt);
         updateRod(dt);
