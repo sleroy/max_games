@@ -38,6 +38,7 @@ const FILES = {
     ondulations: path.join(GAME_DIR, 'ondulations.js'),
     bourriche: path.join(GAME_DIR, 'bourriche.js'),
     combat: path.join(GAME_DIR, 'combat.js'),
+    accrochage: path.join(GAME_DIR, 'accrochage.js'),
     cycleLigne: path.join(GAME_DIR, 'cycleLigne.js'),
     touches: path.join(GAME_DIR, 'touches.js'),
     journal: path.join(GAME_DIR, 'journal.js'),
@@ -426,6 +427,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.ondulations, path.join(tmpDir, 'ondulations.js'));
     fs.copyFileSync(FILES.bourriche, path.join(tmpDir, 'bourriche.js'));
     fs.copyFileSync(FILES.combat, path.join(tmpDir, 'combat.js'));
+    fs.copyFileSync(FILES.accrochage, path.join(tmpDir, 'accrochage.js'));
     fs.copyFileSync(FILES.cycleLigne, path.join(tmpDir, 'cycleLigne.js'));
     fs.copyFileSync(FILES.touches, path.join(tmpDir, 'touches.js'));
     fs.copyFileSync(FILES.journal, path.join(tmpDir, 'journal.js'));
