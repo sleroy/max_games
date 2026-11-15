@@ -17,7 +17,7 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 
 // Modules extraits (tout ce qui n'est pas l'orchestrateur).
 const MODULES = [
-    'environnement.js', 'poissons.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
+    'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
     'especes.js', 'classement.js', 'carnet.js', 'sound.js'
 ];
 
@@ -60,6 +60,7 @@ export function run() {
     const attendus = {
         'environnement.js': 'export function ajouterFond(',
         'poissons.js': 'export function creerPoissons(',
+        'bourriche.js': 'export function creerBourriche(',
         'decor.js': 'export function creerDecor(',
         'portraits.js': 'export function dessinerPortrait(',
         'demelage.js': 'export function creerJeuDemelage(',
