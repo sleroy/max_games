@@ -148,7 +148,11 @@ Le développement reste **sans build** (modules ES natifs + `importmap`). Un
 jamais devenir une dépendance pour développer ou tester.
 
 
-## 8. État au 2026-11-15 (v144) — et le blocage identifié
+## 8. État au 2026-11-15 (v144) — historique du blocage (RÉSOLU)
+
+> ⚠️ Sections 8.1 à 8.5 = **journal de la passe v144**, quand le découpage était
+> bloqué. Elles sont conservées pour la traçabilité (les 5 règles restent
+> valables). **L'état réel et final est en §8.6** (passes v145 → v172).
 
 **Fait** : `decor.js`, `environnement.js`, `poissons.js`, `bourriche.js`,
 `ondulations.js`, `messages.js`, `splashes.js`, `meteo.js`*(voir note)*.
