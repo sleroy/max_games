@@ -21,14 +21,16 @@ export function run() {
     check('le sélecteur de technique existe', !!el('techniqueSelect'));
     checkEqual('la technique par défaut est le bouchon', G().getTechnique(), 'bouchon');
 
-    // 1) Passage en quiver : panneau scion visible, bouchon masqué.
+    // 1) Passage en quiver : le panneau attend que la ligne soit à l’eau.
     checkEqual('on peut choisir le quiver', G().setTechnique('quiver'), true);
     checkEqual('la technique active est le quiver', G().getTechnique(), 'quiver');
-    checkEqual('le panneau du scion s’affiche', G().isQuiverPanelVisible(), true);
+    checkEqual('le panneau du scion reste masqué avant le lancer', G().isQuiverPanelVisible(), false);
     checkEqual('le sélecteur suit le choix', el('techniqueSelect').value, 'quiver');
     G().setTangleChance(0);
     checkEqual('le lancer quiver arrive à l’eau', castTo(0, -25), 'inWater');
     step(0.2);
+    checkEqual('le scion s’affiche quand la ligne est à l’eau', G().isQuiverPanelVisible(), true);
+    checkEqual('le scion visible est annoncé au lecteur d’écran', el('quiverPanel').getAttribute('aria-hidden'), 'false');
     checkEqual('aucun bouchon n’est visible en quiver', G().floatGroup.visible, false);
     const poseQuiver = G().getRodPose().x;
     check('la canne est inclinée en quiver', Math.abs(poseQuiver) > 0.1,
@@ -53,6 +55,8 @@ export function run() {
     fire('gameCanvas', 'pointerdown', { button: 0 });
     checkEqual('le ferrage quiver déclenche le combat', state(), 'struggle');
     checkEqual('on reste en technique quiver', G().getTechnique(), 'quiver');
+    step(0.02);
+    checkEqual('le scion libère l’écran pendant le combat', G().isQuiverPanelVisible(), false);
 
     // 4) Retour au bouchon : le flotteur redevient visible et la canne se redresse.
     resetToIdle();

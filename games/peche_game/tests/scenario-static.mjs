@@ -225,7 +225,7 @@ export function run() {
 
     group('15) Démêlage et quiver');
     check('le mini-jeu est dans un module dédié', /from '\.\/demelage\.js(?:\?v=\d+)?'/.test(script));
-    check('le mode quiver est dans un module dédié', script.includes("from './quiver.js'"));
+    check('le mode quiver est dans un module dédié', /from '\.\/quiver\.js(?:\?v=\d+)?'/.test(script));
     check('les données espèces sont dans un module dédié', script.includes("from './especes.js'"));
     check('le classement est dans un module dédié', script.includes("from './classement.js'"));
     check('la persistance du carnet est dans un module dédié', script.includes("from './carnet.js'"));

@@ -1280,16 +1280,16 @@ body.calm .struggle-marker {
 /* Technique quiver : le scion remplace le bouchon. */
 .quiver-panel {
     position: absolute;
-    left: 50%;
-    bottom: 150px;
-    transform: translateX(-50%);
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    right: calc(8px + env(safe-area-inset-right, 0px));
     display: none;
-    flex-direction: column;
+    grid-template-columns: auto 1fr;
     align-items: center;
-    gap: 2px;
-    padding: 5px 8px;
-    background: rgba(0, 0, 0, 0.48);
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    gap: 4px;
+    padding: 2px 6px;
+    height: 44px;
+    background: #102a36e8;
+    border: 1px solid #7896a0;
     border-radius: 10px;
     color: #dff1ff;
     font-size: 0.72rem;
@@ -1298,14 +1298,31 @@ body.calm .struggle-marker {
 }
 
 .quiver-panel.active {
-    display: flex;
+    display: grid;
 }
 
 #quiverCanvas {
     display: block;
-    width: min(240px, 56vw);
-    height: auto;
+    width: 108px;
+    height: 36px;
     background: transparent;
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.quiver-panel > span {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+@media (max-width: 490px) {
+    .quiver-panel {
+        top: calc(60px + env(safe-area-inset-top, 0px));
+    }
+
+    .hud:has(.quiver-panel.active) .sonar-panel {
+        top: calc(112px + env(safe-area-inset-top, 0px));
+    }
 }
 
 .technique-row {

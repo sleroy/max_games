@@ -54,12 +54,10 @@ export function creerModeQuiver(options) {
 
     function setPanneau(etat) {
         if (!panel) { return; }
-        // Utile à l'attente / à la touche ; caché pendant le combat pour ne pas
-        // chevaucher le panneau de lutte.
-        const visible = actif
-            && etat !== 'struggle' && etat !== 'reeling'
-            && etat !== 'snag' && etat !== 'holding';
+        // Le scion sert à lire les touches dès que la ligne est dans l’eau.
+        const visible = actif && (etat === 'inWater' || etat === 'bite');
         panel.classList.toggle('active', visible);
+        panel.setAttribute('aria-hidden', String(!visible));
     }
 
     function setActif(value) {
