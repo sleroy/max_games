@@ -43,6 +43,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `environnement.js` | Étang : centre, contour, relief/fosses, profondeur, fond 3D | 151 | Monde (à faire seul) |
 | `poissons.js` | Population : fabrique 3D, bancs, spécimens hors norme, respawn | 619 | Poissons / contenu |
 | `combat.js` | Épreuve de force : tension, fatigue, ferrage, touche vue de près, clic utile, accrochage (état via `etat`) | 696 | Combat |
+| `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage (état via `etat`) | 608 | Poissons / contenu |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |

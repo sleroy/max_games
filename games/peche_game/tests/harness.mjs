@@ -38,6 +38,7 @@ const FILES = {
     ondulations: path.join(GAME_DIR, 'ondulations.js'),
     bourriche: path.join(GAME_DIR, 'bourriche.js'),
     combat: path.join(GAME_DIR, 'combat.js'),
+    comportement: path.join(GAME_DIR, 'comportement.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -407,6 +408,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.ondulations, path.join(tmpDir, 'ondulations.js'));
     fs.copyFileSync(FILES.bourriche, path.join(tmpDir, 'bourriche.js'));
     fs.copyFileSync(FILES.combat, path.join(tmpDir, 'combat.js'));
+    fs.copyFileSync(FILES.comportement, path.join(tmpDir, 'comportement.js'));
     fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
