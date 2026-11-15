@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=151';
+import { SoundEngine } from './sound.js?v=152';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -26,6 +26,7 @@ import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=149';
 import { creerBoutique } from './boutique.js?v=150';
 import { creerFiches } from './fiches.js?v=151';
+import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ function lienEtat(nom, lire, ecrire) {
 lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function (v) { BATEAU_PAS_ANGLE = v; });
 lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
 lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
+lienEtat('CAST_DURATION', function () { return CAST_DURATION; }, function (v) { CAST_DURATION = v; });
 lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
@@ -70,9 +72,14 @@ lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) 
 lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
 lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
 lienEtat('castAim', function () { return castAim; }, function (v) { castAim = v; });
+lienEtat('castPhase', function () { return castPhase; }, function (v) { castPhase = v; });
+lienEtat('castPower', function () { return castPower; }, function (v) { castPower = v; });
+lienEtat('castState', function () { return castState; }, function (v) { castState = v; });
 lienEtat('castSwing', function () { return castSwing; }, function (v) { castSwing = v; });
+lienEtat('castSwingDepart', function () { return castSwingDepart; }, function (v) { castSwingDepart = v; });
 lienEtat('castT', function () { return castT; }, function (v) { castT = v; });
 lienEtat('castTarget', function () { return castTarget; }, function (v) { castTarget = v; });
+lienEtat('castTargetPower', function () { return castTargetPower; }, function (v) { castTargetPower = v; });
 lienEtat('castYawAngler', function () { return castYawAngler; }, function (v) { castYawAngler = v; });
 lienEtat('castYawRod', function () { return castYawRod; }, function (v) { castYawRod = v; });
 lienEtat('catchMessageTimer', function () { return catchMessageTimer; }, function (v) { catchMessageTimer = v; });
@@ -88,6 +95,7 @@ lienEtat('emplacementMarge', function () { return emplacementMarge; }, function 
 lienEtat('escaped', function () { return escaped; }, function (v) { escaped = v; });
 lienEtat('especeIndex', function () { return especeIndex; }, function (v) { especeIndex = v; });
 lienEtat('experiencePartie', function () { return experiencePartie; }, function (v) { experiencePartie = v; });
+lienEtat('feedMode', function () { return feedMode; }, function (v) { feedMode = v; });
 lienEtat('fightAdvantage', function () { return fightAdvantage; }, function (v) { fightAdvantage = v; });
 lienEtat('fishCaught', function () { return fishCaught; }, function (v) { fishCaught = v; });
 lienEtat('fishThrowPhase', function () { return fishThrowPhase; }, function (v) { fishThrowPhase = v; });
@@ -101,6 +109,7 @@ lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { 
 lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
 lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
 lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
+lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuDemelage = v; });
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
 lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
 lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
@@ -112,6 +121,7 @@ lienEtat('nibbleInteretAvant', function () { return nibbleInteretAvant; }, funct
 lienEtat('nibblePhase', function () { return nibblePhase; }, function (v) { nibblePhase = v; });
 lienEtat('nibbleRngState', function () { return nibbleRngState; }, function (v) { nibbleRngState = v; });
 lienEtat('nibbleSuivant', function () { return nibbleSuivant; }, function (v) { nibbleSuivant = v; });
+lienEtat('partieTerminee', function () { return partieTerminee; }, function (v) { partieTerminee = v; });
 lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
 lienEtat('poidsRealisteKilos', function () { return poidsRealisteKilos; }, function (v) { poidsRealisteKilos = v; });
 lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
@@ -138,6 +148,7 @@ lienEtat('strugglePos', function () { return strugglePos; }, function (v) { stru
 lienEtat('struggleTimeLeft', function () { return struggleTimeLeft; }, function (v) { struggleTimeLeft = v; });
 lienEtat('styleEspece', function () { return styleEspece; }, function (v) { styleEspece = v; });
 lienEtat('tangleChance', function () { return tangleChance; }, function (v) { tangleChance = v; });
+lienEtat('tangleChanceOverride', function () { return tangleChanceOverride; }, function (v) { tangleChanceOverride = v; });
 lienEtat('techniqueCourante', function () { return techniqueCourante; }, function (v) { techniqueCourante = v; });
 lienEtat('tension', function () { return tension; }, function (v) { tension = v; });
 lienEtat('timeoutEscape', function () { return timeoutEscape; }, function (v) { timeoutEscape = v; });
@@ -3381,171 +3392,21 @@ const {
     BOURRICHE_RADIUS
 });
 
-// ---------------------------------------------------------------------------
-// Lancer de la canne au dosage (même jauge que l'amorce)
-// ---------------------------------------------------------------------------
-const CAST_MIN_RANGE = 7;      // portée mini (jauge à zéro)
-const CAST_MAX_RANGE = 52;     // portée maxi (jauge à fond)
-const CAST_OSC = 1.7;          // vitesse d'oscillation de la jauge
-
-let castState = 'idle';        // 'idle' | 'charging'
+let castState = 'idle';
 let castPower = 0;
 let castTargetPower = 0;
 let castPhase = 0;
-// Ligne tendue pendant le vol : un clic avant l'atterrissage évite l'emmêlement.
 let ligneTendue = false;
-function risqueEmmelement() { return tangleChanceOverride ?? (tangleChance * filEquipe().emmelement); }
 let jeuDemelage = null;
-const castAim = new THREE.Vector3(0, 0.1, -28);
-
-function castPowerForDistance(distance) {
-    return Math.max(0, Math.min(1,
-        (distance - CAST_MIN_RANGE) / (CAST_MAX_RANGE - CAST_MIN_RANGE)));
-}
-
-function castAimDistance() {
-    return Math.hypot(castAim.x - angler.position.x, castAim.z - angler.position.z);
-}
-
-function setCastPower(value) {
-    castPower = Math.max(0, Math.min(1, value));
-    feedGaugeFill.style.width = (castPower * 100).toFixed(0) + '%';
-}
-
-function startCastCharge(point) {
-    if (partieTerminee || totalLignes() === 0) { return; }
-    if (castState !== 'idle' || (floatState !== 'idle' && floatState !== 'inWater') || feedMode) {
-        return;
-    }
-    castState = 'charging';
-    castPhase = 0;
-    castAim.set(point.x, 0.1, point.z);
-    castTargetPower = castPowerForDistance(castAimDistance());
-    setCastPower(0);
-    feedGauge.classList.add('active');
-    feedGaugeTarget.style.left = (castTargetPower * 100).toFixed(0) + '%';
-    ensureSound();
-    statusDisplay.textContent = 'Dose la puissance : relâche quand la jauge passe sur le repère !';
-}
-
-function moveCastAim(point) {
-    if (castState !== 'charging') {
-        return;
-    }
-    castAim.set(point.x, 0.1, point.z);
-    castTargetPower = castPowerForDistance(castAimDistance());
-    feedGaugeTarget.style.left = (castTargetPower * 100).toFixed(0) + '%';
-}
-
-function cancelCast() {
-    if (castState === 'charging') {
-        castState = 'idle';
-        feedGauge.classList.remove('active');
-        statusDisplay.textContent = 'Lancer annulé. Clique sur l’eau pour réessayer.';
-    }
-}
-
-function releaseCast() {
-    if (castState !== 'charging') {
-        return;
-    }
-    // LANCER TROP FORT : la jauge au maximum casse la ligne (et coûte une vie).
-    if (castPower >= 0.995) {
-        castState = 'idle';
-        feedGauge.classList.remove('active');
-        casserLigne('Lancer beaucoup trop fort');
-        return;
-    }
-    castState = 'idle';
-    feedGauge.classList.remove('active');
-    // Le point de chute dépend de la puissance choisie : c'est le geste à réussir.
-    const dx = castAim.x - angler.position.x;
-    const dz = castAim.z - angler.position.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const range = CAST_MIN_RANGE + castPower * (CAST_MAX_RANGE - CAST_MIN_RANGE);
-    startCast(new THREE.Vector3(
-        angler.position.x + (dx / d) * range, 0.1, angler.position.z + (dz / d) * range));
-}
-
-function updateCast(dt) {
-    if (castState !== 'charging') {
-        return;
-    }
-    castPhase += CAST_OSC * dt;
-    const m = ((castPhase % 2) + 2) % 2;
-    setCastPower(m < 1 ? m : 2 - m);
-}
-
-// ---------------------------------------------------------------------------
-// ANIMATION DU LANCER : orientation vers la cible + geste de canne.
-// Appelée à chaque image AVANT updateArm/updateRod.
-// ---------------------------------------------------------------------------
-function updateCastAnimation(dt) {
-    // 1) Cible à regarder : point visé pendant la charge, point de chute
-    //    pendant le vol, puis bouchon réel une fois à l'eau.
-    let cible = null;
-    let facteur = 0;
-    if (castState === 'charging') {
-        cible = castAim;
-        facteur = 0.9;
-    } else if (floatState === 'flying') {
-        cible = castTarget;
-        facteur = 1;
-    } else if (floatState === 'inWater' || floatState === 'bite'
-        || floatState === 'struggle' || floatState === 'reeling'
-        || floatState === 'snag') {
-        cible = floatGroup.position;
-        facteur = 0.8;
-    }
-    let yawAnglerVoulu = 0;
-    let yawRodVoulu = 0;
-    if (cible) {
-        const dx = cible.x - angler.position.x;
-        const dz = cible.z - angler.position.z;
-        if (Math.hypot(dx, dz) > 0.5) {
-            const thetaCible = Math.atan2(dz, dx);
-            // Pêcheur : son axe local +z donne theta = PI/2 - lacet.
-            yawAnglerVoulu = angleNormalise(
-                (Math.PI / 2 - thetaCible) - anglerYawBase) * facteur;
-            // Canne : son bout local a un angle qui dépend AUSSI du geste
-            // vertical (rotation X). On le recalcule avec le swing courant ;
-            // un lacet ψ diminue l'angle monde de ψ.
-            const zSwing = rodLocalTip.y * Math.sin(castSwing)
-                + rodLocalTip.z * Math.cos(castSwing);
-            const angleLocalCanne = Math.atan2(zSwing, rodLocalTip.x);
-            yawRodVoulu = angleNormalise(
-                (angleLocalCanne - thetaCible) - rodYawBase) * facteur;
-        }
-    }
-    yawAnglerVoulu = Math.max(-CAST_YAW_ANGLER_MAX,
-        Math.min(CAST_YAW_ANGLER_MAX, yawAnglerVoulu));
-    yawRodVoulu = Math.max(-CAST_YAW_ROD_MAX,
-        Math.min(CAST_YAW_ROD_MAX, yawRodVoulu));
-    const lissage = Math.min(1, dt * 7);
-    castYawAngler += (yawAnglerVoulu - castYawAngler) * lissage;
-    castYawRod += (yawRodVoulu - castYawRod) * lissage;
-    angler.rotation.y = anglerYawBase + castYawAngler;
-    rodPivot.rotation.y = rodYawBase + castYawRod;
-
-    // 2) Geste de canne : armé pendant la charge, fouetté au lâcher, puis repos.
-    if (castState === 'charging') {
-        castSwing += (CAST_SWING_CHARGE - castSwing) * Math.min(1, dt * 6);
-    } else if (floatState === 'flying') {
-        const volSecondes = castT * CAST_DURATION;
-        const dureeFouette = 0.192;
-        if (volSecondes < dureeFouette) {
-            const t = volSecondes / dureeFouette;
-            const doux = t * t * (3 - 2 * t);
-            castSwing = castSwingDepart
-                + (CAST_SWING_RELEASE - castSwingDepart) * doux;
-        } else {
-            const t = Math.min(1, (volSecondes - dureeFouette) / 0.448);
-            castSwing = CAST_SWING_RELEASE * (1 - t) * (1 - t);
-        }
-    } else {
-        castSwing += (0 - castSwing) * Math.min(1, dt * 8);
-    }
-}
+let castAim = new THREE.Vector3(0, 0.1, -28);
+const {
+    risqueEmmelement, setCastPower, startCastCharge, moveCastAim, cancelCast, releaseCast,
+    updateCast, updateCastAnimation
+} = creerLancerCanne({
+    filEquipe, angler, feedGaugeFill, totalLignes, feedGauge, feedGaugeTarget, ensureSound,
+    statusDisplay, casserLigne, startCast, floatGroup, angleNormalise, rodLocalTip,
+    CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE
+});
 
 // ---------------------------------------------------------------------------
 // Frein du moulinet : on lâche du fil quand le poisson charge (la ligne ne
