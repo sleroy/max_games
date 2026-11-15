@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=116';
+import { SoundEngine } from './sound.js?v=117';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -241,11 +241,13 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 //   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
 // ---------------------------------------------------------------------------
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 0.85 },
-    normal: { difficulty: 1.3, biteWindow: 0.7 },
-    dur: { difficulty: 1.6, biteWindow: 0.55 }
+    facile: { difficulty: 1.0, biteWindow: 0.85, tangleChance: 0 },
+    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08 },
+    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15 }
 };
 let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
+let tangleChance = DIFFICULTY_MODES.normal.tangleChance;
+let tangleChanceOverride = null;
 
 // Tours de manivelle effectués depuis le dernier appel (puis remis à zéro).
 function consumeCrankTurns() {
@@ -3802,6 +3804,7 @@ function setDifficulty(mode) {
     const preset = DIFFICULTY_MODES[mode] || DIFFICULTY_MODES.normal;
     DIFFICULTY = preset.difficulty;
     BITE_WINDOW = preset.biteWindow;
+    tangleChance = preset.tangleChance;
     if (difficultySelect.value !== mode) {
         difficultySelect.value = mode;
     }
@@ -4001,7 +4004,7 @@ let castTargetPower = 0;
 let castPhase = 0;
 // Ligne tendue pendant le vol : un clic avant l'atterrissage évite l'emmêlement.
 let ligneTendue = false;
-let tangleChance = 0.32;
+function risqueEmmelement() { return tangleChanceOverride ?? tangleChance; }
 let jeuDemelage = null;
 const castAim = new THREE.Vector3(0, 0.1, -28);
 
@@ -4137,13 +4140,15 @@ function updateCastAnimation(dt) {
     if (castState === 'charging') {
         castSwing += (CAST_SWING_CHARGE - castSwing) * Math.min(1, dt * 6);
     } else if (floatState === 'flying') {
-        if (castT < 0.24) {
-            const t = Math.min(1, castT / 0.24);
+        const volSecondes = castT * CAST_DURATION;
+        const dureeFouette = 0.192;
+        if (volSecondes < dureeFouette) {
+            const t = volSecondes / dureeFouette;
             const doux = t * t * (3 - 2 * t);
             castSwing = castSwingDepart
                 + (CAST_SWING_RELEASE - castSwingDepart) * doux;
         } else {
-            const t = Math.min(1, (castT - 0.24) / 0.56);
+            const t = Math.min(1, (volSecondes - dureeFouette) / 0.448);
             castSwing = CAST_SWING_RELEASE * (1 - t) * (1 - t);
         }
     } else {
@@ -4176,7 +4181,7 @@ dragButton.addEventListener('pointerleave', () => setDragLoosened(false));
 
 // --- Tutoriel d'accueil (accessible depuis l’écran d’accueil) ----------------------
 const TUTORIAL_STEPS = [
-    { main: '👆', texte: 'Bienvenue à l’étang du Bois Neuf ! Clique sur l’eau, maintiens pour doser la puissance, puis relâche pour lancer la ligne.' },
+    { main: '👆', texte: 'Maintiens sur l’eau pour doser le lancer. Relâche, puis appuie sur « Tendre le fil » pendant qu’il vole : cela évite qu’il s’emmêle. En mode Facile, tu peux simplement laisser le fil se poser.' },
     { main: '✊', texte: 'Quand le bouchon mordille puis s’enfonce, clique vite pour ferrer le poisson : un seul essai !' },
     { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens « Lâcher du fil ».' },
     { main: '🐟', texte: 'Garde le poisson en main et lance-le dans la bourriche 🧺 (comme l’amorce) pour le ranger dans ton carnet.' }
@@ -5228,7 +5233,7 @@ let lineBrokenTimer = 0;
 let snagFreed = false;
 const castStart = new THREE.Vector3();
 const castTarget = new THREE.Vector3();
-const CAST_DURATION = 0.8;
+const CAST_DURATION = 1.2;
 const MAX_WAIT = 20;        // sans poisson, la ligne remonte toute seule (securite)
 
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
@@ -5279,19 +5284,25 @@ function startCast(target) {
     // l'esche « à la volée » dès que le bouchon touche l'eau.
     biteCooldown = 0;
     floatState = 'flying';
-    fishButton.disabled = true;
-    statusDisplay.textContent = 'Lancer… clique pour tendre la ligne avant qu’il touche l’eau !';
+    const peutEmmeler = risqueEmmelement() > 0;
+    fishButton.disabled = !peutEmmeler;
+    fishButton.textContent = peutEmmeler ? 'Tendre le fil' : 'Lancer la canne';
+    statusDisplay.textContent = peutEmmeler
+        ? 'Lancer… appuie sur « Tendre le fil » avant l’arrivée dans l’eau.'
+        : 'Lancer… la ligne va se poser.';
     sound.cast();
 }
 
 // Clic pendant le vol : on tend la ligne avant que le bouchon ne se pose.
 function tendreLigneAuLancer() {
-    if (floatState !== 'flying' || ligneTendue) {
+    if (floatState !== 'flying' || ligneTendue || risqueEmmelement() === 0) {
         return false;
     }
     ligneTendue = true;
     spawnFloatingText('Ligne tendue !', castTarget, '#7ed957');
-    statusDisplay.textContent = 'Ligne tendue ! Le bouchon va se poser…';
+    fishButton.disabled = true;
+    fishButton.textContent = '✓ Fil tendu';
+    statusDisplay.textContent = 'Ligne tendue ! Le lancer est sécurisé.';
     sound.reel();
     return true;
 }
@@ -6599,12 +6610,14 @@ function updateFloat(dt, time) {
         castT += dt / CAST_DURATION;
         if (castT >= 1) {
             castT = 1;
+            fishButton.disabled = true;
+            fishButton.textContent = 'Lancer la canne';
             floatGroup.position.copy(castTarget);
             spawnRipple(castTarget);
             sound.splash();
             if (isSnagged(castTarget)) {
                 startSnag();
-            } else if (!ligneTendue && tangleChance > 0 && rand() < tangleChance) {
+            } else if (!ligneTendue && risqueEmmelement() > 0 && rand() < risqueEmmelement()) {
                 // La ligne n'a pas été tendue : elle s'est emmêlée en touchant
                 // l'eau. Pas de pêche tant que le mini-jeu n'est pas résolu.
                 demarrerEmmElement();
@@ -7007,6 +7020,10 @@ waterUniforms.uNormalsOn.value = waterUniforms.uNormals.value ? 1 : 0;
 fishButton.addEventListener('click', () => {
     if (paused || cameraViewActive || toolDock.classList.contains('ouvert')) { return; }
     ensureSound();
+    if (floatState === 'flying') {
+        tendreLigneAuLancer();
+        return;
+    }
     if (castState === 'charging') {
         releaseCast();
         return;
@@ -7050,6 +7067,10 @@ window.addEventListener('keydown', event => {
         ensureSound();
         if (feedMode) {
             return; // en mode amorçage, on lance avec la souris sur l'eau
+        }
+        if (floatState === 'flying') {
+            tendreLigneAuLancer();
+            return;
         }
         if (castState === 'charging') {
             releaseCast();
@@ -8052,9 +8073,9 @@ window.__game = {
     startReel: startReel,
     // Mini-jeu de démêlage et tension de ligne au lancer — pilotage des tests.
     setTangleChance: function (value) {
-        tangleChance = Math.max(0, Math.min(1, Number(value) || 0));
+        tangleChanceOverride = value === null ? null : Math.max(0, Math.min(1, Number(value) || 0));
     },
-    getTangleChance: function () { return tangleChance; },
+    getTangleChance: risqueEmmelement,
     tendreLigne: tendreLigneAuLancer,
     isLigneTendue: function () { return ligneTendue; },
     forcerEmmElement: demarrerEmmElement,

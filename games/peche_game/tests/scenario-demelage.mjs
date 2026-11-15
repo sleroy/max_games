@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual,
-    G, el, resetToIdle, step, stepUntil, state
+    G, el, fire, resetToIdle, step, stepUntil, state
 } from './harness.mjs';
 
 function attendreEtat(cible, max = 4) {
@@ -18,17 +18,38 @@ export function run() {
     resetToIdle();
     G().lilyPads.length = 0;
 
+    G().setTangleChance(null);
+    G().setDifficulty('facile');
+    checkEqual('le mode Facile écarte les emmêlements au lancer', G().getTangleChance(), 0);
+    G().startCast({ x: 0, y: 0, z: -25 });
+    checkEqual('le bouton de tension est inutile en Facile', el('fishButton').disabled, true);
+    check('le lancer arrive sans geste supplémentaire', attendreEtat('inWater', 4), state());
+    resetToIdle();
+    G().setDifficulty('dur');
+    checkEqual('le mode Dur plafonne le risque à quinze pour cent', G().getTangleChance(), 0.15);
+    G().setDifficulty('normal');
+    checkEqual('le mode Normal plafonne le risque à huit pour cent', G().getTangleChance(), 0.08);
+
     // 1) Un clic pendant le vol tend la ligne : pas d'emmêlement.
     G().setTangleChance(1);
     G().startCast({ x: 0, y: 0, z: -25 });
     checkEqual('la ligne part', state(), 'flying');
     check('le statut invite à tendre la ligne',
-        el('status').textContent.indexOf('tendre la ligne') >= 0, el('status').textContent);
-    checkEqual('le clic tend la ligne', G().tendreLigne(), true);
+        el('status').textContent.includes('Tendre le fil'), el('status').textContent);
+    checkEqual('le bouton indique le geste à faire', el('fishButton').textContent, 'Tendre le fil');
+    checkEqual('le bouton est utilisable pendant le vol', el('fishButton').disabled, false);
+    fire('fishButton', 'click');
+    checkEqual('le jeu confirme le geste', el('fishButton').textContent, '✓ Fil tendu');
     checkEqual('la ligne est marquée tendue', G().isLigneTendue(), true);
     attendreEtat('inWater', 4);
     checkEqual('une ligne tendue arrive sans emmêlement', state(), 'inWater');
     checkEqual('aucune ligne perdue', G().getLignes(), 5);
+
+    resetToIdle();
+    G().startCast({ x: 0, y: 0, z: -25 });
+    fire('gameCanvas', 'pointerdown', { button: 0, pointerType: 'touch' });
+    checkEqual('une pression sur l’eau tend aussi le fil', G().isLigneTendue(), true);
+    check('le geste tactile protège aussi le lancer', attendreEtat('inWater', 4), state());
 
     // 2) Sans tendre la ligne, elle s'emmêle (chance forcée à 100 %).
     resetToIdle();

@@ -69,11 +69,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   carnassier prend sa place avec un **avantage** (combat plus dur, chrono plus court).
   Un **popup 3D** (« 🐟 Brochet attaque ! ») s'affiche **près du bouchon**, en
   plus du message de statut, pour prévenir immédiatement le joueur.
-- **Lancer tendu / ligne emmêlée** : pendant le vol, **clique pour tendre la ligne**
-  avant que le bouchon touche l'eau. Si tu ne le fais pas, la ligne peut s'**emmêler**
-  (32 %) : un **mini-jeu** s'ouvre alors. Suis le câble au doigt du **DÉPART** vert
-  à l'**ARRIVÉE** rouge, sans sortir du câble et dans le temps imparti. Un abandon
-  ou un temps écoulé **coûte une ligne** ; un tracé réussi libère la ligne.
+- **Lancer tendu** : après avoir relâché, appuie sur **Tendre le fil** avant
+  l’arrivée dans l’eau. Un clic sur l’étang pendant le vol fait la même chose.
+  Un fil tendu écarte le risque d’emmêlement. Sans ce geste, le risque est de
+  **0 % en Facile**, **8 % en Normal** et **15 % en Dur**.
+- **Démêlage** : suis le câble du départ vert à l’arrivée rouge. Un tracé réussi
+  libère la ligne. Un abandon ou un temps écoulé coûte une ligne. Les accrochages
+  aux nénuphars ou au fond dépendent de l’endroit visé et de la profondeur.
 - **Deux techniques** : **bouchon** (flotteur classique) ou **quiver** (scion de
   canne, aucun bouchon). En quiver, la canne est inclinée et un **indicateur de
   scion** montre les touches ; le catalogue des 18 touches reste le même, chaque
