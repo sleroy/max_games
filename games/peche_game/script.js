@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=109';
+import { SoundEngine } from './sound.js?v=110';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -999,8 +999,6 @@ const waterUniforms = {
     // Direction NORMALISÉE (du plan d'eau vers le soleil) : elle suit l'azimut
     // fixe du soleil et son élévation, au lieu d'être codée en dur dans le shader.
     uSunDir: { value: directionSoleil3D(new THREE.Vector3()) },
-    uEnv: { value: null },
-    uReflect: { value: 0 },
     uShallow: { value: new THREE.Color(0x3d7d92) },
     uDeep: { value: new THREE.Color(0x0a2736) },
     uSky: { value: new THREE.Color(0x9fc7d6) },
@@ -1008,8 +1006,7 @@ const waterUniforms = {
     uNormalsOn: { value: 0 },
     uReflection: { value: null },
     uReflectOn: { value: 0 },
-    uResolution: { value: new THREE.Vector2(1280, 720) }
-    , uMirrorY: { value: 0 }
+    uReflectionProjection: { value: new THREE.Matrix4() }
 };
 
 // ---------------------------------------------------------------------------
@@ -1018,29 +1015,56 @@ const waterUniforms = {
 // le shader et déformée par les normales. Basse résolution + une image sur deux,
 // désactivé sur mobile.
 // ---------------------------------------------------------------------------
-const waterReflectionTarget = new THREE.WebGLRenderTarget(320, 180, { depthBuffer: true });
-const waterMirrorCamera = new THREE.PerspectiveCamera(45, 16 / 9, 0.5, 400);
-// OPT-IN : le reflet planaire est désactivé tant qu'il n'est pas validé à l'œil
-// (une texture de reflet non initialisée est BLANCHE dans three.js -> eau blanche).
-let waterReflectionOn = false;
+const waterReflectionTarget = postSupported && !isMobileDevice
+    ? new THREE.WebGLRenderTarget(320, 180, { depthBuffer: true }) : null;
+const waterMirrorCamera = new THREE.PerspectiveCamera();
+const mirrorDirection = new THREE.Vector3();
+const mirrorUp = new THREE.Vector3();
+const reflectionClip = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)];
 let waterReflectionFrame = 0;
+
 function updateWaterReflection() {
-    if (!waterReflectionOn || !water) { return; }
+    if (!reflections.enabled || !waterReflectionTarget || camera.position.y <= 0) {
+        waterUniforms.uReflectOn.value = 0;
+        return;
+    }
     waterReflectionFrame += 1;
-    if (waterReflectionFrame % 2 !== 0) { return; }
+    if (waterUniforms.uReflectOn.value && waterReflectionFrame % 2 !== 0) { return; }
     waterMirrorCamera.copy(camera);
-    waterMirrorCamera.position.y = -camera.position.y;
-    waterMirrorCamera.up.set(0, -1, 0);
-    waterMirrorCamera.lookAt(POND_CENTER.x, 0, POND_CENTER.z);
-    const precedent = (typeof renderer.getRenderTarget === 'function') ? renderer.getRenderTarget() : null;
-    const visibleAvant = water.visible;
-    water.visible = false;
-    renderer.setRenderTarget(waterReflectionTarget);
-    renderer.render(scene, waterMirrorCamera);
-    renderer.setRenderTarget(precedent);
-    water.visible = visibleAvant;
-    waterUniforms.uReflection.value = waterReflectionTarget.texture;
-    waterUniforms.uReflectOn.value = 1;   // le sampler est prêt
+    camera.getWorldDirection(mirrorDirection);
+    mirrorDirection.y *= -1;
+    mirrorUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    mirrorUp.y *= -1;
+    waterMirrorCamera.up.copy(mirrorUp);
+    waterMirrorCamera.position.y *= -1;
+    waterMirrorCamera.lookAt(mirrorDirection.add(waterMirrorCamera.position));
+    waterMirrorCamera.updateMatrixWorld(true);
+
+    const previousTarget = renderer.getRenderTarget();
+    const previousClipping = renderer.clippingPlanes;
+    const previousVisibility = water.visible;
+    const previousShadowUpdate = renderer.shadowMap.autoUpdate;
+    try {
+        water.visible = false;
+        renderer.clippingPlanes = reflectionClip;
+        renderer.shadowMap.autoUpdate = false;
+        renderer.setRenderTarget(waterReflectionTarget);
+        renderer.clear();
+        renderer.render(scene, waterMirrorCamera);
+        waterUniforms.uReflectionProjection.value.multiplyMatrices(
+            waterMirrorCamera.projectionMatrix, waterMirrorCamera.matrixWorldInverse);
+        waterUniforms.uReflection.value = waterReflectionTarget.texture;
+        waterUniforms.uReflectOn.value = 1;
+    } catch (error) {
+        setReflections(false);
+        reflectionsToggle.checked = false;
+        console.warn('Reflet planaire indisponible', error);
+    } finally {
+        renderer.setRenderTarget(previousTarget);
+        renderer.clippingPlanes = previousClipping;
+        renderer.shadowMap.autoUpdate = previousShadowUpdate;
+        water.visible = previousVisibility;
+    }
 }
 
 // Miroir JS de la composition de l'eau (memes regles que le fragment shader) :
@@ -1114,13 +1138,11 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform sampler2D uNormals;
         uniform sampler2D uReflection;
         uniform float uReflectOn;
-        uniform vec2 uResolution;
+        uniform mat4 uReflectionProjection;
         uniform float uTime;
         uniform float uWind;
         uniform float uLight;
         uniform vec3 uSunDir;
-        uniform samplerCube uEnv;
-        uniform float uReflect;
         varying vec3 vWorldPos;
         varying vec3 vNormal;
         varying float vDepth;
@@ -1145,14 +1167,14 @@ const waterMaterial = new THREE.ShaderMaterial({
             col = mix(col, uSky, fres * 0.22);
             // REFLET du décor (couche 2) : distordu par les ridules.
             if (uReflectOn > 0.5) {
-                vec2 uvRef = gl_FragCoord.xy / uResolution + vRipple.xy * 0.035;
-                vec3 reflet = texture2D(uReflection, clamp(uvRef, vec2(0.0), vec2(1.0))).rgb;
-                col = mix(col, reflet, 0.15 + fres * 0.25);
-            }
-            // Reflets du décor (optionnels) : cube rendu de temps en temps.
-            if (uReflect > 0.001) {
-                vec3 refl = reflect(-viewDir, n);
-                col = mix(col, textureCube(uEnv, refl).rgb, uReflect * (0.2 + fres * 0.5));
+                vec4 mirrorPoint = uReflectionProjection * vec4(vWorldPos.x, 0.0, vWorldPos.z, 1.0);
+                if (mirrorPoint.w > 0.0) {
+                    vec2 uvRef = mirrorPoint.xy / mirrorPoint.w * 0.5 + 0.5 + vRipple.xy * 0.025;
+                    vec2 edge = min(uvRef, 1.0 - uvRef);
+                    float coverage = smoothstep(0.0, 0.04, min(edge.x, edge.y));
+                    vec3 reflet = texture2D(uReflection, clamp(uvRef, vec2(0.0), vec2(1.0))).rgb;
+                    col = mix(col, reflet, coverage * (0.12 + fres * 0.32));
+                }
             }
             // La nuit, l'eau s'assombrit (cohérent avec la lumière de la scène).
             col *= mix(vec3(0.30, 0.36, 0.48), vec3(1.0), uLight);
@@ -1174,50 +1196,11 @@ water.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(water);
 
 // ---------------------------------------------------------------------------
-// Reflets sur l'eau (optionnels) : un cube-mapping rendu de temps en temps.
-// Désactivé par défaut (coûteux) ; activable depuis le carnet.
-// ---------------------------------------------------------------------------
+// Le reflet planaire est proposé sur ordinateur ; le ciel reste visible sur mobile.
 const reflections = { enabled: false };
-let cubeCamera = null;
-let cubeTarget = null;
-let reflectionTimer = 0;
-if (postSupported && THREE.CubeCamera && THREE.WebGLCubeRenderTarget) {
-    try {
-        cubeTarget = new THREE.WebGLCubeRenderTarget(128, {
-            generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter
-        });
-        cubeCamera = new THREE.CubeCamera(0.5, 320, cubeTarget);
-        cubeCamera.position.set(POND_CENTER.x, 1.6, POND_CENTER.z);
-        scene.add(cubeCamera);
-    } catch (error) {
-        cubeCamera = null;
-    }
-}
-
 function setReflections(value) {
-    reflections.enabled = !!value && !!cubeCamera;
-    waterUniforms.uReflect.value = reflections.enabled ? 0.75 : 0;
-}
-
-function updateReflections(dt) {
-    if (!reflections.enabled || !cubeCamera) {
-        return;
-    }
-    reflectionTimer -= dt;
-    if (reflectionTimer > 0) {
-        return;
-    }
-    reflectionTimer = 2.5;   // on espace les mises à jour (coûteux)
-    try {
-        water.visible = false;
-        cubeCamera.update(renderer, scene);
-        water.visible = true;
-        waterUniforms.uEnv.value = cubeTarget.texture;
-    } catch (error) {
-        // Pas de reflets disponibles : on revient au rendu simple.
-        water.visible = true;
-        setReflections(false);
-    }
+    reflections.enabled = !!value && !!waterReflectionTarget;
+    waterUniforms.uReflectOn.value = 0;
 }
 
 // Même houle que le shader, côté JavaScript : servez-vous en pour faire flotter
@@ -1277,9 +1260,13 @@ function makeShoreGeometry(outer, segments) {
     return geo;
 }
 
+const grassTexture = chargerTexture('sol-herbe.jpg', 180, 180);
 const shore = new THREE.Mesh(
     makeShoreGeometry(220, 96),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, map: chargerTexture('sol-herbe.jpg', 180, 180) })
+    new THREE.MeshStandardMaterial({
+        color: 0xe5e0c9, roughness: 0.94, map: grassTexture,
+        bumpMap: isMobileDevice ? null : grassTexture, bumpScale: 0.12
+    })
 );
 shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
 shore.receiveShadow = true;
@@ -1546,44 +1533,110 @@ scene.add(angler);
 const rodBase = new THREE.Vector3(-3, 2.2 + RIVE_Y, 17);
 const rodTip = new THREE.Vector3(-0.8, 4.81, 11.89); // ~3 m du talon
 
-function cylinderBetween(start, end, radius, material) {
-    const dir = new THREE.Vector3().subVectors(end, start);
-    const len = dir.length();
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, len, 8), material);
-    mesh.position.copy(start).add(end).multiplyScalar(0.5);
-    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-    mesh.castShadow = true;
-    return mesh;
-}
-
-// La canne est regroupée depuis sa base : on peut ainsi la faire plier.
-const rodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
 const rodLocalTip = rodTip.clone().sub(rodBase);
-// PIVOT DE LA CANNE : la canne est regroupée depuis sa base et orientée par un
-// pivot (rotation.y). On peut ainsi la faire plier (rodGroup.rotation.x) SANS
-// que le pliage dépende de l'orientation du poste autour de l'étang.
 const rodPivot = new THREE.Group();
 rodPivot.position.copy(rodBase);
 scene.add(rodPivot);
 const rodGroup = new THREE.Group();
 rodPivot.add(rodGroup);
-// Canne CONIQUE : talon de 25 mm, scion de 4 mm (pas un tube uniforme).
-const rodMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.025, rodLocalTip.length(), 10), rodMat);
-rodMesh.position.copy(rodLocalTip).multiplyScalar(0.5);
-rodMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), rodLocalTip.clone().normalize());
-rodMesh.castShadow = true;
-rodGroup.add(rodMesh);
 
-const handleEnd = rodLocalTip.clone().multiplyScalar(0.2);
-rodGroup.add(cylinderBetween(new THREE.Vector3(0, 0, 0), handleEnd, 0.055, new THREE.MeshStandardMaterial({ color: 0x3b2a1a })));
+const blankMaterial = new THREE.MeshStandardMaterial({ color: 0x25292a, roughness: 0.32 });
+const guideMaterial = new THREE.MeshStandardMaterial({ color: 0x8b9297, metalness: 0.7, roughness: 0.3 });
+const wrapMaterial = new THREE.MeshStandardMaterial({ color: 0x463025, roughness: 0.55 });
+const corkMaterial = new THREE.MeshStandardMaterial({ color: 0xb89163, roughness: 0.88 });
+const rodAxis = rodLocalTip.clone().normalize();
+const guideSide = new THREE.Vector3(0, -1, 0).addScaledVector(rodAxis, rodAxis.y).normalize();
+const cylinderAxis = new THREE.Vector3(0, 1, 0);
+const guideAxis = new THREE.Vector3(0, 0, 1);
 
-const reel = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.06, 0.06, 0.05, 14),
-    new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.4 })
-);
-reel.position.copy(handleEnd).add(new THREE.Vector3(0.25, -0.25, 0));
-reel.rotation.z = Math.PI / 2;
-rodGroup.add(reel);
+function addRodCylinder(from, to, baseRadius, tipRadius, material) {
+    const direction = to.clone().sub(from);
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(
+        tipRadius, baseRadius, direction.length(), 12), material);
+    mesh.position.copy(from).lerp(to, 0.5);
+    mesh.quaternion.setFromUnitVectors(cylinderAxis, direction.normalize());
+    rodGroup.add(mesh);
+    return mesh;
+}
+
+const blank = new THREE.Mesh(new THREE.CylinderGeometry(
+    0.004, 0.022, rodLocalTip.length(), 12, 16), blankMaterial);
+blank.geometry.rotateZ(-Math.PI / 2);
+blank.geometry.translate(rodLocalTip.length() * 0.5, 0, 0);
+const blankAxis = new THREE.Vector3(1, 0, 0);
+blank.geometry.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(blankAxis, rodAxis));
+const blankPositions = blank.geometry.getAttribute('position');
+const blankRest = blankPositions.array.slice();
+const guideMounts = [];
+let previousRodFlex = 0;
+rodGroup.add(blank);
+blank.castShadow = true;
+addRodCylinder(new THREE.Vector3(), rodLocalTip.clone().multiplyScalar(0.15), 0.052, 0.043, corkMaterial);
+addRodCylinder(rodLocalTip.clone().multiplyScalar(0.15),
+    rodLocalTip.clone().multiplyScalar(0.22), 0.037, 0.032, wrapMaterial);
+addRodCylinder(rodLocalTip.clone().multiplyScalar(0.22),
+    rodLocalTip.clone().multiplyScalar(0.27), 0.039, 0.031, corkMaterial);
+
+const reelSeat = rodLocalTip.clone().multiplyScalar(0.18);
+const reelCenter = reelSeat.clone().addScaledVector(guideSide, 0.18);
+const spoolFront = reelCenter.clone().addScaledVector(rodAxis, 0.14);
+const spoolBack = reelCenter.clone().addScaledVector(rodAxis, 0.06);
+addRodCylinder(reelSeat, reelCenter, 0.026, 0.036, blankMaterial);
+addRodCylinder(reelCenter, spoolBack, 0.082, 0.069, blankMaterial);
+addRodCylinder(spoolBack, spoolFront, 0.063, 0.063, wrapMaterial);
+addRodCylinder(spoolFront, spoolFront.clone().addScaledVector(rodAxis, 0.012), 0.075, 0.075, guideMaterial);
+const bail = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.004, 6, 18, Math.PI), guideMaterial);
+bail.position.copy(spoolBack);
+bail.quaternion.setFromUnitVectors(guideAxis, rodAxis);
+rodGroup.add(bail);
+const crankSide = new THREE.Vector3().crossVectors(rodAxis, guideSide).normalize();
+const crankEnd = reelCenter.clone().addScaledVector(crankSide, 0.13);
+addRodCylinder(reelCenter, crankEnd, 0.012, 0.012, guideMaterial);
+addRodCylinder(crankEnd, crankEnd.clone().addScaledVector(guideSide, 0.09), 0.017, 0.019, blankMaterial);
+
+for (const fraction of [0.35, 0.48, 0.60, 0.71, 0.81, 0.90, 0.96]) {
+    const radius = THREE.MathUtils.lerp(0.05, 0.014, fraction);
+    const mount = rodLocalTip.clone().multiplyScalar(fraction);
+    const ringCenter = mount.clone().addScaledVector(guideSide, radius * 1.6);
+    const foot = addRodCylinder(mount, ringCenter.clone().addScaledVector(guideSide, -radius),
+        0.006, 0.004, guideMaterial);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.003, 6, 12), guideMaterial);
+    ring.position.copy(ringCenter);
+    ring.quaternion.setFromUnitVectors(guideAxis, rodAxis);
+    rodGroup.add(ring);
+    guideMounts.push({ fraction, rodParts: [foot, ring].map(mesh => ({ mesh, rest: mesh.position.clone() })) });
+}
+const tipGuide = new THREE.Mesh(new THREE.TorusGeometry(0.011, 0.003, 6, 12), guideMaterial);
+tipGuide.position.copy(rodLocalTip);
+tipGuide.quaternion.setFromUnitVectors(guideAxis, rodAxis);
+rodGroup.add(tipGuide);
+
+function rodFlexOffset(fraction, flex) {
+    const t = Math.max(0, (fraction - 0.27) / 0.73);
+    return flex * 2 * t * t * (1 - t);
+}
+
+function updateRodFlex(flex) {
+    if (Math.abs(flex - previousRodFlex) < 0.001) { return; }
+    previousRodFlex = flex;
+    const length = rodLocalTip.length();
+    for (let i = 0; i < blankRest.length; i += 3) {
+        const x = blankRest[i];
+        const y = blankRest[i + 1];
+        const z = blankRest[i + 2];
+        const fraction = THREE.MathUtils.clamp((x * rodAxis.x + y * rodAxis.y + z * rodAxis.z) / length, 0, 1);
+        const offset = rodFlexOffset(fraction, flex);
+        blankPositions.setXYZ(i / 3, x + guideSide.x * offset, y + guideSide.y * offset, z + guideSide.z * offset);
+    }
+    blankPositions.needsUpdate = true;
+    blank.geometry.computeVertexNormals();
+    for (const { fraction, rodParts } of guideMounts) {
+        const offset = rodFlexOffset(fraction, flex);
+        for (const { mesh, rest } of rodParts) {
+            mesh.position.copy(rest).addScaledVector(guideSide, offset);
+        }
+    }
+}
 
 // Pliage de la canne + position VISUELLE du bout (la ligne part de là).
 // `rodTip` reste la référence logique (distances, tests) et ne bouge pas.
@@ -1629,6 +1682,7 @@ function updateRod(dt) {
         || floatState === 'struggle' || floatState === 'reeling')) ? -0.24 : 0;
     const pliage = -rodBend + castSwing + poseQuiver;
     rodGroup.rotation.x = pliage;
+    updateRodFlex(rodBend + castSwing * 0.4);
     // Pliage autour de l'axe LOCAL de la canne, puis orientation du poste :
     // c'est exactement la transformation de rodPivot -> rodGroup.
     rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, pliage);
@@ -3938,6 +3992,7 @@ effectsToggle.addEventListener('change', () => {
     post.enabled = effectsToggle.checked !== false;
 });
 reflectionsToggle.checked = reflections.enabled;
+reflectionsToggle.disabled = !waterReflectionTarget;
 reflectionsToggle.addEventListener('change', () => {
     setReflections(reflectionsToggle.checked !== false);
     reflectionsToggle.checked = reflections.enabled;
@@ -4287,8 +4342,12 @@ function makeFishTexture(motif) {
     } else if (motif === 'ecailles') {         // écailles (carpe, brème)
         g.fillStyle = 'rgba(120,90,40,0.30)';
         for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
-                g.fillRect(x * 8 + (y % 2) * 4, y * 8, 6, 6);
+            for (let x = -1; x <= 8; x++) {
+                const center = x * 8 + (y % 2) * 4;
+                g.beginPath();
+                g.arc(center, y * 8, 4.8, 0.15 * Math.PI, 0.85 * Math.PI);
+                g.strokeStyle = 'rgba(75,57,27,0.43)';
+                g.stroke();
             }
         }
     } else if (motif === 'mouchetures') {      // taches fines (tanche)
@@ -4359,7 +4418,22 @@ function makeFish(size, power, aggression, form, espece) {
     const bodyY = forme.bodyY;
     const bodyZ = forme.bodyZ;
 
-    const fishBody = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), bodyMat);
+    const bodyGeometry = new THREE.SphereGeometry(0.6, 24, 16);
+    const bodyVertices = bodyGeometry.getAttribute('position');
+    const carp = espece && espece.id === 'carpe';
+    for (let i = 0; i < bodyVertices.count; i++) {
+        const x = bodyVertices.getX(i);
+        const longitudinal = x / 0.6;
+        const shoulder = 1 + 0.16 * longitudinal;
+        const back = bodyVertices.getY(i);
+        const snout = forme.queue === 'fine' ? 0.08 : 0.035;
+        bodyVertices.setXYZ(i, x,
+            back * shoulder - snout * Math.pow(Math.max(0, longitudinal), 3)
+                + (carp ? 0.04 * Math.max(0, back / 0.6) * (1 - longitudinal ** 2) : 0),
+            bodyVertices.getZ(i) * shoulder);
+    }
+    bodyGeometry.computeVertexNormals();
+    const fishBody = new THREE.Mesh(bodyGeometry, bodyMat);
     fishBody.scale.set(bodyX, bodyY, bodyZ);
     fishBody.castShadow = true;
     group.add(fishBody);
@@ -4427,25 +4501,44 @@ function makeFish(size, power, aggression, form, espece) {
     details.add(pectorale2);
 
     // Moustaches (silure, poisson-chat).
-    if (forme.moustaches) {
+    if (forme.moustaches || carp) {
         for (let i = 0; i < 4; i++) {
             const cote = i < 2 ? 1 : -1;
-            const moustache = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, 0.7, 4), bodyMat);
+            const moustache = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.01, carp ? 0.12 : 0.7, 4), bodyMat);
             moustache.rotation.z = Math.PI / 2 - cote * 0.25;
             moustache.rotation.y = (i % 2 === 0 ? 0.35 : -0.35);
-            moustache.position.set(0.62 * bodyX, 0.02 - (i % 2) * 0.12, cote * 0.12);
+            moustache.position.set((carp ? 0.58 : 0.62) * bodyX,
+                carp ? -0.05 - (i % 2) * 0.03 : 0.02 - (i % 2) * 0.12, cote * 0.12);
             details.add(moustache);
         }
     }
 
     // Yeux (certaines espèces ont l'œil rouge, comme la tanche).
-    const eyeMat = new THREE.MeshStandardMaterial({ color: (espece && espece.oeil) ? espece.oeil : 0x111111 });
+    const eyeMat = new THREE.MeshStandardMaterial({ color: (espece && espece.oeil) ? espece.oeil : 0x96713d });
+    const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x0d100e, roughness: 0.16 });
     const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), eyeMat);
     eye1.position.set(0.48 * bodyX, 0.18 * bodyY, 0.3 * bodyZ);
     details.add(eye1);
     const eye2 = eye1.clone();
     eye2.position.z = -0.3 * bodyZ;
     details.add(eye2);
+
+    const gillMaterial = new THREE.LineBasicMaterial({ color: baseColor.clone().multiplyScalar(0.45) });
+    for (const side of [-1, 1]) {
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), pupilMaterial);
+        pupil.position.copy(eye1.position);
+        pupil.position.z = (0.3 * bodyZ + 0.073) * side;
+        details.add(pupil);
+        const gillPoints = [];
+        for (let segment = 0; segment <= 10; segment++) {
+            const t = segment / 10;
+            const x = 0.29 - Math.sin(Math.PI * t) * 0.08;
+            const y = 0.42 - t * 0.77;
+            const z = Math.sqrt(0.36 - x * x - y * y) * (1 + 0.16 * x / 0.6);
+            gillPoints.push(new THREE.Vector3(x * bodyX, y * bodyY, (z * bodyZ + 0.013) * side));
+        }
+        details.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(gillPoints), gillMaterial));
+    }
 
     group.userData.tailPivot = tailPivot;
     group.userData.bodyMat = bodyMat;
@@ -6602,7 +6695,6 @@ majEtiquetteProfondeur();
 // Le jeu est initialisé : la coupe de l'eau (schéma) peut se dessiner.
 coupePrete = true;
 majCoupeProfondeur();
-waterUniforms.uResolution.value.set(window.innerWidth || 1280, window.innerHeight || 720);
 waterUniforms.uNormalsOn.value = waterUniforms.uNormals.value ? 1 : 0;
 
 fishButton.addEventListener('click', () => {
@@ -6874,7 +6966,6 @@ function animate() {
         updateDayNight(dt);
         updateWeather(dt);
         updateAmbiante(dt, elapsed);
-        updateReflections(dt);
         updateWaterReflection();
         updateSplashes(dt);
         updateBubbles(dt);
@@ -7828,8 +7919,8 @@ window.__game = {
     setReflections: setReflections,
     getReflections: function () {
         return {
-            enabled: reflections.enabled, supported: !!cubeCamera,
-            strength: waterUniforms.uReflect.value
+            enabled: reflections.enabled, supported: !!waterReflectionTarget,
+            strength: waterUniforms.uReflectOn.value
         };
     },
     setDifficulty: setDifficulty,
@@ -7891,7 +7982,6 @@ window.__game = {
         updateDayNight(dt);
         updateWeather(dt);
         updateAmbiante(dt, testTime);
-        updateReflections(dt);
         updateSplashes(dt);
         updateBubbles(dt);
         updateFishThrow(dt);

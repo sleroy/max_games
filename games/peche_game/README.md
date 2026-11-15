@@ -282,9 +282,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Carte de l'étang** dans le carnet : où chercher les poissons (herbiers, roseaux,
   pleine eau, fond).
 - **Tutoriel d'accueil** (accessible depuis l’écran d’accueil, avec une main animée) et
-  reboutonnable depuis le carnet.
-- **Reflets sur l'eau** (option du carnet) : un cube-mapping rendu de temps en temps
-  (désactivé par défaut car coûteux) ; **désactivé automatiquement** si le rendu échoue.
+  consultable à nouveau depuis le carnet.
+- **Reflets sur l'eau** (option du carnet sur ordinateur) : reflet planaire en
+  320 × 180 une image sur deux. Sur mobile, l’eau conserve son reflet du ciel.
 - **LOD** : les petits détails des poissons (yeux, nageoires) disparaissent au loin.
 - **Effets sonores** : échantillons **réels locaux** (`assets/sons/eau-splash.wav`
   et `etang-ambiance.mp3`) avec **fallback procédural** (Web Audio API) si les
