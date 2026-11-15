@@ -66,6 +66,23 @@ export function run() {
     }
     check('le bruit reste entre -1 et 1 (et n\'est pas muet)', inRange && nonZero);
 
+    group('7a) Moteur audio : enregistrements disponibles');
+    for (const name of ['cast', 'reel', 'drag', 'birds', 'lineBreak']) {
+        const recording = engine.samples[name] = ctx.createBuffer(1, 4410, 44100);
+        engine[name]();
+        check('« ' + name + '() » utilise l’enregistrement', ctx.started.at(-1).buffer === recording);
+    }
+    const clicks = ctx.started.length;
+    engine.reel();
+    checkEqual('deux demi-tours rapprochés ne superposent pas les cliquets', ctx.started.length, clicks);
+    ctx.currentTime += 0.16;
+    engine.reel();
+    checkEqual('un demi-tour suivant produit un cliquet', ctx.started.length, clicks + 1);
+    engine.samples.rain = ctx.createBuffer(1, 44100, 44100);
+    engine.setRain(0.6);
+    check('la pluie enregistrée tourne en boucle',
+        engine.rainSource.loop && engine.rainSource.buffer === engine.samples.rain);
+
     group('8) Moteur audio : réglages');
     engine.setEnabled(false);
     checkEqual('setEnabled(false) coupe le son', engine.master.gain.targets.at(-1), 0);

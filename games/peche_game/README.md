@@ -297,9 +297,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Textures GPU (essai)** : ajoutez `?textures=ktx2` à l’URL pour essayer les
   cartes de berge compressées. Les JPEG servent de repli si le GPU, le worker
   ou le transcodage ne sont pas disponibles.
-- **Effets sonores** : échantillons **réels locaux** (`assets/sons/eau-splash.wav`
-  et `etang-ambiance.mp3`) avec **fallback procédural** (Web Audio API) si les
-  fichiers ou le décodage ne sont pas disponibles.
+- **Effets sonores** : enregistrements locaux de l’étang, d’éclaboussures,
+  du lancer, du moulinet et de son frein, d’un merle et de la pluie. La casse
+  utilise un claquement enregistré. Le jeu revient aux sons synthétiques si
+  le chargement ou le décodage échoue. Voir `assets/CREDITS.txt`.
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
 - **Difficulté réglable** depuis le carnet : **Facile / Normal / Dur** (le poisson tire

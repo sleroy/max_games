@@ -9,6 +9,7 @@ export class SoundEngine {
         this.samples = {};
         this.ambienceSource = null;
         this.ambienceGain = null;
+        this.lastReelSampleAt = -Infinity;
     }
 
     init() {
@@ -77,6 +78,12 @@ export class SoundEngine {
         };
         charger('splash', 'assets/sons/eau-splash.wav', 0.65, false);
         charger('ambiance', 'assets/sons/etang-ambiance.mp3', 0.08, true);
+        charger('cast', 'assets/sons/canne-lancer.mp3');
+        charger('reel', 'assets/sons/moulinet.mp3');
+        charger('drag', 'assets/sons/moulinet-frein.mp3');
+        charger('lineBreak', 'assets/sons/fil-casse.mp3');
+        charger('birds', 'assets/sons/merle.mp3');
+        charger('rain', 'assets/sons/pluie.mp3');
     }
 
     jouerSample(nom, volume, duree) {
@@ -134,17 +141,17 @@ export class SoundEngine {
         this.windFilter.frequency.setTargetAtTime(300 + strength * 900, t, 0.6);
     }
 
-    // Pluie : bruit filtré, créé seulement quand il se met à pleuvoir.
+    // Pluie : l'enregistrement tourne en boucle à partir de la première averse.
     startRain() {
         if (this.rainGain || !this.ctx) {
             return;
         }
-        const noise = this.makeNoiseBuffer(2);
+        const recording = this.samples.rain;
         const source = this.ctx.createBufferSource();
-        source.buffer = noise;
+        source.buffer = recording || this.makeNoiseBuffer(2);
         source.loop = true;
         const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
+        filter.type = recording ? 'lowpass' : 'bandpass';
         filter.frequency.value = 2600;
         filter.Q.value = 0.6;
         const gain = this.ctx.createGain();
@@ -167,13 +174,16 @@ export class SoundEngine {
         }
         this.startRain();
         const t = this.ctx.currentTime;
-        this.rainGain.gain.setTargetAtTime(amount * 0.16, t, 1.2);
-        this.rainFilter.frequency.setTargetAtTime(1800 + amount * 2200, t, 1.2);
+        const recorded = this.rainFilter.type === 'lowpass';
+        this.rainGain.gain.setTargetAtTime(amount * (recorded ? 0.45 : 0.16), t, 1.2);
+        this.rainFilter.frequency.setTargetAtTime(
+            recorded ? 1400 + amount * 4600 : 1800 + amount * 2200, t, 1.2);
     }
 
     // Pépiements d'oiseaux.
     birds() {
         if (!this.ctx) return;
+        if (this.jouerSample('birds', 0.32)) { return; }
         const t = this.ctx.currentTime;
         for (let i = 0; i < 3; i++) {
             const start = t + i * 0.18;
@@ -232,6 +242,10 @@ export class SoundEngine {
     }
 
     cast() {
+        if (!this.jouerSample('cast', 0.45)) { this.throwItem(); }
+    }
+
+    throwItem() {
         if (!this.ctx) return;
         const t = this.ctx.currentTime;
         const noise = this.ctx.createBufferSource();
@@ -271,6 +285,15 @@ export class SoundEngine {
 
     reel() {
         if (!this.ctx) return;
+        if (this.samples.reel) {
+            const now = this.ctx.currentTime;
+            // Un geste rapide peut déclencher plusieurs demi-tours la même image.
+            if (now - this.lastReelSampleAt >= 0.10) {
+                this.jouerSample('reel', 0.42);
+                this.lastReelSampleAt = now;
+            }
+            return;
+        }
         const t = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         osc.type = 'square';
@@ -282,6 +305,10 @@ export class SoundEngine {
         gain.connect(this.master);
         osc.start(t);
         osc.stop(t + 0.05);
+    }
+
+    drag() {
+        if (!this.jouerSample('drag', 0.38)) { this.reel(); }
     }
 
     catchFish() {
@@ -338,6 +365,7 @@ export class SoundEngine {
 
     lineBreak() {
         if (!this.ctx) return;
+        if (this.jouerSample('lineBreak', 0.52)) { return; }
         const t = this.ctx.currentTime;
         const noise = this.ctx.createBufferSource();
         noise.buffer = this.makeNoiseBuffer(0.2);

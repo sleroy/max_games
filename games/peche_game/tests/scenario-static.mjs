@@ -15,6 +15,9 @@ export function run() {
     ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
+        'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
+        'assets/sons/moulinet-frein.mp3', 'assets/sons/fil-casse.mp3',
+        'assets/sons/merle.mp3', 'assets/sons/pluie.mp3',
         'assets/sol-herbe.jpg', 'assets/ecorce.jpg', 'assets/vase.jpg', 'assets/eau-normales.jpg'].forEach(name => {
         check(name + ' présent', fs.existsSync(path.join(GAME_DIR, name)));
     });

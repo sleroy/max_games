@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=121';
+import { SoundEngine } from './sound.js?v=122';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -2343,7 +2343,7 @@ function releaseFeed() {
     computeFeedLanding();
     feedBall.position.copy(feedOrigin);
     feedBall.visible = true;
-    sound.cast();
+    sound.throwItem();
     statusDisplay.textContent = 'Lancer de l’amorce…';
 }
 
@@ -3890,7 +3890,7 @@ function releaseFishThrow() {
     if (heldFish) {
         heldFish.position.copy(fishThrowOrigin);
     }
-    sound.cast();
+    sound.throwItem();
     statusDisplay.textContent = 'Lancer du poisson…';
 }
 
@@ -4175,6 +4175,7 @@ dragButton.addEventListener('pointerdown', event => {
     if (dragButton.setPointerCapture && event && event.pointerId !== undefined) {
         dragButton.setPointerCapture(event.pointerId);
     }
+    if (!dragLoosened) { sound.drag(); }
     setDragLoosened(true);
 });
 dragButton.addEventListener('pointerup', () => setDragLoosened(false));
@@ -7351,7 +7352,7 @@ function casserLigne(raison) {
     lignesRestantes = Math.max(0, lignesRestantes - 1);
     avertissementsVitesse = 0;
     majLignes();
-    sound.escape();
+    sound.lineBreak();
     spawnFloatingText('💥 Ligne cassée !', floatGroup.position, '#ff6b57');
     statusDisplay.textContent = '💥 ' + raison + ' : une ligne est perdue ('
         + lignesRestantes + ' restante' + (lignesRestantes > 1 ? 's' : '') + ').';

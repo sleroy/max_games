@@ -32,3 +32,19 @@ Les fichiers sol-herbe.ktx2, herbe-normales.ktx2 et herbe-rugosite.ktx2 sont
 des versions Basis Universal (ETC1S, mipmaps) des JPEG Grass004 (CC0 1.0).
 Le chargeur KTX2 et ses dépendances proviennent de three.js r160. Les licences
 de three.js, Basis Universal, ktx-parse et zstddec sont dans assets/ktx2/.
+
+--- Enregistrements de pêche et de météo ---
+Versions courtes, recadrées et normalisées en MP3 mono.
+- canne-lancer.mp3 : « Fishing Rod Cast - Swoosh », mwchristian95, CC0 1.0.
+  https://freesound.org/people/mwchristian95/sounds/725426/
+- moulinet.mp3 : « Spinning reel.wav », tosha73, CC0 1.0.
+  https://freesound.org/people/tosha73/sounds/509902/
+- moulinet-frein.mp3 : « Angel Fly Fish Reel Fast Pull_1.wav », paulprit, CC0 1.0.
+  https://freesound.org/people/paulprit/sounds/507070/
+- fil-casse.mp3 : « rubber band snap.wav », justinstroud, CC0 1.0.
+  https://freesound.org/people/justinstroud/sounds/180149/
+- merle.mp3 : « Blackbird song, solo, Good quality, Forest South of France », Sacha.Julien, CC0 1.0.
+  https://freesound.org/people/Sacha.Julien/sounds/725332/
+- pluie.mp3 : « Rain.ogg », ジダネ, domaine public. Les extrémités se fondent
+  pour permettre la lecture en boucle.
+  https://commons.wikimedia.org/wiki/File:Rain.ogg
