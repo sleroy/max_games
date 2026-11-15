@@ -231,6 +231,7 @@ export function run() {
 
     attraction(O);
     collisions(O);
+    posteSurPonton(O);
 }
 
 /** Densité (poissons / unité²) de l'espèce près de ses obstacles, moyennée sur 4 instants de simulation. */
@@ -430,5 +431,37 @@ function collisions(O) {
     const libreX = O.liste.find(o => o.type === 'roches');
     check('une eau libre n’est pas bloquée', O.lancerBloque({ x: 0, z: -71 }) === null
         && O.accrocheEn({ x: 0, z: -71 }) === null && !!libreX);
+    G().recommencerPartie();
+}
+
+function posteSurPonton(O) {
+    group('73e) Le ponton est un poste de pêche confortable');
+    G().recommencerPartie();
+    resetToIdle();
+    const pp = O.pontonPoste;
+    check('le ponton propose un poste', !!pp);
+    const ponton = O.liste.find(o => o.type === 'ponton');
+    const centre = G().getPondCenter();
+    check('choisir l’axe du ponton sur la carte réussit', G().choisirEmplacement(pp.axe + 0.01, 3));
+    const p = G().angler.position;
+    const dist = Math.hypot(p.x - centre.x, p.z - centre.z);
+    check('le pêcheur est DANS l’eau, sur le plancher (marge ' + G().getEmplacement().marge.toFixed(1) + ')',
+        G().getEmplacement().marge < -9 && dist < G().getRayonEtang(Math.atan2(p.z - centre.z, p.x - centre.x)) - 9);
+    check('… à moins de 2 unités de l’axe des planches',
+        ponton.cercles.some(c => distance2D(c, p) < 2));
+    check('… debout au niveau du plancher (0,67)', Math.abs(p.y - pp.hauteur) < 0.01, p.y.toFixed(2));
+    check('la boussole annonce le ponton', el('compass').textContent.indexOf('ponton') >= 0, el('compass').textContent);
+    check('un angle voisin hors du ponton reste sur la berge',
+        G().choisirEmplacement(pp.axe + 0.2, 3) && G().getEmplacement().marge > 0 && Math.abs(G().angler.position.y - 0.35) < 0.01);
+    G().choisirEmplacement(pp.axe, 3);
+    const ux = centre.x - G().angler.position.x;
+    const uz = centre.z - G().angler.position.z;
+    const n = Math.hypot(ux, uz);
+    check('on pêche depuis le ponton (le lancer vers l’étang part)',
+        castTo(G().angler.position.x + ux / n * 25, G().angler.position.z + uz / n * 25) === 'inWater');
+    resetToIdle();
+    G().placerAuPoste(0);
+    check('retour au poste sud : à terre, niveau de la berge', G().getEmplacement().marge > 0
+        && Math.abs(G().angler.position.y - 0.35) < 0.01);
     G().recommencerPartie();
 }

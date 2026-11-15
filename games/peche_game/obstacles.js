@@ -545,7 +545,7 @@ export function creerObstacles(deps) {
         const recul = Math.max(0, 10.5 - dBord);
         liste.push({
             id: spec.type + '-' + index, type: spec.type, nom: type.nom, x: x, z: z, rayon: rayon,
-            angle: angle, cercles: place.cercles, groupe: groupe,
+            angle: angle, axe: place.pose.angle, cercles: place.cercles, groupe: groupe,
             profil: type.accroche ? ACCROCHAGES[type.accroche] : null,
             barque: type.barque, bloqueLancer: type.bloqueLancer,
             attire: { especes: type.especes.slice(), rayon: ATTIRE_RAYON,
@@ -654,8 +654,13 @@ export function creerObstacles(deps) {
         return stats.poissons;
     }
 
+    // Le ponton est aussi un POSTE de pêche : choisi sur la carte (angle dans `demi` de l'axe), le
+    // pêcheur se place sur le plancher, à 10,5 unités de la berge, et la girouette est rangée.
+    const ponton = liste.find(function (o) { return o.type === 'ponton'; });
+    const pontonPoste = ponton ? { axe: ponton.axe, demi: 0.05, marge: -10.5, hauteur: 0.67, id: ponton.id } : null;
+
     return {
-        liste: liste, TYPES: TYPES, ACCROCHAGES: ACCROCHAGES, RAYON_BARQUE: RAYON_BARQUE,
+        liste: liste, pontonPoste: pontonPoste, TYPES: TYPES, ACCROCHAGES: ACCROCHAGES, RAYON_BARQUE: RAYON_BARQUE,
         postesRef: postesRef, stats: stats, nenupharsDepart: padsInitiaux, empreinte: function () { return signature(liste); },
         // Rejoue le placement dans une scène jetable : deux exécutions doivent donner la même liste.
         refaire: function () {

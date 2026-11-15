@@ -12,7 +12,7 @@ export function creerPlacement(deps) {
         POND_CENTER, rayonEtang, profondeurLocale, RIVE_Y, directionAzimut, SUN_AZIMUT,
         PLACEMENT_MARGE_MIN, PLACEMENT_MARGE_MAX, cartePlacement, POSTE_MARGE,
         cartePlacementAide, azimutPosteTexte, POSTES, cartePlacementRepere, ensureSound,
-        choisirEmplacement, majEtiquettePoste
+        choisirEmplacement, majEtiquettePoste, obstacles
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -156,6 +156,20 @@ export function creerPlacement(deps) {
     carteLigneRive.name = 'rivage-etang';
     carteScene.add(carteLigneRive);
 
+    // --- Obstacles : un repère coloré par ouvrage (le ponton, brun et allongé, est un poste cliquable). ---
+    const COULEURS_REPERES = { ponton: 0xd9a35c, ecluse: 0xd8d4c6, douve: 0x58c4e0, roches: 0xeeeeee,
+        souche: 0x8a5a2b, pieux: 0xb08a4a, epave: 0xc88a3a, joncs: 0x7fd13f };
+    obstacles.liste.forEach(function (o) {
+        const long = o.type === 'ponton';
+        const repere = new THREE.Mesh(new THREE.BoxGeometry(long ? 14 : 4, 0.6, 4),
+            new THREE.MeshBasicMaterial({ color: COULEURS_REPERES[o.type] }));
+        const milieu = long ? o.cercles.reduce(function (m, c) { return { x: m.x + c.x / o.cercles.length, z: m.z + c.z / o.cercles.length }; }, { x: 0, z: 0 }) : o;
+        repere.position.set(milieu.x, etat.CARTE_3D_EAU_Y + 0.4, milieu.z);
+        repere.rotation.y = -o.axe;
+        repere.name = 'repere-' + o.id;
+        carteScene.add(repere);
+    });
+
     // --- Couronne de placement : un ruban posé sur le relief (1,4 → 6 unités). ---
     const carteBandePositions = [];
     const carteBandeIndices = [];
@@ -296,7 +310,8 @@ export function creerPlacement(deps) {
         majMarqueurCarte();
         if (cartePlacementAide) {
             cartePlacementAide.textContent = '📍 '
-                + (etat.emplacementLibre
+                + (etat.emplacementMarge < 0 ? 'ponton'
+                    : etat.emplacementLibre
                     ? azimutPosteTexte(etat.emplacementAngle)
                     : POSTES[etat.posteActuel].nom.toLowerCase())
                 + ' · ' + etat.emplacementMarge.toFixed(1).replace('.', ',')

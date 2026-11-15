@@ -282,7 +282,7 @@ Trois rôles de jeu :
   l'obstacle. Le premier banc de chaque espèce est toujours attiré, les suivants une fois sur deux (≈ la moitié des 58 poissons).
 - [x] **Collision avec la barque** (v177) : arrêt contre le ponton, l'écluse, les roches, les souches, les pieux, l'épave ;
   les joncs freinent (40 % du coup de rame). Le lancer qui retombe sur un ponton, une écluse ou des roches est refusé.
-- [x] **Tests** : `tests/scenario-obstacles.mjs` (~ 260 vérifications) : placement déterministe, non-chevauchement
+- [x] **Tests** : `tests/scenario-obstacles.mjs` (248 vérifications) : placement déterministe, non-chevauchement
   (postes, bourriche, départ, embarquement, fosses, nénuphars), accrochage, attraction, collision, ponton-poste.
 
 > Les **types de fond** (sable, gravier, vase, roche, herbier — section 14.3) jouent

@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v173** (grand étang : rayon 90, fosses, ≈ 58 poissons)
+> Dernière mise à jour : **2026-11-15** · jeu **v178** (obstacles aquatiques : ponton, écluse, roches, souches…)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -44,7 +44,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `poissons.js` | Population calculée d'après la surface et la biomasse (≈ 58 poissons, 100–300 kg/ha, solitaires rares, poissons de fond en fosse), fabrique 3D, bancs, spécimens hors norme, respawn | 773 | Poissons / contenu |
 | `combat.js` | Épreuve de force : tension, fatigue, ferrage, touche vue de près, clic utile, accrochage (état via `etat`) | 696 | Combat |
 | `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage (état via `etat`) | 608 | Poissons / contenu |
-| `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement (état via `etat`) | 521 | Bateau / monde |
+| `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement, collision avec les obstacles, poste sur le ponton (état via `etat`) | 565 | Bateau / monde |
 | `lancerPoisson.js` | Lancer du poisson dans la bourriche : prise en main, lancer, arc de vol (état via `etat`) | 206 | Bourriche / lancer |
 | `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang à l'échelle du cadre (état via `etat`) | 159 | Carnet / UI |
 | `boutique.js` | Expérience (XP) et boutique de bouchons : gains, achats, rendu (état via `etat`) | 264 | Boutique / progression |
@@ -62,7 +62,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `journal.js` | Carnet de pêche : chargement/sauvegarde, rendu, ajout d’une prise (état via `etat`) | 112 | Carnet / persistance |
 | `touches.js` | Catalogue des touches : durées, mouvements du bouchon, tirage vrai/faux (état via `etat`) | 165 | Touches / contenu |
 | `cycleLigne.js` | Cycle de la ligne : visée sur l’eau, lancer, remontée, touche détectée, fin du lancer (état via `etat`) | 197 | Lancer / ligne |
-| `accrochage.js` | Accrochage dans les nénuphars : détection, accroc, dégagement du fil (état via `etat`) | 188 | Combat / accroc |
+| `accrochage.js` | Accrochage dans les nénuphars, la vase et les obstacles : détection, accroc, dégagement du fil (état via `etat`) | 226 | Combat / accroc |
 | `ambiance.js` | Ambiance : vent, faune sonore, nuages, ondulation de la queue des poissons (état via `etat`) | 95 | Ambiance / effets |
 | `entrees.js` | Entrées : pointeur, clavier et boutons de l’écran de jeu (état via `etat`) | 225 | Entrées / UI |
 | `cheat.js` | Cheat : mot secret « poisson » (+50 XP) (état via `etat`) | 123 | Cheat / tests |
@@ -78,8 +78,8 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `portraits.js` | Portraits 2D des espèces (fond transparent) | 282 | Combat / UI |
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
 | `especes.js` | **Données** espèces, comportements, styles, touches | 228 | Contenu (ajout d'espèces) |
-| `obstacles.js` | Obstacles aquatiques (§14.2) : ponton, écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 700 | Monde / obstacles |
-| `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars | 214 | Monde / décor |
+| `obstacles.js` | Obstacles aquatiques (§14.2) : ponton (aussi poste de pêche), écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 671 | Monde / obstacles |
+| `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars (expose aussi leurs positions à `obstacles.js`) | 220 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
 | `carnet.js` | Persistance du carnet (localStorage) | 88 | Persistance |
@@ -336,3 +336,28 @@ Demande du joueur : « étang moyen + zones profondes » (`idées.md` §14.1 et 
 - **`placement.js`** : terrain de la carte 170 → 260 unités, caméra reculée ×1,7.
 - **`bateau.js`** : les bornes de rame se calculent au rayon de l'angle d'**arrivée** (bug révélé par l'étang plus grand).
 - Tests : `tests/scenario-grand-etang.mjs` (rayon, fosses, barque, sonar, cartes, population, densité).
+
+
+## 10. Obstacles aquatiques (v174 → v178) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §14.2 (ponton, écluse, douve, roches, arbres immergés, pieux, épave, joncs).
+
+- **`obstacles.js`** (nouveau, 671 lignes, plafond 800) : 12 obstacles de 8 types. Données (`TYPES`,
+  `ACCROCHAGES`, `SPECS`), placement, dessin et requêtes de jeu (`accrocheEn`, `lancerBloque`,
+  `heurtBarque`, `attirer`, `pontonPoste`). Créé dans `script.js` après les postes de berge et avant la
+  barque et les poissons. **Il ne consomme jamais `rand()`** : angles fixes + première place libre
+  (postes de berge, bourriche, départ, fosses, nénuphars, arbres, rochers et roseaux du décor évités),
+  détails par un LCG local. Aucune texture téléchargée (canvas 64 px + géométrie).
+- **`decor.js`** : retourne aussi `arbres`, `rochers`, `roseaux` (simples copies, aucun tirage de plus).
+- **`accrochage.js`** : `isSnagged(point)` renvoie `true` (nénuphar) ou l'obstacle ; `startSnag(obstacle)` lit son
+  profil (difficulté, message). `etat.snag.rythme` remplace `dansLaVase` pour décider du rythme à tenir.
+- **`comportement.js`** : passe l'obstacle à `startSnag`.
+- **`poissons.js`** : appelle `obstacles.attirer(fishes)` après le peuplement, dans `repeuplerEtang()` et pour
+  un poisson de remplacement (déplace `homeX/homeZ` et la position du poisson ou du banc sur l'obstacle).
+- **`bateau.js`** : `deplacerBateau` refuse le coup de rame qui amène la coque (rayon 1,5) sur un ouvrage et le
+  réduit à 40 % dans les joncs ; `placerALAngle` pose le pêcheur sur le ponton quand l'angle choisi est sur
+  son axe (marge −10,5, y 0,67, girouette rangée).
+- **`cycleLigne.js`** : `startCast` refuse un lancer qui retombe sur un ponton, une écluse ou des roches.
+- **`placement.js`** : un repère coloré par obstacle sur la carte d'accueil (le ponton est cliquable).
+- **`script.js`** : +6 lignes de câblage, ratchet 2995 → 3001 ; `window.__game.obstacles` pour les tests.
+- Tests : `tests/scenario-obstacles.mjs` (placement, accrochage, attraction, collision, ponton).

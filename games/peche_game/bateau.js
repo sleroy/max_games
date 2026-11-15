@@ -384,6 +384,7 @@ export function creerBateau(deps) {
 
     function nomEmplacementCourant() {
         if (etat.modeBateau) { return 'bateau'; }
+        if (etat.emplacementMarge < 0) { return 'ponton'; }
         return etat.emplacementLibre
             ? azimutPosteTexte(etat.emplacementAngle)
             : POSTES[etat.posteActuel].nom.toLowerCase();
@@ -427,8 +428,12 @@ export function creerBateau(deps) {
         // Sur la rive : marge positive bornée. En bateau : marge NÉGATIVE (dans
         // l'eau), bornée par le filet de sécurité ; le vrai bornage est fait dans
         // deplacerBateau (le rayon dépend de l'angle).
+        // PONTON : un angle choisi sur son axe pose le pêcheur sur le plancher.
+        const pp = obstacles.pontonPoste;
+        const surPonton = !etat.modeBateau && !!pp && ecartAngulaire(angle, pp.axe) < pp.demi;
+        if (surPonton) { angle = pp.axe; marge = pp.marge; }
         const margeBrute = Number.isFinite(marge) ? marge : POSTE_MARGE;
-        const margeVoulue = etat.modeBateau
+        const margeVoulue = surPonton ? pp.marge : etat.modeBateau
             ? Math.max(BATEAU_MIN_CENTRE - RAYON_ETANG_MAX,
                 Math.min(-BATEAU_MARGE_BORD, margeBrute))
             : Math.max(PLACEMENT_MARGE_MIN,
@@ -475,8 +480,15 @@ export function creerBateau(deps) {
 
         // 3) BATEAU : la coque se glisse sous le pêcheur, tournée comme lui (proue
         //    vers l'étang). La girouette, matériel de berge, reste rangée à quai.
+        // Sur le ponton : pêcheur, canne et caméra montent au niveau du plancher.
+        if (surPonton) {
+            const dy = pp.hauteur - POSTE_ANGLER.y;
+            [angler.position, rodBase, rodTip, NORMAL_CAM_POS, NORMAL_CAM_TARGET].forEach(function (repere) {
+                repere.y += dy;
+            });
+        }
         etat.bateauGroupe.visible = etat.modeBateau;
-        vaneGroup.visible = !etat.modeBateau;
+        vaneGroup.visible = !etat.modeBateau && !surPonton;
         if (etat.modeBateau) {
             // La barque recule de 0,7 : le pêcheur est près de la poupe et la
             // proue (et la canne) dépassent devant lui, comme dans une vraie barque.

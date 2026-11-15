@@ -195,6 +195,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 ## Fonctionnalités
 
 - Scène 3D : étang, rive, arbres, roseaux, rochers, nénuphars, ciel dégradé, nuages, soleil.
+- **Obstacles aquatiques** : ponton (poste de pêche : clique sur son repère brun de la carte), écluse, douve, roches,
+  souches immergées, pieux, épave, îlots de joncs. Ils **accrochent** l'hameçon (chacun a sa difficulté et son message),
+  **attirent** certaines espèces (brochet près des souches, perche près des roches…) et **bloquent** la barque et le lancer.
 - Pêcheur 3D avec canne, ligne courbe et bouchon muni d'un hameçon.
 - 20 poissons de 4 formes différentes, avec taille, force, agressivité et poids variables.
 - **Vent** aléatoire : déplace le bouchon, décale le lancer, fait bouger les nuages, indiqué par une **girouette 3D** et une **jauge**.
