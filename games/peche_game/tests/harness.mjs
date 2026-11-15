@@ -38,6 +38,7 @@ const FILES = {
     ondulations: path.join(GAME_DIR, 'ondulations.js'),
     bourriche: path.join(GAME_DIR, 'bourriche.js'),
     combat: path.join(GAME_DIR, 'combat.js'),
+    stocks: path.join(GAME_DIR, 'stocks.js'),
     sonar: path.join(GAME_DIR, 'sonar.js'),
     vie: path.join(GAME_DIR, 'vie.js'),
     meteo: path.join(GAME_DIR, 'meteo.js'),
@@ -422,6 +423,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.ondulations, path.join(tmpDir, 'ondulations.js'));
     fs.copyFileSync(FILES.bourriche, path.join(tmpDir, 'bourriche.js'));
     fs.copyFileSync(FILES.combat, path.join(tmpDir, 'combat.js'));
+    fs.copyFileSync(FILES.stocks, path.join(tmpDir, 'stocks.js'));
     fs.copyFileSync(FILES.sonar, path.join(tmpDir, 'sonar.js'));
     fs.copyFileSync(FILES.vie, path.join(tmpDir, 'vie.js'));
     fs.copyFileSync(FILES.meteo, path.join(tmpDir, 'meteo.js'));

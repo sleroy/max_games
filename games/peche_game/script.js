@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=160';
+import { SoundEngine } from './sound.js?v=161';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -35,6 +35,7 @@ import { creerPlacement } from './placement.js?v=157';
 import { creerMeteo } from './meteo.js?v=158';
 import { creerVie } from './vie.js?v=159';
 import { creerSonar } from './sonar.js?v=160';
+import { creerStocks } from './stocks.js?v=161';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +47,7 @@ import { etat } from './etat.js?v=145';
 function lienEtat(nom, lire, ecrire) {
     Object.defineProperty(etat, nom, { get: lire, set: ecrire, enumerable: true });
 }
+lienEtat('AMORCE_DEPART', function () { return AMORCE_DEPART; }, function (v) { AMORCE_DEPART = v; });
 lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function (v) { BATEAU_PAS_ANGLE = v; });
 lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
 lienEtat('BATEAU_PRIX', function () { return BATEAU_PRIX; }, function (v) { BATEAU_PRIX = v; });
@@ -65,8 +67,12 @@ lienEtat('FLOTTEURS', function () { return FLOTTEURS; }, function (v) { FLOTTEUR
 lienEtat('FLOTTEUR_ECHELLE', function () { return FLOTTEUR_ECHELLE; }, function (v) { FLOTTEUR_ECHELLE = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('LINE_SEGMENTS', function () { return LINE_SEGMENTS; }, function (v) { LINE_SEGMENTS = v; });
+lienEtat('MAX_LIGNES', function () { return MAX_LIGNES; }, function (v) { MAX_LIGNES = v; });
+lienEtat('RECHARGES', function () { return RECHARGES; }, function (v) { RECHARGES = v; });
 lienEtat('SONAR_PRICE', function () { return SONAR_PRICE; }, function (v) { SONAR_PRICE = v; });
+lienEtat('TAILLE_LOT', function () { return TAILLE_LOT; }, function (v) { TAILLE_LOT = v; });
 lienEtat('TUTORIAL_STEPS', function () { return TUTORIAL_STEPS; }, function (v) { TUTORIAL_STEPS = v; });
+lienEtat('TYPES_DE_FIL', function () { return TYPES_DE_FIL; }, function (v) { TYPES_DE_FIL = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
 lienEtat('ZONES_CARTE', function () { return ZONES_CARTE; }, function (v) { ZONES_CARTE = v; });
 lienEtat('amorceDepartRestante', function () { return amorceDepartRestante; }, function (v) { amorceDepartRestante = v; });
@@ -161,6 +167,7 @@ lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuD
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
 lienEtat('libellules', function () { return libellules; }, function (v) { libellules = v; });
 lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
+lienEtat('lignesRestantes', function () { return lignesRestantes; }, function (v) { lignesRestantes = v; });
 lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
 lienEtat('lineGeometry', function () { return lineGeometry; }, function (v) { lineGeometry = v; });
 lienEtat('linePositions', function () { return linePositions; }, function (v) { linePositions = v; });
@@ -1990,8 +1997,8 @@ const {
     setFeedMode, startFeedCharge, moveFeedAim, releaseFeed, cancelFeed, updateChum, updateFeed,
     updateArm, fermerOutils, updateToolDock
 } = creerAmorcage({
-    scene, angler, feedGaugeFill, feedGaugeTarget, stockAmorce, statusDisplay, feedButton,
-    majAmorce, feedGauge, ensureSound, POND_CENTER, wind, rayonEtang, saveJournal, sound, arm,
+    scene, angler, feedGaugeFill, feedGaugeTarget, stockAmorce: (...args) => stockAmorce(...args), statusDisplay, feedButton,
+    majAmorce: (...args) => majAmorce(...args), feedGauge, ensureSound, POND_CENTER, wind, rayonEtang, saveJournal, sound, arm,
     toolDock, toolToggle, setCameraView, cameraButton, depthPanel, quickFeedButton, lineSelect,
     updateDepthButtons, bornesProfondeur, sonarButton
 });
@@ -2112,88 +2119,20 @@ const {
     sound, sonarCount, POND_CENTER, angler, rayonEtang, fermerOutils
 });
 
-const MAX_LIGNES = 5;
-const AMORCE_DEPART = 3;
-const RECHARGES = [
-    { id: 'amorce', nom: 'Boules d’amorce', prix: 12, desc: 'Attirent les poissons vers le point de chute.' },
-    { id: 'nylon', nom: 'Nylon', prix: 18, resistance: 1, emmelement: 1, desc: 'Le fil standard.' },
-    { id: 'fluorocarbone', nom: 'Fluorocarbone', prix: 28, resistance: 1, emmelement: 0.5,
-        desc: 'Réduit de moitié le risque d’emmêlement si tu oublies de tendre le fil.' },
-    { id: 'tresse', nom: 'Tresse', prix: 36, resistance: 1.25, emmelement: 1,
-        desc: 'Supporte mieux les poissons qui tirent et la remontée rapide.' }
-];
-const TYPES_DE_FIL = RECHARGES.slice(1);
-const TAILLE_LOT = 3;
-let lignesRestantes = MAX_LIGNES;
-let amorceDepartRestante = AMORCE_DEPART;
-const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false, bateau: false,
-    technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice(), scions: SCIONS_DE_DEPART.slice(), scion: SCIONS_DE_DEPART[0], ligne: 'nylon',
-    recharges: Object.fromEntries(RECHARGES.map(article => [article.id, 0])) };
-
-function stockAmorce() {
-    return amorceDepartRestante + journal.recharges.amorce;
-}
-
-function majAmorce() {
-    const stock = stockAmorce();
-    feedButton.textContent = (feedMode ? '🥣 Amorce prête' : '🥣 Amorce') + ' (' + stock + ')';
-    quickFeedCount.textContent = String(stock);
-    const action = feedMode ? 'Annuler l’amorçage' : 'Amorcer';
-    quickFeedButton.setAttribute('aria-label',
-        action + ', ' + stock + (stock === 1 ? ' boule restante' : ' boules restantes'));
-    quickFeedButton.setAttribute('aria-pressed', String(feedMode));
-}
-
-function stockFil(id) {
-    return journal.recharges[id] + (id === 'nylon' ? lignesRestantes : 0);
-}
-
-function totalLignes() {
-    return TYPES_DE_FIL.reduce((total, fil) => total + stockFil(fil.id), 0);
-}
-
-function filEquipe() {
-    return TYPES_DE_FIL.find(fil => fil.id === journal.ligne) || TYPES_DE_FIL[0];
-}
-
-function selectionnerFilDisponible() {
-    if (stockFil(journal.ligne) > 0) { return; }
-    journal.ligne = TYPES_DE_FIL.find(fil => stockFil(fil.id) > 0)?.id || 'nylon';
-}
-
-function debiterLigne() {
-    const id = filEquipe().id;
-    if (id === 'nylon' && lignesRestantes > 0) {
-        lignesRestantes -= 1;
-    } else if (journal.recharges[id] > 0) {
-        journal.recharges[id] -= 1;
-    }
-    selectionnerFilDisponible();
-    saveJournal();
-    majLignes();
-    renderBoutique();
-}
-
-function acheterRecharge(id) {
-    const article = RECHARGES.find(recharge => recharge.id === id);
-    if (!article || journal.experience < article.prix) { return false; }
-    journal.experience -= article.prix;
-    journal.recharges[id] += TAILLE_LOT;
-    selectionnerFilDisponible();
-    saveJournal();
-    renderJournal();
-    majLignes();
-    return true;
-}
-
-lineSelect.addEventListener('change', () => {
-    const id = lineSelect.value;
-    if (floatState === 'idle' && castState === 'idle'
-            && TYPES_DE_FIL.some(fil => fil.id === id) && stockFil(id) > 0) {
-        journal.ligne = id;
-        saveJournal();
-    }
-    lineSelect.value = journal.ligne;
+let MAX_LIGNES;
+let AMORCE_DEPART;
+let RECHARGES;
+let TYPES_DE_FIL;
+let TAILLE_LOT;
+let lignesRestantes;
+let amorceDepartRestante;
+let journal;
+const {
+    stockAmorce, majAmorce, stockFil, totalLignes, filEquipe, selectionnerFilDisponible,
+    debiterLigne, acheterRecharge
+} = creerStocks({
+    SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal, majLignes,
+    renderJournal, lineSelect
 });
 
 // Compteur de la PARTIE en cours (la bourriche), distinct du carnet persistant
