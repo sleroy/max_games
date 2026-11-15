@@ -1706,6 +1706,13 @@ body.calm .struggle-marker {
     white-space: nowrap;
 }
 
+.carnet-top {
+    padding: 4px 9px;
+    font-size: 1.05rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
 .hud-counters {
     display: flex;
     flex-wrap: wrap;

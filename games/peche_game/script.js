@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=181';
+import { SoundEngine } from './sound.js?v=182';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=173';
@@ -30,7 +30,7 @@ import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
 import { creerAmorcage } from './amorcage.js?v=179';
-import { creerFrein } from './frein.js?v=154';
+import { creerFrein } from './frein.js?v=182';
 import { creerLigne } from './ligne.js?v=180';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';

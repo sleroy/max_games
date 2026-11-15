@@ -80,14 +80,27 @@ export function creerFrein(deps) {
     if (accueilTutoriel) { accueilTutoriel.addEventListener('click', openTutorial); }
 
     // --- Carnet : ouverture, difficulté, accessibilité -------------------------
-    journalButton.addEventListener('click', () => {
+    // Le carnet s'ouvre par le bouton du menu ET par le bouton 📖 de la barre du
+    // haut (à droite de ☰ Menu) : les deux passent par la même bascule.
+    const carnetTopButton = document.getElementById('carnetTopButton');
+
+    function basculerCarnet() {
         ensureSound();
         if (journalPanel.classList.contains('open')) {
             hideJournal();
         } else {
             showJournal();
         }
-    });
+        if (carnetTopButton) {
+            carnetTopButton.setAttribute('aria-expanded',
+                journalPanel.classList.contains('open') ? 'true' : 'false');
+        }
+    }
+
+    journalButton.addEventListener('click', basculerCarnet);
+    if (carnetTopButton) {
+        carnetTopButton.addEventListener('click', basculerCarnet);
+    }
     journalClose.addEventListener('click', hideJournal);
     difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
     if (scionSelect) {

@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=181">
+    <link rel="stylesheet" href="style.css?v=182">
 </head>
 <body>
     <div class="game-wrap">
@@ -17,6 +17,9 @@
             <div class="hud-top">
                 <button class="tool-toggle" id="toolToggle" aria-label="Ouvrir le menu"
                     aria-controls="toolDock" aria-expanded="false">☰ Menu</button>
+                <button class="tool-toggle carnet-top" id="carnetTopButton"
+                    aria-label="Ouvrir le carnet de pêche" title="Carnet de pêche"
+                    aria-controls="journal" aria-expanded="false">📖</button>
                 <div class="hud-counters">
                     <span>Score : <span id="score">0</span></span>
                     <span id="lignesLabel">🧵 Lignes : 5/5</span>
@@ -331,6 +334,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=181"></script>
+    <script type="module" src="script.js?v=182"></script>
 </body>
 </html>

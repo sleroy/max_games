@@ -64,6 +64,17 @@ export function run() {
         checkEqual('même version pour sound.js et index.html', soundImport[1], jsVersion[1]);
     }
 
+    group('3d) Bouton 📖 du carnet à droite du menu');
+    const carnetTopButton = html.match(/<button class="tool-toggle carnet-top" id="carnetTopButton"[^>]*>/);
+    check('le bouton carnet de la barre du haut est dans index.html', !!carnetTopButton);
+    if (carnetTopButton) {
+        check('il déclare aria-controls="journal"',
+            carnetTopButton[0].includes('aria-controls="journal"'));
+        check('il est placé après le bouton ☰ Menu',
+            html.indexOf('id="carnetTopButton"') > html.indexOf('id="toolToggle"'));
+    }
+    check('la feuille de style connaît .carnet-top', css.includes('.carnet-top'));
+
     group('3c) Interface du carnet (onglets + largeur)');
     check('le panneau du carnet est assez LARGE', /\.panel\s*\{[^}]*width:\s*min\(94vw,\s*900px\)/.test(css),
         (css.match(/\.panel\s*\{[^}]*width:\s*min\(([^)]*)\)/) || [])[1] || '?');

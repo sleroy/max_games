@@ -169,6 +169,23 @@ export function run() {
     });
     check('le fond de l etang est double face (visible depuis la berge)',
         G().getFondDoubleFace() === true);
+    // --- Bouton 📖 de la barre du haut, à droite de ☰ Menu ---------------------
+    group('51b) Carnet : bouton 📖 de la barre du haut (à droite du menu)');
+    const carnetTop = el('carnetTopButton');
+    check('le bouton carnet de la barre du haut existe', !!carnetTop);
+    G().hideJournal();
+    checkEqual('le carnet est fermé au départ', G().isJournalOpen(), false);
+    carnetTop.emit('click', {});
+    checkEqual('un clic sur 📖 ouvre le carnet', G().isJournalOpen(), true);
+    checkEqual('l’attribut aria-expanded passe à true',
+        carnetTop.getAttribute('aria-expanded'), 'true');
+    carnetTop.emit('click', {});
+    checkEqual('un second clic referme le carnet', G().isJournalOpen(), false);
+    checkEqual('l’attribut aria-expanded repasse à false',
+        carnetTop.getAttribute('aria-expanded'), 'false');
+    el('journalButton').emit('click', {});
+    checkEqual('le bouton « Carnet » du menu fonctionne toujours', G().isJournalOpen(), true);
+    G().hideJournal();
 }
 
 export default run;
