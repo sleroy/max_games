@@ -43,12 +43,15 @@ export function creerMeteo(deps) {
     }
 
     // Gouttes de pluie : quelques centaines de points autour de l'étang.
-    const RAIN_COUNT = 700;
+    // v173 : la pluie couvre tout l'étang (≈ 220 unités de large) : zone de 2 × 120,
+    // 2 400 gouttes (même densité qu'avant : 700 gouttes sur 120 × 120).
+    const RAIN_DEMI = 120;
+    const RAIN_COUNT = 2400;
     const rainPositions = new Float32Array(RAIN_COUNT * 3);
     for (let i = 0; i < RAIN_COUNT; i++) {
-        rainPositions[i * 3] = POND_CENTER.x - 60 + ((i * 37) % 120);
+        rainPositions[i * 3] = POND_CENTER.x - RAIN_DEMI + ((i * 37) % (RAIN_DEMI * 2));
         rainPositions[i * 3 + 1] = -0.2 + ((i * 53) % 32);
-        rainPositions[i * 3 + 2] = POND_CENTER.z - 60 + ((i * 71) % 120);
+        rainPositions[i * 3 + 2] = POND_CENTER.z - RAIN_DEMI + ((i * 71) % (RAIN_DEMI * 2));
     }
     const rainGeometry = new THREE.BufferGeometry();
     rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
@@ -97,7 +100,7 @@ export function creerMeteo(deps) {
                 rainRippleTimer = 0.35;
                 const a = rainRippleTimer * 37 + etat.weatherPluie * 11;
                 etat.spawnRipple(new THREE.Vector3(
-                    POND_CENTER.x + Math.cos(a) * 18, 0.06, POND_CENTER.z + Math.sin(a) * 18));
+                    POND_CENTER.x + Math.cos(a) * 18 * 3, 0.06, POND_CENTER.z + Math.sin(a) * 18 * 3));
             }
         }
         sound.setRain(etat.weatherPluie);

@@ -141,7 +141,7 @@ export function run() {
     check('le contour vient d’un bruit radial déterministe',
         code.includes('function rayonEtang') && code.includes('const BRUIT_ETANG'));
     check('la rive et l’eau suivent ce contour',
-        script.includes('makeShoreGeometry') && script.includes('rayonEtang(a)'));
+        code.includes('makeShoreGeometry') && code.includes('rayonEtang(a)'));   // fonctions déplacées dans environnement.js (v173)
     check('la carte du carnet affiche le contour généré',
         code.includes('contour-etang'));
 

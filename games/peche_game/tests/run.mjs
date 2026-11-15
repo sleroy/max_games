@@ -42,6 +42,7 @@ import scenarioPortraits from './scenario-portraits.mjs';
 import scenarioModules from './scenario-modules.mjs';
 import scenarioCheat from './scenario-cheat.mjs';
 import { run as scenarioSonar } from './scenario-sonar.mjs';
+import scenarioGrandEtang from './scenario-grand-etang.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -83,6 +84,7 @@ try {
     scenarioPortraits();        // panneau de combat court + portraits d'espèces
     scenarioModules();          // contrat des modules (découpage, plafonds, cycles)
     scenarioSonar();            // sonar : ping de sous-marin + ondes jaunes
+    scenarioGrandEtang();       // grand étang (v173) : rayon 90, fosses en barque, ≈ 58 poissons
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
 } catch (error) {
     crashed = error;

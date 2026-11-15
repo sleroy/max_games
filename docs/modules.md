@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v172**
+> Dernière mise à jour : **2026-11-15** · jeu **v173** (grand étang : rayon 90, fosses, ≈ 58 poissons)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -39,14 +39,14 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 
 | Module | Rôle | Lignes | Propriétaire / à qui le modifier |
 |---|---|---|---|
-| `script.js` | Orchestrateur : scène 3D, câblage, pont `etat`, API de test | ~3 020 | **Personne en parallèle** — à réduire |
-| `environnement.js` | Étang : centre, contour, relief/fosses, profondeur, fond 3D | 151 | Monde (à faire seul) |
-| `poissons.js` | Population : fabrique 3D, bancs, spécimens hors norme, respawn | 619 | Poissons / contenu |
+| `script.js` | Orchestrateur : scène 3D, câblage, pont `etat`, API de test | ~2 990 | **Personne en parallèle** — à réduire |
+| `environnement.js` | Étang : centre, rayon (90), contour, relief et 3 fosses, profondeur max, surface (ha), maillages du fond, de l'eau (`makeWaterGeometry`) et de la rive (`makeShoreGeometry`) | 283 | Monde (à faire seul) |
+| `poissons.js` | Population calculée d'après la surface et la biomasse (≈ 58 poissons, 100–300 kg/ha, solitaires rares, poissons de fond en fosse), fabrique 3D, bancs, spécimens hors norme, respawn | 773 | Poissons / contenu |
 | `combat.js` | Épreuve de force : tension, fatigue, ferrage, touche vue de près, clic utile, accrochage (état via `etat`) | 696 | Combat |
 | `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage (état via `etat`) | 608 | Poissons / contenu |
-| `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement (état via `etat`) | 518 | Bateau / monde |
+| `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement (état via `etat`) | 521 | Bateau / monde |
 | `lancerPoisson.js` | Lancer du poisson dans la bourriche : prise en main, lancer, arc de vol (état via `etat`) | 206 | Bourriche / lancer |
-| `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang (état via `etat`) | 157 | Carnet / UI |
+| `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang à l'échelle du cadre (état via `etat`) | 159 | Carnet / UI |
 | `boutique.js` | Expérience (XP) et boutique de bouchons : gains, achats, rendu (état via `etat`) | 264 | Boutique / progression |
 | `fiches.js` | Onglet Espèces : fiche par poisson (silhouette, zone de vie, comportement) (état via `etat`) | 124 | Carnet / UI |
 | `lancerCanne.js` | Lancer de la canne au dosage (jauge) et animation du geste de lancer (état via `etat`) | 182 | Lancer |
@@ -54,7 +54,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `frein.js` | Frein du moulinet (on lâche du fil quand le poisson charge) et didacticiel (état via `etat`) | 132 | Frein / tutoriel |
 | `ligne.js` | Ligne + flotteur : tampon de la ligne, groupe du bouchon, textures, opacité, bornes de profondeur (état via `etat`) | 140 | Ligne / bouchon |
 | `bouchons.js` | Types de bouchons (flotteurs), scions du quiver, capacités spéciales (état via `etat`) | 188 | Bouchons / boutique |
-| `placement.js` | Carte de placement vue de dessus (écran d’accueil) et hauteur du terrain (état via `etat`) | 399 | Monde / placement |
+| `placement.js` | Carte de placement vue de dessus (écran d’accueil, terrain de 260 unités) et hauteur du terrain (état via `etat`) | 403 | Monde / placement |
 | `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
 | `vie.js` | Vie ambiante (oiseaux, libellules, poisson qui saute) et bulles sous l’eau (état via `etat`) | 171 | Ambiance / faune |
 | `sonar.js` | Sonar : bouée, radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 199 | Sonar / boutique |
@@ -78,7 +78,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `portraits.js` | Portraits 2D des espèces (fond transparent) | 282 | Combat / UI |
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
 | `especes.js` | **Données** espèces, comportements, styles, touches | 228 | Contenu (ajout d'espèces) |
-| `decor.js` | Décor fixe : arbres, roseaux, rochers, nénuphars | 206 | Monde / décor |
+| `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars | 214 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
 | `carnet.js` | Persistance du carnet (localStorage) | 88 | Persistance |
@@ -314,3 +314,24 @@ test réel dans Chromium (lancer → `inWater`, touche, ferrage, combat) sans er
     `extract2.py`, `route.mjs`, `toplevel.mjs`, `bridge.py`, `freevars.mjs` (détecte les
     identifiants jamais déclarés, cause des `ReferenceError`). Le scan du pont ne doit
     lire que les modules qui importent `etat.js` (`demelage`, `quiver` ont un `etat` local).
+
+
+## 9. Grand étang (v173) — ce qui change pour les modules
+
+Demande du joueur : « étang moyen + zones profondes » (`idées.md` §14.1 et §14.4).
+
+- **`environnement.js`** : `POND_RADIUS` 55 → **90** (contour de 71 à 104, borne `RAYON_ETANG_MAX` 109,8),
+  `POND_CENTER` (0, 0, **-71**) pour que la rive sud (poste de départ) ne bouge pas ;
+  trois `FOSSES` (rayon 16 à 22, profondeur max **8,14** ≈ 4 m), `PROFONDEUR_MAX`, `SURFACE_HA` (0,64 ha),
+  `RAYON_CADRE_CARTE`. Les maillages de l'eau (40 × 128) et de la rive (rayon 430) y sont aussi.
+  Le shader d'eau ne contient plus aucune constante de l'étang : il lit `aDepth`.
+- **`bouchons.js` / `especes.js`** : la ligne descend jusqu'à **9,0** (4,5 m) au lieu de 7,0, pour atteindre le fond des fosses.
+- **`poissons.js`** : population = `round(surface × 90 poissons/ha)` = 58 ; `FISH_COUNT` (64) n'est plus
+  qu'un plafond. La composition est planifiée avant de fabriquer les poissons (≥ 10 espèces, 1 silure max,
+  2 de chaque autre solitaire), la biomasse est contrôlée (100–300 kg/ha). Silure, anguille et sandre
+  naissent dans les fosses.
+- **`script.js`** : brume 150 → 480, ciel 520, caméra `far` 900, ombres qui suivent le pêcheur
+  (`suivreOmbres`), disque du soleil relatif à la caméra. Plafond de lignes abaissé (3 030 → 2 995).
+- **`placement.js`** : terrain de la carte 170 → 260 unités, caméra reculée ×1,7.
+- **`bateau.js`** : les bornes de rame se calculent au rayon de l'angle d'**arrivée** (bug révélé par l'étang plus grand).
+- Tests : `tests/scenario-grand-etang.mjs` (rayon, fosses, barque, sonar, cartes, population, densité).

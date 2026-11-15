@@ -17,23 +17,23 @@ export function run() {
     checkEqual('profondeur par défaut', G().getProfondeur(), 2.5);
     checkEqual('l’hameçon est à la profondeur réglée', G().getHookDepth(), -2.5);
     const bornesAnglaise = G().getBornesProfondeur();
-    check('l’anglaise atteint le fond de l’étang', bornesAnglaise[1] >= 6.6,
+    check('l’anglaise atteint le fond de l’étang', bornesAnglaise[1] >= G().getProfondeurMaxEtang(),
         bornesAnglaise.join(' à ') + ' unités');
     G().setProfondeur(10);
     checkEqual('la profondeur est bornée par le bouchon', G().getProfondeur(), bornesAnglaise[1]);
     G().setFloatType('coulisse');
     check('la pose à coulisse atteint aussi le fond de l’étang',
-        G().getBornesProfondeur()[1] >= 6.6, G().getBornesProfondeur().join(' à ') + ' unités');
+        G().getBornesProfondeur()[1] >= G().getProfondeurMaxEtang(), G().getBornesProfondeur().join(' à ') + ' unités');
     G().setProfondeur(4.5);
     checkClose('on peut descendre l’hameçon très bas', G().getHookDepth(), -4.5, 1e-9);
     G().setFloatType('coulisse');
     check('la pose à coulisse permet de pêcher 3 m et plus',
         G().getBornesProfondeur()[1] >= 6.0, G().getBornesProfondeur().join(' à ') + ' unités');
     G().setFloatType('anglaise');
-    G().setProfondeur(7.0);
+    G().setProfondeur(9.0);
     check('le panneau affiche la plage du bouchon',
         el('depthRange').textContent.indexOf('Anglaise') >= 0
-        && el('depthRange').textContent.indexOf('3,5 m') >= 0, el('depthRange').textContent);
+        && el('depthRange').textContent.indexOf('4,5 m') >= 0, el('depthRange').textContent);
     check('le panneau signale qu’on est au maximum',
         el('depthRange').textContent.indexOf('maxi') >= 0, el('depthRange').textContent);
     G().setProfondeur(2.5);
@@ -172,7 +172,7 @@ export function run() {
     // --- La COUPE DE L'EAU : le visuel du réglage de profondeur ---
     resetToIdle();
     clearLilyPads();
-    castTo(0, -40);                               // au centre : 2,5 m d'eau
+    castTo(G().getPondCenter().x, G().getPondCenter().z);   // au centre : 2,5 m d'eau
     resetToIdle();
     G().setFloatType('coulisse');
     G().setProfondeur(1.5);

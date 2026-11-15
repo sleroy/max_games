@@ -1,8 +1,9 @@
 // ---------------------------------------------------------------------------
 // Scénario 55 : l'ÉTANG GÉNÉRÉ (idee 3 de idees.md).
 // Le bord suit un bruit radial déterministe ; l'eau, le fond, la rive et la
-// profondeur locale s'appuient dessus. Le rayon NOMINAL reste 55 et la
-// profondeur maximale ne change pas (les 869 tests précédents doivent tenir).
+// profondeur locale s'appuient dessus. v173 : le rayon NOMINAL passe de 55 à 90
+// (« étang moyen », ≈ 0,64 ha) et les fosses sont plus profondes (voir aussi
+// scenario-grand-etang.mjs pour les mesures du nouvel étang).
 // ---------------------------------------------------------------------------
 import { group, check, checkEqual, checkClose, G, el, resetToIdle } from './harness.mjs';
 
@@ -31,8 +32,11 @@ export function run() {
 
     const centre = G().getPondCenter();
     const nominal = G().getPondRadius();
-    checkEqual('le rayon NOMINAL reste 55 (échelle de la carte)', nominal, 55);
-    checkEqual('la profondeur maximale ne change pas', G().getProfondeurMaxEtang(), 6.6);
+    checkEqual('le rayon NOMINAL est 90 (étang moyen, v173 ; c’était 55)', nominal, 90);
+    // Avant : 5 (centre) + 1,6 (fosse) = 6,6. Maintenant : fosses plus profondes.
+    check('la profondeur maximale a augmenté (fosses plus profondes que les 6,6 d’avant)',
+        G().getProfondeurMaxEtang() > 7.5 && G().getProfondeurMaxEtang() <= 8.2,
+        G().getProfondeurMaxEtang() + ' unités');
     checkEqual('le centre reste à la profondeur maximale du bassin',
         G().profondeurLocale(centre.x, centre.z), 5);
 
@@ -52,9 +56,11 @@ export function run() {
         maxi - mini > 15, mini.toFixed(2) + ' → ' + maxi.toFixed(2)
         + ' (' + (100 * (maxi - mini) / nominal).toFixed(0) + ' % du rayon)');
     check('la forme reste dans une fourchette crédible (pas un lac gigantesque)',
-        mini > 40 && maxi < 70, mini.toFixed(1) + ' / ' + maxi.toFixed(1));
+        mini > 65 && maxi < 115, mini.toFixed(1) + ' / ' + maxi.toFixed(1));
+    // Le bruit vaut ±22 % du rayon nominal, mais ses harmoniques ne culminent jamais
+    // ensemble : la borne (110) reste à moins de 8 unités du maximum atteint (104).
     check('le rayon maximal exposé est une borne supérieure crédible',
-        G().getRayonEtangMax() >= maxi && G().getRayonEtangMax() - maxi < 5,
+        G().getRayonEtangMax() >= maxi && G().getRayonEtangMax() - maxi < 8,
         G().getRayonEtangMax().toFixed(2) + ' (borne) vs ' + maxi.toFixed(2) + ' (atteint)');
     const valeurs = [];
     for (let i = 0; i < 16; i++) {
@@ -65,8 +71,8 @@ export function run() {
 
     // --- 2) L'eau suit le contour ---
     const eau = G().water;
-    const anneauxEau = 22;
-    const segmentsEau = 64;
+    const anneauxEau = 40;    // 22 × 64 avant l'agrandissement : pas de ≈ 2,5 unités
+    const segmentsEau = 128;
     checkEqual('le maillage d’eau garde sa résolution', eau.geometry.attributes.position.count,
         1 + anneauxEau * segmentsEau);
     const premierAnneauExterneEau = 1 + (anneauxEau - 1) * segmentsEau;
@@ -78,8 +84,8 @@ export function run() {
 
     // --- 3) Le fond déborde sous la rive en suivant le même contour ---
     const fond = G().getFondMesh();
-    const anneauxFond = 26;
-    const segmentsFond = 96;
+    const anneauxFond = 40;
+    const segmentsFond = 128;
     const premierAnneauExterneFond = 1 + (anneauxFond - 1) * segmentsFond;
     const ecartFond = ecartAnneau(fond, premierAnneauExterneFond, segmentsFond, 2);
     check('le fond suit le contour avec 2 unités de marge', ecartFond < 1e-4,
@@ -89,7 +95,7 @@ export function run() {
 
     // --- 4) La rive (anneau) suit le contour, sans rotation ---
     const rive = G().getShoreMesh();
-    const segmentsRive = 96;
+    const segmentsRive = 128;
     const anneauxRive = 4;
     checkEqual('la rive a quatre sommets par segment pour le dégradé de berge',
         rive.geometry.attributes.position.count, segmentsRive * anneauxRive);
@@ -100,11 +106,11 @@ export function run() {
         const exterieur = rayonDuSommet(rive, s * anneauxRive + anneauxRive - 1);
         ecartRive = Math.max(ecartRive,
             Math.abs(interieur.rayon - G().getRayonEtang(interieur.angle)));
-        ecartExterieur = Math.max(ecartExterieur, Math.abs(exterieur.rayon - 220));
+        ecartExterieur = Math.max(ecartExterieur, Math.abs(exterieur.rayon - 430));
     }
     check('le bord intérieur de la rive épouse le contour', ecartRive < 1e-4,
         'écart max ' + ecartRive.toExponential(1) + ' unité');
-    check('la rive s’étend toujours jusqu’à 220 unités', ecartExterieur < 1e-4);
+    check('la rive s’étend jusqu’à 430 unités (brume totale à 480)', ecartExterieur < 1e-4);
     checkClose('la rive est à la bonne hauteur', rive.position.y, 0.35, 1e-9);
     check('la rive n’est plus un anneau tourné (géométrie déjà horizontale)',
         Math.abs(rive.rotation.x) < 1e-9);
@@ -133,12 +139,12 @@ export function run() {
     // À distance ÉGALE du centre, deux directions n'ont pas la même profondeur.
     const angleMax = (echantillons.indexOf(maxi) / 720) * Math.PI * 2;
     const angleMin = (echantillons.indexOf(mini) / 720) * Math.PI * 2;
-    const d = 52;
+    const d = 85;   // 52 avant (près du bord à 55) ; ici près du bord, à 90 de rayon nominal
     const profMax = G().profondeurLocale(
         centre.x + Math.cos(angleMax) * d, centre.z + Math.sin(angleMax) * d);
     const profMin = G().profondeurLocale(
         centre.x + Math.cos(angleMin) * d, centre.z + Math.sin(angleMin) * d);
-    check('à 52 unités du centre, la profondeur dépend de la direction',
+    check('à 85 unités du centre, la profondeur dépend de la direction',
         Math.abs(profMax - profMin) > 0.15,
         profMax.toFixed(2) + ' vs ' + profMin.toFixed(2) + ' unités');
     const dehors = G().profondeurLocale(

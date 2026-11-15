@@ -3,17 +3,17 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=172';
+import { SoundEngine } from './sound.js?v=173';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=173';
 import { creerClassement } from './classement.js';
 import { dessinerPortrait } from './portraits.js?v=140';
-import { creerPoissons } from './poissons.js?v=143';
+import { creerPoissons } from './poissons.js?v=173';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
-    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY,
-    ajouterFond } from './environnement.js?v=142';
-import { creerDecor } from './decor.js?v=141';
+    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=173';
+import { creerDecor } from './decor.js?v=173';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
@@ -23,24 +23,24 @@ import { creerCombat } from './combat.js?v=145';
 import { creerComportement } from './comportement.js?v=146';
 import { creerBateau } from './bateau.js?v=147';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
-import { creerCarnetUI } from './carnetUI.js?v=149';
+import { creerCarnetUI } from './carnetUI.js?v=173';
 import { creerBoutique } from './boutique.js?v=150';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerAmorcage } from './amorcage.js?v=153';
 import { creerFrein } from './frein.js?v=154';
 import { creerLigne } from './ligne.js?v=155';
-import { creerBouchons } from './bouchons.js?v=156';
-import { creerPlacement } from './placement.js?v=157';
-import { creerMeteo } from './meteo.js?v=158';
-import { creerVie } from './vie.js?v=159';
+import { creerBouchons } from './bouchons.js?v=173';
+import { creerPlacement } from './placement.js?v=173';
+import { creerMeteo } from './meteo.js?v=173';
+import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=160';
 import { creerStocks } from './stocks.js?v=161';
 import { creerJournal } from './journal.js?v=162';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=164';
 import { creerAccrochage } from './accrochage.js?v=165';
-import { creerAmbiance } from './ambiance.js?v=166';
+import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=167';
 import { creerCheat } from './cheat.js?v=168';
 import { creerBoucle } from './boucle.js?v=169';
@@ -636,7 +636,10 @@ const {
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fd3ea);
-scene.fog = new THREE.Fog(0x9fd3ea, 90, 260);
+// Brume : l'étang fait maintenant jusqu'à ≈ 210 unités de large et le pêcheur peut
+// se tenir à n'importe quelle rive. Elle commence à 150 et noie tout à 480 : la rive
+// opposée (≈ 200 unités) reste nette, seuls l'horizon et le bord du terrain se fondent.
+scene.fog = new THREE.Fog(0x9fd3ea, 150, 480);
 
 // Ciel dégradé
 const skyMat = new THREE.ShaderMaterial({
@@ -644,16 +647,18 @@ const skyMat = new THREE.ShaderMaterial({
     uniforms: {
         topColor: { value: new THREE.Color(0x4a9fd8) },
         bottomColor: { value: new THREE.Color(0xe6f6fd) },
-        offset: { value: 30 },
+        offset: { value: 52 },   // 30 × (520 / 300) : même dégradé avec la sphère agrandie
         exponent: { value: 0.7 }
     },
     vertexShader: 'varying vec3 vWorldPosition; void main() { vec4 wp = modelMatrix * vec4(position, 1.0); vWorldPosition = wp.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: 'uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize(vWorldPosition + offset).y; gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'
 });
-const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), skyMat);
+// Sphère du ciel : 520 (au lieu de 300) pour englober la brume (480) et la caméra, qui
+// peut maintenant s'éloigner de ≈ 190 unités de l'origine (poste à la rive nord).
+const sky = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 16), skyMat);
 scene.add(sky);
 
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 600);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 900);
 // Sur un écran étroit, le FOV horizontal devient trop petit : la bourriche et
 // la girouette (à ±12 unités) sortent du cadre. On garantit un FOV horizontal
 // minimum en élargissant le FOV vertical (borné pour éviter la déformation).
@@ -809,11 +814,15 @@ const skyLight = new THREE.HemisphereLight(0xcfe8ff, 0x3a5a3f, 0.5);
 scene.add(skyLight);
 
 const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.15);
-sunLight.position.set(SUN_DIRECTION.x * 70, 73, SUN_DIRECTION.z * 70);
+// Position du soleil RELATIVE au centre des ombres (voir suivreOmbres) : c'est ce
+// décalage, et lui seul, qui donne la direction de la lumière.
+const sunDecalage = new THREE.Vector3(SUN_DIRECTION.x * 70, 73, SUN_DIRECTION.z * 70);
+sunLight.position.copy(sunDecalage);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
-// L'étang généré peut atteindre ~63 unités de rayon : la carte d'ombre doit
-// couvrir tout le lac et la berge, sinon les arbres du fond perdent leur ombre.
+// La carte d'ombre couvre 180 × 180 unités. Depuis v173 l'étang fait ≈ 210 unités de
+// large : une carte fixe ne couvrirait plus tous les postes. Elle SUIT donc le pêcheur
+// (suivreOmbres) et couvre toujours la rive, le matériel et la moitié proche de l'eau.
 sunLight.shadow.camera.left = -90;
 sunLight.shadow.camera.right = 90;
 sunLight.shadow.camera.top = 90;
@@ -824,12 +833,29 @@ sunLight.shadow.camera.far = 260;
 sunLight.shadow.bias = -0.0004;
 sunLight.shadow.normalBias = 0.03;
 scene.add(sunLight);
+scene.add(sunLight.target);
 
+// Centre des ombres : 35 unités devant le pêcheur, vers le milieu de l'étang. La
+// lumière garde la même direction (même décalage) : seul son point de visée bouge.
+const ombreCentre = new THREE.Vector3();
+function suivreOmbres() {
+    if (!angler) { return; }
+    ombreCentre.set(POND_CENTER.x - angler.position.x, 0, POND_CENTER.z - angler.position.z);
+    const d = ombreCentre.length() || 1;
+    ombreCentre.multiplyScalar(Math.min(35, d) / d).add(angler.position);
+    ombreCentre.y = 0;
+    sunLight.target.position.copy(ombreCentre);
+    sunLight.position.copy(ombreCentre).add(sunDecalage);
+}
+
+// Disque du soleil : posé dans le ciel RELATIVEMENT à la caméra (120 unités dans la
+// direction de la lumière). Fixé au monde, il se retrouvait derrière la caméra ou dans
+// un arbre dès que le poste changeait de rive (l'étang fait maintenant 210 unités).
 const sunMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(5, 24, 24),
-    new THREE.MeshBasicMaterial({ color: 0xfff3b0 })
+    new THREE.SphereGeometry(10, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xfff3b0, fog: false })
 );
-sunMesh.position.copy(sunLight.position).multiplyScalar(0.75);
+sunMesh.position.copy(sunDecalage).multiplyScalar(1.2);
 scene.add(sunMesh);
 
 // Halo du soleil
@@ -847,7 +873,7 @@ function makeGlowTexture() {
     return new THREE.CanvasTexture(c);
 }
 const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeGlowTexture(), transparent: true, depthWrite: false }));
-sunGlow.scale.set(70, 70, 1);
+sunGlow.scale.set(140, 140, 1);
 sunGlow.position.copy(sunMesh.position);
 scene.add(sunGlow);
 
@@ -871,14 +897,15 @@ function updateDayNight(dt) {
     // où l'on pêche, on l'a dans le dos, de côté ou en plein contre-jour.
     const exposition = expositionPoste();
     // Soleil : azimut FIXE (sud-ouest), seule l'élévation suit le cycle du jour.
-    sunLight.position.set(SUN_DIRECTION.x * 70, 12 + daylight * 65, SUN_DIRECTION.z * 70);
+    sunDecalage.set(SUN_DIRECTION.x * 70, 12 + daylight * 65, SUN_DIRECTION.z * 70);
+    suivreOmbres();
     sunLight.intensity = (0.25 + daylight * 1.05) * exposition;
     sunLight.color.copy(SUN_WARM).lerp(SUN_DAY, daylight);
-    sunMesh.position.copy(sunLight.position).multiplyScalar(0.75);
+    sunMesh.position.copy(camera.position).addScaledVector(sunDecalage.clone().normalize(), 120);
     sunGlow.position.copy(sunMesh.position);
     // La même direction pour le reflet solaire du shader d'eau (plus de valeur
     // codée en dur : le soleil peut être ailleurs qu'au sud-ouest).
-    waterUniforms.uSunDir.value.copy(sunLight.position).normalize();
+    waterUniforms.uSunDir.value.copy(sunDecalage).normalize();
     // Ciel (dégradé), brume et fond.
     skyMat.uniforms.topColor.value.copy(SKY_TOP_NIGHT).lerp(SKY_TOP_DAY, daylight);
     skyMat.uniforms.bottomColor.value.copy(SKY_BOTTOM_NIGHT).lerp(SKY_BOTTOM_DAY, daylight);
@@ -974,7 +1001,8 @@ for (let i = 0; i < 8; i++) {
         puff.scale.y = 0.5;
         cloud.add(puff);
     }
-    cloud.position.set(-90 + rand() * 180, 42 + rand() * 22, -120 - rand() * 50);
+    // Nuages répartis sur tout le ciel de l'étang (≈ 440 × 340 unités, v173).
+    cloud.position.set(-220 + rand() * 440, 42 + rand() * 22, -280 + rand() * 320);
     scene.add(cloud);
     clouds.push(cloud);
 }
@@ -983,47 +1011,6 @@ for (let i = 0; i < 8; i++) {
 // Étang : géométrie du monde (centre, contour, relief, fond) — module dédié.
 // ---------------------------------------------------------------------------
 const pondBottom = ajouterFond(scene);
-
-// Eau : disque « polaire » (anneaux + rayons) pour permettre au shader de
-// déformer finement la surface en vagues. Chaque anneau suit le CONTOUR de
-// l'étang : le bord de l'eau n'est plus un cercle parfait.
-function makeWaterGeometry(rings, segments) {
-    const positions = [0, 0, 0];
-    const indices = [];
-    for (let r = 1; r <= rings; r++) {
-        for (let s = 0; s < segments; s++) {
-            const a = (s / segments) * Math.PI * 2;
-            const rr = rayonEtang(a) * (r / rings);
-            positions.push(Math.cos(a) * rr, 0, Math.sin(a) * rr);
-        }
-    }
-    // Éventail du centre vers le premier anneau.
-    for (let s = 0; s < segments; s++) {
-        indices.push(0, 1 + s, 1 + ((s + 1) % segments));
-    }
-    // Quadrangles entre anneaux voisins.
-    for (let r = 1; r < rings; r++) {
-        const base = 1 + (r - 1) * segments;
-        const next = 1 + r * segments;
-        for (let s = 0; s < segments; s++) {
-            const s1 = (s + 1) % segments;
-            indices.push(base + s, next + s, next + s1);
-            indices.push(base + s, next + s1, base + s1);
-        }
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    // Profondeur d'eau RÉELLE sous chaque sommet : sert à foncer l'eau au large
-    // et à la garder claire au bord (plus de bassine bleu pâle uniforme).
-    const depths = [];
-    for (let i = 0; i < positions.length; i += 3) {
-        depths.push(profondeurLocale(POND_CENTER.x + positions[i], POND_CENTER.z + positions[i + 2]));
-    }
-    geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(depths, 1));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-    return geo;
-}
 
 // Carte de normales d'eau GÉNÉRÉE (pas de fichier image à embarquer) : la
 // somme de vagues sinusoidales tileables, convertie en normales RGB. C'est la
@@ -1189,6 +1176,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform float uTime;
         uniform vec2 uWindDir;
         uniform float uWind;
+        attribute float aDepth;
         varying vec3 vWorldPos;
         varying vec3 vNormal;
         varying float vDepth;
@@ -1211,16 +1199,11 @@ const waterMaterial = new THREE.ShaderMaterial({
             vec2 grad;
             wp.y += waveHeight(wp.xz, uTime, grad);
             vWorldPos = wp.xyz;
-            // Profondeur RÉELLE de l'étang sous ce point (mêmes constantes que
-            // profondeurLocale) : claire au bord, sombre au centre et dans les fosses.
-            vec2 dp = wp.xz - vec2(0.0, -40.0);
-            float dd = length(dp);
-            float tt = min(1.0, dd / 55.0);
-            float pr = 1.4 + 3.6 * (1.0 - tt * tt);
-            float f1 = length(wp.xz - vec2(-16.0, -56.0)) / 11.0;
-            float f2 = length(wp.xz - vec2(20.0, -26.0)) / 9.0;
-            pr += 1.6 * max(0.0, 1.0 - f1 * f1) + 1.2 * max(0.0, 1.0 - f2 * f2);
-            vDepth = pr;
+            // Profondeur RÉELLE de l'étang sous ce sommet : elle est calculée côté
+            // JavaScript (profondeurLocale : contour, cuvette et fosses) et stockée
+            // dans le maillage (aDepth). Plus aucune constante de l'étang dans le
+            // shader : agrandir l'étang ou déplacer une fosse suffit, rien à recopier.
+            vDepth = aDepth;
             vNormal = normalize(vec3(-grad.x, 1.0, -grad.y));
             gl_Position = projectionMatrix * viewMatrix * wp;
         }
@@ -1257,6 +1240,9 @@ const waterMaterial = new THREE.ShaderMaterial({
             // LA profondeur commande la couleur : claire au bord, sombre au fond.
             float prof = clamp(vDepth / 5.2, 0.0, 1.0);
             vec3 col = mix(uShallow, uDeep, prof);
+            // Les FOSSES (au-delà de 5 unités) foncent encore : on lit les zones
+            // profondes d'un coup d'œil, depuis la berge comme depuis la barque.
+            col = mix(col, uDeep * 0.55, clamp((vDepth - 5.0) / 3.2, 0.0, 1.0) * 0.7);
             // Un peu de vaguelette : petites variations de teinte.
             col *= 0.94 + 0.06 * clamp(n.y, 0.0, 1.0);
             col = mix(col, uSky, fres * 0.22);
@@ -1286,7 +1272,11 @@ const waterMaterial = new THREE.ShaderMaterial({
     `
 });
 
-const water = new THREE.Mesh(makeWaterGeometry(22, 64), waterMaterial);
+// Résolution du maillage d'eau : l'étang a 1,6 fois plus de rayon, on garde un pas de
+// ≈ 2,5 unités entre anneaux et ≈ 5 unités entre rayons (houle en vertex shader).
+const EAU_ANNEAUX = 40;
+const EAU_SEGMENTS = 128;
+const water = new THREE.Mesh(makeWaterGeometry(EAU_ANNEAUX, EAU_SEGMENTS), waterMaterial);
 water.position.set(POND_CENTER.x, 0, POND_CENTER.z);
 scene.add(water);
 
@@ -1318,50 +1308,12 @@ function updateWater(t) {
     waterUniforms.uWind.value = wind.strength;
 }
 
-// Rive : un anneau dont le bord INTÉRIEUR suit le contour généré de l'étang.
-// (Un RingGeometry donnait un cercle parfait et laissait des fentes.)
-function makeShoreGeometry(outer, segments) {
-    const positions = [];
-    const uvs = [];
-    const colors = [];
-    const indices = [];
-    const coast = new THREE.Color(0xa08465);
-    const transition = new THREE.Color(0xd7c7a7);
-    const grass = new THREE.Color(0xffffff);
-    for (let segment = 0; segment < segments; segment++) {
-        const angle = segment / segments * Math.PI * 2;
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const inner = rayonEtang(angle);
-        const edgeWidth = 1.7 + 0.8 * Math.sin(7 * angle) + 0.4 * Math.cos(13 * angle);
-        const rings = [inner, inner + edgeWidth, inner + edgeWidth * 2, outer];
-        for (let ring = 0; ring < rings.length; ring++) {
-            const x = cos * rings[ring];
-            const z = sin * rings[ring];
-            positions.push(x, 0, z);
-            uvs.push((x / outer + 1) / 2, (z / outer + 1) / 2);
-            const color = ring === 0 ? coast : ring === 1 ? transition : grass;
-            colors.push(color.r, color.g, color.b);
-        }
-        const next = ((segment + 1) % segments) * rings.length;
-        for (let ring = 0; ring < rings.length - 1; ring++) {
-            const current = segment * rings.length + ring;
-            const adjacent = next + ring;
-            indices.push(current, adjacent + 1, current + 1,
-                current, adjacent, adjacent + 1);
-        }
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-    return geo;
-}
-
+// Le sol s'étend jusqu'à 430 unités du centre (brume totale à 480 de la caméra) : on ne
+// voit jamais son bord. La texture d'herbe garde sa densité (180 × 430/220 ≈ 350).
+const RIVE_RAYON_EXTERIEUR = 430;
+const RIVE_TEXTURE_REPETITIONS = 350;
 const shore = new THREE.Mesh(
-    makeShoreGeometry(220, 96),
+    makeShoreGeometry(RIVE_RAYON_EXTERIEUR, 128),
     new THREE.MeshStandardMaterial({
         color: 0xe5e0c9, roughness: 0.94, vertexColors: true,
         normalScale: new THREE.Vector2(0.55, 0.55)
@@ -1391,17 +1343,17 @@ async function loadShoreTextures(material) {
                 try {
                     texture = await loader.loadAsync('./assets/' + name + '.ktx2');
                     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                    texture.repeat.set(180, 180);
+                    texture.repeat.set(RIVE_TEXTURE_REPETITIONS, RIVE_TEXTURE_REPETITIONS);
                 } catch {
                     // Un navigateur peut bloquer les workers ou WebAssembly.
                 }
             }
-            material[property] = texture || chargerTexture(name + '.jpg', 180, 180, srgb);
+            material[property] = texture || chargerTexture(name + '.jpg', RIVE_TEXTURE_REPETITIONS, RIVE_TEXTURE_REPETITIONS, srgb);
             material.needsUpdate = true;
         }));
     } catch {
         for (const [property, name, srgb] of maps) {
-            material[property] = chargerTexture(name + '.jpg', 180, 180, srgb);
+            material[property] = chargerTexture(name + '.jpg', RIVE_TEXTURE_REPETITIONS, RIVE_TEXTURE_REPETITIONS, srgb);
         }
         material.needsUpdate = true;
     } finally {
@@ -1601,7 +1553,7 @@ let dernierCoupe = -1;
 let coupePrete = false;   // le schéma attend que le jeu soit entièrement initialisé
 
 // Hauteur d'eau (unités) représentée par la hauteur du schéma.
-const COUPE_REF = 6.8;
+const COUPE_REF = 9.2;   // hauteur du schéma (≥ fond max 8,8 : étang moyen v173)
 
 function nombreMetres(unites) {
     return (unites / 2).toFixed(1).replace('.', ',') + ' m';
@@ -1737,7 +1689,7 @@ let emplacementAngle = ANGLE_BASE;
 let emplacementMarge = POSTE_MARGE;
 
 let BATEAU_PAS_ANGLE = 0.055;
-let BATEAU_PAS_MARGE = 1.6;
+let BATEAU_PAS_MARGE = 2.4;   // v173 : étang 1,6 × plus grand → pas d'avancée × 1,5
 let bateauGroupe = new THREE.Group();
 let modeBateau = false;
 let bateauRame = { gauche: false, droite: false, avant: false };
@@ -1855,7 +1807,8 @@ const {
     montrerOnglet, rendreCarteEtang
 } = creerCarnetUI({
     tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
-    FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES, profondeurLocale
+    FOND_CENTRE, FOSSES, PROFONDEUR_MAX, RAYON_CADRE_CARTE, lilyPads, BOURRICHE_POS, angler, floatGroup,
+    SPECIES, profondeurLocale
 });
 
 const {
@@ -1959,14 +1912,18 @@ const {
 // ---------------------------------------------------------------------------
 const { fishes, styleEspece, makeFish, spawnFish, randomFishPosition,
     poidsRealisteKilos, setHorsNormeChance, getHorsNormeChance,
-    distributionAttendue, comportementRand, repeuplerEtang, punishFish,
+    distributionAttendue, comportementRand, repeuplerEtang, punishFish, statsPopulation,
+    SOLITAIRES, MAX_PAR_SOLITAIRE, BIOMASSE_MIN_KG_HA,
+    BIOMASSE_MAX_KG_HA, ESPECES_MIN,
     PROIES_CARNASSIERS, CARNASSIERS, PREDATOR_ATTACK_RADIUS,
     PREDATOR_ATTACK_ADVANTAGE } = creerPoissons({
     scene: scene,
     rand: rand,
     rayonEtang: rayonEtang,
     POND_CENTER: POND_CENTER,
-    fondY: fondY
+    fondY: fondY,
+    FOSSES: FOSSES,
+    SURFACE_HA: SURFACE_HA
 });
 
 // ---------------------------------------------------------------------------
@@ -2413,6 +2370,20 @@ window.__game = {
     getRecordBattu: function () { return recordBattu ? Object.assign({}, recordBattu) : null; },
     spawnFish: spawnFish,
     repeuplerEtang: repeuplerEtang,
+    // Population : cible calculée d'après la surface, plafond technique, bornes réalistes.
+    getPopulation: function () {
+        const stats = statsPopulation();
+        stats.solitairesListe = SOLITAIRES.slice();
+        stats.maxParSolitaire = Object.assign({}, MAX_PAR_SOLITAIRE);
+        stats.biomasseMin = BIOMASSE_MIN_KG_HA;
+        stats.biomasseMax = BIOMASSE_MAX_KG_HA;
+        stats.especesMin = ESPECES_MIN;
+        return stats;
+    },
+    getEtangInfo: function () {
+        return { fosses: FOSSES, surfaceHa: SURFACE_HA, profondeurMax: PROFONDEUR_MAX,
+            rayonCadre: RAYON_CADRE_CARTE, pasBateau: { angle: BATEAU_PAS_ANGLE, marge: BATEAU_PAS_MARGE } };
+    },
     setHorsNormeChance: setHorsNormeChance,
     getHorsNormeChance: getHorsNormeChance,
     getHorsNormeCount: function () {
@@ -2631,7 +2602,8 @@ window.__game = {
             azimut: SUN_AZIMUT,
             libelle: azimutTexte(SUN_AZIMUT),
             direction: { x: direction.x, y: direction.y, z: direction.z },
-            position: { x: sunLight.position.x, y: sunLight.position.y, z: sunLight.position.z },
+            // Position RELATIVE au centre des ombres (la direction de la lumière).
+            position: { x: sunDecalage.x, y: sunDecalage.y, z: sunDecalage.z },
             intensite: sunLight.intensity,
             exposition: expositionPoste(),
             lumiereEau: waterUniforms.uLight.value,
@@ -2829,7 +2801,7 @@ window.__game = {
     profondeurLocale: profondeurLocale,
     // Profondeur maximale de l'étang (fond de la fosse la plus profonde).
     getProfondeurMaxEtang: function () {
-        return FOND_CENTRE + Math.max.apply(null, FOSSES.map(function (f) { return f.plus; }));
+        return PROFONDEUR_MAX;
     },
     fondY: fondY,
     isHameconDansLaVase: function () { return hameconDansLaVase; },

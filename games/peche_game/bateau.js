@@ -163,10 +163,14 @@ export function creerBateau(deps) {
     // pas au repos : le bouchon ne peut pas être remorqué.
     function deplacerBateau(deltaAngle, deltaMarge) {
         if (!etat.modeBateau || etat.floatState !== 'idle') { return false; }
-        const rayon = rayonEtang(etat.emplacementAngle);
+        // Les bornes se calculent au rayon de l'ANGLE D'ARRIVÉE (et non de départ) : le
+        // contour varie de 71 à 104 unités, et un coup de rame qui tourne beaucoup
+        // pouvait sinon amener la barque à moins de 10 unités du centre, voire au-delà.
+        const nouvelAngle = etat.emplacementAngle + deltaAngle;
+        const rayon = rayonEtang(nouvelAngle);
         let marge = etat.emplacementMarge + deltaMarge;
         marge = Math.max(BATEAU_MIN_CENTRE - rayon, Math.min(-BATEAU_MARGE_BORD, marge));
-        const ok = placerALAngle(etat.emplacementAngle + deltaAngle, marge, -1, true);
+        const ok = placerALAngle(nouvelAngle, marge, -1, true);
         if (ok) {
             etat.spawnRipple({ x: angler.position.x, y: 0, z: angler.position.z });
         }

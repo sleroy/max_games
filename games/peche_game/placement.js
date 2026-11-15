@@ -22,8 +22,11 @@ export function creerPlacement(deps) {
     // glisser dans cette couronne choisit l'angle ET la distance à la berge.
     // ---------------------------------------------------------------------------
     etat.CARTE_3D_TAILLE = 320;        // résolution du canvas de la carte
-    etat.CARTE_3D_MONDE = 170;         // largeur du terrain représenté (unités)
-    etat.CARTE_3D_SEGMENTS = 96;       // résolution du maillage de relief
+    // v173 : étang de rayon nominal 90 (contour jusqu'à ≈ 104, couronne jusqu'à 110) :
+    // le terrain représenté passe de 170 à 260 unités de large (demi-largeur 130 =
+    // rayon max + couronne + 16 de berge), à ≈ 1,75 unité par segment comme avant.
+    etat.CARTE_3D_MONDE = 260;         // largeur du terrain représenté (unités)
+    etat.CARTE_3D_SEGMENTS = 148;      // résolution du maillage de relief
     etat.CARTE_3D_EAU_Y = 0;           // HAUTEUR DE L'EAU : dessous = le lac
     etat.CARTE_3D_BANDE_SEGMENTS = 128;
 
@@ -62,7 +65,7 @@ export function creerPlacement(deps) {
     // dégradé de gris (comme une heightmap) plus claire en altitude.
     function couleurCarte(y) {
         if (y < etat.CARTE_3D_EAU_Y) {
-            const t = Math.min(1, -y / 5.5);
+            const t = Math.min(1, -y / 8.4);   // jusqu'au fond des fosses (≈ 8,1)
             return _couleurCarte.copy(CARTE_EAU_BAS).lerp(CARTE_EAU_PROFOND, t);
         }
         const t = Math.min(1, (y - RIVE_Y) / 7);
@@ -71,8 +74,10 @@ export function creerPlacement(deps) {
 
     const carteScene = new THREE.Scene();
     carteScene.background = new THREE.Color(0x16242b);
-    etat.carteCamera = new THREE.PerspectiveCamera(50, 1, 0.5, 600);
-    etat.carteCamera.position.set(POND_CENTER.x + 75, 100, POND_CENTER.z + 120);
+    // La caméra recule dans les mêmes proportions que l'étang grandit (× 1,7) : tout
+    // le contour et la couronne de placement restent dans le cadre de 320 px.
+    etat.carteCamera = new THREE.PerspectiveCamera(50, 1, 0.5, 1000);
+    etat.carteCamera.position.set(POND_CENTER.x + 128, 170, POND_CENTER.z + 204);
     etat.carteCamera.lookAt(POND_CENTER.x, -1, POND_CENTER.z);
     etat.carteCamera.updateMatrixWorld();
     etat.carteCamera.updateProjectionMatrix();

@@ -65,10 +65,10 @@ export function creerAmbiance(deps) {
         clouds.forEach(cloud => {
             cloud.position.x += Math.cos(wind.dir) * speed * dt;
             cloud.position.z += Math.sin(wind.dir) * speed * dt;
-            if (cloud.position.x > 130) cloud.position.x = -130;
-            if (cloud.position.x < -130) cloud.position.x = 130;
-            if (cloud.position.z > -50) cloud.position.z = -190;
-            if (cloud.position.z < -190) cloud.position.z = -50;
+            if (cloud.position.x > 230) cloud.position.x = -230;
+            if (cloud.position.x < -230) cloud.position.x = 230;
+            if (cloud.position.z > 50) cloud.position.z = -290;
+            if (cloud.position.z < -290) cloud.position.z = 50;
         });
     }
 

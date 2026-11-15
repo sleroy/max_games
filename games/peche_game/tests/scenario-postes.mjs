@@ -136,7 +136,7 @@ export function run() {
     checkEqual('le lancer au nord part', castTo(cibleLancer.x, cibleLancer.z), 'inWater');
     const profondeur = G().profondeurLocale(
         G().floatGroup.position.x, G().floatGroup.position.z);
-    check('la profondeur au nord reste jouable', profondeur > 1.4 && profondeur < 6.6,
+    check('la profondeur au nord reste jouable', profondeur > 1.4 && profondeur <= G().getProfondeurMaxEtang(),
         profondeur.toFixed(2) + ' unités');
     forceBite();
     checkEqual('un poisson mord au poste nord', state(), 'bite');

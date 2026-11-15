@@ -74,7 +74,7 @@ export function run() {
         !!partGardon && !!partSilure && partGardon.part > partSilure.part,
         (partGardon ? partGardon.part.toFixed(3) : '?') + ' > '
         + (partSilure ? partSilure.part.toFixed(3) : '?'));
-    checkEqual('l’étang contient bien 20 poissons', G().fishes.length, 20);
+    checkEqual('l’étang contient bien toute sa population', G().fishes.length, G().getPopulation().cible);
 
     // 7) Spécimen hors norme : taille/poids/combat au-delà de la norme.
     const raresAvant = G().getHorsNormeCount();

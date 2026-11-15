@@ -173,8 +173,10 @@ export function run() {
     const dz = centre.z - librePecheur.z;
     const d = Math.hypot(dx, dz);
     const cibleLibre = {
-        x: librePecheur.x + (dx / d) * 26,
-        z: librePecheur.z + (dz / d) * 26
+        // 32 unités (et non 26) : depuis la v173 le bassin est plus large, donc la zone
+        // de vase (fond < 3 unités) s'étend jusqu'à ≈ 25 unités de la rive.
+        x: librePecheur.x + (dx / d) * 32,
+        z: librePecheur.z + (dz / d) * 32
     };
     checkEqual('le lancer part depuis l’emplacement libre',
         castTo(cibleLibre.x, cibleLibre.z), 'inWater');

@@ -69,7 +69,7 @@ export function run() {
     check('la petite proie est libérée et visible',
         proie.userData.hooked === false && proie.visible === true);
     check('le carnassier est marqué ferré', predateur.userData.hooked === true);
-    checkEqual('l’étang garde ses 20 poissons', G().fishes.length, nbFishes);
+    checkEqual('l’étang garde tous ses poissons', G().fishes.length, nbFishes);
 
     // 4) Le combat est celui du brochet, avec un avantage au poisson.
     checkEqual('le combat est celui du brochet', G().getStruggleStyle(),

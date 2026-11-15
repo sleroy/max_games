@@ -87,7 +87,9 @@ export function creerDecor(deps) {
     const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
     // --- Arbres : un appel de dessin pour les troncs, un autre pour le feuillage.
-    const TREE_MAX = 40;
+    // v173 : étang de rayon 90 (périmètre × 1,6, surface × 2,8) → décor étoffé pour que
+    // la berge ne paraisse pas nue : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars.
+    const TREE_MAX = 64;
     const trunkInst = new THREE.InstancedMesh(
         new THREE.CylinderGeometry(0.3, 0.45, 3, 6), trunkMat, TREE_MAX
     );
@@ -118,10 +120,11 @@ export function creerDecor(deps) {
         }
     }
 
-    for (let i = 0; i < 40; i++) {
-        const angle = (i / 40) * Math.PI * 2 + rand() * 0.1;
-        // Les arbres poussent DERRIÈRE la rive LOCALE (le contour n'est pas un cercle).
-        const radius = rayonEtang(angle) + 8 + rand() * 35;
+    for (let i = 0; i < TREE_MAX; i++) {
+        const angle = (i / TREE_MAX) * Math.PI * 2 + rand() * 0.1;
+        // Les arbres poussent DERRIÈRE la rive LOCALE (le contour n'est pas un cercle),
+        // sur une bande de 8 à 53 unités (35 avant l'agrandissement de l'étang).
+        const radius = rayonEtang(angle) + 8 + rand() * 45;
         const x = POND_CENTER.x + Math.cos(angle) * radius;
         const z = POND_CENTER.z + Math.sin(angle) * radius;
         // Laisse dégagé l'espace devant la caméra et le pêcheur.
@@ -141,16 +144,19 @@ export function creerDecor(deps) {
 
     // --- Nénuphars : la SEULE sortie du module (accrochage + carte du carnet).
     const lilyPads = [];
+    const NENUPHARS = 40;   // 14 sur 0,23 ha → ≈ 40 sur 0,64 ha (même densité)
     const lilyMat = new THREE.MeshStandardMaterial({
         color: 0x3f7d4a, roughness: 0.8, side: THREE.DoubleSide
     });
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < NENUPHARS; i++) {
         const radius = 0.25 + rand() * 0.45;   // 12 à 35 cm de rayon
         const pad = new THREE.Mesh(new THREE.CircleGeometry(radius, 16), lilyMat);
         pad.rotation.x = -Math.PI / 2;
         const angle = rand() * Math.PI * 2;
-        // Les nénuphars restent DANS l'eau, à distance du bord local.
-        const r = rand() * Math.max(1, rayonEtang(angle) - 12);
+        // Les nénuphars restent DANS l'eau, à distance du bord local. La racine carrée
+        // répartit les nénuphars à densité égale sur toute la surface : avec un tirage
+        // linéaire du rayon, ils s'entassaient au milieu du grand étang (v173).
+        const r = Math.sqrt(rand()) * Math.max(1, rayonEtang(angle) - 12);
         pad.position.set(POND_CENTER.x + Math.cos(angle) * r, 0.06,
             POND_CENTER.z + Math.sin(angle) * r);
         scene.add(pad);
@@ -162,9 +168,10 @@ export function creerDecor(deps) {
     const reedMat = new THREE.MeshStandardMaterial({ color: 0x2f6b3f, roughness: 0.9 });
     const reedGeo = new THREE.CylinderGeometry(0.02, 0.035, 1, 5);
     reedGeo.translate(0, 0.5, 0);
-    const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, 40);
+    const ROSEAUX = 70;   // 40 pour un périmètre de 345 → 70 pour ≈ 570
+    const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, ROSEAUX);
     let reedCount = 0;
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < ROSEAUX; i++) {
         const angle = rand() * Math.PI * 2;
         // Les roseaux poussent DANS l'eau, le long du contour généré.
         const r = rayonEtang(angle) - 1 - rand() * 5;
@@ -184,9 +191,10 @@ export function creerDecor(deps) {
 
     // --- Rochers (instanciés).
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 1 });
-    const rockInst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), rockMat, 12);
+    const ROCHERS = 24;
+    const rockInst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), rockMat, ROCHERS);
     rockInst.castShadow = true;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < ROCHERS; i++) {
         const angle = rand() * Math.PI * 2;
         // Les rochers restent sur la berge, derrière le bord local.
         const r = rayonEtang(angle) + 3 + rand() * 12;

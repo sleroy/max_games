@@ -6,11 +6,12 @@ import {
     G, el, fire, state, statusText, step, stepFor, stepUntil,
     castDistance, distanceToShore, parkFish, clearLilyPads, resetToIdle,
     castTo, forceBite, strike, startFight,
-    crankTurns, crankDragTurns, crankWidgetActive
+    crankTurns, crankDragTurns, crankWidgetActive, adapterAuBouchon
 } from './harness.mjs';
 
-// Les 20 poissons attendus et l'API publique du jeu (contrat de test).
-const FISH_COUNT = 20;
+// La population attendue (v173 : calculée d'après la surface de l'étang, ≈ 58 poissons
+// au lieu de 20) et l'API publique du jeu (contrat de test).
+const populationCible = () => G().getPopulation().cible;
 const API = [
     'scene', 'camera', 'renderer', 'fishes', 'floatGroup', 'rodTip', 'angler', 'makeFish', 'lilyPads',
     'startCast', 'hookFish', 'getState', 'getBitePhase', 'isBiteViewActive', 'getCameraMode', 'startReel',
@@ -31,7 +32,7 @@ export function run() {
     group('9) Chargement du module et API de test');
     check('window.__game est exposé', !!G());
     API.forEach(name => check('__game.' + name + ' exposé', name in G()));
-    checkEqual('les poissons sont dans l\'étang', G().fishes.length, FISH_COUNT);
+    checkEqual('les poissons sont dans l\'étang', G().fishes.length, populationCible());
     checkEqual('un tour de manivelle = 2 unités de fil', G().getUnitsPerTurn(), 2);
     checkEqual('état initial : repos', state(), 'idle');
     check('au repos, le bouton de lancer est masqué', el('fishButton').hidden !== false);
@@ -281,7 +282,7 @@ export function run() {
     checkEqual('le carnet enregistre la prise de la même façon',
         G().getJournal().total, journalBefore + (inBourriche ? 1 : 0));
     checkEqual('plus rien en main', G().getHeldFish(), null);
-    checkEqual('toujours 20 poissons', G().fishes.length, FISH_COUNT);
+    checkEqual('toujours toute la population', G().fishes.length, populationCible());
     checkEqual('on peut relancer', el('fishButton').disabled, false);
     checkEqual('manivelle cachée au repos', crankWidgetActive(), false);
 
@@ -314,7 +315,7 @@ export function run() {
     check('message de victoire affiché', el('catchMessage').classList.contains('show'), true);
     check('le message donne le poids', el('catchMessage').textContent.includes('kg'), el('catchMessage').textContent);
     checkEqual('le poisson rangé a quitté l’étang', G().fishes.indexOf(caught2), -1);
-    checkEqual('un nouveau poisson le remplace', G().fishes.length, FISH_COUNT);
+    checkEqual('un nouveau poisson le remplace', G().fishes.length, populationCible());
     check('le compteur de la bourriche se met à jour',
         el('bourricheLabel').textContent,
         '🧺 Bourriche : ' + G().getBourricheCount());
@@ -422,9 +423,13 @@ export function run() {
     group('23) Le poisson remonte vers l’hameçon avant de mordre');
     resetToIdle();
     clearLilyPads();
-    castTo(0, -25);
+    // Au CENTRE de l'étang : c'est là que le fond est à 5 unités (le test place un poisson
+    // à 5,2 de profondeur ; plus près de la rive il serait remonté par le relief).
+    castTo(G().getPondCenter().x, G().getPondCenter().z);
     parkFish();
     const deepFish = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
+    // Un poisson de la couche « mi-eau » (les espèces de fond suivent le relief, pas la zone).
+    adapterAuBouchon(deepFish);
     deepFish.position.set(G().floatGroup.position.x, -5.2, G().floatGroup.position.z);
     deepFish.userData.depth = -5.2;
     deepFish.userData.profondeurZone = [-6.5, -0.5];   // il peut mordre à l'hameçon
@@ -586,7 +591,7 @@ export function run() {
     checkEqual('aucun point marqué', Number(el('score').textContent), scoreAvant);
     checkEqual('aucune prise ajoutée au carnet', G().getJournal().total, journalAvant);
     check('le poisson est retourné à l’eau', G().fishes.indexOf(missed) >= 0);
-    checkEqual('toujours 20 poissons', G().fishes.length, FISH_COUNT);
+    checkEqual('toujours toute la population', G().fishes.length, populationCible());
     checkEqual('plus rien en main', G().getHeldFish(), null);
 
     group('27) Effets visuels (post-traitement maison)');
@@ -814,7 +819,7 @@ export function run() {
     check('la canne mesure 2,8 à 3,2 m', mes.canneM >= 2.8 && mes.canneM <= 3.2, mes.canneM + ' m');
     check('le pêcheur mesure 1,65 à 1,75 m', mes.pecheurM >= 1.65 && mes.pecheurM <= 1.75,
         mes.pecheurM + ' m');
-    check('l’étang mesure 40 à 70 m de large', mes.etangM >= 40 && mes.etangM <= 70,
+    check('l’étang mesure 80 à 100 m de large (étang moyen, ≈ 0,64 ha)', mes.etangM >= 80 && mes.etangM <= 100,
         mes.etangM + ' m');
     check('l’étang est profond de 1 à 4 m', mes.fondM >= 1 && mes.fondM <= 4, mes.fondM + ' m');
     check('la taille 3D d’un poisson = sa longueur réelle',

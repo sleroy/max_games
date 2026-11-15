@@ -79,9 +79,9 @@ export function creerVie(deps) {
             const bird = etat.birds[i];
             const p = bird.userData.phase;
             bird.position.set(
-                Math.cos(time * 0.06 + p) * 70,
+                Math.cos(time * 0.06 + p) * 110,
                 24 + Math.sin(time * 0.3 + p) * 2.5,
-                -60 + Math.sin(time * 0.06 + p) * 45);
+                POND_CENTER.z + Math.sin(time * 0.06 + p) * 80);
             bird.rotation.y = -time * 0.06 - p + Math.PI / 2;
             const battement = Math.sin(time * 9 + p) * 0.7;
             bird.userData.ailes.forEach(a => { a.mesh.rotation.x = a.cote * (0.2 + battement); });

@@ -9,7 +9,7 @@ import { etat } from './etat.js?v=145';
 export function creerCarnetUI(deps) {
     const {
         tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
-        FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES,
+        FOND_CENTRE, FOSSES, PROFONDEUR_MAX, RAYON_CADRE_CARTE, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES,
         profondeurLocale
     } = deps;
 
@@ -57,7 +57,10 @@ export function creerCarnetUI(deps) {
         const R = POND_RADIUS;
         const cx = 100;
         const cy = 60;
-        const ech = 100 / (2 * R);              // unités du monde → pixels du plan
+        // Échelle : le cadre (demi-hauteur 58 px) contient le plus grand rayon du
+        // contour + la couronne de placement (RAYON_CADRE_CARTE), donc le pêcheur
+        // et la bourriche ne sortent jamais de la carte, même à l'extrémité des lobes.
+        const ech = 58 / RAYON_CADRE_CARTE;     // unités du monde → pixels du plan
         const mx = function (x) { return cx + (x - POND_CENTER.x) * ech; };
         const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
         // Chemin SVG du contour GÉNÉRÉ (facteur 1 = bord de l'eau, < 1 = isobathe).
@@ -96,14 +99,14 @@ export function creerCarnetUI(deps) {
                 + '" font-size="6.4" font-weight="bold" fill="#ffffff" stroke="#0d3348" stroke-width="0.5">'
                 + (unites / 2) + ' m</text>';
         });
-        // Les deux FOSSES : les points les plus profonds de l'étang.
+        // Les FOSSES : les points les plus profonds de l'étang (profondeur RÉELLE).
         FOSSES.forEach(function (fosse) {
             svg += '<circle cx="' + mx(fosse.x).toFixed(1) + '" cy="' + mz(fosse.z).toFixed(1)
                 + '" r="' + (fosse.rayon * ech).toFixed(1)
                 + '" fill="rgba(6, 34, 52, 0.42)" stroke="#bfe6f5" stroke-width="0.5" stroke-dasharray="1.5 1.5"/>';
             svg += '<text x="' + mx(fosse.x).toFixed(1) + '" y="' + (mz(fosse.z) + 2).toFixed(1)
                 + '" text-anchor="middle" font-size="4.8" fill="#ffffff">fosse '
-                + ((FOND_CENTRE + fosse.plus) / 2).toFixed(1).replace('.', ',') + ' m</text>';
+                + (profondeurLocale(fosse.x, fosse.z) / 2).toFixed(1).replace('.', ',') + ' m</text>';
         });
         // Les nénuphars, aux VRAIES positions (aléatoires à chaque partie).
         lilyPads.forEach(function (pad) {
@@ -123,7 +126,7 @@ export function creerCarnetUI(deps) {
         svg += '</svg>';
         // Légende : les espèces de chaque zone, d'après leurs profondeurs RÉELLES.
         // Échelle de profondeur, en clair (c'est ce qui aide à choisir son poste).
-        const profMax = FOND_CENTRE + Math.max.apply(null, FOSSES.map(function (f) { return f.plus; }));
+        const profMax = PROFONDEUR_MAX;
         let legende = '<div class="map-profondeur">Profondeur : <b>'
             + (FOND_BORD / 2).toFixed(1).replace('.', ',') + ' m</b> au bord → <b>'
             + (FOND_CENTRE / 2).toFixed(1).replace('.', ',') + ' m</b> au centre → <b>'

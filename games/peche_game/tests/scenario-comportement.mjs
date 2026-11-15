@@ -87,9 +87,14 @@ export function run() {
     check('les bancs restent groupés (écart moyen au centre < 6)', dispMoy < 6,
         dispMoy.toFixed(2));
     const fondants = poissons.filter(f => f.userData.couche === 'fond');
-    check('les espèces de fond nagent près du relief', fondants.every(function (f) {
-        return f.position.y + f.userData.topOffset - G().fondY(f.position.x, f.position.z) < 1.4;
-    }));
+    // Hauteur du CENTRE du poisson au-dessus du relief (et non de son dos : un silure
+    // de 2 m a un dos à 1,1 unité de son centre, donc plus de 1,4 au-dessus du fond
+    // même collé à la vase au fond d'une fosse, v173).
+    const hauteurs = fondants.map(function (f) {
+        return f.position.y - G().fondY(f.position.x, f.position.z);
+    });
+    check('les espèces de fond nagent près du relief', hauteurs.every(h => h < 1.4),
+        'max ' + Math.max.apply(null, hauteurs).toFixed(2) + ' sur ' + fondants.length + ' poissons');
 
     // 5) Quiver : l'hameçon est posé au fond ; le bouchon garde sa profondeur.
     G().setTangleChance(0);

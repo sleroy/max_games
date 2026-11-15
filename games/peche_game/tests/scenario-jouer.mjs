@@ -92,7 +92,7 @@ export function run() {
         el('struggle').classList.contains('active'), false);
     checkEqual('le panneau de fin de partie est fermé',
         el('gameOver').classList.contains('active'), false);
-    checkEqual('l’étang a toujours ses 20 poissons', G().fishes.length, 20);
+    checkEqual('l’étang a toujours toute sa population', G().fishes.length, G().getPopulation().cible);
 
     // --- Le carnet, l'XP et les bouchons PERSISTENT ---
     checkEqual('le carnet persiste', G().getJournal().total, journalApres);

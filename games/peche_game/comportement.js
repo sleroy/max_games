@@ -173,7 +173,9 @@ export function creerComportement(deps) {
         // Un poisson « de fond » suit le relief ; les autres gardent leur tranche d'eau.
         if (data.couche === 'fond') {
             const cibleY = fondY(fish.position.x, fish.position.z) + 0.45;
-            data.depth += (cibleY - data.depth) * Math.min(1, dt * 1.5);
+            // Suivi du relief : 3 par seconde (1,5 avant). Les bords des fosses ont des
+            // pentes de 30 % ; à 1,5 un poisson lancé à 4 unités/s décollait de > 1,4.
+            data.depth += (cibleY - data.depth) * Math.min(1, dt * 3);
         }
     }
 
