@@ -10,9 +10,19 @@ function read(name) {
     return fs.readFileSync(path.join(GAME_DIR, name), 'utf8');
 }
 
+// Certaines règles portent sur « le code du jeu » sans se soucier du module qui
+// le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
+// modules fusionnés : script.js + les modules extraits.
+const MODULES = ['decor.js'];
+
+function readModules() {
+    return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))
+        .map(read).join('\n');
+}
+
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'portraits.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
@@ -25,6 +35,7 @@ export function run() {
 
     const html = read('index.html');
     const script = read('script.js');
+    const code = script + '\n' + readModules();
     const css = read('style.css');
 
     group('2) Cohérence entre index.html et script.js');
@@ -115,8 +126,8 @@ export function run() {
         tactileBtn ? tactileBtn[1] + ' px' : 'règle tactile absente');
     check('le panneau de profondeur a un titre clair', html.includes('id="depthTitle">Profondeur'));
     check('les textures sont chargées en local (aucun CDN)',
-        script.includes("chargerTexture('ecorce.jpg'") && script.includes("chargerTexture('eau-normales.jpg'")
-        && !/https?:\/\/[^'"]+\.(jpg|png)/.test(script));
+        code.includes("chargerTexture('ecorce.jpg'") && code.includes("chargerTexture('eau-normales.jpg'")
+        && !/https?:\/\/[^'"]+\.(jpg|png)/.test(code));
 
     group('6) Soleil directionnel (idee 2)');
     check('l’azimut du soleil est une constante (225° = sud-ouest)',

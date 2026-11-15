@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v140**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v141**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -491,6 +491,15 @@ vient de là, pas du nombre de fonctionnalités.
   scénario de test).
 
 ### 16.2 Découpage proposé (ordre de valeur décroissante)
+
+- [x] **Contrat et propriété écrits** : `docs/modules.md` (règles, tableau
+  module → rôle → lignes → propriétaire, plafonds, ordre de découpage).
+- [x] **Premier module extrait : `decor.js`** (v141) — arbres, roseaux, rochers,
+  nénuphars. Frontière parfaite : le module reçoit 6 dépendances et ne rend que
+  `lilyPads`. `script.js` passe de 9 581 à 9 424 lignes.
+- [x] **Garde-fou en place** : `tests/scenario-modules.mjs` (plafond 800 lignes /
+  module, **cliquet** sur `script.js` à 9 450, pas de cycle, module documenté,
+  API d'entrée présente).
 
 Un module = une responsabilité, avec **injection de dépendances** comme le font
 déjà `demelage.js` et `quiver.js` (`creerXxx({ canvas, panel, … })`) : aucun accès

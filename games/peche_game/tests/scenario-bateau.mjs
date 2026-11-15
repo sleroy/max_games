@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual, checkClose,
-    G, el, resetToIdle, castTo, forceBite, strike, step, crankTurns, state
+    G, el, fire, resetToIdle, castTo, forceBite, strike, step, stepFor, crankTurns, state
 } from './harness.mjs';
 
 function distance2D(a, b) {
@@ -28,6 +28,7 @@ export function run() {
 
     // --- Sans barque : rien n'est possible ---
     checkEqual('sans barque, le bouton est caché', el('boatButton').hidden, true);
+    checkEqual('sans barque, le pad de rame est caché', G().getBateauPad().cache, true);
     checkEqual('sans barque, embarquer est refusé', G().embarquerBateau(), false);
 
     // --- Achat : il faut l'XP, et une seule fois ---
@@ -91,6 +92,38 @@ export function run() {
     check('jamais à moins de 10 unités du centre', auCentre >= 9.9,
         auCentre.toFixed(2) + ' unités');
     checkEqual('tourner (gauche) fonctionne', G().deplacerBateau(0.3, 0), true);
+
+    // --- Commandes TACTILES (tablette / téléphone) : tap et maintien ---
+    step(1 / 60);
+    checkEqual('à bord, ligne au repos, le pad apparaît', G().getBateauPad().cache, false);
+    const margeAvantTap = G().getEmplacement().marge;
+    fire('boatRow', 'pointerdown', { pointerId: 1, preventDefault() {} });
+    check('un tap sur ▲ fait avancer d’un pas',
+        G().getEmplacement().marge < margeAvantTap,
+        margeAvantTap.toFixed(2) + ' -> ' + G().getEmplacement().marge.toFixed(2));
+    fire('boatRow', 'pointerup', { pointerId: 1 });
+    checkEqual('relâcher arrête la rame', G().getBateauPad().rame.avant, false);
+    const margeApresRelache = G().getEmplacement().marge;
+    stepFor(1.5);
+    checkClose('relâché : la barque ne bouge plus',
+        G().getEmplacement().marge, margeApresRelache, 0.001);
+
+    // Maintenir ▲ : la barque avance en continu (plusieurs pas par seconde).
+    // On repart d'un peu plus loin du centre, sinon la borne bloque l'avancée.
+    G().deplacerBateau(0, 400);
+    const margeAvantMaintien = G().getEmplacement().marge;
+    fire('boatRow', 'pointerdown', { pointerId: 2, preventDefault() {} });
+    stepFor(1);
+    fire('boatRow', 'pointerup', { pointerId: 2 });
+    check('maintenir ▲ avance en continu',
+        G().getEmplacement().marge < margeAvantMaintien - 1,
+        margeAvantMaintien.toFixed(2) + ' -> ' + G().getEmplacement().marge.toFixed(2));
+
+    // Le pad disparaît dès que la ligne n'est plus au repos.
+    castTo(G().angler.position.x, G().angler.position.z - 6);
+    step(1 / 60);
+    checkEqual('ligne dehors : le pad de rame se cache', G().getBateauPad().cache, true);
+    resetToIdle();
 
     // --- PÊCHE COMPLÈTE à bord : lancer -> touche -> ferrage -> bourriche ---
     resetToIdle();

@@ -2309,6 +2309,12 @@ body.mode-quiver .row-bouchon { display: none; }
     font-size: 1.25rem;
 }
 
+/* La barque est débloquée : le bouton « Amorce » monte au-dessus du bouton
+   « Bateau » (les deux vivent en bas à gauche, à portée du pouce). */
+.hud:has(.boat-button:not([hidden])) .quick-feed {
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+}
+
 /* Scion du quiver : bien plus grand sur ordinateur (lecture fine des touches). */
 @media (min-width: 900px) and (min-height: 560px) {
     .quiver-panel {
@@ -2348,4 +2354,65 @@ body.mode-quiver .row-bouchon { display: none; }
 
 .boat-button:active {
     transform: scale(0.96);
+}
+
+/* ---------------------------------------------------------------------------
+   COMMANDES TACTILES DE LA BARQUE (tap = un pas, maintenir = ramer en continu).
+   Trois grosses cibles dans le pouce droit, au-dessus de la manivelle.
+   Affichées seulement à bord ET ligne au repos : on ne rame pas en pêchant.
+   --------------------------------------------------------------------------- */
+.boat-pad {
+    position: absolute;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Masqué par l'attribut hidden : display:flex ne doit pas l'emporter. */
+.boat-pad[hidden] {
+    display: none;
+}
+
+.boat-pad-btn {
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    background: rgba(10, 26, 38, 0.85);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: bold;
+    cursor: pointer;
+    touch-action: none;
+    transition: transform 0.12s;
+}
+
+.boat-pad-btn.row {
+    width: 62px;
+    height: 62px;
+    font-size: 1.35rem;
+    border-color: rgba(140, 240, 192, 0.75);
+}
+
+.boat-pad-btn:active {
+    transform: scale(0.94);
+    background: rgba(30, 60, 80, 0.95);
+}
+
+@media (max-height: 460px) {
+    .boat-pad {
+        bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    }
+    .boat-pad-btn {
+        width: 48px;
+        height: 48px;
+    }
+    .boat-pad-btn.row {
+        width: 54px;
+        height: 54px;
+    }
 }

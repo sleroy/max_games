@@ -304,7 +304,9 @@ node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
 
 | Fichier | Rôle |
 |---|---|
-| `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI |
+| `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI — **en cours de découpage** |
+| `decor.js` | décor fixe : arbres, roseaux, rochers, nénuphars (rend `lilyPads`) |
+| `portraits.js` | portraits 2D des espèces sur fond transparent (panneau de combat) |
 | `especes.js` | données : espèces, styles de combat, silhouettes, touches |
 | `carnet.js` | persistance du carnet de pêche (localStorage) |
 | `classement.js` | classement local |
@@ -312,6 +314,11 @@ node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
 | `quiver.js` | indicateur de scion de canne |
 | `sound.js` | moteur audio |
 | `tests/` | harnais Node (`harness.mjs`, `three-stub.mjs`) + `scenario-*.mjs` |
+
+> **Découpage et travail en parallèle** : lire **`docs/modules.md`** (contrat des
+> modules, tableau de propriété, plafonds de lignes, ordre de découpage). Règle :
+> un agent = un fichier ; `script.js` ne reçoit qu'un import et un appel
+> `creerXxx(deps)`. Garde-fou automatique : `tests/scenario-modules.mjs`.
 
 Suivi des idées : `idées.md` à la racine (ignoré par git, ne pas modifier sans demande).
 

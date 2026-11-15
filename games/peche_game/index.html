@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=138">
+    <link rel="stylesheet" href="style.css?v=141">
 </head>
 <body>
     <div class="game-wrap">
@@ -293,6 +293,12 @@
             </div>
             <button class="boat-button" id="boatButton" hidden
                 aria-pressed="false" title="Monter à bord ou revenir sur la rive">🚤 Bateau</button>
+            <div class="boat-pad" id="boatPad" hidden role="group"
+                aria-label="Commander la barque">
+                <button class="boat-pad-btn" id="boatLeft" aria-label="Tourner à gauche">◀</button>
+                <button class="boat-pad-btn row" id="boatRow" aria-label="Ramer vers le centre">▲</button>
+                <button class="boat-pad-btn" id="boatRight" aria-label="Tourner à droite">▶</button>
+            </div>
             <div class="hud-bottom">
                 <div class="status" id="status">Clique sur l'eau pour lancer la ligne.</div>
                 <button id="fishButton" hidden disabled>Tendre le fil</button>
@@ -325,6 +331,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=138"></script>
+    <script type="module" src="script.js?v=141"></script>
 </body>
 </html>

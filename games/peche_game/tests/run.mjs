@@ -39,6 +39,7 @@ import { run as scenarioRemontee } from './scenario-remontee.mjs';
 import { run as scenarioVitesse } from './scenario-vitesse.mjs';
 import scenarioBateau from './scenario-bateau.mjs';
 import scenarioPortraits from './scenario-portraits.mjs';
+import scenarioModules from './scenario-modules.mjs';
 import scenarioCheat from './scenario-cheat.mjs';
 import { run as scenarioSonar } from './scenario-sonar.mjs';
 
@@ -80,6 +81,7 @@ try {
     scenarioVitesse();          // remontée trop rapide : poids du poisson + fil
     scenarioBateau();           // mode bateau : barque achetable, ramer, pêche à bord
     scenarioPortraits();        // panneau de combat court + portraits d'espèces
+    scenarioModules();          // contrat des modules (découpage, plafonds, cycles)
     scenarioSonar();            // sonar : ping de sous-marin + ondes jaunes
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
 } catch (error) {
