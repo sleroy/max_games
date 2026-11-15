@@ -50,8 +50,9 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
   l'eau). L'**XP de partie** affichée repart aussi à 0 ; le **carnet**, l'**XP
   carrière** (boutique), les **bouchons achetés** et le **classement** sont conservés.
-- **Menu** : pendant la pêche, l’écran affiche le score et l’action en cours.
-  Le menu regroupe la pause, le son, le plein écran, les outils et les statistiques.
+- **Interface** : une barre en haut regroupe le menu, le score et les lignes
+  restantes. L’action en cours s’affiche en bas. La pause, le son, le plein
+  écran, les outils et les autres statistiques se trouvent dans le menu.
 - **Vue** : ouvre `Menu → Vue` entre deux actions. Écarte ou rapproche deux doigts
   pour zoomer, tourne-les pour orienter la caméra, ou utilise les boutons à droite.
   **Recentrer** rétablit la vue d’origine et **Reprendre** rend la main à la pêche.

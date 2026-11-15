@@ -195,6 +195,9 @@ export function run() {
     check('les compteurs, le vent et les commandes secondaires sont dans le menu',
         ['statsStrip', 'compass', 'windFill', 'endGameButton', 'pauseButton'].every(
             id => menu.includes('id="' + id + '"')));
+    const topBar = html.slice(html.indexOf('class="hud-top"'), html.indexOf('class="feed-gauge"'));
+    check('le menu, le score et les lignes partagent la barre du haut',
+        ['toolToggle', 'score', 'lignesLabel'].every(id => topBar.includes('id="' + id + '"')));
     check('le menu se replie derrière un seul bouton',
         html.includes('id="toolToggle"') && css.includes('.tool-dock.ouvert'));
     check('les commandes de caméra sont masquées au départ',

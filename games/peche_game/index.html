@@ -8,14 +8,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=113">
+    <link rel="stylesheet" href="style.css?v=114">
 </head>
 <body>
     <div class="game-wrap">
         <canvas id="gameCanvas"></canvas>
         <div class="hud">
-            <button class="tool-toggle" id="toolToggle" aria-label="Ouvrir le menu"
-                aria-controls="toolDock" aria-expanded="false">☰ Menu</button>
+            <div class="hud-top">
+                <button class="tool-toggle" id="toolToggle" aria-label="Ouvrir le menu"
+                    aria-controls="toolDock" aria-expanded="false">☰ Menu</button>
+                <div class="hud-counters">
+                    <span>Score : <span id="score">0</span></span>
+                    <span id="lignesLabel">🧵 Lignes : 5/5</span>
+                </div>
+            </div>
             <div class="feed-gauge" id="feedGauge">
                 <div class="feed-gauge-bar">
                     <div class="feed-gauge-fill" id="feedGaugeFill"></div>
@@ -58,7 +64,6 @@
                 <div class="stats-strip" id="statsStrip">
                     <div class="bourriche-label" id="bourricheLabel">🧺 Bourriche : 0</div>
                     <div class="bourriche-label" id="xpLabel">⭐ 0 XP</div>
-                    <div class="bourriche-label" id="lignesLabel">🧵 Lignes : 5/5</div>
                 </div>
                 <div class="hud-compass" id="compass">🧭 Nord en haut · ☀️ soleil au sud-ouest</div>
                 <div class="wind-gauge">
@@ -262,7 +267,6 @@
                     </div>
                 </div>
             </div>
-            <div class="hud-score">Score : <span id="score">0</span></div>
             <div class="catch-message" id="catchMessage"></div>
             <div class="struggle" id="struggle">
                 <div class="struggle-info" id="struggleInfo">Poisson</div>
@@ -311,6 +315,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=113"></script>
+    <script type="module" src="script.js?v=114"></script>
 </body>
 </html>

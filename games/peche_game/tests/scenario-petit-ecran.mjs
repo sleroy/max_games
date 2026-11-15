@@ -39,7 +39,7 @@ export function run() {
         el('bourricheLabel').textContent);
     check('l’XP reste accessible dans le menu',
         el('xpLabel').textContent.indexOf('XP') >= 0, el('xpLabel').textContent);
-    check('les lignes restent accessibles dans le menu',
+    check('les lignes restantes sont indiquées',
         el('lignesLabel').textContent.indexOf('Lignes') >= 0,
         el('lignesLabel').textContent);
 
