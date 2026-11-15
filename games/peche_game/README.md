@@ -50,9 +50,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
   l'eau). L'**XP de partie** affichée repart aussi à 0 ; le **carnet**, l'**XP
   carrière** (boutique), les **bouchons achetés** et le **classement** sont conservés.
-- **Interface** : une barre en haut regroupe le menu, le score et les lignes
-  restantes. L’action en cours s’affiche en bas. La pause, le son, le plein
-  écran, les outils et les autres statistiques se trouvent dans le menu.
+- **Interface** : la barre du haut regroupe le menu, le score, les lignes,
+  le vent et la profondeur de l’hameçon. Règle la profondeur avec **−** et **+**.
+  La coupe de l’eau et les autres commandes se trouvent dans le menu.
+- **Sonar flottant** : débloque-le pour **150 XP carrière** dans **Carnet →
+  Boutique**. **Menu → Poser le sonar** le place au bouchon ou près de ta
+  berge. Le radar indique les poissons dans un rayon de **12 m**. Tu peux
+  ranger le sonar et le réutiliser dans une autre partie.
 - **Vue** : ouvre `Menu → Vue` entre deux actions. Écarte ou rapproche deux doigts
   pour zoomer, tourne-les pour orienter la caméra, ou utilise les boutons à droite.
   **Recentrer** rétablit la vue d’origine et **Reprendre** rend la main à la pêche.

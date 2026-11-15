@@ -1683,10 +1683,6 @@ body.calm .struggle-marker {
     max-width: none;
 }
 
-.tool-dock .depth-panel.indisponible {
-    display: none;
-}
-
 .stats-strip {
     display: flex;
     flex-wrap: wrap;
@@ -1721,12 +1717,6 @@ body.calm .struggle-marker {
 }
 
 @media (max-height: 430px) {
-    .tool-dock .depth-cross,
-    .tool-dock .depth-hint,
-    .tool-dock .depth-range {
-        display: none;
-    }
-
     .hud-bottom {
         bottom: calc(8px + env(safe-area-inset-bottom, 0px));
         gap: 4px;
@@ -1739,5 +1729,88 @@ body.calm .struggle-marker {
     #fishButton {
         min-height: 48px;
         padding: 7px 16px;
+    }
+}
+
+
+.hud-depth {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hud-depth .depth-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+}
+
+.hud-depth-readout {
+    font-size: 0.8rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.hud-depth-readout strong {
+    display: block;
+    font-variant-numeric: tabular-nums;
+}
+
+.hud-top .wind-bar {
+    width: clamp(24px, 7vw, 78px);
+}
+
+.sonar-panel {
+    position: absolute;
+    top: calc(60px + env(safe-area-inset-top, 0px));
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 10px;
+    background: #102a36e8;
+    color: #fff;
+    font-size: 0.78rem;
+}
+
+.sonar-panel[hidden],
+.tool-dock.ouvert ~ .sonar-panel {
+    display: none;
+}
+
+#sonarRadar {
+    width: min(94px, 22vh);
+    height: auto;
+    aspect-ratio: 1;
+}
+
+@media (max-width: 530px) {
+    .hud-top {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 2px 8px;
+    }
+
+    .hud-counters {
+        grid-column: 2;
+    }
+
+    .hud-top .wind-gauge {
+        grid-column: 1;
+        padding-inline-start: 6px;
+    }
+
+    .hud-depth {
+        justify-content: flex-end;
+    }
+
+    .tool-dock,
+    .sonar-panel {
+        top: calc(104px + env(safe-area-inset-top, 0px));
+    }
+
+    .tool-dock {
+        max-height: calc(100% - 112px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     }
 }

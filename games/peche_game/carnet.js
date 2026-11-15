@@ -37,6 +37,7 @@ export function chargerCarnet(options) {
         });
         if (typeof saved.bouchon === 'string') { setFlotteur(saved.bouchon); }
         data.experience = Math.max(0, Math.floor(saved.experience || 0));
+        data.sonar = saved.sonar === true;
         data.technique = saved.technique === 'quiver' ? 'quiver' : 'bouchon';
         data.bouchons = bouchonsDepart.slice();
         const achetes = Array.isArray(saved.bouchons) ? saved.bouchons : [];

@@ -226,6 +226,39 @@ export function run() {
     checkEqual('on garde le bouchon de départ équipé', G().getFloatType(), 'anglaise');
     G().lilyPads.length = 0;
 
+    group('62) Sonar flottant : achat, détection et rangement');
+    const buySonar = () => fire('boutique', 'click', { target: { dataset: { action: 'acheter', id: 'sonar' } } });
+    G().setExperience(149);
+    buySonar();
+    checkEqual('le sonar reste verrouillé sous 150 XP', el('sonarButton').hidden, true);
+    checkEqual('un achat refusé ne coûte rien', G().getExperience(), 149);
+    G().setExperience(300);
+    buySonar();
+    checkEqual('le sonar coûte 150 XP', G().getExperience(), 150);
+    checkEqual('le sonar acheté apparaît dans le menu', el('sonarButton').hidden, false);
+    buySonar();
+    checkEqual('le même sonar ne peut pas être racheté', G().getExperience(), 150);
+
+    resetToIdle();
+    clearLilyPads();
+    checkEqual('on lance pour placer le sonar au bouchon', castTo(0, -25), 'inWater');
+    const floatPosition = G().floatGroup.position;
+    const oldPositions = G().fishes.map(fish => fish.position.clone());
+    G().fishes.forEach((fish, index) => {
+        fish.position.set(floatPosition.x + (index === 0 ? 23 : 25), -2, floatPosition.z);
+    });
+    fire('sonarButton', 'click');
+    checkEqual('poser le sonar affiche le radar', el('sonarPanel').hidden, false);
+    checkEqual('seul le poisson dans le rayon de 12 m est détecté',
+        el('sonarCount').textContent, '1 poisson · 12 m');
+    G().fishes.forEach((fish, index) => fish.position.copy(oldPositions[index]));
+    fire('sonarButton', 'click');
+    checkEqual('ranger le sonar cache le radar', el('sonarPanel').hidden, true);
+    fire('sonarButton', 'click');
+    G().recommencerPartie();
+    checkEqual('une nouvelle partie range le sonar', el('sonarPanel').hidden, true);
+    checkEqual('le sonar reste acquis dans la nouvelle partie', el('sonarButton').hidden, false);
+
     G().setExperience(0);
     resetToIdle();
     G().setFloatType('anglaise');

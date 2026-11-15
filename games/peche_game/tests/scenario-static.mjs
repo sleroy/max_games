@@ -109,7 +109,7 @@ export function run() {
     check('sur mobile / tablette, les boutons font ≥ 48 px',
         !!tactileBtn && parseInt(tactileBtn[1], 10) >= 48,
         tactileBtn ? tactileBtn[1] + ' px' : 'règle tactile absente');
-    check('le panneau de profondeur a un titre clair', html.indexOf('🌊 Profondeur') >= 0);
+    check('le panneau de profondeur a un titre clair', html.includes('Profondeur de l’hameçon') && html.includes('Coupe de l’eau'));
     check('les textures sont chargées en local (aucun CDN)',
         script.includes("chargerTexture('ecorce.jpg'") && script.includes("chargerTexture('eau-normales.jpg'")
         && !/https?:\/\/[^'"]+\.(jpg|png)/.test(script));
@@ -192,12 +192,12 @@ export function run() {
     const toolsStart = html.indexOf('id="toolDock"');
     const toolsEnd = html.indexOf('id="cameraControls"');
     const menu = html.slice(toolsStart, toolsEnd);
-    check('les compteurs, le vent et les commandes secondaires sont dans le menu',
-        ['statsStrip', 'compass', 'windFill', 'endGameButton', 'pauseButton'].every(
+    check('les statistiques de carrière et les commandes secondaires sont dans le menu',
+        ['statsStrip', 'compass', 'endGameButton', 'pauseButton'].every(
             id => menu.includes('id="' + id + '"')));
     const topBar = html.slice(html.indexOf('class="hud-top"'), html.indexOf('class="feed-gauge"'));
-    check('le menu, le score et les lignes partagent la barre du haut',
-        ['toolToggle', 'score', 'lignesLabel'].every(id => topBar.includes('id="' + id + '"')));
+    check('la barre du haut regroupe les compteurs, le vent et la profondeur',
+        ['toolToggle', 'score', 'lignesLabel', 'windFill', 'windArrow', 'depthMinus', 'depthLabel', 'depthPlus'].every(id => topBar.includes('id="' + id + '"')));
     check('le menu se replie derrière un seul bouton',
         html.includes('id="toolToggle"') && css.includes('.tool-dock.ouvert'));
     check('les commandes de caméra sont masquées au départ',

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=114';
+import { SoundEngine } from './sound.js?v=115';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -98,7 +98,10 @@ const especeFiche = document.getElementById('especeFiche');
 const tabBtnEspeces = document.getElementById('tabBtnEspeces');
 let especeIndex = 0;             // poisson affiché dans l'onglet « Espèces »
 const toolDock = document.getElementById('toolDock');
-const depthPanel = document.getElementById('depthPanel');
+const sonarButton = document.getElementById('sonarButton');
+const sonarPanel = document.getElementById('sonarPanel');
+const sonarRadar = document.getElementById('sonarRadar');
+const sonarCount = document.getElementById('sonarCount');
 const cameraButton = document.getElementById('cameraButton');
 const cameraControls = document.getElementById('cameraControls');
 const toolToggle = document.getElementById('toolToggle');
@@ -1970,18 +1973,18 @@ function majEtiquetteProfondeur() {
     }
     const bornes = bornesProfondeur();
     depthLabel.textContent = (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m';
-    if (depthMinus) {
-        depthMinus.disabled = profondeurLigne <= bornes[0] + 0.01;
-    }
-    if (depthPlus) {
-        depthPlus.disabled = profondeurLigne >= bornes[1] - 0.01;
-    }
+    updateDepthButtons(bornes);
     // La plage du bouchon équipé : c'est ELLE qui fixe la limite de profondeur.
     if (depthRange) {
         const f = flotteurCourant();
         depthRange.textContent = f.nom + ' : ' + nombreMetres(bornes[0]) + ' à '
             + nombreMetres(bornes[1]) + (profondeurLigne >= bornes[1] - 0.01 ? ' (maxi)' : '');
     }
+}
+
+function updateDepthButtons(bornes, adjustable = true) {
+    depthMinus.disabled = !adjustable || profondeurLigne <= bornes[0] + 0.01;
+    depthPlus.disabled = !adjustable || profondeurLigne >= bornes[1] - 0.01;
 }
 
 let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
@@ -2495,7 +2498,8 @@ function updateToolDock() {
     const resting = (floatState === 'idle' || floatState === 'inWater') && cameraMode === 'normal';
     cameraButton.disabled = !resting || paused;
     feedButton.disabled = !resting || paused;
-    depthPanel.classList.toggle('indisponible', !resting || paused);
+    updateDepthButtons(bornesProfondeur(), resting && !paused && !cameraViewActive && castState === 'idle');
+    sonarButton.disabled = !sonarBuoy.visible && (!resting || paused);
     if (cameraViewActive && !resting) { setCameraView(false); }
 }
 
@@ -3188,7 +3192,100 @@ const fishThrowOrigin = new THREE.Vector3();
 // ---------------------------------------------------------------------------
 // Carnet de pêche (conservé dans le navigateur quand c'est possible)
 // ---------------------------------------------------------------------------
-const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice() };
+const SONAR_PRICE = 150;
+const SONAR_RADIUS = 24; // 12 m à l’échelle du jeu.
+const sonarBuoy = new THREE.Mesh(new THREE.SphereGeometry(0.29, 12, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffb62e, roughness: 0.55 }));
+sonarBuoy.visible = false;
+scene.add(sonarBuoy);
+const sonarContext = sonarRadar.getContext('2d');
+let sonarScanTimer = 0;
+
+function acheterSonar() {
+    if (journal.sonar || journal.experience < SONAR_PRICE) { return false; }
+    journal.experience -= SONAR_PRICE;
+    journal.sonar = true;
+    saveJournal();
+    renderJournal();
+    return true;
+}
+
+function rangerSonar() {
+    sonarBuoy.visible = false;
+    sonarPanel.hidden = true;
+    sonarButton.textContent = '📡 Poser le sonar';
+    sonarButton.setAttribute('aria-pressed', 'false');
+}
+
+function updateSonar(dt, time) {
+    if (!sonarBuoy.visible) { return; }
+    const origin = sonarBuoy.position;
+    origin.y = 0.13 + waterWaveHeightAt(origin.x, origin.z, time);
+    sonarScanTimer -= dt;
+    if (sonarScanTimer > 0) { return; }
+    sonarScanTimer = 0.2;
+
+    const center = sonarRadar.width / 2;
+    const radius = center - 4;
+    if (sonarContext) {
+        sonarContext.clearRect(0, 0, sonarRadar.width, sonarRadar.height);
+        sonarContext.strokeStyle = '#76b5ac';
+        for (const fraction of [0.5, 1]) {
+            sonarContext.beginPath();
+            sonarContext.arc(center, center, radius * fraction, 0, Math.PI * 2);
+            sonarContext.stroke();
+        }
+        sonarContext.fillStyle = '#ffc454';
+        sonarContext.fillRect(center - 2, center - 2, 4, 4);
+        sonarContext.fillStyle = '#9df5c6';
+    }
+
+    let detected = 0;
+    for (const fish of fishes) {
+        if (fish === heldFish || fish.userData.hooked) { continue; }
+        const dx = fish.position.x - origin.x;
+        const dz = fish.position.z - origin.z;
+        if (dx * dx + dz * dz > SONAR_RADIUS ** 2) { continue; }
+        detected += 1;
+        if (sonarContext) {
+            sonarContext.beginPath();
+            sonarContext.arc(center + dx / SONAR_RADIUS * radius,
+                center + dz / SONAR_RADIUS * radius, 2.6, 0, Math.PI * 2);
+            sonarContext.fill();
+        }
+    }
+    const label = detected + (detected === 1 ? ' poisson' : ' poissons') + ' · 12 m';
+    if (sonarCount.textContent !== label) {
+        sonarCount.textContent = label;
+        sonarRadar.setAttribute('aria-label', 'Radar, nord en haut. ' + label);
+    }
+}
+
+sonarButton.addEventListener('click', () => {
+    if (!journal.sonar) { return; }
+    if (sonarBuoy.visible) {
+        rangerSonar();
+    } else {
+        if (paused || (floatState !== 'idle' && floatState !== 'inWater')) { return; }
+        if (floatState === 'inWater') {
+            sonarBuoy.position.copy(floatGroup.position);
+        } else {
+            const angle = Math.atan2(angler.position.z - POND_CENTER.z, angler.position.x - POND_CENTER.x);
+            const distance = rayonEtang(angle) - 4;
+            sonarBuoy.position.set(POND_CENTER.x + Math.cos(angle) * distance, 0.13,
+                POND_CENTER.z + Math.sin(angle) * distance);
+        }
+        sonarBuoy.visible = true;
+        sonarPanel.hidden = false;
+        sonarButton.textContent = '📡 Ranger le sonar';
+        sonarButton.setAttribute('aria-pressed', 'true');
+        sonarScanTimer = 0;
+        updateSonar(0, elapsed);
+    }
+    fermerOutils();
+});
+
+const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false, technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice() };
 // Compteur de la PARTIE en cours (la bourriche), distinct du carnet persistant
 // (`journal.total` = total de toutes les parties).
 let bourricheCount = 0;
@@ -3386,6 +3483,15 @@ function renderBoutique() {
             + '<div class="shop-desc">' + f.desc + '</div>'
             + bouton + '</div>';
     });
+    const owned = journal.sonar;
+    sonarButton.hidden = !owned;
+    html += '<div class="shop-item' + (owned ? ' owned' : '') + '">'
+        + '<div class="shop-name">📡 Sonar flottant</div>'
+        + '<div class="shop-desc">Repère les poissons à 12 m autour du sonar. Pose-le depuis le menu.</div>'
+        + (owned ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
+            : '<button class="shop-btn buy" data-id="sonar" data-action="acheter"'
+                + (journal.experience < SONAR_PRICE ? ' disabled' : '') + '>Acheter · ' + SONAR_PRICE + ' XP</button>')
+        + '</div>';
     boutique.innerHTML = html;
 }
 
@@ -3417,6 +3523,10 @@ boutique.addEventListener('click', event => {
         return;
     }
     const id = cible.dataset.id;
+    if (id === 'sonar' && cible.dataset.action === 'acheter') {
+        if (acheterSonar()) { sound.catchFish(); }
+        return;
+    }
     if (cible.dataset.action === 'equiper') {
         ensureSound();
         setFloatType(id);
@@ -6879,19 +6989,15 @@ feedButton.addEventListener('click', () => {
     fermerOutils();
 });
 
-// Réglage de la profondeur de la ligne (− / +).
-if (depthMinus) {
-    depthMinus.addEventListener('click', function () {
-        ensureSound();
-        setProfondeur(profondeurLigne - 0.5);
-    });
+// Les commandes restent visibles même quand la ligne est occupée.
+function clickDepth(delta) {
+    if (paused || cameraViewActive || castState !== 'idle'
+            || (floatState !== 'idle' && floatState !== 'inWater')) { return; }
+    ensureSound();
+    setProfondeur(profondeurLigne + delta);
 }
-if (depthPlus) {
-    depthPlus.addEventListener('click', function () {
-        ensureSound();
-        setProfondeur(profondeurLigne + 0.5);
-    });
-}
+depthMinus.addEventListener('click', () => clickDepth(-0.5));
+depthPlus.addEventListener('click', () => clickDepth(0.5));
 majEtiquetteProfondeur();
 // Le jeu est initialisé : la coupe de l'eau (schéma) peut se dessiner.
 coupePrete = true;
@@ -7159,6 +7265,7 @@ function animate() {
         updateBiteView(dt);
         updateWater(elapsed);
         updateFish(dt, elapsed);
+        updateSonar(dt, elapsed);
         updateFloat(dt, elapsed);
         // La coupe de l'eau suit le bouchon (5 fois par seconde suffit).
         if (elapsed - dernierCoupe > 0.2) {
@@ -7327,6 +7434,7 @@ function fermerClassement() {
 // `raison` vaut 'lignes' (défaut) ou 'manuelle'.
 function terminerPartie(raison) {
     if (partieTerminee) { return; }
+    rangerSonar();
     setCameraView(false);
     if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
     const manuelle = raison === 'manuelle';
@@ -7395,6 +7503,7 @@ function majModalBackdrop() {
 }
 
 function revenirAccueil() {
+    rangerSonar();
     if (gameOver) { gameOver.classList.remove('active'); }
     if (classement) { classement.classList.remove('active'); }
     if (accueil) { accueil.classList.add('active'); }
@@ -7405,6 +7514,7 @@ function revenirAccueil() {
 // et état de pêche. Le carnet (`journal`), l'XP, les bouchons achetés et le
 // classement sont PERSISTANTS : on ne les efface pas ici.
 function reinitialiserPartie() {
+    rangerSonar();
     // --- État de pêche / animations ---
     if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
     ligneTendue = false;
@@ -8188,6 +8298,7 @@ window.__game = {
         updateBiteView(dt);
         updateWater(testTime);
         updateFish(dt, testTime);
+        updateSonar(dt, testTime);
         updateFloat(dt, testTime);
         updateFeed(dt);
         updateChum(dt);

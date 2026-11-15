@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=114">
+    <link rel="stylesheet" href="style.css?v=115">
 </head>
 <body>
     <div class="game-wrap">
@@ -20,6 +20,16 @@
                 <div class="hud-counters">
                     <span>Score : <span id="score">0</span></span>
                     <span id="lignesLabel">🧵 Lignes : 5/5</span>
+                </div>
+                <div class="wind-gauge">
+                    <span class="wind-label">Vent</span>
+                    <div class="wind-bar"><div class="wind-fill" id="windFill"></div></div>
+                    <span class="wind-arrow" id="windArrow" aria-hidden="true">➤</span>
+                </div>
+                <div class="hud-depth" role="group" aria-label="Profondeur de l’hameçon">
+                    <button class="depth-btn" id="depthMinus" aria-label="Moins profond" title="Moins profond">−</button>
+                    <span class="hud-depth-readout">Profondeur <strong id="depthLabel">1,3 m</strong></span>
+                    <button class="depth-btn" id="depthPlus" aria-label="Plus profond" title="Plus profond">+</button>
                 </div>
             </div>
             <div class="feed-gauge" id="feedGauge">
@@ -38,25 +48,17 @@
                     <button class="feed-button" id="feedButton">🥣 Nourrir</button>
                     <button class="journal-button" id="journalButton">📖 Carnet</button>
                     <button class="journal-button" id="rankingButton">🏆 Classement</button>
+                    <button id="sonarButton" hidden aria-pressed="false">📡 Poser le sonar</button>
                     <button class="end-game-button" id="endGameButton">🏁 Terminer</button>
                 </div>
                 <div class="depth-panel" id="depthPanel">
-                    <div class="depth-panel-head">
-                        <span class="depth-title">🌊 Profondeur</span>
-                        <span class="depth-label" id="depthLabel">1,3 m</span>
-                    </div>
+                    <div class="depth-panel-head"><span class="depth-title">Coupe de l’eau</span></div>
                     <div class="depth-cross" id="depthCross">
                         <div class="depth-bottom" id="depthBottomLine"></div>
                         <div class="depth-hookline" id="depthHookLine"></div>
                         <div class="depth-float" id="depthFloat"></div>
                         <div class="depth-hook" id="depthHook"></div>
                         <span class="depth-zone" id="depthZoneLabel">mi-eau</span>
-                    </div>
-                    <div class="depth-actions">
-                        <button class="depth-btn" id="depthMinus"
-                            aria-label="Moins profond : remonter l’hameçon vers la surface">⬆️ Moins profond</button>
-                        <button class="depth-btn" id="depthPlus"
-                            aria-label="Plus profond : descendre l’hameçon vers le fond">⬇️ Plus profond</button>
                     </div>
                     <div class="depth-hint" id="depthHint">Fond ici : —</div>
                     <div class="depth-range" id="depthRange">Bouchon : —</div>
@@ -66,11 +68,10 @@
                     <div class="bourriche-label" id="xpLabel">⭐ 0 XP</div>
                 </div>
                 <div class="hud-compass" id="compass">🧭 Nord en haut · ☀️ soleil au sud-ouest</div>
-                <div class="wind-gauge">
-                    <span class="wind-label">Vent</span>
-                    <div class="wind-bar"><div class="wind-fill" id="windFill"></div></div>
-                    <span class="wind-arrow" id="windArrow">➤</span>
-                </div>
+            </div>
+            <div class="sonar-panel" id="sonarPanel" hidden>
+                <canvas id="sonarRadar" width="104" height="104" role="img" aria-label="Radar du sonar"></canvas>
+                <span id="sonarCount">0 poisson</span>
             </div>
             <div class="camera-controls" id="cameraControls" hidden role="group" aria-label="Commandes de la caméra">
                 <div class="camera-turn">
@@ -315,6 +316,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=114"></script>
+    <script type="module" src="script.js?v=115"></script>
 </body>
 </html>
