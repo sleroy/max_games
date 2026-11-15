@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=155';
+import { SoundEngine } from './sound.js?v=156';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -30,6 +30,7 @@ import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerAmorcage } from './amorcage.js?v=153';
 import { creerFrein } from './frein.js?v=154';
 import { creerLigne } from './ligne.js?v=155';
+import { creerBouchons } from './bouchons.js?v=156';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -44,11 +45,13 @@ function lienEtat(nom, lire, ecrire) {
 lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function (v) { BATEAU_PAS_ANGLE = v; });
 lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
 lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
+lienEtat('BOUCHONS_DE_DEPART', function () { return BOUCHONS_DE_DEPART; }, function (v) { BOUCHONS_DE_DEPART = v; });
 lienEtat('CAST_DURATION', function () { return CAST_DURATION; }, function (v) { CAST_DURATION = v; });
 lienEtat('CHUM_ATTRACT_ACCEL', function () { return CHUM_ATTRACT_ACCEL; }, function (v) { CHUM_ATTRACT_ACCEL = v; });
 lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
 lienEtat('FEED_MAX_RANGE', function () { return FEED_MAX_RANGE; }, function (v) { FEED_MAX_RANGE = v; });
 lienEtat('FEED_MIN_RANGE', function () { return FEED_MIN_RANGE; }, function (v) { FEED_MIN_RANGE = v; });
+lienEtat('FLOTTEURS', function () { return FLOTTEURS; }, function (v) { FLOTTEURS = v; });
 lienEtat('FLOTTEUR_ECHELLE', function () { return FLOTTEUR_ECHELLE; }, function (v) { FLOTTEUR_ECHELLE = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('LINE_SEGMENTS', function () { return LINE_SEGMENTS; }, function (v) { LINE_SEGMENTS = v; });
@@ -78,6 +81,7 @@ lienEtat('biteTouche', function () { return biteTouche; }, function (v) { biteTo
 lienEtat('biteViewActive', function () { return biteViewActive; }, function (v) { biteViewActive = v; });
 lienEtat('biteViewHideTimer', function () { return biteViewHideTimer; }, function (v) { biteViewHideTimer = v; });
 lienEtat('biteViewTimer', function () { return biteViewTimer; }, function (v) { biteViewTimer = v; });
+lienEtat('bouchonPossede', function () { return bouchonPossede; }, function (v) { bouchonPossede = v; });
 lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
 lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
 lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
@@ -1859,7 +1863,7 @@ const {
     setFloatOpacity, bornesProfondeur, appliquerProfondeurVisuelle, majEtiquetteProfondeur,
     updateDepthButtons, setProfondeur
 } = creerLigne({
-    scene, flotteurCourant, depthLabel, nombreMetres, depthMinus, depthPlus, majCoupeProfondeur
+    scene, flotteurCourant: (...args) => flotteurCourant(...args), depthLabel, nombreMetres, depthMinus, depthPlus, majCoupeProfondeur
 });
 
 // ---------------------------------------------------------------------------
@@ -1921,173 +1925,18 @@ const FLOTTEUR_ECHELLE = 0.8;
 floatGroup.scale.setScalar(FLOTTEUR_ECHELLE);
 scene.add(floatGroup);
 
-// ---------------------------------------------------------------------------
-// Types de bouchons (flotteurs) : chacun a sa sensibilité à la touche.
-//   - plus sensible = fenêtre de ferrage plus longue, MAIS plus de fausses
-//     touches (le bouchon bouge pour un rien) ;
-//   - sur une touche en remontée : l'anglaise sort la moitié de sa tige, un
-//     bouchon court et sensible (waggler) se couche sur le côté.
-// ---------------------------------------------------------------------------
-// Capacités spéciales des bouchons. Les valeurs « neutres » valent 1.
-//   fenetre  : longueur de la fenêtre de ferrage (> 1 = plus facile)
-//   fausses  : nombre de fausses touches (< 1 = moins de pièges)
-//   avantage : avantage laissé au poisson au ferrage (< 1 = mieux pour toi)
-//   temps    : temps d'épreuve de force (> 1 = plus de temps)
-//   xp       : expérience gagnée (> 1 = plus d'expérience)
-//   voyant   : le bouchon reste visible la nuit
-const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false };
-
-// Bouchons offerts au départ (les autres s'ACHÈTENT avec l'expérience).
-const BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
-
-const FLOTTEURS = [
-    { id: 'anglaise', nom: 'Anglaise', profondeur: [0.6, 7.0], prix: 0, atout: '🎯 Très sensible', capacite: {}, sensibilite: 1.35, remontee: 'demi-tige', longueur: 0.45,
-      couleur: 0xff5a3c, corps: 0xf4f4f4,
-      desc: 'Anglaise : longue tige fine, très sensible. Sur une touche en remontée, la moitié de la tige ressort. Attention : elle bouge aussi sur les fausses touches !' },
-    { id: 'waggler', nom: 'Waggler', profondeur: [0.6, 7.0], prix: 0, atout: '🎯 Sensible', capacite: {}, sensibilite: 1.15, remontee: 'couche', longueur: 0.35,
-      couleur: 0xffd24d, corps: 0xf4f4f4,
-      desc: 'Waggler : bouchon court et fin pour l’eau calme. Très sensible ; quand le poisson remonte, il se couche sur le côté.' },
-    { id: 'coulisse', nom: 'Pose à coulisse', profondeur: [0.8, 7.0], prix: 0, atout: '⚖️ Sensibilité moyenne', capacite: {}, sensibilite: 0.85, remontee: 'couche', longueur: 0.5,
-      couleur: 0xd0552a, corps: 0xf4f4f4,
-      desc: 'Pose à coulisse : bouchon coulissant pour pêcher profond. Sensibilité moyenne, un peu moins de fausses touches.' },
-    { id: 'bolognaise', nom: 'Bolognaise', profondeur: [1.2, 7.0], prix: 0, atout: '🛡️ Peu de fausses touches', capacite: {}, sensibilite: 0.7, remontee: 'demi-tige', longueur: 0.8,
-      couleur: 0xe04a2a, corps: 0xffe066,
-      desc: 'Bolognaise : gros bouchon pour lancer loin. Peu sensible : la fenêtre de ferrage est courte, mais il y a moins de fausses touches.' },
-    // --- Bouchons à ACHETER avec l'expérience (capacités spéciales) ---
-    { id: 'plume', nom: 'Plume d’oie lumineuse', profondeur: [0.6, 7.0], prix: 40, remontee: 'couche', longueur: 0.4,
-      couleur: 0x8ef0c0, corps: 0xf7f7f7, atout: '💡 Visible la nuit',
-      capacite: { voyant: true, fenetre: 1.1 }, sensibilite: 1.0,
-      desc: 'Plume lumineuse : elle brille doucement, donc tu la vois même quand la nuit tombe. Un peu plus de temps pour ferrer.' },
-    { id: 'truque', nom: 'Bouchon truqué', profondeur: [0.6, 7.0], prix: 70, remontee: 'couche', longueur: 0.38,
-      couleur: 0xff7ad9, corps: 0xf4f4f4, atout: '🤫 Moins de fausses touches',
-      capacite: { fausses: 0.55 }, sensibilite: 1.2,
-      desc: 'Bouchon truqué : il ne bouge presque pas pour rien. Bien moins de fausses touches : tu serres au bon moment !' },
-    { id: 'plombee', nom: 'Waggler plombé', profondeur: [1.2, 7.0], prix: 110, remontee: 'couche', longueur: 0.4,
-      couleur: 0x2f6fd0, corps: 0xe8e8e8, atout: '🏋️ Combat plus court',
-      capacite: { temps: 1.25, avantage: 0.9 }, sensibilite: 0.9,
-      desc: 'Waggler plombé : bien posé dans l’eau, il fatigue le poisson. L’épreuve de force dure plus longtemps et le poisson a moins d’avance.' },
-    { id: 'maitre', nom: 'Bouchon du maître', profondeur: [0.6, 7.0], prix: 200, remontee: 'demi-tige', longueur: 0.55,
-      couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
-      capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
-      sensibilite: 1.25,
-      desc: 'Le bouchon du maître pêcheur : un peu tout à la fois (ferrage plus facile, moins de fausses touches, poisson moins combatif) et 50 % d’expérience en plus !' }
-];
-let flotteurChoix = 'anglaise';
-// Technique de pêche : 'bouchon' (flotteur) ou 'quiver' (scion de canne, hameçon au fond).
-let techniqueCourante = 'bouchon';
-let scionChoix = SCIONS_DE_DEPART[0];
-
-function trouverScion(id) {
-    for (let i = 0; i < SCIONS.length; i++) {
-        if (SCIONS[i].id === id) { return SCIONS[i]; }
-    }
-    return null;
-}
-
-function scionCourant() {
-    return trouverScion(scionChoix) || SCIONS[0];
-}
-
-// En quiver, le « bouchon » actif est le SCION : sensibilité et capacités suivent.
-function flotteurCourant() {
-    if (techniqueCourante === 'quiver') { return scionCourant(); }
-    for (let i = 0; i < FLOTTEURS.length; i++) {
-        if (FLOTTEURS[i].id === flotteurChoix) {
-            return FLOTTEURS[i];
-        }
-    }
-    return FLOTTEURS[0];
-}
-
-function appliquerFlotteurVisuel(f) {
-    // La tige s'allonge selon le modèle (elle ressort plus ou moins de l'eau).
-    floatStick.scale.y = f.longueur / 0.5;
-    floatStick.position.y = 0.04 + f.longueur / 2;
-    floatStick.material.color.set(f.couleur);
-    floatBody.material.color.set(f.corps);
-    floatStick.userData.longueur = f.longueur;
-    // Bouchons lumineux : une petite lueur propre les rend lisibles la nuit.
-    const lueur = capaciteBouchon(f).voyant;
-    if (floatStick.material.emissive) {
-        floatStick.material.emissive.set(lueur ? f.couleur : 0x000000);
-        floatStick.material.emissiveIntensity = lueur ? 0.9 : 0;
-    }
-    if (floatBody.material.emissive) {
-        floatBody.material.emissive.set(lueur ? 0x335566 : 0x000000);
-        floatBody.material.emissiveIntensity = lueur ? 0.45 : 0;
-    }
-    // Le bas de ligne et l'hameçon suivent la profondeur réglée.
-    appliquerProfondeurVisuelle();
-}
-
-function setFloatType(id) {
-    const f = trouverFlotteur(id);
-    // Un bouchon inconnu, ou pas encore acheté, ne peut pas être équipé.
-    if (!f || !bouchonPossede(f.id)) {
-        return;
-    }
-    flotteurChoix = f.id;
-    if (floatSelect.value !== f.id) {
-        floatSelect.value = f.id;
-    }
-    floatInfo.textContent = f.desc;
-    appliquerFlotteurVisuel(f);
-    // La profondeur est bornée par le bouchon choisi (une pose à coulisse va
-    // beaucoup plus profond qu'une anglaise).
-    setProfondeur(profondeurLigne);
-    journal.bouchon = f.id;
-    saveJournal();
-}
-
-function scionPossede(id) {
-    return journal.scions.indexOf(id) >= 0;
-}
-
-// Équipe un scion possédé (mode quiver).
-function setScion(id) {
-    const f = trouverScion(id);
-    if (!f || !scionPossede(f.id)) { return false; }
-    scionChoix = f.id;
-    journal.scion = f.id;
-    saveJournal();
-    if (scionSelect && scionSelect.value !== f.id) { scionSelect.value = f.id; }
-    if (techniqueCourante === 'quiver') { floatInfo.textContent = f.desc; }
-    return true;
-}
-
-function acheterScion(id) {
-    const f = trouverScion(id);
-    if (!f || scionPossede(id) || journal.experience < f.prix) { return false; }
-    journal.experience -= f.prix;
-    journal.scions.push(id);
-    saveJournal();
-    renderJournal();
-    return true;
-}
-
-// Retrouve un bouchon par son identifiant (ou null).
-function trouverFlotteur(id) {
-    for (let i = 0; i < FLOTTEURS.length; i++) {
-        if (FLOTTEURS[i].id === id) {
-            return FLOTTEURS[i];
-        }
-    }
-    return null;
-}
-
-// Capacités du bouchon donné (ou du bouchon équipé) : les valeurs manquantes
-// prennent la valeur neutre (CAPACITE_BASE).
-function capaciteBouchon(f) {
-    const c = (f || flotteurCourant()).capacite || {};
-    return {
-        fenetre: c.fenetre || CAPACITE_BASE.fenetre,
-        fausses: c.fausses || CAPACITE_BASE.fausses,
-        avantage: c.avantage || CAPACITE_BASE.avantage,
-        temps: c.temps || CAPACITE_BASE.temps,
-        xp: c.xp || CAPACITE_BASE.xp,
-        voyant: !!c.voyant
-    };
-}
+let BOUCHONS_DE_DEPART;
+let FLOTTEURS;
+let flotteurChoix;
+let techniqueCourante;
+let scionChoix;
+const {
+    trouverScion, flotteurCourant, appliquerFlotteurVisuel, setFloatType, scionPossede, setScion,
+    acheterScion, trouverFlotteur, capaciteBouchon
+} = creerBouchons({
+    SCIONS_DE_DEPART, SCIONS, appliquerProfondeurVisuelle, floatSelect, floatInfo, setProfondeur,
+    saveJournal, scionSelect, renderJournal
+});
 
 floatInfo.textContent = flotteurCourant().desc;
 appliquerFlotteurVisuel(flotteurCourant());
