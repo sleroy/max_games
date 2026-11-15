@@ -381,6 +381,48 @@ l'ajout des obstacles (14.2) la bouée peut atterrir dans une roche ou sur la li
   aucun ping avant le plouf ; ping après l'impact ; sonar refusé en combat /
   emmêlement ; lancer possible depuis la barque ; `Ranger` immédiat.
 
+### 14.8 Bug — la détection du FOND doit se faire sous le bouchon, à son arrivée
+
+Règle voulue : **la profondeur se choisit avant le lancer**, et la **détection du
+fond se fait par rapport à l'emplacement du bouchon quand il arrive** (là où il
+tombe vraiment), pas par rapport au point visé, ni à la berge.
+
+Ce que fait le code aujourd'hui (vérifié) :
+
+- `comportement.js:373` : à l'atterrissage, `floatGroup.position.copy(castTarget)` —
+  position et point visé coïncident **à cet instant**.
+- `comportement.js:389-401` : le verdict « hameçon dans la vase » est calculé **une
+  seule fois**, avec `profondeurLocale(castTarget.x, castTarget.z)`.
+- `comportement.js:422-431` : ensuite le bouchon **DÉRIVE au vent** (jusqu'à 4 unités
+  du point d'impact) et **le verdict n'est jamais recalculé**. L'hameçon peut donc
+  être dans la vase sans que le jeu le sache, ou flotter au-dessus d'une fosse alors
+  qu'il est déclaré au fond.
+- `script.js:1570-1573` et `carnetUI.js:148` : le **schéma de coupe** et le carnet,
+  eux, utilisent `floatGroup.position` (la position réelle, dérivée comprise) → **le
+  panneau et la décision du jeu peuvent se contredire**.
+
+- [ ] **Une seule source de vérité** : le fond est **toujours** évalué avec
+  `profondeurLocale(floatGroup.position.x, floatGroup.position.z)` — au moment de
+  l'atterrissage **et** après chaque dérive, jamais avec `castTarget` ni la position
+  du pêcheur.
+- [ ] **Réévaluation après dérive** : si le bouchon dérive au vent, le verdict
+  (« hameçon dans la vase », accrochage `fond`, zone surface / mi-eau / fond) est
+  **réactualisé** ; le schéma de coupe, le libellé du widget et l'état du jeu doivent
+  afficher **la même valeur au même instant**.
+- [ ] **Le lancer atterrit où il atterrit** : le point d'impact = `floatGroup.position`
+  à l'arrivée ; la profondeur choisie avant le lancer reste une **longueur
+  bouchon → hameçon** (en unités), pas une altitude absolue.
+- [ ] **Cas limites** : bord peu profond (`FOND_BORD` ≈ 1,4) avec une profondeur
+  réglée grande → vase/accrochage ; fosse profonde avec la même profondeur → pas
+  d'accrochage. Deux lancers à profondeur identique mais **points d'impact
+  différents** doivent donner **deux verdicts différents**.
+- [ ] **Tests à ajouter** : (a) le verdict utilise la position du bouchon et non
+  `castTarget` (on les décale et on vérifie que c'est la position du bouchon qui
+  gagne) ; (b) après une dérive au vent, le verdict est recalculé ; (c) la valeur
+  affichée par le schéma de coupe et celle utilisée par le jeu sont **égales** ;
+  (d) un lancer au bord et un lancer en fosse à profondeur égale donnent des
+  verdicts opposés.
+
 ## Scénarios de test ajoutés (v131–v139)
 
 - **57** : mode bateau (achat XP, embarquement au milieu, bornes de déplacement,
