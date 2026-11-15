@@ -64,6 +64,62 @@ export function creerComportement(deps) {
         return !zone || (etat.HOOK_DEPTH >= zone[0] - 0.5 && etat.HOOK_DEPTH <= zone[1] + 0.5);
     }
 
+    // ---------------------------------------------------------------------------
+    // PETIT COUP DE MOULINET (§14.9) : un léger mouvement de la manivelle fait bouger
+    // l'esche sur place et crée un remous ; les poissons déjà TOUT PROCHES s'y
+    // intéressent. Ce n'est pas un aimant : rayon ≈ 3 unités (BITE_INTEREST_RADIUS = 7),
+    // effet qui retombe en REMOUS_DUREE secondes, plafonné à 1. Un geste franc
+    // (≥ GESTE_RAPPEL_TOURS) ramène la ligne, comme avant. L'intensité vit dans
+    // etat.remous (0 → 1) ; elle n'existe que bouchon à l'eau, sans combat ni accrochage.
+    // ---------------------------------------------------------------------------
+    const REMOUS_RAYON = 3;           // unités, à pleine intensité et sensibilité 1
+    const REMOUS_DUREE = 3;           // secondes pour retomber de 1 à 0
+    const REMOUS_GAIN = 10;           // intensité gagnée par tour de manivelle (1 tour = 1 geste franc)
+    const GESTE_RAPPEL_TOURS = 0.3;   // au-delà (cumulé sur un même geste), on ramène la ligne
+    const GESTE_PAUSE = 0.5;          // secondes sans manivelle : le geste est terminé
+    etat.remous = 0;
+    etat.moulinetGeste = 0;
+    etat.moulinetRepos = 0;
+    etat.remousRond = 0;
+
+    // Les carnassiers en embuscade guettent le moindre remous ; un poisson méfiant
+    // (peu agressif) y réagit moins. Jamais plus de 1,3 : le rayon reste < 4 unités.
+    function sensibiliteRemous(data) {
+        const c = data.comp;
+        const ardeur = Math.min(1.2, Math.max(0.5, data.aggression || 0.8));
+        return Math.min(1.3, ardeur * (c && c.humeur === 'embuscade' ? 1.25 : 1));
+    }
+
+    // Distance à laquelle CE poisson sent le remous en ce moment (0 = rien).
+    function rayonRemous(data) {
+        return etat.remous > 0 ? REMOUS_RAYON * etat.remous * sensibiliteRemous(data) : 0;
+    }
+
+    // Appelé à chaque image bouchon à l'eau, avec les tours de manivelle de l'image.
+    // Renvoie true quand le geste est franc : il faut ramener la ligne.
+    function dandiner(dt, tours) {
+        etat.remous = Math.max(0, etat.remous - dt / REMOUS_DUREE);
+        etat.remousRond -= dt;
+        if (tours <= 0) {
+            etat.moulinetRepos += dt;
+            if (etat.moulinetRepos > GESTE_PAUSE) { etat.moulinetGeste = 0; }
+            return false;
+        }
+        etat.moulinetRepos = 0;
+        etat.moulinetGeste += tours;
+        if (etat.moulinetGeste >= GESTE_RAPPEL_TOURS) {
+            etat.moulinetGeste = 0;
+            etat.remous = 0;
+            return true;
+        }
+        etat.remous = Math.min(1, etat.remous + tours * REMOUS_GAIN);
+        if (etat.remousRond <= 0 && ripples.length < 10) {
+            etat.remousRond = 0.5;
+            spawnRipple(floatGroup.position);
+        }
+        return false;
+    }
+
     const etatsGroupes = {};
 
     // Humeur : l'espèce alterne ses phases (le brochet guette puis bondit, la tanche
@@ -283,12 +339,15 @@ export function creerComportement(deps) {
                 // (sauf les chasseurs nocturnes) et par eau trouble (pluie). Le poisson
                 // voit devant et sur les côtés, pas dans son dos : derrière lui, il ne
                 // sent l'appât que de très près (ligne latérale, odorat, barbillons).
-                const rayonInteret = rayonVueEspece(data);
                 const zoneEsp = data.profondeurZone;
-                const dansSaZone = hameconDansZone(data, zoneEsp)
-                    && baitDansDomaine(data)
+                const zoneOk = hameconDansZone(data, zoneEsp) && baitDansDomaine(data);
+                const vu = bd < rayonVueEspece(data) && zoneOk
                     && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd));
-                if (bd < rayonInteret && dansSaZone) {
+                // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout
+                // proche (même dans son dos : ligne latérale), mais ne le sort ni de sa zone
+                // de vie ni de sa couche d'eau (seul `vu` fait changer sa profondeur).
+                const senti = !vu && zoneOk && etat.floatState === 'inWater' && bd < rayonRemous(data);
+                if (vu || senti) {
                     etat.baitInterest = true;
                     data.targeting = true;
                     const inv = bd > 0.001 ? 1 / bd : 0;
@@ -296,7 +355,9 @@ export function creerComportement(deps) {
                     const k = Math.min(1, dt * 4);
                     data.vx += (bx * inv * wanted - data.vx) * k;
                     data.vz += (bz * inv * wanted - data.vz) * k;
-                    data.depth += (etat.HOOK_DEPTH - data.depth) * Math.min(1, dt * 2.5);
+                    if (vu) {
+                        data.depth += (etat.HOOK_DEPTH - data.depth) * Math.min(1, dt * 2.5);
+                    }
                 }
             }
             // Nage naturelle (cap, vitesse, banc, pauses, domaine vital) tant que le
@@ -398,6 +459,10 @@ export function creerComportement(deps) {
     }
 
     function updateFloat(dt, time) {
+        if (etat.floatState !== 'inWater') {
+            etat.remous = 0;            // pas de remous en combat, accrochage, emmêlement…
+            etat.moulinetGeste = 0;
+        }
         if (etat.floatState === 'flying') {
             etat.castT += dt / CAST_DURATION;
             if (etat.castT >= 1) {
@@ -420,6 +485,7 @@ export function creerComportement(deps) {
                     etat.waitTimer = 0;
                     etat.depuisLancement = 0;
                     etat.hameconDansLaVase = false;
+                    consumeCrankTurns();   // les tours donnés avant l'arrivée du bouchon sont perdus
                     if (modeQuiver.estActif()) { poserHameconAuFond(); }
                     // Verdict du fond SOUS LE BOUCHON, à son arrivée (§14.8) : trop
                     // profond pour l'eau d'ici, l'hameçon s'enfonce dans la vase et
@@ -452,7 +518,8 @@ export function creerComportement(deps) {
                 floatGroup.position.z = castTarget.z + (deriveZ / derive) * 4;
             }
             const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
-            floatGroup.position.y = 0.1 + houle;
+            // Un petit coup de moulinet fait trembler l'esche (le remous s'éteint en 3 s).
+            floatGroup.position.y = 0.1 + houle - 0.04 * etat.remous * Math.abs(Math.sin(time * 16));
             // Le bouchon a dérivé : le fond n'est plus forcément le même sous lui.
             if (jugerFond()) { return; }
             etat.depuisLancement += dt;
@@ -513,7 +580,8 @@ export function creerComportement(deps) {
             // Un tour de manivelle pendant l'attente : on ramène la ligne (pour
             // relancer ailleurs). La manivelle est le SEUL moyen de ramener la
             // ligne : ni le clic ni le clavier ne le font (voir pointerdown).
-            if (consumeCrankTurns() > 0) {
+            // Petit coup : remous (§14.9) ; geste franc : on ramène la ligne.
+            if (dandiner(dt, consumeCrankTurns())) {
                 startReel();
                 return;
             }

@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v180** (le fond se juge sous le bouchon : `verdictFond`)
+> Dernière mise à jour : **2026-11-15** · jeu **v181** (petit coup de moulinet : `dandiner`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -43,7 +43,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `environnement.js` | Étang : centre, rayon (90), contour, relief et 3 fosses, profondeur max, surface (ha), maillages du fond, de l'eau (`makeWaterGeometry`) et de la rive (`makeShoreGeometry`), **verdict du fond** (`verdictFond`, `MARGE_VASE`) | 298 | Monde (à faire seul) |
 | `poissons.js` | Population calculée d'après la surface et la biomasse (≈ 58 poissons, 100–300 kg/ha, solitaires rares, poissons de fond en fosse), fabrique 3D, bancs, spécimens hors norme, respawn | 773 | Poissons / contenu |
 | `combat.js` | Épreuve de force : tension, fatigue, ferrage, touche vue de près, clic utile, accrochage (état via `etat`) | 696 | Combat |
-| `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage, verdict du fond sous le bouchon (`jugerFond`) (état via `etat`) | 633 | Poissons / contenu |
+| `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage, verdict du fond sous le bouchon (`jugerFond`), remous du petit coup de moulinet (`dandiner`) (état via `etat`) | 701 | Poissons / contenu |
 | `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement, collision avec les obstacles, poste sur le ponton (état via `etat`) | 565 | Bateau / monde |
 | `lancerPoisson.js` | Lancer du poisson dans la bourriche : prise en main, lancer, arc de vol (état via `etat`) | 206 | Bourriche / lancer |
 | `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang à l'échelle du cadre (état via `etat`) | 159 | Carnet / UI |
@@ -414,3 +414,20 @@ n'alertait qu'à 0,25 du fond au lieu de 0,5).
   bouchon), `window.__game` : `getVerdictFond`, `castTarget`, `setWind`, `etat`. Ratchet 2999 → 2971.
 - Tests : `scenario-fond.mjs` (74) ; `scenario-profondeur.mjs` adapté (indice « Fond à » avec majuscule dans la vase,
   règle de 0,5 partagée par le schéma et le jeu).
+
+
+## 13. Petit coup de moulinet (v181) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §14.9. Un tour de manivelle ramenait toujours la ligne et n'attirait personne.
+
+- **`comportement.js`** (633 → 701 lignes) : `dandiner(dt, tours)` est appelé à chaque image bouchon à l'eau avec
+  les tours consommés. Moins de 0,3 tour cumulé (un geste = tours séparés de moins de 0,5 s) : remous
+  `etat.remous` (+10 par tour, plafonné à 1, −1/3 par seconde) et un rond à la surface. Au-delà : `startReel()`,
+  comme avant. `updateFish` : un poisson déjà dans sa zone d'eau et son domaine, mais pas intéressé de lui-même,
+  est « senti » s'il est à moins de `3 × remous × sensibilité` unités (sensibilité = agressivité bornée à 0,5–1,2,
+  ×1,25 pour les `embuscade`, plafond 1,3). Il approche comme un poisson intéressé, **sans** changer de couche.
+  `etat.remous` repasse à 0 hors `inWater`. Les tours donnés avant l'arrivée du bouchon sont jetés à l'atterrissage.
+- État ajouté à `etat` (propriétés de module, non reliées à `script.js`) : `remous`, `moulinetGeste`,
+  `moulinetRepos`, `remousRond`.
+- **`script.js`** : aucune modification de logique (versions de cache 181).
+- Tests : `scenario-dandine.mjs` (75).
