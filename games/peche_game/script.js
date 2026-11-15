@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=147';
+import { SoundEngine } from './sound.js?v=148';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -22,6 +22,7 @@ import { creerSplashes } from './splashes.js?v=144';
 import { creerCombat } from './combat.js?v=145';
 import { creerComportement } from './comportement.js?v=146';
 import { creerBateau } from './bateau.js?v=147';
+import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFIC
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
 lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
+lienEtat('annoncerRecord', function () { return annoncerRecord; }, function (v) { annoncerRecord = v; });
 lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
 lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
 lienEtat('bateauGroupe', function () { return bateauGroupe; }, function (v) { bateauGroupe = v; });
@@ -89,6 +91,7 @@ lienEtat('fishThrowPower', function () { return fishThrowPower; }, function (v) 
 lienEtat('fishThrowState', function () { return fishThrowState; }, function (v) { fishThrowState = v; });
 lienEtat('fishThrowT', function () { return fishThrowT; }, function (v) { fishThrowT = v; });
 lienEtat('fishThrowTarget', function () { return fishThrowTarget; }, function (v) { fishThrowTarget = v; });
+lienEtat('fishes', function () { return fishes; }, function (v) { fishes = v; });
 lienEtat('floatState', function () { return floatState; }, function (v) { floatState = v; });
 lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { flotteurChoix = v; });
 lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
@@ -115,8 +118,10 @@ lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v;
 lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
 lienEtat('score', function () { return score; }, function (v) { score = v; });
 lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
+lienEtat('showCatchMessage', function () { return showCatchMessage; }, function (v) { showCatchMessage = v; });
 lienEtat('signalerToucheRatee', function () { return signalerToucheRatee; }, function (v) { signalerToucheRatee = v; });
 lienEtat('snag', function () { return snag; }, function (v) { snag = v; });
+lienEtat('spawnFish', function () { return spawnFish; }, function (v) { spawnFish = v; });
 lienEtat('spawnFloatingText', function () { return spawnFloatingText; }, function (v) { spawnFloatingText = v; });
 lienEtat('spawnRipple', function () { return spawnRipple; }, function (v) { spawnRipple = v; });
 lienEtat('spawnSplash', function () { return spawnSplash; }, function (v) { spawnSplash = v; });
@@ -3814,188 +3819,16 @@ function setDifficulty(mode) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Lancer du poisson dans la bourriche
-// ---------------------------------------------------------------------------
-function bourricheDistance() {
-    return Math.hypot(BOURRICHE_POS.x - angler.position.x, BOURRICHE_POS.z - angler.position.z);
-}
-
-function fishThrowPowerFor(distance) {
-    return Math.max(0, Math.min(1,
-        (distance - FISH_THROW_MIN) / (FISH_THROW_MAX - FISH_THROW_MIN)));
-}
-
-// Le poisson est amené au bord : on le garde en main et on invite à le lancer.
-function startHoldingFish(fish) {
-    sound.playEpuisette();
-    heldFish = fish;
-    hookedFish = null;
-    fish.userData.hooked = false;
-    fish.userData.biting = false;
-    fish.visible = true;
-    fish.userData.details.visible = true;
-    fish.scale.setScalar(fish.userData.size * 0.75);
-    // Bien visible depuis la berge : levé au-dessus de l'épaule, côté caméra.
-    fish.rotation.set(0, Math.PI * 0.75, 0);
-    fish.position.set(angler.position.x + 1.5, 3.6, angler.position.z + 1.1);
-    floatState = 'holding';
-    floatGroup.position.copy(floatIdle);
-    fishThrowState = 'idle';
-    fishThrowTarget = fishThrowPowerFor(bourricheDistance());
-    fishButton.disabled = true;
-    fishButton.hidden = true;
-    const espece = fish.userData.espece ? fish.userData.espece + ' ' : '';
-    spawnFloatingText((fish.userData.espece || 'Poisson') + ' au bord !', fish.position, '#9ef0c0');
-    statusDisplay.textContent = espece + 'au bord ! Lance-le dans la bourriche 🧺 (appuie, maintiens, relâche au bon moment).';
-}
-
-function setFishThrowPower(value) {
-    fishThrowPower = Math.max(0, Math.min(1, value));
-    feedGaugeFill.style.width = (fishThrowPower * 100).toFixed(0) + '%';
-}
-
-function startFishThrow() {
-    if (floatState !== 'holding' || fishThrowState !== 'idle') {
-        return;
-    }
-    fishThrowState = 'charging';
-    fishThrowPhase = 0;
-    fishThrowTarget = fishThrowPowerFor(bourricheDistance());
-    setFishThrowPower(0);
-    feedGauge.classList.add('active');
-    feedGaugeTarget.style.left = (fishThrowTarget * 100).toFixed(0) + '%';
-    ensureSound();
-    statusDisplay.textContent = 'Dose la puissance : relâche quand la jauge passe sur le repère !';
-}
-
-function computeFishThrowLanding() {
-    const dx = BOURRICHE_POS.x - angler.position.x;
-    const dz = BOURRICHE_POS.z - angler.position.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const range = FISH_THROW_MIN + fishThrowPower * (FISH_THROW_MAX - FISH_THROW_MIN);
-    fishThrowLanding.set(
-        angler.position.x + (dx / d) * range + Math.cos(wind.dir) * wind.strength * FISH_THROW_WIND,
-        0.1,
-        angler.position.z + (dz / d) * range + Math.sin(wind.dir) * wind.strength * FISH_THROW_WIND
-    );
-}
-
-function releaseFishThrow() {
-    if (fishThrowState !== 'charging') {
-        return;
-    }
-    fishThrowState = 'flying';
-    fishThrowT = 0;
-    feedGauge.classList.remove('active');
-    computeFishThrowLanding();
-    fishThrowOrigin.set(angler.position.x + 1.1, 2.6, angler.position.z - 0.9);
-    if (heldFish) {
-        heldFish.position.copy(fishThrowOrigin);
-    }
-    sound.throwItem();
-    statusDisplay.textContent = 'Lancer du poisson…';
-}
-
-function finishHolding() {
-    fishThrowState = 'idle';
-    feedGauge.classList.remove('active');
-    fishButton.disabled = false;
-    fishButton.hidden = true;
-    floatState = 'idle';
-    fishCaught = false;
-    escaped = false;
-    floatGroup.position.copy(floatIdle);
-}
-
-// Réussi : le poisson tombe dans la bourriche (score + carnet).
-function storeHeldFish() {
-    const fish = heldFish;
-    if (fish) { sound.playPoissonSol(); }
-    finishHolding();
-    heldFish = null;
-    if (!fish) {
-        return;
-    }
-    const weight = fish.userData.weight;
-    scene.remove(fish);
-    const index = fishes.indexOf(fish);
-    if (index >= 0) {
-        fishes.splice(index, 1);
-    }
-    spawnFish();
-    caughtWeight = weight;
-    score++;
-    bourricheCount += 1;
-    scoreDisplay.textContent = score;
-    recordBattu = null;
-    // On enregistre d'abord : le carnet nous dit si c'est un NOUVEAU RECORD.
-    const entree = addJournalEntry(weight, fish.userData.espece);
-    showCatchMessage(weight, fish.userData.espece, entree.nouveauRecord,
-        fish.userData.horsNorme);
-    const gainXp = gagnerExperience(weight);
-    sound.catchFish();
-    spawnRipple(BOURRICHE_POS);
-    spawnSplash(BOURRICHE_POS);
-    if (entree.nouveauRecord) {
-        annoncerRecord(weight, fish.userData.espece, entree.ancienRecord,
-            fish.userData.horsNorme);
-        return;
-    }
-    statusDisplay.textContent = (fish.userData.horsNorme ? '✨ HORS NORME ! ' : '')
-        + 'Dans la bourriche ! ' + fish.userData.espece + ' — '
-        + fmtPoids(weight) + ' (+1 · +' + gainXp + ' XP) 🧺';
-}
-
-// Raté : le poisson retombe à l'eau et repart.
-function dropHeldFish() {
-    const fish = heldFish;
-    finishHolding();
-    heldFish = null;
-    if (!fish) {
-        return;
-    }
-    fish.scale.setScalar(fish.userData.size);
-    fish.rotation.set(0, 0, 0);
-    fish.userData.depth = Math.min(fish.userData.depth, -1.2);
-    fish.position.set(fishThrowLanding.x,
-        fish.userData.depth - fish.userData.topOffset, fishThrowLanding.z);
-    fish.userData.vx = Math.cos(wind.dir) * 2;
-    fish.userData.vz = Math.sin(wind.dir) * 2;
-    spawnRipple(fishThrowLanding);
-    spawnSplash(fishThrowLanding);
-    sound.escape();
-    statusDisplay.textContent = 'Raté ! Le poisson est retombé à l’eau…';
-}
-
-function updateFishThrow(dt) {
-    if (fishThrowState === 'charging') {
-        fishThrowPhase += FISH_THROW_OSC * dt;
-        const m = ((fishThrowPhase % 2) + 2) % 2;
-        setFishThrowPower(m < 1 ? m : 2 - m);
-    } else if (fishThrowState === 'flying') {
-        fishThrowT += dt / FISH_THROW_DURATION;
-        const t = Math.min(1, fishThrowT);
-        if (heldFish) {
-            heldFish.position.set(
-                fishThrowOrigin.x + (fishThrowLanding.x - fishThrowOrigin.x) * t,
-                fishThrowOrigin.y + (fishThrowLanding.y - fishThrowOrigin.y) * t + Math.sin(Math.PI * t) * 3.2,
-                fishThrowOrigin.z + (fishThrowLanding.z - fishThrowOrigin.z) * t
-            );
-            heldFish.rotation.x += dt * 6;
-        }
-        if (fishThrowT >= 1) {
-            const inBourriche = Math.hypot(
-                fishThrowLanding.x - BOURRICHE_POS.x,
-                fishThrowLanding.z - BOURRICHE_POS.z) < BOURRICHE_RADIUS;
-            if (inBourriche) {
-                storeHeldFish();
-            } else {
-                dropHeldFish();
-            }
-        }
-    }
-}
+const {
+    startHoldingFish, setFishThrowPower, startFishThrow, releaseFishThrow, storeHeldFish,
+    dropHeldFish, updateFishThrow
+} = creerLancerPoisson({
+    BOURRICHE_POS, angler, FISH_THROW_MIN, FISH_THROW_MAX, sound, floatGroup, floatIdle,
+    fishButton, statusDisplay, feedGaugeFill, feedGauge, feedGaugeTarget, ensureSound,
+    fishThrowLanding, wind, FISH_THROW_WIND, fishThrowOrigin, scene, scoreDisplay,
+    addJournalEntry, gagnerExperience, fmtPoids, FISH_THROW_OSC, FISH_THROW_DURATION,
+    BOURRICHE_RADIUS
+});
 
 // ---------------------------------------------------------------------------
 // Lancer de la canne au dosage (même jauge que l'amorce)
