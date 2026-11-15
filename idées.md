@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v185**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v186**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -821,7 +821,7 @@ la **partie** repart bien de zéro (accueil, score 0, 5/5 lignes), mais le **mon
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **2609 vérifications vertes** (v185) (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **2689 vérifications vertes** (v186) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
@@ -839,14 +839,16 @@ du poisson dans la bourriche.
   l'eau chaude de surface de l'eau froide profonde (le poisson se tient juste
   au-dessus). À brancher sur les `COMPORTEMENTS` d'`especes.js` (vitesse, couche,
   activité) ; rend les fosses et la barque vraiment utiles.
-- [ ] **Heures actives.** La touche est aujourd'hui purement aléatoire
-  (`biteSinkAt = 3 + rand() * 5`). La faire dépendre de **l'aube et du crépuscule**
-  (meilleures heures) et de la nuit pour les espèces déjà marquées `nocturne`
-  (sandre, silure, anguille, tanche). Effort faible : un facteur horaire sur le
-  délai de touche.
-- [ ] **Pression atmosphérique.** Dérivée de la météo existante (beau / rafales /
-  pluie) : pression qui monte = poissons actifs ; chute avant l'orage = pêche
-  fermée, puis coup de feu juste après la pluie.
+- [x] **Heures actives** — LIVRÉ v186. La touche dépend de l'heure (`physique.js`) : aube et crépuscule
+  = meilleures heures (délai × 0,75), midi neutre pour un diurne (× 1,0), nuit × 2,5 ; les espèces
+  `nocturne` (sandre, silure, anguille, tanche) font l'inverse (nuit × 1,0, midi × 2,5). Facteur
+  déterministe (aucun `rand()`), plancher d'activité 0,30 (jamais de division par ≈ 0). Heure et période
+  lisibles dans la barre du haut (« 🕒 6 h 30 · aube »).
+- [x] **Pression atmosphérique** — LIVRÉ v186. Dérivée de la météo (beau 1022 hPa, rafales 1004,
+  pluie 998, constante de temps 14 s) avec une tendance lissée : chute avant l'orage = jusqu'à × 2,2
+  (pêche presque fermée), hausse après la pluie = × 0,65 (coup de feu). Flèche ↗ / → / ↘ dans le HUD.
+  Facteur total borné à [0,5 ; 6] ; crochets de test `setHeure`, `setMeteo`, `setPression`,
+  `getFacteurTouche` (docs/modules.md §16).
 - [ ] **Eau trouble après la pluie.** La vision par espèce existe déjà : ajouter une
   turbidité qui la réduit (pluie, vent fort, barque qui remue le fond).
 - [ ] **Pluie = surface agitée → plus de fausses touches.** Sous la pluie, la surface

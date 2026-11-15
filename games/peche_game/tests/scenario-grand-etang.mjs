@@ -173,7 +173,7 @@ export function run() {
         fond.userData.homeX = bouchon.x;
         fond.userData.homeZ = bouchon.z;
         fond.userData.homeRadius = 20;
-        fond.userData.comp = Object.assign({}, fond.userData.comp, { vue: 12, nocturne: true });
+        fond.userData.comp = Object.assign({}, fond.userData.comp, { vue: 12, nocturne: false });   // diurne : facteur de touche neutre à midi (physique.js)
         fond.userData.vx = 0;
         fond.userData.vz = 0;
         check(nom + ' : un poisson de fond mord au fond de la fosse',

@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v184** (esches : `esches.js`)
+> Dernière mise à jour : **2026-11-15** · jeu **v186** (physique de l'eau : `physique.js`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -82,6 +82,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `obstacles.js` | Obstacles aquatiques (§14.2) : ponton (aussi poste de pêche), écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 671 | Monde / obstacles |
 | `esches.js` | Esches (§15.2) : maïs, ver, pain / flocons, bouillette, vif / leurre. Modèle pur (`ESCHES`, `coucheHamecon`, `efficaciteEsche` : espèce × couche × substrat) et système (`creerEsches` : décision d'un poisson arrivé sur l'hameçon, une fois par poisson et par lancer, message discret après plusieurs refus, étiquette du widget). Générateur local, jamais `rand()` | 150 | Esches / pêche |
 | `substrats.js` | Types de fond (§14.3) : sable, gravier, vase, roche, herbier. Grille déterministe (sans `rand()`) dérivée du relief, des fosses, de l'exposition au vent et des nénuphars/roseaux du décor. Source unique de la texture du fond (`pixelsFond`, `habillerFond`), de la carte du carnet (`rectsCarte`), du verdict de fond sous l'hameçon (`verdictFond`, accrochages vase / herbier / roche) et de l'habitat des poissons (`attirer`, `COMPORTEMENTS[...].substrats`). Plafond 800 | 522 | Monde / fonds |
+| `physique.js` | Physique de l'eau (§15.1) : heures actives et pression. Modèle pur (`heureDeJeu`, `phaseDeHeure`, `periodeDeJournee`, `texteHeure`, `activiteHoraire`, `facteurHoraire`, `PRESSION_CIBLE`, `facteurPression`, `limiterFacteur`, `flecheTendance`) et système (`creerPhysique` : pression suivie image par image, `etat.facteurTouche(comp)` appelé par `combat.js`, ligne « heure · pression » du HUD, `crochets` de test repris dans `window.__game` par `script.js`). Aucun `rand()`. Plafond 800 | ~230 | Météo / physique |
 | `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars (expose aussi leurs positions à `obstacles.js`) | 220 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
@@ -484,3 +485,30 @@ Demande du joueur : `idées.md` §15.2. L'hameçon était nu : tout poisson arri
 - **`boutique.js`** : section « Esches » (Acheter ×3, Équiper, Hameçon nu) ; **`ligne.js`** : couche du widget via `coucheHamecon`.
 - **Tests** : `etat.eschesActives = false` dans le harnais (tout poisson mord, comme avant) ; `scenario-esches.mjs` (77) l'active.
 - **`script.js`** : +4 lignes (ratchet 2980 → 2984).
+
+
+## 16. Heures actives et pression (v186) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §15.1 (la touche était purement aléatoire : `biteSinkAt = 3 + rand() * 5`).
+
+- **`physique.js`** (nouveau, plafond 800) : **un seul chemin de calcul** du délai de touche.
+  `facteurTouche(comp) = limiter( facteurHoraire × facteurPression )`, borné à [0,5 ; 6].
+  - **Horaire** : `dayPhase` 0 = 6 h (aube), 0,25 = 12 h, 0,5 = 18 h, 0,75 = minuit. Activité `a` ∈ [0,30 ; 1], facteur `0,75 / a`.
+    Diurne : 0,75 à midi (× 1,0), 1,0 à l'aube et au crépuscule (× 0,75), 0,30 la nuit (× 2,5). Nocturne (`COMPORTEMENTS[…].nocturne` :
+    sandre, silure, anguille, tanche) : 0,75 la nuit (× 1,0), 1,0 aux crépuscules, 0,30 à midi (× 2,5).
+  - **Pression** (dérivée de la météo de `meteo.js`) : cible beau 1022 hPa, rafales 1004, pluie 998, constante de temps 14 s de jeu.
+    Tendance ∈ [−1 ; 1] = vitesse de variation lissée. Facteur = (hausse : `1 − 0,35 t` ; chute : `1 + 1,2 |t|`) × niveau
+    (`1 + (1013 − p)/150`, borné 0,9–1,2). Chute avant l'orage = jusqu'à × 2,2 ; coup de feu après la pluie = × 0,65.
+- **`combat.js`** : `etat.biteSinkAt = (3 + rand() * 5) × etat.facteurTouche(comp)` (1er signal) et `(2 + rand() * 6) × …` (pauses
+  entre faux signaux). **Aucun tirage en plus** : le facteur est lu, jamais tiré.
+- **`meteo.js`** : `etat.meteoGelee` (crochet de test) arrête le minuteur du cycle.
+- **`script.js`** : +5 lignes (import, création, `majPhysique` à côté de `updateWeather` dans les deux boucles, spread des crochets
+  dans `window.__game`) ; `updateDayNight` ne fait plus avancer l'horloge si `etat.horlogeGelee`. Ratchet 3006 → 3011.
+- **`index.html`** : une ligne de HUD `#heureEau` sous la boussole (« 🕒 6 h 30 · aube · 1021 hPa ↗ »), sans popup.
+- **Crochets de test** (`window.__game`) : `setHeure(h)` (impose l'heure et gèle l'horloge ; `setHeure(null)` la relance), `getHeure()`,
+  `setMeteo(id)` (impose la météo et gèle son cycle), `setPression(p, tendance)` (fige ; `setPression(null)` rend la main à la météo),
+  `getPression()`, `getTendancePression()`, `getFacteurTouche(espèce | profil)`, `getTexteConditions()`.
+- **Harnais** : `run.mjs` appelle `debutScenario()` avant **chaque** scénario = `setGraine` (verrou conservé) + `setHeure(12)` +
+  `setPression(1013, 0)` : facteur ×1 posé explicitement pour les scénarios historiques. `forceBite(nocturne = false)` : le poisson du
+  test est diurne (il était `nocturne: true` pour la vue ; à midi les deux voient pareil).
+- Tests : `scenario-physique.mjs` (78).

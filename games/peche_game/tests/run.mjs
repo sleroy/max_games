@@ -13,6 +13,7 @@ import { installEnvironment, loadGame, cleanup, report, G } from './harness.mjs'
 // ce verrou, un test statistique peut passer un jour sur deux (mesuré : densité
 // des substrats x1,2 au lieu de x1,3, biomasse 93,8 kg/ha au lieu de 100).
 const GRAINE_TESTS = 20240101;
+
 import scenarioStatic from './scenario-static.mjs';
 import scenarioSound from './scenario-sound.mjs';
 import scenarioGameplay from './scenario-gameplay.mjs';
@@ -54,6 +55,17 @@ import { run as scenarioFond } from './scenario-fond.mjs';
 import { run as scenarioDandine } from './scenario-dandine.mjs';
 import { run as scenarioSubstrats } from './scenario-substrats.mjs';
 import { run as scenarioEsches } from './scenario-esches.mjs';
+import { run as scenarioPhysique } from './scenario-physique.mjs';
+
+// Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
+// Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
+// historiques supposent un facteur ×1 : on le pose explicitement (midi, 1013 hPa stable)
+// au lieu de laisser l'heure et la météo dériver d'un scénario à l'autre.
+function debutScenario() {
+    G().setGraine(GRAINE_TESTS);
+    G().setHeure(12);
+    G().setPression(1013, 0);
+}
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -62,85 +74,87 @@ try {
     scenarioStatic();          // fichiers, cohérence HTML <-> JS (pas de code exécuté)
     installEnvironment();
     await loadGame();
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioSound();           // sound.js avec un faux AudioContext
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioGameplay();        // lancer, bouchon, moulinet, remontée, nénuphars, vent
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioFeed();            // amorçage : boule de nourriture, jauge, attraction
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioBoutique();        // expérience (XP) et boutique de bouchons
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioRythme();          // rythme des touches : patience et bouchon calme
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioTouches();         // catalogue des touches (mouvements du bouchon)
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioRendu();           // rendu : tampon de profondeur et « voile blanc »
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioCarnet();          // carnet : onglets, carte de l’étang, zones des poissons
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioProfondeur();      // profondeur de la ligne, relief, vase, amorçage
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioStyles();          // un style de touches et de combat par espèce
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioLignes();          // lignes (vies), casse, fin de partie, classement
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioRagondin();        // ragondin voleur : 3 clics, vol, rareté
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioPostes();          // emplacements : les 4 bords de l'étang
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioSoleil();           // soleil fixe au sud-ouest + lumière par poste
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioEtang();            // étang généré : contour, eau, fond, rive, carte
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioPlacement();        // choix libre sur la carte vue de dessus
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioVase();             // la vase est tenace (rythme obligatoire)
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioOndulations();      // ondulations avant la touche : aléatoires
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioLancer();           // geste de lancer : armé, fouetté, orienté
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioJouer();            // JOUER = partie neuve (score, bourriche, lignes)
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioPetitEcran();       // petit écran : dock repliable + FOV
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioMessages();         // messages de touche : « Ça bouge » interdit
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioCarnassier();       // attaque de carnassier pendant la remontée
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioFin();              // fin volontaire, accueil modal, XP de partie, rares
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioDemelage();         // ligne tendue, emmêlement et mini-jeu de démêlage
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioQuiver();           // bouchon / quiver : scion, canne inclinée, ferrage
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioComportement();     // poissons réalistes, quiver au fond, accueil épuré
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioRemontee();         // la manivelle seule ramène la ligne (plus de clic)
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioVitesse();          // remontée trop rapide : poids du poisson + fil
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioBateau();           // mode bateau : barque achetable, ramer, pêche à bord
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioPortraits();        // panneau de combat court + portraits d'espèces
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioModules();          // contrat des modules (découpage, plafonds, cycles)
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioSonar();            // sonar : ping de sous-marin + ondes jaunes
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioGrandEtang();       // grand étang (v173) : rayon 90, fosses en barque, ≈ 58 poissons
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioObstacles();        // obstacles aquatiques (v174) : placement, accrochage, attraction, collision
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioFond();             // fond sous le bouchon (v180) : un seul verdict, dérive comprise
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioDandine();          // petit coup de moulinet (v181) : remous, rayon 3, décroissance, plafond
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioSubstrats();        // types de fond (v183) : répartition, habitat, risques, carte, widget
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
     scenarioEsches();           // esches (v184) : profils, touches, stock, persistance, boutique
-    G().setGraine(GRAINE_TESTS);
+    debutScenario();
+    scenarioPhysique();         // physique de l'eau (v186) : heures actives, pression, facteur de touche
+    debutScenario();
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
 } catch (error) {
     crashed = error;

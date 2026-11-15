@@ -81,6 +81,7 @@ export function run() {
 
     // --- 4) L'azimut ne bouge pas avec le temps : seule l'élévation varie ---
     G().placerAuPoste(0);
+    G().setHeure(null);          // le test mesure le cycle du jour : l'horloge (gelée à midi par run.mjs) repart
     const avant = rafraichirSoleil();
     for (let i = 0; i < 120; i++) {
         G().step(0.5);          // 60 s : un peu plus d'un huitième de journée

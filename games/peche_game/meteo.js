@@ -63,7 +63,7 @@ export function creerMeteo(deps) {
     scene.add(etat.rainPoints);
 
     function updateWeather(dt) {
-        weatherTimer -= dt;
+        weatherTimer -= etat.meteoGelee ? 0 : dt;     // meteoGelee : crochet de test (physique.js)
         if (weatherTimer <= 0) {
             weatherIndex = (weatherIndex + 1) % WEATHER_CYCLE.length;
             weatherTimer = WEATHER_CYCLE[weatherIndex].duree;

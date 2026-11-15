@@ -344,7 +344,8 @@ export function creerCombat(deps) {
         } else {
             etat.biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression, etat.biteStyle);
         }
-        etat.biteSinkAt = 3 + rand() * 5;       // longue attente possible (3 à 8 s) avant le 1er signal
+        // Longue attente possible (3 à 8 s) avant le 1er signal, × facteur d'heure et de pression (physique.js).
+        etat.biteSinkAt = (3 + rand() * 5) * etat.facteurTouche(fish.userData.comp);
         etat.biteSignalTimer = 0;
         etat.biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
         etat.strikeQuality = '';
@@ -492,7 +493,9 @@ export function creerCombat(deps) {
             if (etat.biteSignalTimer >= etat.biteSignalDuree) {
                 etat.bitePhase = 'floating';
                 etat.biteViewTimer = 0;
-                etat.biteSinkAt = 2 + rand() * 6;       // la pause peut être longue (2 à 8 s) avant le signal suivant
+                // La pause peut être longue (2 à 8 s) avant le signal suivant (même facteur que le premier).
+                etat.biteSinkAt = (2 + rand() * 6)
+                    * etat.facteurTouche(etat.biteFish ? etat.biteFish.userData.comp : null);
                 floatGroup.rotation.z = 0;
                 floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
             }
