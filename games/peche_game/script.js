@@ -3,12 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=132';
+import { SoundEngine } from './sound.js?v=133';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=132';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=133';
 import { creerClassement } from './classement.js';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=132';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=133';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -302,9 +302,17 @@ crank.addEventListener('pointermove', event => {
     crankSpeedWindow += ecart;
     if (crankSpeedWindow >= 0.6) {
         const toursParSeconde = (crankSpeedRad / TWO_PI) / crankSpeedWindow;
+        const fenetre = crankSpeedWindow;
+        const max = vitesseMaxTours();
         crankSpeedRad = 0;
         crankSpeedWindow = 0;
-        if (toursParSeconde > VITESSE_MANIVELLE_MAX * filEquipe().resistance) {
+        if (toursParSeconde > max) {
+            // PATINAGE : au-delà du maximum, le moulinet n'entraîne plus — les
+            // tours en trop sont PERDUS (l'effort est gaspillé). La ligne ne
+            // casse qu'en cas d'abus SOUTENU (voir avertirVitesse), sinon un
+            // enfant qui « moule » la manivelle perdrait sa ligne sans comprendre.
+            const excedent = (toursParSeconde - max) * fenetre * TWO_PI;
+            crankRotationDelta = Math.max(0, crankRotationDelta - excedent);
             crankSpeedStrikes += 1;
             if (crankSpeedStrikes >= 2) {
                 crankSpeedStrikes = 0;
@@ -6335,7 +6343,11 @@ function updateStruggle(dt) {
     struggle.lateral = (struggle.lateral || 0) * Math.max(0, 1 - dt * 1.6);
     if (!struggle.fatigueShown && struggle.elapsed > Math.min(2.5, endurance * 0.35)) {
         struggle.fatigueShown = true;
-        statusDisplay.textContent = 'Le poisson fatigue. Tourne plus vite !';
+        // Conseil HONNÊTE : inutile de dire « tourne plus vite » à qui tient un
+        // gros poisson, sa vitesse maximale est basse (la ligne patinerait).
+        statusDisplay.textContent = vitesseMaxTours() < VITESSE_MANIVELLE_MAX
+            ? 'Le poisson fatigue, mais ne force pas : remonte régulièrement.'
+            : 'Le poisson fatigue. Tourne plus vite !';
     }
     // 3) La barre et la position du poisson suivent la longueur de fil sortie.
     // 3) Frein : si on lâche du fil, le poisson reprend de la distance mais la
@@ -7939,7 +7951,7 @@ let testTime = 0;
 // trop rapide en coûte une. À zéro : fin de partie, nom du pêcheur et
 // classement local (3 onglets : poissons, poids total, records par espèce).
 // ---------------------------------------------------------------------------
-const VITESSE_MANIVELLE_MAX = 4.0;     // tours/s EN MOYENNE sur 0,6 s (il faut enchaîner)
+const VITESSE_MANIVELLE_MAX = 4.0;     // base : tours/s EN MOYENNE sur 0,6 s
 const RANKING_KEY = 'peche_max_games_classement';
 const NOM_KEY = 'peche_max_games_nom';
 let avertissementsVitesse = 0;
@@ -7979,7 +7991,33 @@ function casserLigne(raison) {
     if (totalLignes() === 0) { terminerPartie(); }
 }
 
-// Remontée trop rapide : un avertissement (toutes les 0,8 s au plus), puis le
+// ---------------------------------------------------------------------------
+// Remontée trop rapide : LA CHARGE COMPTE
+// ---------------------------------------------------------------------------
+// Le fil ne casse pas parce qu'on tourne vite : il casse parce que quelque
+// chose TIRE au bout. Deux conséquences :
+//   • sans poisson ferré (on rembobine un bouchon vide) : aucune limite ;
+//   • avec un poisson ferré : plus il est lourd, plus la vitesse permise est
+//     basse (et le fil choisi compte aussi).
+// Poids réels du jeu : ~0,1 kg (goujon) à ~106 kg (silure).
+function vitesseMaxTours() {
+    if (!hookedFish) { return Infinity; }
+    const poids = Math.max(0.05, hookedFish.userData.weight || 0);
+    // 0,1 kg ≈ 6,1 · 0,8 kg ≈ 5,4 · 2,8 kg ≈ 4,5 · 6 kg ≈ 3,6 · ≥ 20 kg = 2,5
+    const seuil = Math.max(2.5, VITESSE_MANIVELLE_MAX + 2.5 - 1.2 * Math.sqrt(poids));
+    return seuil * filEquipe().resistance;
+}
+
+// Chance qu'un avertissement casse vraiment la ligne : elle grandit avec le
+// poids du poisson (un goujon ne fait pas casser un fil, une carpe oui).
+function risqueCasseVitesse() {
+    if (!hookedFish) { return 0; }
+    const poids = Math.max(0.05, hookedFish.userData.weight || 0);
+    const facteur = Math.min(1.6, 0.4 + 0.4 * Math.sqrt(poids));
+    return Math.min(0.15, 0.015 * avertissementsVitesse * facteur);
+}
+
+// Remontée trop rapide : un avertissement (toutes les 1,5 s au plus), puis le
 // risque de casse augmente à chaque avertissement.
 function avertirVitesse() {
     if (partieTerminee) { return; }
@@ -7994,7 +8032,7 @@ function avertirVitesse() {
         statusDisplay.textContent = '⚠️ Tu remontes trop vite ! La ligne souffre ('
             + avertissementsVitesse + ' avertissement' + (avertissementsVitesse > 1 ? 's' : '') + ').';
     }
-    if (rand() < Math.min(0.10, 0.015 * avertissementsVitesse)) {
+    if (rand() < risqueCasseVitesse()) {
         casserLigne('Tu as remonté trop vite');
     }
 }
@@ -8380,6 +8418,13 @@ window.__game = {
     maxLignes: MAX_LIGNES,
     casserLigne: casserLigne,
     getAvertissements: function () { return avertissementsVitesse; },
+    // Règles de la « remontée trop rapide » (poids du poisson + fil choisi).
+    getVitesseMaxTours: function () { return vitesseMaxTours(); },
+    getRisqueCasseVitesse: function () { return risqueCasseVitesse(); },
+    setFilEquipe: function (id) {
+        if (TYPES_DE_FIL.some(function (fil) { return fil.id === id; })) { journal.ligne = id; }
+        return journal.ligne;
+    },
     avertirVitesse: avertirVitesse,
     getElapsed: function () { return elapsed; },
     ouvrirClassement: ouvrirClassement,
