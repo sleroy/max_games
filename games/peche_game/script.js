@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=159';
+import { SoundEngine } from './sound.js?v=160';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -34,6 +34,7 @@ import { creerBouchons } from './bouchons.js?v=156';
 import { creerPlacement } from './placement.js?v=157';
 import { creerMeteo } from './meteo.js?v=158';
 import { creerVie } from './vie.js?v=159';
+import { creerSonar } from './sonar.js?v=160';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -47,6 +48,7 @@ function lienEtat(nom, lire, ecrire) {
 }
 lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function (v) { BATEAU_PAS_ANGLE = v; });
 lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
+lienEtat('BATEAU_PRIX', function () { return BATEAU_PRIX; }, function (v) { BATEAU_PRIX = v; });
 lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
 lienEtat('BOUCHONS_DE_DEPART', function () { return BOUCHONS_DE_DEPART; }, function (v) { BOUCHONS_DE_DEPART = v; });
 lienEtat('CARTE_3D_BANDE_SEGMENTS', function () { return CARTE_3D_BANDE_SEGMENTS; }, function (v) { CARTE_3D_BANDE_SEGMENTS = v; });
@@ -63,6 +65,7 @@ lienEtat('FLOTTEURS', function () { return FLOTTEURS; }, function (v) { FLOTTEUR
 lienEtat('FLOTTEUR_ECHELLE', function () { return FLOTTEUR_ECHELLE; }, function (v) { FLOTTEUR_ECHELLE = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('LINE_SEGMENTS', function () { return LINE_SEGMENTS; }, function (v) { LINE_SEGMENTS = v; });
+lienEtat('SONAR_PRICE', function () { return SONAR_PRICE; }, function (v) { SONAR_PRICE = v; });
 lienEtat('TUTORIAL_STEPS', function () { return TUTORIAL_STEPS; }, function (v) { TUTORIAL_STEPS = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
 lienEtat('ZONES_CARTE', function () { return ZONES_CARTE; }, function (v) { ZONES_CARTE = v; });
@@ -190,6 +193,11 @@ lienEtat('showCatchMessage', function () { return showCatchMessage; }, function 
 lienEtat('signalerToucheRatee', function () { return signalerToucheRatee; }, function (v) { signalerToucheRatee = v; });
 lienEtat('snag', function () { return snag; }, function (v) { snag = v; });
 lienEtat('sonarBuoy', function () { return sonarBuoy; }, function (v) { sonarBuoy = v; });
+lienEtat('sonarDernierPing', function () { return sonarDernierPing; }, function (v) { sonarDernierPing = v; });
+lienEtat('sonarHorloge', function () { return sonarHorloge; }, function (v) { sonarHorloge = v; });
+lienEtat('sonarOndes', function () { return sonarOndes; }, function (v) { sonarOndes = v; });
+lienEtat('sonarPings', function () { return sonarPings; }, function (v) { sonarPings = v; });
+lienEtat('sonarScanTimer', function () { return sonarScanTimer; }, function (v) { sonarScanTimer = v; });
 lienEtat('spawnFish', function () { return spawnFish; }, function (v) { spawnFish = v; });
 lienEtat('spawnFloatingText', function () { return spawnFloatingText; }, function (v) { spawnFloatingText = v; });
 lienEtat('spawnRipple', function () { return spawnRipple; }, function (v) { spawnRipple = v; });
@@ -2089,183 +2097,19 @@ const {
 // ---------------------------------------------------------------------------
 // Carnet de pêche (conservé dans le navigateur quand c'est possible)
 // ---------------------------------------------------------------------------
-const SONAR_PRICE = 150;
-const BATEAU_PRIX = 180;
-const SONAR_RADIUS = 24; // 12 m à l’échelle du jeu.
-const sonarBuoy = new THREE.Mesh(new THREE.SphereGeometry(0.29, 12, 8),
-    new THREE.MeshStandardMaterial({ color: 0xffb62e, roughness: 0.55 }));
-sonarBuoy.visible = false;
-scene.add(sonarBuoy);
-const sonarContext = sonarRadar.getContext('2d');
-let sonarScanTimer = 0;
-
-// « Pings » de sonar : quand un poisson est repéré, le sonar émet un ping
-// de sous-marin ET une onde jaune qui s'étend à la surface de l'eau.
-// Pas plus d'un ping toutes les SONAR_PING_DELAI secondes (« de temps en temps »).
-const SONAR_PING_DELAI = 1.8;   // s — tempo minimale entre deux pings.
-const SONAR_ONDE_DUREE = 1.4;   // s — vie d'une onde jaune.
-const sonarOndeGeo = new THREE.RingGeometry(0.92, 1, 40);
-const sonarOndes = [];          // ondes jaunes vivantes (Mesh).
-let sonarHorloge = 0;           // secondes avancées par updateSonar (horloge du sonar).
-let sonarDernierPing = -Infinity;
-let sonarPings = 0;             // compteur de pings (pour les tests).
-
-// Émet une onde jaune à la surface, centrée sur la bouée du sonar.
-function emettreOndeSonar() {
-    const onde = new THREE.Mesh(sonarOndeGeo, new THREE.MeshBasicMaterial({
-        color: 0xffc454, transparent: true, opacity: 0.85,
-        side: THREE.DoubleSide, depthWrite: false
-    }));
-    onde.rotation.x = -Math.PI / 2; // à plat sur l'eau
-    onde.position.set(sonarBuoy.position.x, 0.1, sonarBuoy.position.z);
-    onde.userData.vie = 0;
-    scene.add(onde);
-    sonarOndes.push(onde);
-}
-
-// Fait disparaître immédiatement toutes les ondes (rangement du sonar).
-function effacerOndesSonar() {
-    while (sonarOndes.length > 0) {
-        const onde = sonarOndes.pop();
-        scene.remove(onde);
-        onde.material.dispose();
-    }
-}
-
-function acheterSonar() {
-    if (journal.sonar || journal.experience < SONAR_PRICE) { return false; }
-    journal.experience -= SONAR_PRICE;
-    journal.sonar = true;
-    saveJournal();
-    renderJournal();
-    return true;
-}
-
-// Achète la barque (un seul achat, pour toujours). Renvoie true si réussi.
-function acheterBateau() {
-    if (journal.bateau || journal.experience < BATEAU_PRIX) { return false; }
-    journal.experience -= BATEAU_PRIX;
-    journal.bateau = true;
-    saveJournal();
-    renderJournal();
-    return true;
-}
-
-function rangerSonar() {
-    sonarBuoy.visible = false;
-    effacerOndesSonar();
-    sonarPanel.hidden = true;
-    sonarButton.textContent = '📡 Poser le sonar';
-    sonarButton.setAttribute('aria-pressed', 'false');
-}
-
-function updateSonar(dt, time) {
-    if (!sonarBuoy.visible) { return; }
-    // Le sonar a SA propre horloge (dt cumulé) : la tempo des pings ne dépend
-    // ni de elapsed (jeu) ni de testTime (harnais de test).
-    sonarHorloge += dt;
-    const origin = sonarBuoy.position;
-    origin.y = 0.13 + waterWaveHeightAt(origin.x, origin.z, time);
-
-    // Les ondes jaunes vivent leur vie entre deux balayages : elles grandissent
-    // en s'estompant, en suivant doucement la houle.
-    for (let i = sonarOndes.length - 1; i >= 0; i--) {
-        const onde = sonarOndes[i];
-        onde.userData.vie += dt;
-        const progression = onde.userData.vie / SONAR_ONDE_DUREE;
-        if (progression >= 1) {
-            scene.remove(onde);
-            onde.material.dispose();
-            sonarOndes.splice(i, 1);
-            continue;
-        }
-        onde.position.y = 0.1
-            + waterWaveHeightAt(onde.position.x, onde.position.z, time) * 0.5;
-        onde.scale.setScalar(1 + progression * 6);
-        onde.material.opacity = 0.85 * (1 - progression);
-    }
-
-    sonarScanTimer -= dt;
-    if (sonarScanTimer > 0) { return; }
-    sonarScanTimer = 0.2;
-
-    const center = sonarRadar.width / 2;
-    const radius = center - 4;
-    if (sonarContext) {
-        sonarContext.clearRect(0, 0, sonarRadar.width, sonarRadar.height);
-        sonarContext.strokeStyle = '#76b5ac';
-        for (const fraction of [0.5, 1]) {
-            sonarContext.beginPath();
-            sonarContext.arc(center, center, radius * fraction, 0, Math.PI * 2);
-            sonarContext.stroke();
-        }
-        sonarContext.fillStyle = '#ffc454';
-        sonarContext.fillRect(center - 2, center - 2, 4, 4);
-        sonarContext.fillStyle = '#9df5c6';
-    }
-
-    let detected = 0;
-    for (const fish of fishes) {
-        if (fish === heldFish || fish.userData.hooked) { continue; }
-        const dx = fish.position.x - origin.x;
-        const dz = fish.position.z - origin.z;
-        if (dx * dx + dz * dz > SONAR_RADIUS ** 2) { continue; }
-        detected += 1;
-        if (sonarContext) {
-            sonarContext.beginPath();
-            sonarContext.arc(center + dx / SONAR_RADIUS * radius,
-                center + dz / SONAR_RADIUS * radius, 2.6, 0, Math.PI * 2);
-            sonarContext.fill();
-        }
-    }
-    // Poisson repéré : « ping » de sous-marin + onde jaune à la surface
-    // (pas plus d'un ping toutes les SONAR_PING_DELAI secondes).
-    if (detected > 0 && sonarHorloge - sonarDernierPing >= SONAR_PING_DELAI) {
-        // MÊME horloge des deux côtés : le « time » passé par l'animateur est
-        // l'horloge du JEU (grande après plusieurs parties), pas celle du
-        // sonar — les mélanger casse la tempo dès que le jeu a tourné.
-        sonarDernierPing = sonarHorloge;
-        sonarPings += 1;
-        sound.sonarPing();
-        emettreOndeSonar();
-    }
-    const label = detected + (detected === 1 ? ' poisson' : ' poissons') + ' · 12 m';
-    if (sonarCount.textContent !== label) {
-        sonarCount.textContent = label;
-        sonarRadar.setAttribute('aria-label', 'Radar, nord en haut. ' + label);
-    }
-}
-
-sonarButton.addEventListener('click', () => {
-    if (!journal.sonar) { return; }
-    if (sonarBuoy.visible) {
-        rangerSonar();
-    } else {
-        if (paused || (floatState !== 'idle' && floatState !== 'inWater')) { return; }
-        if (floatState === 'inWater') {
-            sonarBuoy.position.copy(floatGroup.position);
-        } else if (modeBateau) {
-            // Depuis la barque : le sonar part DEVANT, vers le centre de l'étang.
-            const dx = POND_CENTER.x - angler.position.x;
-            const dz = POND_CENTER.z - angler.position.z;
-            const d = Math.hypot(dx, dz) || 1;
-            sonarBuoy.position.set(angler.position.x + (dx / d) * 8, 0.13,
-                angler.position.z + (dz / d) * 8);
-        } else {
-            const angle = Math.atan2(angler.position.z - POND_CENTER.z, angler.position.x - POND_CENTER.x);
-            const distance = rayonEtang(angle) - 4;
-            sonarBuoy.position.set(POND_CENTER.x + Math.cos(angle) * distance, 0.13,
-                POND_CENTER.z + Math.sin(angle) * distance);
-        }
-        sonarBuoy.visible = true;
-        sonarPanel.hidden = false;
-        sonarButton.textContent = '📡 Ranger le sonar';
-        sonarButton.setAttribute('aria-pressed', 'true');
-        sonarScanTimer = 0;
-        sonarDernierPing = -Infinity; // un placement peut pinger tout de suite
-        updateSonar(0, elapsed);
-    }
-    fermerOutils();
+let SONAR_PRICE;
+let BATEAU_PRIX;
+let sonarBuoy;
+let sonarScanTimer;
+let sonarOndes;
+let sonarHorloge;
+let sonarDernierPing;
+let sonarPings;
+const {
+    acheterSonar, acheterBateau, rangerSonar, updateSonar
+} = creerSonar({
+    scene, sonarRadar, saveJournal, renderJournal, sonarPanel, sonarButton, waterWaveHeightAt,
+    sound, sonarCount, POND_CENTER, angler, rayonEtang, fermerOutils
 });
 
 const MAX_LIGNES = 5;

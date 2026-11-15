@@ -57,6 +57,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `placement.js` | Carte de placement vue de dessus (écran d’accueil) et hauteur du terrain (état via `etat`) | 399 | Monde / placement |
 | `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
 | `vie.js` | Vie ambiante (oiseaux, libellules, poisson qui saute) et bulles sous l’eau (état via `etat`) | 171 | Ambiance / faune |
+| `sonar.js` | Sonar : bouée, radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 199 | Sonar / boutique |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |
