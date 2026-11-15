@@ -141,6 +141,21 @@ export function fondY(x, z) {
     return -profondeurLocale(x, z);
 }
 
+// VERDICT DU FOND (§14.8) — SOURCE UNIQUE. La profondeur de la ligne (longueur
+// bouchon → hameçon, en unités) se choisit avant le lancer ; le fond se juge là où
+// est LE BOUCHON (x, z = floatGroup.position), jamais au point visé ni à la berge.
+// Le jeu (comportement.js) et le schéma de coupe (ligne.js) appellent cette seule
+// fonction : ils ne peuvent plus se contredire. Au quiver, l'hameçon est posé EN
+// APPUI sur le fond par construction (`auFond`) : jamais dans la vase.
+export const MARGE_VASE = 0.5;   // l'hameçon touche la vase à moins de 0,5 unité du fond
+export function verdictFond(x, z, profondeurLigne, auFond) {
+    const profondeurEau = profondeurLocale(x, z);
+    return {
+        profondeurEau,
+        dansLaVase: !auFond && profondeurLigne > profondeurEau - MARGE_VASE
+    };
+}
+
 // Maillage du fond : un disque « polaire » qui suit le contour, avec une
 // profondeur (`aDepth`) stockée par sommet pour foncer l'eau au large.
 export function makeFondGeometry(marge, rings, segments) {

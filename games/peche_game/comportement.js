@@ -15,7 +15,7 @@ export function creerComportement(deps) {
         fishes, animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL,
         ripples, spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
         risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond,
-        profondeurLocale, majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt,
+        verdictFond, majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt,
         nibbleRand, MAX_WAIT, consumeCrankTurns, startReel, findBitingFish, showBiteView,
         floatIdle, tenterAttaquePredateur, REEL_IDLE_HELP, REEL_AUTO, REEL_PER_TURN, angler,
         startHoldingFish, endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS,
@@ -363,6 +363,40 @@ export function creerComportement(deps) {
         });
     }
 
+    // ---------------------------------------------------------------------------
+    // FOND SOUS LE BOUCHON (§14.8). Le verdict « hameçon dans la vase » se calcule
+    // avec verdictFond à la position du bouchon (jamais au point visé) : à l'arrivée,
+    // puis à CHAQUE image tant que le bouchon flotte, donc aussi après une dérive au
+    // vent. Le schéma de coupe (ligne.js) utilise la même fonction.
+    // Renvoie true si l'hameçon vient de s'accrocher dans la vase (transition
+    // « pas dans la vase → dans la vase » : jamais de nouvel accrochage à chaque image).
+    // ---------------------------------------------------------------------------
+    function jugerFond() {
+        const pos = floatGroup.position;
+        const verdict = verdictFond(pos.x, pos.z, etat.profondeurLigne, modeQuiver.estActif());
+        const avant = etat.hameconDansLaVase;
+        etat.hameconDansLaVase = verdict.dansLaVase;
+        if (verdict.dansLaVase === avant) { return false; }
+        if (!verdict.dansLaVase) {
+            floatGroup.rotation.z = 0;   // le bouchon se redresse
+            majCoupeProfondeur();
+            return false;
+        }
+        // Pas d'accrochage pendant un combat, un accrochage déjà en cours, un
+        // emmêlement, une touche ou un poisson ferré.
+        if (etat.floatState !== 'inWater' || etat.snag || etat.struggle
+            || etat.hookedFish || etat.fishCaught || etat.biteFish) {
+            majCoupeProfondeur();
+            return false;
+        }
+        // La ligne accrochée reste là où le bouchon est vraiment.
+        castTarget.x = pos.x;
+        castTarget.z = pos.z;
+        startSnag('fond');
+        majCoupeProfondeur();
+        return true;
+    }
+
     function updateFloat(dt, time) {
         if (etat.floatState === 'flying') {
             etat.castT += dt / CAST_DURATION;
@@ -385,25 +419,12 @@ export function creerComportement(deps) {
                     etat.floatState = 'inWater';
                     etat.waitTimer = 0;
                     etat.depuisLancement = 0;
-                    if (modeQuiver.estActif()) { poserHameconAuFond(castTarget); }
-                    const profLocale = profondeurLocale(castTarget.x, castTarget.z);
-                    // Hameçon BEAUCOUP trop profond : il s'enfonce dans la vase et
-                    // s'y accroche (il faut le dégager à la main !).
-                    if (etat.profondeurLigne > profLocale + 0.3) {
-                        etat.hameconDansLaVase = true;
-                        startSnag('fond');
-                        majCoupeProfondeur();
-                        return;
-                    }
-                    // Profondeur réglée > profondeur de l'eau à cet endroit : l'hameçon
-                    // est DANS LA VASE → il s'y ACCROCHE, exactement comme dans les
-                    // nénuphars : il faut le dégager (même mini-jeu).
-                    etat.hameconDansLaVase = etat.profondeurLigne > profLocale - 0.5;
-                    if (etat.hameconDansLaVase) {
-                        startSnag('fond');
-                        majCoupeProfondeur();
-                        return;
-                    }
+                    etat.hameconDansLaVase = false;
+                    if (modeQuiver.estActif()) { poserHameconAuFond(); }
+                    // Verdict du fond SOUS LE BOUCHON, à son arrivée (§14.8) : trop
+                    // profond pour l'eau d'ici, l'hameçon s'enfonce dans la vase et
+                    // s'y accroche, comme dans les nénuphars (il faut le dégager).
+                    if (jugerFond()) { return; }
                     statusDisplay.textContent = etat.techniqueCourante === 'quiver'
                         ? 'Surveille le scion.'
                         : 'Surveille le bouchon.';
@@ -432,6 +453,8 @@ export function creerComportement(deps) {
             }
             const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
             floatGroup.position.y = 0.1 + houle;
+            // Le bouchon a dérivé : le fond n'est plus forcément le même sous lui.
+            if (jugerFond()) { return; }
             etat.depuisLancement += dt;
             if (etat.hameconDansLaVase) {
                 // L'hameçon est dans la vase : le bouchon se couche et rien ne mord.

@@ -10,7 +10,7 @@ import { etat } from './etat.js?v=145';
 export function creerLigne(deps) {
     const {
         scene, flotteurCourant, depthLabel, nombreMetres, depthMinus, depthPlus,
-        majCoupeProfondeur
+        coupe, verdictFond
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -132,8 +132,49 @@ export function creerLigne(deps) {
         majCoupeProfondeur();
     }
 
+    // ---------------------------------------------------------------------------
+    // COUPE DE L'EAU : le petit schéma qui montre le bouchon en surface, le fil,
+    // l'hameçon à SA profondeur et le fond à l'endroit pêché. `coupe` regroupe ses
+    // éléments (cadre, fond, fil, hameçon, zone, indice).
+    // Le fond se juge SOUS LE BOUCHON, avec la même fonction que le jeu (verdictFond).
+    // Avant l'arrivée du bouchon (repos, vol), le schéma montre le point visé : c'est
+    // un simple aperçu, aucune décision n'en dépend.
+    // ---------------------------------------------------------------------------
+    const COUPE_REF = 9.2;   // hauteur du schéma (≥ fond max 8,8 : étang moyen v173)
+
+    function majCoupeProfondeur() {
+        if (!coupe.cadre || !etat.coupePrete) {
+            return;
+        }
+        const apercu = etat.floatState === 'idle' || etat.floatState === 'flying';
+        const lieu = apercu ? etat.castTarget : etat.floatGroup.position;
+        const verdict = verdictFond(lieu.x, lieu.z, etat.profondeurLigne, etat.modeQuiver.estActif());
+        const profLocale = verdict.profondeurEau;
+        // Le fond, en % de la hauteur du schéma (jamais collé aux bords).
+        const fondPct = Math.min(96, Math.max(8, (profLocale / COUPE_REF) * 100));
+        coupe.fond.style.top = fondPct.toFixed(1) + '%';
+        coupe.fond.style.height = (100 - fondPct).toFixed(1) + '%';
+        // L'hameçon et le fil qui le relie au bouchon.
+        const hameconPct = Math.min(100, (etat.profondeurLigne / COUPE_REF) * 100);
+        coupe.hamecon.style.top = hameconPct.toFixed(1) + '%';
+        coupe.fil.style.height = hameconPct.toFixed(1) + '%';
+        const zone = etat.modeQuiver.estActif() ? 'au fond (quiver)'
+            : (etat.profondeurLigne < 1.6 ? 'surface' : (etat.profondeurLigne < 3.2 ? 'mi-eau' : 'fond'));
+        coupe.zone.textContent = zone;
+        // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
+        // Accroché dans la vase, la décision du jeu (accrochage) fait foi : le bouchon
+        // tremble de quelques centièmes, ce qui ne doit pas faire clignoter l'alerte.
+        const dansLaVase = verdict.dansLaVase
+            || (etat.floatState === 'snag' && !!etat.snag && etat.snag.dansLaVase);
+        coupe.hamecon.classList.toggle('danger', dansLaVase);
+        coupe.indice.classList.toggle('alerte', dansLaVase);
+        coupe.indice.textContent = dansLaVase
+            ? '⚠ Fond à ' + nombreMetres(profLocale) + ' : hameçon dans la vase !'
+            : zone + ' · fond à ' + nombreMetres(profLocale);
+    }
+
     return {
         setFloatOpacity, bornesProfondeur, appliquerProfondeurVisuelle, majEtiquetteProfondeur,
-        updateDepthButtons, setProfondeur
+        updateDepthButtons, setProfondeur, majCoupeProfondeur
     };
 }

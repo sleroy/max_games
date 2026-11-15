@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v179** (le sonar se lance comme une amorce : `lancer.js`)
+> Dernière mise à jour : **2026-11-15** · jeu **v180** (le fond se juge sous le bouchon : `verdictFond`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -40,10 +40,10 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | Module | Rôle | Lignes | Propriétaire / à qui le modifier |
 |---|---|---|---|
 | `script.js` | Orchestrateur : scène 3D, câblage, pont `etat`, API de test | ~2 990 | **Personne en parallèle** — à réduire |
-| `environnement.js` | Étang : centre, rayon (90), contour, relief et 3 fosses, profondeur max, surface (ha), maillages du fond, de l'eau (`makeWaterGeometry`) et de la rive (`makeShoreGeometry`) | 283 | Monde (à faire seul) |
+| `environnement.js` | Étang : centre, rayon (90), contour, relief et 3 fosses, profondeur max, surface (ha), maillages du fond, de l'eau (`makeWaterGeometry`) et de la rive (`makeShoreGeometry`), **verdict du fond** (`verdictFond`, `MARGE_VASE`) | 298 | Monde (à faire seul) |
 | `poissons.js` | Population calculée d'après la surface et la biomasse (≈ 58 poissons, 100–300 kg/ha, solitaires rares, poissons de fond en fosse), fabrique 3D, bancs, spécimens hors norme, respawn | 773 | Poissons / contenu |
 | `combat.js` | Épreuve de force : tension, fatigue, ferrage, touche vue de près, clic utile, accrochage (état via `etat`) | 696 | Combat |
-| `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage (état via `etat`) | 608 | Poissons / contenu |
+| `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage, verdict du fond sous le bouchon (`jugerFond`) (état via `etat`) | 633 | Poissons / contenu |
 | `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement, collision avec les obstacles, poste sur le ponton (état via `etat`) | 565 | Bateau / monde |
 | `lancerPoisson.js` | Lancer du poisson dans la bourriche : prise en main, lancer, arc de vol (état via `etat`) | 206 | Bourriche / lancer |
 | `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang à l'échelle du cadre (état via `etat`) | 159 | Carnet / UI |
@@ -53,7 +53,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `lancer.js` | **Geste de lancer commun** (amorce et sonar) : visée, jauge de puissance, point d’impact, arc de vol, arrivée. Les objets lançables s’enregistrent dans `etat.projectiles` (`etat.declarerProjectile`) | 243 | Lancer / outils |
 | `amorcage.js` | Amorçage : boule d’amorce (stock, plouf, nuage de miettes qui attire les poissons), bras du pêcheur et barre d’outils (état via `etat`) | 205 | Amorçage / outils |
 | `frein.js` | Frein du moulinet (on lâche du fil quand le poisson charge) et didacticiel (état via `etat`) | 132 | Frein / tutoriel |
-| `ligne.js` | Ligne + flotteur : tampon de la ligne, groupe du bouchon, textures, opacité, bornes de profondeur (état via `etat`) | 140 | Ligne / bouchon |
+| `ligne.js` | Ligne + flotteur : tampon de la ligne, groupe du bouchon, textures, opacité, bornes de profondeur, **coupe de l'eau** (schéma de profondeur, `majCoupeProfondeur`) (état via `etat`) | 180 | Ligne / bouchon |
 | `bouchons.js` | Types de bouchons (flotteurs), scions du quiver, capacités spéciales (état via `etat`) | 188 | Bouchons / boutique |
 | `placement.js` | Carte de placement vue de dessus (écran d’accueil, terrain de 260 unités) et hauteur du terrain (état via `etat`) | 403 | Monde / placement |
 | `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
@@ -391,3 +391,26 @@ et faisait pinger tout de suite.
   `creerSonar`. 3000 → 2998 lignes, ratchet 3001 → 2999.
 - Tests : `scenario-sonar.mjs` (71 et 71b : puissance, direction, ping après le plouf, centre du radar, refus en
   combat / accrochage / emmêlement / vol, barque, ouvrages, berge, Ranger), `lancerSonar()` dans `harness.mjs`.
+
+
+## 12. Le fond se juge sous le bouchon (v180) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §14.8 (bug : le verdict « hameçon dans la vase » était calculé une fois avec le point
+visé, puis jamais recalculé après la dérive au vent ; le schéma de coupe, lui, lisait la position du bouchon et
+n'alertait qu'à 0,25 du fond au lieu de 0,5).
+
+- **`environnement.js`** : `verdictFond(x, z, profondeurLigne, auFond)` est la **source unique** (`dansLaVase` = ligne
+  plus longue que `profondeur − MARGE_VASE`, marge 0,5 ; jamais au quiver). La profondeur de la ligne reste une
+  **longueur bouchon → hameçon** (`HOOK_DEPTH = −profondeurLigne`), jamais une altitude.
+- **`comportement.js`** : `jugerFond()` appelle `verdictFond` à la position du bouchon, à l'atterrissage puis à chaque
+  image tant que le bouchon flotte (`inWater`) : le verdict suit la dérive. `startSnag('fond')` ne part qu'à la
+  **transition** « pas dans la vase → dans la vase », jamais en combat, accrochage, emmêlement, touche ni poisson ferré.
+  À l'accrochage, `castTarget` est ramené sous le bouchon (le bouchon est tenu là où il est). Un bouchon qui
+  retrouve de l'eau profonde se redresse.
+- **`ligne.js`** : héberge `majCoupeProfondeur` (sortie de `script.js`, 2999 → 2970 lignes) ; elle appelle
+  `verdictFond` sous le bouchon. Avant l'arrivée (repos, vol), le schéma montre le point visé : un aperçu, aucune
+  décision. Accroché dans la vase, l'alerte suit la décision du jeu (pas de clignotement).
+- **`script.js`** : éléments du schéma passés à `creerLigne({ coupe })`, `poserHameconAuFond()` sans argument (sous le
+  bouchon), `window.__game` : `getVerdictFond`, `castTarget`, `setWind`, `etat`. Ratchet 2999 → 2971.
+- Tests : `scenario-fond.mjs` (74) ; `scenario-profondeur.mjs` adapté (indice « Fond à » avec majuscule dans la vase,
+  règle de 0,5 partagée par le schéma et le jeu).

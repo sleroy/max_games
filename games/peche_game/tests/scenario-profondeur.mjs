@@ -183,7 +183,10 @@ export function run() {
     check('le schéma enfonce l’hameçon quand la ligne s’allonge',
         basHamecon > hautHamecon + 15, hautHamecon.toFixed(0) + '% -> ' + basHamecon.toFixed(0) + '%');
     checkEqual('le schéma nomme la couche d’eau (fond)', el('depthZoneLabel').textContent, 'fond');
-    check('le schéma donne la profondeur du fond', el('depthHint').textContent.indexOf('fond à') >= 0,
+    // v180 (§14.8) : le schéma et le jeu partagent la MÊME règle de vase (hameçon à moins de
+    // 0,5 unité du fond ; le schéma n'alertait qu'à 0,25). À 4,5 dans 5,0 d'eau, l'hameçon est
+    // donc dans la vase et l'indice commence par « Fond à » (majuscule) : on cherche sans casse.
+    check('le schéma donne la profondeur du fond', el('depthHint').textContent.toLowerCase().indexOf('fond à') >= 0,
         el('depthHint').textContent);
     G().setProfondeur(2.5);
     check('à 1,25 m dans 2,5 m d’eau, l’hameçon est au-dessus du trait du fond',

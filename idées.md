@@ -404,27 +404,33 @@ Ce que fait le code aujourd'hui (vérifié) :
   eux, utilisent `floatGroup.position` (la position réelle, dérivée comprise) → **le
   panneau et la décision du jeu peuvent se contredire**.
 
-- [ ] **Une seule source de vérité** : le fond est **toujours** évalué avec
+- [x] **Une seule source de vérité** : le fond est **toujours** évalué avec
   `profondeurLocale(floatGroup.position.x, floatGroup.position.z)` — au moment de
   l'atterrissage **et** après chaque dérive, jamais avec `castTarget` ni la position
   du pêcheur.
-- [ ] **Réévaluation après dérive** : si le bouchon dérive au vent, le verdict
+- [x] **Réévaluation après dérive** : si le bouchon dérive au vent, le verdict
   (« hameçon dans la vase », accrochage `fond`, zone surface / mi-eau / fond) est
   **réactualisé** ; le schéma de coupe, le libellé du widget et l'état du jeu doivent
   afficher **la même valeur au même instant**.
-- [ ] **Le lancer atterrit où il atterrit** : le point d'impact = `floatGroup.position`
+- [x] **Le lancer atterrit où il atterrit** : le point d'impact = `floatGroup.position`
   à l'arrivée ; la profondeur choisie avant le lancer reste une **longueur
   bouchon → hameçon** (en unités), pas une altitude absolue.
-- [ ] **Cas limites** : bord peu profond (`FOND_BORD` ≈ 1,4) avec une profondeur
+- [x] **Cas limites** : bord peu profond (`FOND_BORD` ≈ 1,4) avec une profondeur
   réglée grande → vase/accrochage ; fosse profonde avec la même profondeur → pas
   d'accrochage. Deux lancers à profondeur identique mais **points d'impact
   différents** doivent donner **deux verdicts différents**.
-- [ ] **Tests à ajouter** : (a) le verdict utilise la position du bouchon et non
+- [x] **Tests à ajouter** : (a) le verdict utilise la position du bouchon et non
   `castTarget` (on les décale et on vérifie que c'est la position du bouchon qui
   gagne) ; (b) après une dérive au vent, le verdict est recalculé ; (c) la valeur
   affichée par le schéma de coupe et celle utilisée par le jeu sont **égales** ;
   (d) un lancer au bord et un lancer en fosse à profondeur égale donnent des
   verdicts opposés.
+- **Livré en v180** : `verdictFond` (`environnement.js`) est la source unique, appelée par `comportement.js`
+  (`jugerFond`, à l'arrivée puis à chaque image : la dérive est prise en compte, accrochage seulement à la
+  transition) et par le schéma de coupe (`majCoupeProfondeur`, déplacé dans `ligne.js`). Règle de vase unifiée
+  à 0,5 unité du fond (le schéma alertait à 0,25). Tests : scénario **74**, +41 vérifications (2 310 → **2 351**).
+  Test existant adapté sans suppression : scénario 43 (indice « Fond à » avec majuscule dans la vase).
+  `script.js` 2 998 → **2 970** lignes (cliquet 2 971).
 
 ### 14.9 Idée — un petit coup de moulinet attire les poissons tout proches
 

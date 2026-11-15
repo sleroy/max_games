@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=179';
+import { SoundEngine } from './sound.js?v=180';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=173';
@@ -11,8 +11,8 @@ import { creerClassement } from './classement.js';
 import { dessinerPortrait } from './portraits.js?v=140';
 import { creerPoissons } from './poissons.js?v=178';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
-    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=173';
+    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=180';
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
@@ -21,7 +21,7 @@ import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
 import { creerCombat } from './combat.js?v=145';
-import { creerComportement } from './comportement.js?v=178';
+import { creerComportement } from './comportement.js?v=180';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=173';
@@ -31,7 +31,7 @@ import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
 import { creerAmorcage } from './amorcage.js?v=179';
 import { creerFrein } from './frein.js?v=154';
-import { creerLigne } from './ligne.js?v=155';
+import { creerLigne } from './ligne.js?v=180';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
 import { creerMeteo } from './meteo.js?v=173';
@@ -1459,12 +1459,11 @@ const {
 // Le quiver se pêche AU FOND (comme la pêche à l'anglaise « posée ») : l'hameçon
 // repose sur le relief à l'endroit où la ligne est tombée.
 let profondeurBouchonMemo = null;
-function poserHameconAuFond(lieu) {
+function poserHameconAuFond() {
     if (profondeurBouchonMemo === null) { profondeurBouchonMemo = profondeurLigne; }
     const enEau = floatState !== 'idle' && floatState !== 'flying';
-    const px = lieu ? lieu.x : (enEau ? floatGroup.position.x : castTarget.x);
-    const pz = lieu ? lieu.z : (enEau ? floatGroup.position.z : castTarget.z);
-    const fond = Math.max(0.6, profondeurLocale(px, pz) - 0.55);   // posé juste au-dessus de la vase
+    const lieu = enEau ? floatGroup.position : castTarget;   // sous le bouchon dès qu'il est à l'eau
+    const fond = Math.max(0.6, profondeurLocale(lieu.x, lieu.z) - 0.55);   // posé juste au-dessus de la vase
     if (Math.abs(fond - profondeurLigne) > 0.001) {
         profondeurLigne = fond;
         HOOK_DEPTH = -fond;
@@ -1535,59 +1534,23 @@ let HOOK_DEPTH;
 let floatState;
 const {
     setFloatOpacity, bornesProfondeur, appliquerProfondeurVisuelle, majEtiquetteProfondeur,
-    updateDepthButtons, setProfondeur
+    updateDepthButtons, setProfondeur, majCoupeProfondeur
 } = creerLigne({
-    scene, flotteurCourant: (...args) => flotteurCourant(...args), depthLabel, nombreMetres, depthMinus, depthPlus, majCoupeProfondeur
+    scene, flotteurCourant: (...args) => flotteurCourant(...args), depthLabel, nombreMetres, depthMinus, depthPlus, verdictFond,
+    coupe: {
+        cadre: document.getElementById('depthCross'), fond: document.getElementById('depthBottomLine'),
+        fil: document.getElementById('depthHookLine'), hamecon: document.getElementById('depthHook'),
+        zone: document.getElementById('depthZoneLabel'), indice: document.getElementById('depthHint')
+    }
 });
 
-// ---------------------------------------------------------------------------
-// COUPE DE L'EAU : le petit schéma qui montre, en direct, le bouchon en
-// surface, le fil, l'hameçon à SA profondeur et le fond de l'étang à l'endroit
-// pêché. C'est la partie « visuelle » du réglage de profondeur.
-// ---------------------------------------------------------------------------
-const depthCross = document.getElementById('depthCross');
-const depthBottomLine = document.getElementById('depthBottomLine');
-const depthHookLine = document.getElementById('depthHookLine');
-const depthHookDot = document.getElementById('depthHook');
-const depthZoneLabel = document.getElementById('depthZoneLabel');
-const depthHint = document.getElementById('depthHint');
+// COUPE DE L'EAU : le schéma (éléments `coupe`, passés à ligne.js, qui le dessine).
 const depthRange = document.getElementById('depthRange');
 let dernierCoupe = -1;
 let coupePrete = false;   // le schéma attend que le jeu soit entièrement initialisé
 
-// Hauteur d'eau (unités) représentée par la hauteur du schéma.
-const COUPE_REF = 9.2;   // hauteur du schéma (≥ fond max 8,8 : étang moyen v173)
-
 function nombreMetres(unites) {
     return (unites / 2).toFixed(1).replace('.', ',') + ' m';
-}
-
-function majCoupeProfondeur() {
-    if (!depthCross || !coupePrete) {
-        return;
-    }
-    const enEau = floatState !== 'idle';
-    const px = enEau ? floatGroup.position.x : castTarget.x;
-    const pz = enEau ? floatGroup.position.z : castTarget.z;
-    const profLocale = profondeurLocale(px, pz);
-    // Le fond, en % de la hauteur du schéma (jamais collé aux bords).
-    const fondPct = Math.min(96, Math.max(8, (profLocale / COUPE_REF) * 100));
-    depthBottomLine.style.top = fondPct.toFixed(1) + '%';
-    depthBottomLine.style.height = (100 - fondPct).toFixed(1) + '%';
-    // L'hameçon et le fil qui le relie au bouchon.
-    const hameconPct = Math.min(100, (profondeurLigne / COUPE_REF) * 100);
-    depthHookDot.style.top = hameconPct.toFixed(1) + '%';
-    depthHookLine.style.height = hameconPct.toFixed(1) + '%';
-    const zone = modeQuiver.estActif() ? 'au fond (quiver)'
-        : (profondeurLigne < 1.6 ? 'surface' : (profondeurLigne < 3.2 ? 'mi-eau' : 'fond'));
-    depthZoneLabel.textContent = zone;
-    // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
-    const dansLeFond = !modeQuiver.estActif() && profondeurLigne > profLocale - 0.25;
-    depthHookDot.classList.toggle('danger', dansLeFond);
-    depthHint.classList.toggle('alerte', dansLeFond);
-    depthHint.textContent = dansLeFond
-        ? '⚠ Fond à ' + nombreMetres(profLocale) + ' : hameçon dans la vase !'
-        : zone + ' · fond à ' + nombreMetres(profLocale);
 }
 
 const floatIdle = new THREE.Vector3(rodTip.x, rodTip.y - 0.6, rodTip.z);
@@ -2101,7 +2064,7 @@ const {
     BITE_INTEREST_RADIUS, floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang, fishes,
     animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL, ripples,
     spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
-    risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond, profondeurLocale,
+    risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond, verdictFond,
     majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt, nibbleRand, MAX_WAIT,
     consumeCrankTurns, startReel, findBitingFish, showBiteView, floatIdle,
     tenterAttaquePredateur, REEL_IDLE_HELP, REEL_AUTO, REEL_PER_TURN, angler, startHoldingFish,
@@ -2812,6 +2775,15 @@ window.__game = {
     },
     fondY: fondY,
     isHameconDansLaVase: function () { return hameconDansLaVase; },
+    // Fond sous le bouchon (§14.8) : verdict en direct, point visé, vent imposé, état partagé.
+    getVerdictFond: function () {
+        return verdictFond(floatGroup.position.x, floatGroup.position.z, profondeurLigne, modeQuiver.estActif());
+    },
+    castTarget: castTarget,
+    setWind: function (dir, force) {
+        Object.assign(wind, { dir: dir, targetDir: dir, strength: force, targetStrength: force, timer: 1e9 });
+    },
+    etat: etat,
     getFloatOpacity: function () { return floatBody.material.opacity; },
     // Bourriche, carnet et lancer du poisson — exposé pour les tests.
     getBourriche: function () {
