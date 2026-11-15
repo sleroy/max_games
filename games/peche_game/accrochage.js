@@ -8,7 +8,7 @@ import { etat } from './etat.js?v=145';
 
 export function creerAccrochage(deps) {
     const {
-        lilyPads, strugglePanel, sound, struggleInfo, strugglePortrait, struggleTimer,
+        lilyPads, obstacles, strugglePanel, sound, struggleInfo, strugglePortrait, struggleTimer,
         struggleHint, updateStruggleBar, fishButton, statusDisplay, fermerPanneauCombat,
         debiterLigne, perdreLeBouchon, totalLignes, terminerPartie, snagPret, appliquerClicUtile,
         rand
@@ -17,7 +17,13 @@ export function creerAccrochage(deps) {
     // ---------------------------------------------------------------------------
     // Accrochage dans les nénuphars
     // ---------------------------------------------------------------------------
+    // Renvoie `true` pour un nénuphar, l'OBSTACLE (ponton, souche, roches…) qui retient
+    // l'hameçon, ou false. startSnag(obstacle) lit sa difficulté et son message.
     function isSnagged(point) {
+        const obstacle = obstacles.accrocheEn(point);
+        if (obstacle) {
+            return obstacle;
+        }
         for (let i = 0; i < lilyPads.length; i++) {
             const pad = lilyPads[i];
             const dx = point.x - pad.x;
@@ -32,15 +38,35 @@ export function creerAccrochage(deps) {
 
     function startSnag(mode) {
         etat.floatState = 'snag';
+        const obstacle = mode && typeof mode === 'object' ? mode : null;
+        const profil = obstacle ? obstacle.profil : null;
         const dansLaVase = mode === 'fond';
-        etat.tension = dansLaVase ? 0.55 : 0.5;
+        etat.tension = profil ? profil.tensionDepart : (dansLaVase ? 0.55 : 0.5);
         // Deux accrochages, deux difficultés :
         //  - NÉNUPHARS : on clique vite, c'est facile (clickCooldown = 0).
         //  - VASE : elle ASPIRE. Un clic n'est utile que toutes les 0,32 s ; il faut
         //    tenir un rythme (~3 clics/s) pendant plusieurs secondes, sinon la
         //    tension monte et la ligne casse.
-        etat.snag = dansLaVase ? {
+        // OBSTACLES (obstacles.js) : chacun a SA difficulté et SON message (ACCROCHAGES).
+        etat.snag = profil ? {
+            dansLaVase: false,
+            obstacle: obstacle.type,
+            rythme: profil.clickCooldown > 0,
+            message: profil.message,
+            pullRate: profil.pullRate,
+            burstStrength: profil.burstStrength,
+            burstInterval: profil.burstInterval,
+            burstTimer: profil.burstInterval,
+            clickPower: profil.clickPower,
+            clickCooldown: profil.clickCooldown,
+            enAttente: false,
+            elapsed: 0,
+            lastClick: -1,
+            clics: 0,
+            clicsUtiles: 0
+        } : dansLaVase ? {
             dansLaVase: true,
+            rythme: true,
             // La vase tire un peu moins fort qu'avant : ses à-coups rendaient la
             // sortie injuste (on pouvait perdre la ligne en cliquant correctement).
             pullRate: 0.08,
@@ -58,6 +84,7 @@ export function creerAccrochage(deps) {
             clicsUtiles: 0
         } : {
             dansLaVase: false,
+            rythme: false,
             pullRate: 0.12,
             burstStrength: 0.10,
             burstInterval: 1.1,
@@ -74,30 +101,41 @@ export function creerAccrochage(deps) {
         strugglePanel.classList.add('active');
         strugglePanel.classList.add('snagging');
         sound.snag();
-        struggleInfo.textContent = dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
+        struggleInfo.textContent = profil ? profil.message
+            : dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
         if (strugglePortrait) { strugglePortrait.hidden = true; }
         etat.portraitEspeceCourante = null;
         struggleTimer.textContent = '';
         struggleTimer.classList.remove('urgent');
-        struggleHint.textContent = dansLaVase
-            ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
-            : 'Clique vite pour dégager la ligne !';
+        struggleHint.textContent = profil ? indiceObstacle(profil)
+            : dansLaVase
+                ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
+                : 'Clique vite pour dégager la ligne !';
         struggleHint.hidden = false;
         majIndiceSnag();
         updateStruggleBar();
         fishButton.disabled = false;
         fishButton.textContent = 'Dégager !';
         fishButton.hidden = false;
-        statusDisplay.textContent = dansLaVase
+        statusDisplay.textContent = profil
+            ? profil.message + (profil.clickCooldown > 0
+                ? ' Clique en rythme (≈ 3 clics/s) pour la dégager.' : ' Clique vite pour la dégager.')
+            : dansLaVase
             ? 'Ton hameçon s’est enfoncé dans la vase ! Tire en rythme (≈ 3 clics/s) pour le dégager, puis règle une ligne moins profonde.'
             : 'La ligne s’est accrochée aux nénuphars ! Clique pour la dégager.';
+    }
+
+    function indiceObstacle(profil) {
+        return profil.clickCooldown > 0
+            ? 'Clique en rythme (environ 3 fois par seconde) pour dégager la ligne !'
+            : 'Clique vite pour dégager la ligne !';
     }
 
     // Indique au joueur s'il peut cliquer (vase) ou s'il doit laisser le fil se
     // détendre. N'affiche rien pour les nénuphars (pas de temps de récupération).
     let snagIndicePret = null;
     function majIndiceSnag() {
-        if (!etat.snag || !etat.snag.dansLaVase) {
+        if (!etat.snag || !etat.snag.rythme) {
             return;
         }
         const pret = (etat.snag.elapsed - etat.snag.lastClick) >= etat.snag.clickCooldown;
@@ -108,7 +146,8 @@ export function creerAccrochage(deps) {
         // Le clic n'est jamais perdu (il attend son tour) : on encourage au lieu de
         // gronder le joueur.
         struggleHint.textContent = pret
-            ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
+            ? (etat.snag.obstacle ? 'Clique en rythme (environ 3 fois par seconde) pour dégager la ligne !'
+                : 'La vase aspire : clique en rythme (environ 3 fois par seconde) !')
             : 'La ligne se détend… ton clic est gardé, continue !';
         if (fishButton.classList) {
             fishButton.classList.toggle('cooldown', !pret);

@@ -373,8 +373,9 @@ export function creerComportement(deps) {
                 floatGroup.position.copy(castTarget);
                 spawnRipple(castTarget);
                 sound.splash();
-                if (isSnagged(castTarget)) {
-                    startSnag();
+                const accroc = isSnagged(castTarget);
+                if (accroc) {
+                    startSnag(accroc === true ? undefined : accroc);   // nénuphar, ou obstacle
                 } else if (!etat.ligneTendue && risqueEmmelement() > 0 && rand() < risqueEmmelement()) {
                     // La ligne n'a pas été tendue : elle s'est emmêlée en touchant
                     // l'eau. Pas de pêche tant que le mini-jeu n'est pas résolu.

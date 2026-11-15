@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
     GAME_DIR, group, check, checkEqual,
-    G, resetToIdle
+    G, el, fire, resetToIdle, castTo, step, state
 } from './harness.mjs';
 
 const TYPES_ATTENDUS = ['ponton', 'ecluse', 'douve', 'roches', 'souche', 'pieux', 'epave', 'joncs'];
@@ -24,6 +24,28 @@ function distance2D(a, b) {
 export function assurerBarque() {
     G().setExperience(G().getBateauPrix());
     G().acheterBateau();   // sans effet si la barque est déjà achetée
+}
+
+/** Un point d'eau libre juste à côté de l'obstacle, qui coince l'hameçon sans être sur la pierre. */
+export function pointAccroche(o) {
+    const O = G().obstacles;
+    for (const c of o.cercles) {
+        for (let k = 0; k < 24; k++) {
+            const a = (k / 24) * Math.PI * 2;
+            const p = { x: c.x + Math.cos(a) * (c.r + 0.4), z: c.z + Math.sin(a) * (c.r + 0.4) };
+            const dx = p.x - G().getPondCenter().x;
+            const dz = p.z - G().getPondCenter().z;
+            const dedans = Math.hypot(dx, dz) < G().getRayonEtang(Math.atan2(dz, dx)) - 4;
+            if (dedans && O.accrocheEn(p) === o && O.lancerBloque(p) === null) { return p; }
+        }
+    }
+    return null;
+}
+
+/** Lance la ligne pour que l'hameçon retombe EXACTEMENT en (x, z) malgré le vent. */
+export function lancerSur(x, z) {
+    const vent = G().getWind();
+    return castTo(x - Math.cos(vent.dir) * vent.strength * 2.5, z - Math.sin(vent.dir) * vent.strength * 2.5);
 }
 
 export function run() {
@@ -134,6 +156,76 @@ export function run() {
     }
     G().placerAuPoste(0);
     resetToIdle();
+
+    // --- 5) ACCROCHAGE : l'hameçon posé sur un obstacle se coince, avec SON message ---
+    group('73b) Obstacles : accrochage (difficulté et message propres à chacun)');
+    G().setFloatType('anglaise');
+    G().setProfondeur(2.5);
+    const accrochables = O.liste.filter(o => o.profil);
+    check('tous les obstacles sauf la douve peuvent accrocher', accrochables.length === O.liste.length - 1,
+        accrochables.length + ' sur ' + O.liste.length);
+    const messages = new Set();
+    accrochables.forEach(function (o) {
+        const p = pointAccroche(o);
+        check(o.id + ' : un point d’accrochage existe', !!p);
+        if (!p) { return; }
+        resetToIdle();
+        G().lilyPads.length = 0;
+        G().recommencerPartie();
+        lancerSur(p.x, p.z);
+        check(o.id + ' : l’hameçon se coince (état snag)', state() === 'snag', state());
+        const snag = G().getSnag();
+        check(o.id + ' : bon type d’obstacle dans l’accrochage', snag && snag.obstacle === o.type,
+            snag && snag.obstacle);
+        check(o.id + ' : message « ' + o.profil.message + ' »',
+            el('struggleInfo').textContent === o.profil.message, el('struggleInfo').textContent);
+        check(o.id + ' : le statut répète le message',
+            el('status').textContent.indexOf(o.profil.message) === 0, el('status').textContent);
+        check(o.id + ' : réglages repris du profil (rythme ' + o.profil.clickCooldown + ' s)',
+            snag && Math.abs(snag.clickCooldown - o.profil.clickCooldown) < 1e-9
+            && Math.abs(snag.clickPower - o.profil.clickPower) < 1e-9);
+        messages.add(o.profil.message);
+        resetToIdle();
+    });
+    check('chaque type d’obstacle a son propre message', messages.size === new Set(accrochables.map(o => o.type)).size,
+        messages.size + ' messages');
+    // Difficulté : de plus en plus dure, mais toujours possible au rythme demandé.
+    const niveaux = { facile: 1, moyenne: 2, difficile: 3 };
+    Object.keys(O.ACCROCHAGES).forEach(function (cle) {
+        const a = O.ACCROCHAGES[cle];
+        const cadence = a.clickCooldown > 0 ? Math.min(1 / a.clickCooldown, 5) : 5;
+        const tire = a.pullRate + a.burstStrength / a.burstInterval;
+        check(cle + ' (' + a.difficulte + ') : niveau cohérent', niveaux[a.difficulte] === a.niveau);
+        check(cle + ' : dégageable en cliquant au rythme demandé',
+            a.clickPower * cadence > tire, (a.clickPower * cadence).toFixed(2) + ' > ' + tire.toFixed(2));
+    });
+    check('la souche, l’épave et l’écluse sont plus dures que les joncs et les pieux',
+        ['souche', 'epave', 'ecluse'].every(c => O.ACCROCHAGES[c].niveau > O.ACCROCHAGES.joncs.niveau
+            && O.ACCROCHAGES[c].niveau > O.ACCROCHAGES.pieux.niveau));
+    check('la souche tire plus fort que la vase (0,08 / 0,08 / 0,32 s)',
+        O.ACCROCHAGES.souche.pullRate + O.ACCROCHAGES.souche.burstStrength / O.ACCROCHAGES.souche.burstInterval
+        > 0.08 + 0.08 / 0.9);
+
+    // Cliquer en rythme dégage la souche ; ne rien faire casse la ligne.
+    const souche = O.liste.find(o => o.type === 'souche');
+    const ps = pointAccroche(souche);
+    resetToIdle();
+    lancerSur(ps.x, ps.z);
+    let t = 0;
+    while (state() === 'snag' && t < 30) {
+        fire('fishButton', 'click');
+        step(souche.profil.clickCooldown + 0.02);
+        t += souche.profil.clickCooldown + 0.02;
+    }
+    check('en cliquant en rythme, la souche lâche', state() === 'reeling', state() + ' après ' + t.toFixed(1) + ' s');
+    check('… et cela prend plusieurs secondes', t > 2, t.toFixed(1) + ' s');
+    resetToIdle();
+    lancerSur(ps.x, ps.z);
+    let attente = 0;
+    while (state() === 'snag' && attente < 30) { step(0.1); attente += 0.1; }
+    check('sans cliquer, la ligne casse', state() === 'broken' || state() === 'idle', state());
+    resetToIdle();
+    G().recommencerPartie();
 }
 
 export default run;
