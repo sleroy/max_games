@@ -344,3 +344,93 @@ bruitages à remplacer, banc d'origine à rejoindre après une capture.
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
 Total de la suite : **1577 vérifications vertes** (`node games/peche_game/tests/run.mjs`).
+
+## 15. Réalisme — pistes identifiées (2026-11-15)
+
+État des lieux vérifié dans le code : météo et cycle jour/nuit existent, la vision,
+la zone de vie et les comportements par espèce aussi. En revanche **l'esche est
+absente** (hameçon nu), **la touche ne dépend ni de l'heure ni du temps**, il n'y a
+**ni température d'eau, ni saison, ni pression**, et le vent ne dévie que le lancer
+du poisson dans la bourriche.
+
+### 15.1 Physique de l'eau (gain réalisme le plus fort, effort moyen)
+
+- [ ] **Température de l'eau + saisons + thermocline.** Eau froide (< 8 °C) :
+  poissons léthargiques, carnassiers encore actifs. Eau chaude (> 22 °C) : poissons
+  au fond, meilleure pêche à l'aube et au crépuscule. En été, la thermocline sépare
+  l'eau chaude de surface de l'eau froide profonde (le poisson se tient juste
+  au-dessus). À brancher sur les `COMPORTEMENTS` d'`especes.js` (vitesse, couche,
+  activité) ; rend les fosses et la barque vraiment utiles.
+- [ ] **Heures actives.** La touche est aujourd'hui purement aléatoire
+  (`biteSinkAt = 3 + rand() * 5`). La faire dépendre de **l'aube et du crépuscule**
+  (meilleures heures) et de la nuit pour les espèces déjà marquées `nocturne`
+  (sandre, silure, anguille, tanche). Effort faible : un facteur horaire sur le
+  délai de touche.
+- [ ] **Pression atmosphérique.** Dérivée de la météo existante (beau / rafales /
+  pluie) : pression qui monte = poissons actifs ; chute avant l'orage = pêche
+  fermée, puis coup de feu juste après la pluie.
+- [ ] **Eau trouble après la pluie.** La vision par espèce existe déjà : ajouter une
+  turbidité qui la réduit (pluie, vent fort, barque qui remue le fond).
+
+### 15.2 L'esche — le manque le plus visible
+
+- [ ] **Choisir son appât.** Aujourd'hui l'hameçon est **nu** (aucune occurrence de
+  « appât » dans le code ; seule l'amorce existe). Esches réalistes : **ver de
+  terre, maïs, pain, bouillette, vif / leurre**. Chaque esche cible des espèces :
+  - [ ] maïs → **carpe, tanche, brème** ;
+  - [ ] ver → **gardon, perche, anguille, goujon** ;
+  - [ ] pain/flocons → **gardon, rotengle, chevesne** (surface) ;
+  - [ ] bouillette → **carpe, carassin** (fond) ;
+  - [ ] vif ou leurre → **brochet, sandre, black-bass**.
+- [ ] **Esches consommables et achetables en XP** (le système de `RECHARGES` existe
+  déjà : lots de 3, stock affiché, sélection du fil à équiper — même modèle).
+- [ ] **Cohérence avec la profondeur et le fond** : une esche de fond sur la vase,
+  un leurre en pleine eau, un flocon en surface ; l'esche inadaptée ne touche
+  presque jamais (message discret, jamais de texte d'aide explicite).
+- [ ] **Hameçon nu = presque rien** : pêcher sans esche reste possible mais très
+  peu productif (et pédagogique).
+
+### 15.3 Combat
+
+- [ ] **Frein réglable + « départ » du poisson.** Aujourd'hui le frein est binaire
+  (« Lâcher du fil »). Réel : le poisson part, prend du fil, la ligne chante, et le
+  joueur règle la tension pour ne pas casser.
+- [ ] **Épuisette obligatoire au-dessus de ~3 kg.** Le son d'épuisette existe déjà
+  (`sound.playEpuisette`) mais pas le geste : sans épuisette, le gros poisson se
+  décroche au bord.
+- [ ] **Fil qui « chante » sous forte tension** (son continu modulé par la tension).
+
+### 15.4 Réglementation et éthique (éducatif)
+
+- [ ] **Maille légale + remise à l'eau.** Les tailles minimales existent déjà
+  (`cm: [10, 42]` = juvénile → grand sujet) mais aucune règle. Un poisson sous la
+  maille doit être **remis à l'eau** : pas de record au carnet, petite XP
+  « connaissance » à la place.
+- [ ] **Bourriche limitée / quota.** Un garde-poisson a une capacité ; au-delà, il
+  faut relâcher ou terminer la partie.
+
+### 15.5 Barque et monde
+
+- [ ] **Bruit des rames qui effraie les poissons proches** (réutiliser le système de
+  vision/portée existant) et **barque qui dérive au vent** quand on ne rame pas.
+- [ ] **Lancer dévié par le vent.** Le vent ne dévie aujourd'hui que le lancer du
+  poisson dans la bourriche (`FISH_THROW_WIND`) : appliquer la même logique au
+  lancer de la ligne.
+- [ ] **Poissons qui sautent** au crépuscule (carpe, brochet) — les sons sont déjà
+  crédités, il manque le saut visible et l'ondulation.
+
+### 15.6 Ce qui ne s'applique pas
+
+- **Marées et cycle lunaire** : un étang n'a pas de marée ; la lune n'aurait aucun
+  effet mécanique crédible ici.
+
+### 15.7 Ordre suggéré
+
+1. **Température / saisons / heures actives** (15.1) — change la sensation de jeu.
+2. **Appâts** (15.2) — comble le manque le plus visible.
+3. **Pression et turbidité** (15.1), puis **épuisette et frein** (15.3).
+4. **Maille et remise à l'eau** (15.4), puis le reste de la barque (15.5).
+
+Ces idées s'articulent avec les **fonds** (14.3) et les **obstacles** (14.2) : un
+substrat + une température + une heure + une esche, c'est ce qui décide vraiment
+qu'un poisson mord.
