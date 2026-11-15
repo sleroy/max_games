@@ -1678,11 +1678,6 @@ body.calm .struggle-marker {
     border-color: #aa777a;
 }
 
-.tool-dock .depth-panel {
-    width: 100%;
-    max-width: none;
-}
-
 .stats-strip {
     display: flex;
     flex-wrap: wrap;
@@ -1733,27 +1728,20 @@ body.calm .struggle-marker {
 }
 
 
-.hud-depth {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+.hud > .depth-panel {
+    position: absolute;
+    top: calc(60px + env(safe-area-inset-top, 0px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    width: min(224px, 36vw);
+    background: #102a36ee;
+    z-index: 8;
 }
 
-.hud-depth .depth-btn {
+.hud > .depth-panel .depth-btn {
     min-width: 44px;
     min-height: 44px;
     padding: 0;
-}
-
-.hud-depth-readout {
-    font-size: 0.8rem;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.hud-depth-readout strong {
-    display: block;
-    font-variant-numeric: tabular-nums;
+    font-size: 1.15rem;
 }
 
 .hud-top .wind-bar {
@@ -1786,31 +1774,21 @@ body.calm .struggle-marker {
 }
 
 @media (max-width: 530px) {
-    .hud-top {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        gap: 2px 8px;
+    .hud-top .wind-gauge {
+        gap: 4px;
     }
 
     .hud-counters {
-        grid-column: 2;
+        gap: 0 7px;
+    }
+}
+
+@media (max-height: 430px) {
+    .hud > .depth-panel {
+        width: clamp(120px, 29vw, 180px);
     }
 
-    .hud-top .wind-gauge {
-        grid-column: 1;
-        padding-inline-start: 6px;
-    }
-
-    .hud-depth {
-        justify-content: flex-end;
-    }
-
-    .tool-dock,
-    .sonar-panel {
-        top: calc(104px + env(safe-area-inset-top, 0px));
-    }
-
-    .tool-dock {
-        max-height: calc(100% - 112px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    .hud > .depth-panel .depth-cross {
+        height: 60px;
     }
 }

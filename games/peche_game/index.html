@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=115">
+    <link rel="stylesheet" href="style.css?v=116">
 </head>
 <body>
     <div class="game-wrap">
@@ -26,11 +26,6 @@
                     <div class="wind-bar"><div class="wind-fill" id="windFill"></div></div>
                     <span class="wind-arrow" id="windArrow" aria-hidden="true">➤</span>
                 </div>
-                <div class="hud-depth" role="group" aria-label="Profondeur de l’hameçon">
-                    <button class="depth-btn" id="depthMinus" aria-label="Moins profond" title="Moins profond">−</button>
-                    <span class="hud-depth-readout">Profondeur <strong id="depthLabel">1,3 m</strong></span>
-                    <button class="depth-btn" id="depthPlus" aria-label="Plus profond" title="Plus profond">+</button>
-                </div>
             </div>
             <div class="feed-gauge" id="feedGauge">
                 <div class="feed-gauge-bar">
@@ -39,6 +34,25 @@
                 </div>
                 <div class="feed-gauge-label">Puissance — relâche sur le repère !</div>
             </div>
+            <section class="depth-panel" id="depthPanel" aria-labelledby="depthTitle">
+                <div class="depth-panel-head">
+                    <span class="depth-title" id="depthTitle">Profondeur</span>
+                    <strong class="depth-label" id="depthLabel">1,3 m</strong>
+                </div>
+                <div class="depth-cross" id="depthCross">
+                    <div class="depth-bottom" id="depthBottomLine"></div>
+                    <div class="depth-hookline" id="depthHookLine"></div>
+                    <div class="depth-float" id="depthFloat"></div>
+                    <div class="depth-hook" id="depthHook"></div>
+                    <span class="depth-zone" id="depthZoneLabel">mi-eau</span>
+                </div>
+                <div class="depth-actions">
+                    <button class="depth-btn" id="depthMinus" aria-label="Moins profond" title="Moins profond">−</button>
+                    <button class="depth-btn" id="depthPlus" aria-label="Plus profond" title="Plus profond">+</button>
+                </div>
+                <div class="depth-hint" id="depthHint">Fond ici : —</div>
+                <div class="depth-range" id="depthRange">Bouchon : —</div>
+            </section>
             <div class="tool-dock" id="toolDock">
                 <div class="tool-actions">
                     <button id="pauseButton">⏸ Pause</button>
@@ -50,18 +64,6 @@
                     <button class="journal-button" id="rankingButton">🏆 Classement</button>
                     <button id="sonarButton" hidden aria-pressed="false">📡 Poser le sonar</button>
                     <button class="end-game-button" id="endGameButton">🏁 Terminer</button>
-                </div>
-                <div class="depth-panel" id="depthPanel">
-                    <div class="depth-panel-head"><span class="depth-title">Coupe de l’eau</span></div>
-                    <div class="depth-cross" id="depthCross">
-                        <div class="depth-bottom" id="depthBottomLine"></div>
-                        <div class="depth-hookline" id="depthHookLine"></div>
-                        <div class="depth-float" id="depthFloat"></div>
-                        <div class="depth-hook" id="depthHook"></div>
-                        <span class="depth-zone" id="depthZoneLabel">mi-eau</span>
-                    </div>
-                    <div class="depth-hint" id="depthHint">Fond ici : —</div>
-                    <div class="depth-range" id="depthRange">Bouchon : —</div>
                 </div>
                 <div class="stats-strip" id="statsStrip">
                     <div class="bourriche-label" id="bourricheLabel">🧺 Bourriche : 0</div>
@@ -316,6 +318,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=115"></script>
+    <script type="module" src="script.js?v=116"></script>
 </body>
 </html>
