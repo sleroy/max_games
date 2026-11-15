@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=163';
+import { SoundEngine } from './sound.js?v=164';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -38,6 +38,7 @@ import { creerSonar } from './sonar.js?v=160';
 import { creerStocks } from './stocks.js?v=161';
 import { creerJournal } from './journal.js?v=162';
 import { creerTouches } from './touches.js?v=163';
+import { creerCycleLigne } from './cycleLigne.js?v=164';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -82,6 +83,7 @@ lienEtat('amorceDepartRestante', function () { return amorceDepartRestante; }, f
 lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
 lienEtat('annoncerRecord', function () { return annoncerRecord; }, function (v) { annoncerRecord = v; });
 lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
+lienEtat('avertiRemontee', function () { return avertiRemontee; }, function (v) { avertiRemontee = v; });
 lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
 lienEtat('bateauGroupe', function () { return bateauGroupe; }, function (v) { bateauGroupe = v; });
 lienEtat('bateauRame', function () { return bateauRame; }, function (v) { bateauRame = v; });
@@ -164,7 +166,9 @@ lienEtat('floatState', function () { return floatState; }, function (v) { floatS
 lienEtat('floatStick', function () { return floatStick; }, function (v) { floatStick = v; });
 lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { flotteurChoix = v; });
 lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
+lienEtat('hameconDansZone', function () { return hameconDansZone; }, function (v) { hameconDansZone = v; });
 lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
+lienEtat('hideBiteView', function () { return hideBiteView; }, function (v) { hideBiteView = v; });
 lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
 lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuDemelage = v; });
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
@@ -188,10 +192,12 @@ lienEtat('partieStats', function () { return partieStats; }, function (v) { part
 lienEtat('partieTerminee', function () { return partieTerminee; }, function (v) { partieTerminee = v; });
 lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
 lienEtat('poidsRealisteKilos', function () { return poidsRealisteKilos; }, function (v) { poidsRealisteKilos = v; });
+lienEtat('pointerNdc', function () { return pointerNdc; }, function (v) { pointerNdc = v; });
 lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
 lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
 lienEtat('rainPoints', function () { return rainPoints; }, function (v) { rainPoints = v; });
+lienEtat('raycaster', function () { return raycaster; }, function (v) { raycaster = v; });
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
 lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
 lienEtat('renderBoutique', function () { return renderBoutique; }, function (v) { renderBoutique = v; });
@@ -204,6 +210,7 @@ lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
 lienEtat('showCatchMessage', function () { return showCatchMessage; }, function (v) { showCatchMessage = v; });
 lienEtat('signalerToucheRatee', function () { return signalerToucheRatee; }, function (v) { signalerToucheRatee = v; });
 lienEtat('snag', function () { return snag; }, function (v) { snag = v; });
+lienEtat('snagFreed', function () { return snagFreed; }, function (v) { snagFreed = v; });
 lienEtat('sonarBuoy', function () { return sonarBuoy; }, function (v) { sonarBuoy = v; });
 lienEtat('sonarDernierPing', function () { return sonarDernierPing; }, function (v) { sonarDernierPing = v; });
 lienEtat('sonarHorloge', function () { return sonarHorloge; }, function (v) { sonarHorloge = v; });
@@ -2233,7 +2240,7 @@ const {
     updateCast, updateCastAnimation
 } = creerLancerCanne({
     filEquipe, angler, feedGaugeFill, totalLignes, feedGauge, feedGaugeTarget, ensureSound,
-    statusDisplay, casserLigne, startCast, floatGroup, angleNormalise, rodLocalTip,
+    statusDisplay, casserLigne, startCast: (...args) => startCast(...args), floatGroup, angleNormalise, rodLocalTip,
     CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE
 });
 
@@ -2391,179 +2398,17 @@ const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
 const REEL_IDLE_HELP = 3;
 const REEL_AUTO = 6;
 
-const raycaster = new THREE.Raycaster();
-const pointerNdc = new THREE.Vector2(0, 0);
-
-function waterPointFromEvent(event) {
-    const rect = canvas.getBoundingClientRect();
-    pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointerNdc, camera);
-    const hits = raycaster.intersectObject(water);
-    return hits.length ? hits[0].point.clone() : null;
-}
-
-function startCast(target) {
-    if (partieTerminee || totalLignes() === 0) { return; }
-    if (floatState !== 'idle') {
-        return;
-    }
-    castStart.copy(rodTipVisual);
-    castSwingDepart = castSwing;
-    castTarget.copy(target);
-    castTarget.x += Math.cos(wind.dir) * wind.strength * 2.5;
-    castTarget.z += Math.sin(wind.dir) * wind.strength * 2.5;
-    castTarget.y = 0.1;
-    const wdx = castTarget.x - POND_CENTER.x;
-    const wdz = castTarget.z - POND_CENTER.z;
-    const wd = Math.hypot(wdx, wdz);
-    const maxR = rayonEtang(Math.atan2(wdz, wdx)) - 2;
-    if (wd > maxR) {
-        castTarget.x = POND_CENTER.x + (wdx / wd) * maxR;
-        castTarget.z = POND_CENTER.z + (wdz / wd) * maxR;
-    }
-    castT = 0;
-    fishCaught = false;
-    ligneTendue = false;
-    // Un nouveau lancer = une nouvelle chance : le poisson peut prendre
-    // l'esche « à la volée » dès que le bouchon touche l'eau.
-    biteCooldown = 0;
-    floatState = 'flying';
-    updateToolDock();
-    const peutEmmeler = risqueEmmelement() > 0;
-    fishButton.disabled = !peutEmmeler;
-    fishButton.hidden = !peutEmmeler;
-    fishButton.textContent = 'Tendre le fil';
-    statusDisplay.textContent = peutEmmeler
-        ? 'Lancer… appuie sur « Tendre le fil » avant l’arrivée dans l’eau.'
-        : 'Lancer… la ligne va se poser.';
-    sound.cast();
-    sound.playFouet();
-}
-
-// Clic pendant le vol : on tend la ligne avant que le bouchon ne se pose.
-function tendreLigneAuLancer() {
-    if (floatState !== 'flying' || ligneTendue || risqueEmmelement() === 0) {
-        return false;
-    }
-    ligneTendue = true;
-    spawnFloatingText('Ligne tendue !', castTarget, '#7ed957');
-    fishButton.disabled = true;
-    fishButton.textContent = '✓ Fil tendu';
-    statusDisplay.textContent = 'Ligne tendue ! Le lancer est sécurisé.';
-    sound.reel();
-    return true;
-}
-
-// Démarre le mini-jeu de démêlage (appelé quand le lancer n'a pas été tendu).
-function demarrerEmmElement() {
-    if (partieTerminee) { return; }
-    if (hookedFish) {
-        hookedFish.userData.hooked = false;
-        hookedFish.visible = false;
-        hookedFish = null;
-    }
-    if (biteFish) {
-        biteFish.userData.biting = false;
-        biteFish.visible = false;
-        biteFish = null;
-    }
-    if (struggle) {
-        struggle = null;
-        struggleTimeLeft = 0;
-        fermerPanneauCombat();
-        setDragLoosened(false);
-    }
-    if (snag) { snag = null; }
-    biteViewActive = false;
-    hideBiteView();
-    floatState = 'tangle';
-    floatGroup.position.copy(castTarget);
-    floatGroup.visible = true;
-    floatGroup.rotation.z = 0;
-    crank.classList.remove('active');
-    feedButton.classList.remove('active');
-    fishButton.disabled = true;
-    if (jeuDemelage) { jeuDemelage.ouvrir(); }
-    spawnFloatingText('🧶 Ligne emmêlée !', floatGroup.position, '#ffb347');
-    sound.escape();
-    statusDisplay.textContent = '🧶 Ligne emmêlée ! Suis le fil du départ à l’arrivée.';
-}
-
-// Étapes où la manivelle est utile : dès que la ligne est à l'eau (pour ramener
-// la ligne et relancer où l'on veut), pendant le combat et pendant la remontée.
-const CRANK_STATES = ['inWater', 'reeling', 'struggle'];
-
-function updateCrankVisibility() {
-    crank.classList.toggle('active', CRANK_STATES.indexOf(floatState) >= 0);
-}
-
-function startReel(automatique) {
-    if (floatState === 'inWater') {
-        floatState = 'reeling';
-        reelIdle = 0;
-        hameconDansLaVase = false;
-        avertiRemontee = false;
-        const support = techniqueCourante === 'quiver'
-            ? 'la ligne est toujours à l’eau'
-            : 'le bouchon est toujours à l’eau';
-        statusDisplay.textContent = automatique
-            ? 'Aucun poisson en ' + MAX_WAIT + ' s : la ligne a été remontée TOUTE SEULE. Relance (ou amorce pour attirer les poissons !).'
-            : 'On remonte la ligne… (' + support + ' : un poisson peut encore mordre !)';
-    }
-}
-
-// Un poisson mord quand il est réellement arrivé sur l'hameçon (distance 3D) :
-// il a donc dû s'approcher du bouchon ET remonter vers la surface (voir updateFish).
-function findBitingFish() {
-    if (fishCaught) {
-        return null;
-    }
-    let best = null;
-    let bestDist = BITE_RADIUS * BITE_RADIUS;
-    for (let i = 0; i < fishes.length; i++) {
-        const fish = fishes[i];
-        const data = fish.userData;
-        if (data.hooked || data.biting) {
-            continue;
-        }
-        // Seuls les poissons dont la tranche d'eau contient l'hameçon peuvent mordre.
-        const zone = data.profondeurZone;
-        if (!hameconDansZone(data, zone)) {
-            continue;
-        }
-        const dx = fish.position.x - floatGroup.position.x;
-        const dy = (fish.position.y + data.topOffset) - HOOK_DEPTH;
-        const dz = fish.position.z - floatGroup.position.z;
-        const d2 = dx * dx + dy * dy + dz * dz;
-        if (d2 < bestDist) {
-            bestDist = d2;
-            best = fish;
-        }
-    }
-    return best;
-}
-
-function endCast() {
-    if (fishCaught) {
-        score++;
-        scoreDisplay.textContent = score;
-        showCatchMessage(caughtWeight);
-        sound.catchFish();
-        statusDisplay.textContent = 'Poisson attrapé ! ' + fmtPoids(caughtWeight) + ' (+1) 🎣';
-        fishCaught = false;
-    } else if (snagFreed) {
-        statusDisplay.textContent = 'Ligne dégagée ! Tu peux relancer.';
-        snagFreed = false;
-    } else if (escaped) {
-        sound.escape();
-        statusDisplay.textContent = timeoutEscape ? 'Temps écoulé ! Le poisson s’est décroché.' : 'Le poisson s’est détaché ! Réessaie.';
-        escaped = false;
-        timeoutEscape = false;
-    } else {
-        statusDisplay.textContent = 'Rien cette fois… clique sur l’eau pour relancer.';
-    }
-}
+let raycaster;
+let pointerNdc;
+const {
+    waterPointFromEvent, startCast, tendreLigneAuLancer, demarrerEmmElement,
+    updateCrankVisibility, startReel, findBitingFish, endCast
+} = creerCycleLigne({
+    canvas, camera, water, totalLignes, castStart, rodTipVisual, castTarget, wind, POND_CENTER,
+    rayonEtang, updateToolDock, risqueEmmelement, fishButton, statusDisplay, sound,
+    fermerPanneauCombat, setDragLoosened, crank, feedButton, MAX_WAIT, BITE_RADIUS, fishes,
+    scoreDisplay, fmtPoids
+});
 
 let catchMessageTimer = null;
 let recordBattu = null;
