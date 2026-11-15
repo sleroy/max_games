@@ -13,7 +13,7 @@ function read(name) {
 // Certaines règles portent sur « le code du jeu » sans se soucier du module qui
 // le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
 // modules fusionnés : script.js + les modules extraits.
-const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js'];
+const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js'];
 
 function readModules() {
     return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))
@@ -22,7 +22,7 @@ function readModules() {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'splashes.js', 'messages.js', 'ondulations.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'splashes.js', 'messages.js', 'ondulations.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
@@ -135,7 +135,7 @@ export function run() {
     check('le shader d’eau reçoit la direction du soleil (uniforme uSunDir)',
         script.includes('uniform vec3 uSunDir') && script.includes('viewDir + uSunDir'));
     check('plus aucune direction solaire codée en dur dans le shader',
-        !script.includes('normalize(vec3(0.4, 1.0, -0.6))'));
+        !code.includes('normalize(vec3(0.4, 1.0, -0.6))'));
 
     group('7) Étang généré (idee 3)');
     check('le contour vient d’un bruit radial déterministe',
@@ -179,9 +179,9 @@ export function run() {
     check('les mordillements utilisent un générateur local',
         script.includes('function nibbleRand') && script.includes('nibbleRngState'));
     check('plus de cycle périodique de 4 s',
-        !script.includes('const cycle = time % 4'));
+        !code.includes('const cycle = time % 4'));
     check('plus de rond toutes les 1,8 s',
-        !script.includes('nibbleRippleTimer = 1.8'));
+        !code.includes('nibbleRippleTimer = 1.8'));
 
     group('11) Geste de lancer');
     check('le geste de lancer a une animation dédiée',
@@ -195,13 +195,13 @@ export function run() {
 
     group('12) JOUER réinitialise la partie');
     check('JOUER déclenche une partie neuve',
-        script.includes('function reinitialiserPartie')
-        && script.includes('recommencerPartie();'));
+        code.includes('function reinitialiserPartie')
+        && code.includes('recommencerPartie();'));
     check('score et bourriche de partie sont remis à zéro',
         script.includes('score = 0') && script.includes('bourricheCount = 0'));
     check('le carnet et l’XP ne sont pas effacés',
-        !script.includes('journal.total = 0')
-        && !script.includes('journal.experience = 0'));
+        !code.includes('journal.total = 0')
+        && !code.includes('journal.experience = 0'));
 
     group('13) Petit écran : dock repliable et FOV');
     const toolsStart = html.indexOf('id="toolDock"');
@@ -228,9 +228,9 @@ export function run() {
     check('un FOV horizontal minimum est prévu pour les écrans étroits',
         script.includes('function fovPourAspect') && script.includes('H_FOV_MIN'));
     check('l’avertissement de remontée trop rapide est une popup 3D',
-        script.includes('Trop vite !') && script.includes('spawnFloatingText'));
+        code.includes('Trop vite !') && code.includes('spawnFloatingText'));
     check('le message interdit « Ça bouge » n’est jamais affiché',
-        !script.includes('Ça bouge') && !script.includes('Ca bouge'));
+        !code.includes('Ça bouge') && !code.includes('Ca bouge'));
     check('le seul message d’approche est « Un poisson s’approche »',
         code.includes('Un poisson s’approche'));
 

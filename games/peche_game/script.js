@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=169';
+import { SoundEngine } from './sound.js?v=170';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -44,6 +44,7 @@ import { creerAmbiance } from './ambiance.js?v=166';
 import { creerEntrees } from './entrees.js?v=167';
 import { creerCheat } from './cheat.js?v=168';
 import { creerBoucle } from './boucle.js?v=169';
+import { creerPartie } from './partie.js?v=170';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -89,6 +90,7 @@ lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { 
 lienEtat('annoncerRecord', function () { return annoncerRecord; }, function (v) { annoncerRecord = v; });
 lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
 lienEtat('avertiRemontee', function () { return avertiRemontee; }, function (v) { avertiRemontee = v; });
+lienEtat('avertissementsVitesse', function () { return avertissementsVitesse; }, function (v) { avertissementsVitesse = v; });
 lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
 lienEtat('bateauGroupe', function () { return bateauGroupe; }, function (v) { bateauGroupe = v; });
 lienEtat('bateauRame', function () { return bateauRame; }, function (v) { bateauRame = v; });
@@ -138,6 +140,7 @@ lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { ca
 lienEtat('chum', function () { return chum; }, function (v) { chum = v; });
 lienEtat('clock', function () { return clock; }, function (v) { clock = v; });
 lienEtat('coupePrete', function () { return coupePrete; }, function (v) { coupePrete = v; });
+lienEtat('crankRotationDelta', function () { return crankRotationDelta; }, function (v) { crankRotationDelta = v; });
 lienEtat('dayPhase', function () { return dayPhase; }, function (v) { dayPhase = v; });
 lienEtat('depthRange', function () { return depthRange; }, function (v) { depthRange = v; });
 lienEtat('depuisLancement', function () { return depuisLancement; }, function (v) { depuisLancement = v; });
@@ -2155,7 +2158,7 @@ const {
     stockAmorce, majAmorce, stockFil, totalLignes, filEquipe, selectionnerFilDisponible,
     debiterLigne, acheterRecharge
 } = creerStocks({
-    SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal: (...args) => saveJournal(...args), majLignes,
+    SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal: (...args) => saveJournal(...args), majLignes: (...args) => majLignes(...args),
     renderJournal: (...args) => renderJournal(...args), lineSelect
 });
 
@@ -2252,7 +2255,7 @@ const {
     updateCast, updateCastAnimation
 } = creerLancerCanne({
     filEquipe, angler, feedGaugeFill, totalLignes, feedGauge, feedGaugeTarget, ensureSound,
-    statusDisplay, casserLigne, startCast: (...args) => startCast(...args), floatGroup, angleNormalise, rodLocalTip,
+    statusDisplay, casserLigne: (...args) => casserLigne(...args), startCast: (...args) => startCast(...args), floatGroup, angleNormalise, rodLocalTip,
     CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE
 });
 
@@ -2268,7 +2271,7 @@ const {
     setDragLoosened, openTutorial, closeTutorial, nextTutorialStep
 } = creerFrein({
     dragButton, strugglePanel, ensureSound, sound, tutorialText, tutorialHand,
-    tutorialStepDisplay, tutorialNext, tutorial, accueil, demarrerJeu, tutorialClose,
+    tutorialStepDisplay, tutorialNext, tutorial, accueil, demarrerJeu: (...args) => demarrerJeu(...args), tutorialClose,
     tutorialOpen, hideJournal, journalButton, journalPanel, showJournal, journalClose,
     difficultySelect, setDifficulty, scionSelect, setScion, renderBoutique, floatSelect,
     setFloatType, effectsToggle, post, reflectionsToggle, reflections, waterReflectionTarget,
@@ -2439,7 +2442,7 @@ const {
     PREDATOR_ATTACK_ADVANTAGE, flotteurCourant, rand, TOUCHES_PAR_ID, choisirTouche, biteOrigine,
     rodTipVisual, setFloatOpacity, modeQuiver, punishFish, dureeTouche, appliquerMouvement,
     mouvementDeTouche, BITE_VIEW_LINGER, majIndiceSnag: (...args) => majIndiceSnag(...args), fermerPanneauCombat, consumeCrankTurns,
-    vitesseMaxTours
+    vitesseMaxTours: (...args) => vitesseMaxTours(...args)
 });
 
 const {
@@ -2447,7 +2450,7 @@ const {
 } = creerAccrochage({
     lilyPads, strugglePanel, sound, struggleInfo, strugglePortrait, struggleTimer, struggleHint,
     updateStruggleBar, fishButton, statusDisplay, fermerPanneauCombat, debiterLigne,
-    perdreLeBouchon, totalLignes, terminerPartie, snagPret, appliquerClicUtile, rand
+    perdreLeBouchon, totalLignes, terminerPartie: (...args) => terminerPartie(...args), snagPret, appliquerClicUtile, rand
 });
 
 const {
@@ -2638,439 +2641,27 @@ animate();
 // ---------------------------------------------------------------------------
 let testTime = 0;
 // ---------------------------------------------------------------------------
-// LIGNES (VIES) : on part avec 5 lignes. Un lancer trop fort ou une remontée
-// trop rapide en coûte une. À zéro : fin de partie, nom du pêcheur et
-// classement local (3 onglets : poissons, poids total, records par espèce).
-// ---------------------------------------------------------------------------
-const VITESSE_MANIVELLE_MAX = 4.0;     // base : tours/s EN MOYENNE sur 0,6 s
-const RANKING_KEY = 'peche_max_games_classement';
-const NOM_KEY = 'peche_max_games_nom';
-let avertissementsVitesse = 0;
-let partieTerminee = false;
-let derniereAlerteVitesse = -10000;
-let ongletClassement = 'poissons';
-let partieStats = { poissons: 0, poids: 0, records: {} };
-
-function majLignes() {
-    if (!lignesLabel) { return; }
-    const total = totalLignes();
-    const reserves = total - lignesRestantes;
-    lignesLabel.textContent = '🧵 Lignes : ' + total + (reserves ? '' : '/' + MAX_LIGNES);
-    lignesLabel.classList.toggle('danger', total <= 1);
-}
-
-function casserLigne(raison) {
-    if (partieTerminee) { return; }
-    fishButton.hidden = true;
-    if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
-    debiterLigne();
-    avertissementsVitesse = 0;
-    sound.lineBreak();
-    spawnFloatingText('💥 Ligne cassée !', floatGroup.position, '#ff6b57');
-    statusDisplay.textContent = '💥 ' + raison + ' : une ligne est perdue ('
-        + totalLignes() + ' restante' + (totalLignes() > 1 ? 's' : '') + ').';
-    floatState = 'idle';
-    hameconDansLaVase = false;
-    fishButton.disabled = false;
-    if (hookedFish) {
-        hookedFish.userData.hooked = false;
-        hookedFish.visible = false;
-        hookedFish = null;
-    }
-    floatGroup.position.copy(floatIdle);
-    floatGroup.rotation.z = 0;
-    if (totalLignes() === 0) { terminerPartie(); }
-}
-
-// ---------------------------------------------------------------------------
-// Remontée trop rapide : LA CHARGE COMPTE
-// ---------------------------------------------------------------------------
-// Le fil ne casse pas parce qu'on tourne vite : il casse parce que quelque
-// chose TIRE au bout. Deux conséquences :
-//   • sans poisson ferré (on rembobine un bouchon vide) : aucune limite ;
-//   • avec un poisson ferré : plus il est lourd, plus la vitesse permise est
-//     basse (et le fil choisi compte aussi).
-// Poids réels du jeu : ~0,1 kg (goujon) à ~106 kg (silure).
-function vitesseMaxTours() {
-    if (!hookedFish) { return Infinity; }
-    const poids = Math.max(0.05, hookedFish.userData.weight || 0);
-    // 0,1 kg ≈ 6,1 · 0,8 kg ≈ 5,4 · 2,8 kg ≈ 4,5 · 6 kg ≈ 3,6 · ≥ 20 kg = 2,5
-    const seuil = Math.max(2.5, VITESSE_MANIVELLE_MAX + 2.5 - 1.2 * Math.sqrt(poids));
-    return seuil * filEquipe().resistance;
-}
-
-// Chance qu'un avertissement casse vraiment la ligne : elle grandit avec le
-// poids du poisson (un goujon ne fait pas casser un fil, une carpe oui).
-function risqueCasseVitesse() {
-    if (!hookedFish) { return 0; }
-    const poids = Math.max(0.05, hookedFish.userData.weight || 0);
-    const facteur = Math.min(1.6, 0.4 + 0.4 * Math.sqrt(poids));
-    return Math.min(0.15, 0.015 * avertissementsVitesse * facteur);
-}
-
-// Remontée trop rapide : un avertissement (toutes les 1,5 s au plus), puis le
-// risque de casse augmente à chaque avertissement.
-function avertirVitesse() {
-    if (partieTerminee) { return; }
-    const maintenant = performance.now();
-    if (maintenant - derniereAlerteVitesse < 1500) { return; }  // 1 alerte / 1,5 s
-    derniereAlerteVitesse = maintenant;
-    avertissementsVitesse += 1;
-    // POPUP 3D près du bouchon, comme « FERRÉ ! » ou « Trop tôt ! » : le joueur
-    // voit l'avertissement sans quitter l'eau des yeux.
-    spawnFloatingText('⚠️ Trop vite !', floatGroup.position, '#ffb347');
-    if (avertissementsVitesse <= 3) {
-        statusDisplay.textContent = '⚠️ Tu remontes trop vite ! La ligne souffre ('
-            + avertissementsVitesse + ' avertissement' + (avertissementsVitesse > 1 ? 's' : '') + ').';
-    }
-    if (rand() < risqueCasseVitesse()) {
-        casserLigne('Tu as remonté trop vite');
-    }
-}
-
-// Classement local délégué au module classement.js.
-const classementApi = creerClassement({
-    store: journalStore,
-    rankingKey: RANKING_KEY,
-    nomKey: NOM_KEY,
-    getPartieStats: function () { return partieStats; },
-    fmtPoids: fmtPoids,
-    rankingList: rankingList,
-    rankingTabs: rankingTabs
+let VITESSE_MANIVELLE_MAX;
+let avertissementsVitesse;
+let partieTerminee;
+let partieStats;
+const {
+    majLignes, casserLigne, vitesseMaxTours, risqueCasseVitesse, avertirVitesse,
+    chargerClassement, enregistrerClassement, renderClassement, ouvrirClassement, terminerPartie,
+    revenirAccueil, recommencerPartie, demarrerJeu, afficherAccueil
+} = creerPartie({
+    lignesLabel, totalLignes, fishButton, debiterLigne, sound, spawnFloatingText, statusDisplay,
+    floatIdle, filEquipe, rand, creerClassement, fmtPoids, rankingList, rankingTabs, classement,
+    fermerOutils, rangerSonar, setCameraView, hideBiteView, setDragLoosened, feedGauge,
+    cancelFeed, crank, feedButton, gameOver, gameOverTitle, gameOverText, gameOverScore,
+    playerName, modalBackdrop, accueil, cancelCast, randomFishPosition, fishes,
+    fermerPanneauCombat, setFloatOpacity, setCastPower, castTarget, rodGroup, rodTipVisual,
+    rodTip, angler, rodPivot, setFeedMode, floatingTexts, scene, missRings, ripples,
+    effrayerRagondin, ragondinAlert, scoreDisplay, resetCameraView, pauseButton, renderJournal,
+    majCoupeProfondeur, updateToolDock, updateCrankVisibility, updateLine, stockAmorce,
+    saveScore, showRanking, rankingButton, closeRanking, restartGame, saveAndMenu, backToMenu,
+    endGameButton, ensureSound, playButton, accueilClassement, techniqueSelect, setTechnique
 });
-
-function chargerClassement() {
-    return classementApi.charger();
-}
-
-function sauverClassement(liste) {
-    classementApi.sauver(liste);
-}
-
-function enregistrerClassement(nom) {
-    return classementApi.enregistrer(nom);
-}
-
-function renderClassement(onglet) {
-    ongletClassement = onglet || 'poissons';
-    classementApi.render(ongletClassement);
-}
-
-function ouvrirClassement() {
-    if (!classement) { return; }
-    fermerOutils();
-    renderClassement(ongletClassement);
-    classement.classList.add('active');
-    majModalBackdrop();
-}
-
-function fermerClassement() {
-    if (classement) { classement.classList.remove('active'); }
-    majModalBackdrop();
-}
-
-// Fin de partie : plus aucune ligne, ou fin volontaire par le joueur.
-// `raison` vaut 'lignes' (défaut) ou 'manuelle'.
-function terminerPartie(raison) {
-    if (partieTerminee) { return; }
-    rangerSonar();
-    setCameraView(false);
-    if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
-    const manuelle = raison === 'manuelle';
-    partieTerminee = true;
-    // On coupe proprement une ligne en cours : aucun poisson ne doit rester
-    // accroché derrière le panneau de fin de partie.
-    if (hookedFish) {
-        hookedFish.userData.hooked = false;
-        hookedFish.visible = false;
-        hookedFish = null;
-    }
-    if (biteFish) {
-        biteFish.userData.biting = false;
-        biteFish.visible = false;
-        biteFish = null;
-    }
-    biteViewActive = false;
-    hideBiteView();
-    struggle = null;
-    struggleTimeLeft = 0;
-    snag = null;
-    setDragLoosened(false);
-    castState = 'idle';
-    feedGauge.classList.remove('active');
-    if (feedState === 'charging') { cancelFeed(); }
-    floatState = 'idle';
-    floatGroup.visible = true;
-    floatGroup.position.copy(floatIdle);
-    floatGroup.rotation.z = 0;
-    crank.classList.remove('active');
-    feedButton.classList.remove('active');
-    fishButton.disabled = true;
-    fermerOutils();
-    if (!gameOver) { majModalBackdrop(); return; }
-    if (gameOverTitle) {
-        gameOverTitle.textContent = manuelle ? '🏁 Partie terminée' : '💥 Plus de lignes !';
-    }
-    if (gameOverText) {
-        gameOverText.textContent = manuelle
-            ? 'Tu as choisi de terminer la partie. Voici ton bilan :'
-            : 'Tu n’as plus de lignes. Voici ta partie :';
-    }
-    if (gameOverScore) {
-        gameOverScore.innerHTML = '🐟 <b>' + partieStats.poissons + '</b> poisson(s) · ⚖️ <b>'
-            + fmtPoids(partieStats.poids) + '</b> au total · 🏆 <b>'
-            + Object.keys(partieStats.records).length + '</b> espèce(s)';
-    }
-    if (playerName) {
-        let dernierNom = '';
-        try { if (journalStore) { dernierNom = journalStore.getItem(NOM_KEY) || ''; } } catch (e) { /* plein */ }
-        playerName.value = dernierNom;
-    }
-    gameOver.classList.add('active');
-    majModalBackdrop();
-}
-
-// Le fond assombri n'est affiché que si une modale est réellement ouverte.
-function majModalBackdrop() {
-    if (!modalBackdrop) { return; }
-    const bloque = !!(
-        (accueil && accueil.classList.contains('active'))
-        || (gameOver && gameOver.classList.contains('active'))
-        || (classement && classement.classList.contains('active'))
-    );
-    modalBackdrop.classList.toggle('active', bloque);
-}
-
-function revenirAccueil() {
-    rangerSonar();
-    if (gameOver) { gameOver.classList.remove('active'); }
-    if (classement) { classement.classList.remove('active'); }
-    if (accueil) { accueil.classList.add('active'); }
-    majModalBackdrop();
-}
-
-// Remet la PARTIE à zéro : score, bourriche de la partie, lignes, statistiques
-// et état de pêche. Le carnet (`journal`), l'XP, les bouchons achetés et le
-// classement sont PERSISTANTS : on ne les efface pas ici.
-function reinitialiserPartie() {
-    rangerSonar();
-    // --- État de pêche / animations ---
-    if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
-    ligneTendue = false;
-    if (castState === 'charging') { cancelCast(); }
-    if (feedState === 'charging') { cancelFeed(); }
-    if (hookedFish) { hookedFish.userData.hooked = false; }
-    if (biteFish) { biteFish.userData.biting = false; }
-    // Poisson en main : on le remet à l'eau (et dans le tableau s'il en sortait).
-    if (heldFish) {
-        const poisson = heldFish;
-        heldFish = null;
-        poisson.scale.setScalar(poisson.userData.size);
-        poisson.rotation.set(0, 0, 0);
-        poisson.position.copy(randomFishPosition());
-        poisson.visible = true;
-        poisson.userData.vx = 0;
-        poisson.userData.vz = 0;
-        if (fishes.indexOf(poisson) < 0) { fishes.push(poisson); }
-    }
-    fishes.forEach(function (poisson) {
-        poisson.userData.hooked = false;
-        poisson.userData.biting = false;
-        poisson.userData.targeting = false;
-        poisson.visible = true;
-        poisson.scale.setScalar(poisson.userData.size);
-        poisson.rotation.set(0, 0, 0);
-        poisson.userData.vx = 0;
-        poisson.userData.vz = 0;
-    });
-    hookedFish = null;
-    biteFish = null;
-    biteViewActive = false;
-    hideBiteView();
-    struggle = null;
-    snag = null;
-    fermerPanneauCombat();
-    setDragLoosened(false);
-    tension = 0;
-    hameconDansLaVase = false;
-    snagFreed = false;
-    lineBrokenTimer = 0;
-    fishCaught = false;
-    escaped = false;
-    timeoutEscape = false;
-    caughtWeight = 0;
-    recordBattu = null;
-    waitTimer = 0;
-    depuisLancement = 0;
-    biteCooldown = 0;
-    biteSignauxRestants = 1;
-    baitInterest = false;
-    nibbleInteretAvant = false;
-    nibbleDebut = -1;
-    nibbleSuivant = 0;
-    nibblePhase = 0;
-
-    // --- Bouchon, canne et bras au repos ---
-    floatState = 'idle';
-    floatGroup.visible = true;
-    floatGroup.position.copy(floatIdle);
-    floatGroup.rotation.z = 0;
-    setFloatOpacity(1);
-    castState = 'idle';
-    setCastPower(0);
-    castTargetPower = 0;
-    castPhase = 0;
-    castT = 0;
-    castTarget.copy(castAim);
-    castSwing = 0;
-    castSwingDepart = 0;
-    castYawAngler = 0;
-    castYawRod = 0;
-    rodBend = 0;
-    rodGroup.rotation.x = 0;
-    rodTipVisual.copy(rodTip);
-    angler.rotation.y = anglerYawBase;
-    rodPivot.rotation.y = rodYawBase;
-    feedGauge.classList.remove('active');
-    feedState = 'idle';
-    setFeedMode(false);
-    feedBall.visible = false;
-    feedPower = 0;
-    feedTargetPower = 0;
-    feedFlyT = 0;
-    fishThrowState = 'idle';
-    fishThrowPower = 0;
-    fishThrowTarget = 0;
-    fishThrowPhase = 0;
-    fishThrowT = 0;
-
-    // --- Effets visuels de la partie précédente ---
-    floatingTexts.forEach(function (item) {
-        scene.remove(item.sprite);
-        if (item.sprite.material.map) { item.sprite.material.map.dispose(); }
-        item.sprite.material.dispose();
-    });
-    floatingTexts.length = 0;
-    missRings.forEach(function (item) {
-        scene.remove(item.mesh);
-        item.mesh.geometry.dispose();
-        item.mesh.material.dispose();
-    });
-    missRings.length = 0;
-    ripples.forEach(function (item) {
-        scene.remove(item.mesh);
-        item.mesh.geometry.dispose();
-        item.mesh.material.dispose();
-    });
-    ripples.length = 0;
-    if (chum) { scene.remove(chum.group); chum = null; }
-    if (ragondin) { effrayerRagondin(); }
-    ragondinHits = 0;
-    ragondinVolTimer = 0;
-    ragondinTimer = 18 + rand() * 12;
-    if (ragondinAlert) { ragondinAlert.classList.remove('active'); }
-
-    // --- Compteurs de la PARTIE (le carnet/XP persistants ne bougent pas) ---
-    score = 0;
-    scoreDisplay.textContent = score;
-    bourricheCount = 0;
-    lignesRestantes = MAX_LIGNES;
-    amorceDepartRestante = AMORCE_DEPART;
-    avertissementsVitesse = 0;
-    derniereAlerteVitesse = -10000;
-    partieTerminee = false;
-    partieStats = { poissons: 0, poids: 0, records: {} };
-    experiencePartie = 0;
-    crankRotationDelta = 0;
-
-    // --- Interface ---
-    if (gameOver) { gameOver.classList.remove('active'); }
-    if (classement) { classement.classList.remove('active'); }
-    feedButton.classList.remove('active');
-    crank.classList.remove('active');
-    fishButton.disabled = false;
-    fishButton.hidden = true;
-    fishButton.classList.remove('cooldown');
-    paused = false;
-    setCameraView(false);
-    resetCameraView();
-    pauseButton.textContent = '⏸ Pause';
-    fermerOutils();
-    majLignes();
-    renderJournal();      // bourriche de la partie + XP persistant
-    majCoupeProfondeur();
-    updateToolDock();
-    updateCrankVisibility();
-    updateLine();
-    majModalBackdrop();
-}
-
-function recommencerPartie() {
-    reinitialiserPartie();
-    if (gameOver) { gameOver.classList.remove('active'); }
-    fermerClassement();
-    majModalBackdrop();
-    statusDisplay.textContent = 'Nouvelle partie : ' + totalLignes() + ' lignes et ' + stockAmorce() + ' boules d’amorce.';
-}
-
-// --- Boutons du panneau de fin de partie et du classement ---
-if (saveScore) {
-    saveScore.addEventListener('click', function () {
-        enregistrerClassement(playerName ? playerName.value : '');
-        if (gameOver) { gameOver.classList.remove('active'); }
-        ouvrirClassement();
-    });
-}
-if (showRanking) { showRanking.addEventListener('click', ouvrirClassement); }
-if (rankingButton) { rankingButton.addEventListener('click', ouvrirClassement); }
-if (closeRanking) { closeRanking.addEventListener('click', fermerClassement); }
-if (restartGame) { restartGame.addEventListener('click', recommencerPartie); }
-if (saveAndMenu) {
-    saveAndMenu.addEventListener('click', function () {
-        enregistrerClassement(playerName ? playerName.value : '');
-        revenirAccueil();
-    });
-}
-if (backToMenu) { backToMenu.addEventListener('click', revenirAccueil); }
-if (endGameButton) {
-    endGameButton.addEventListener('click', function () {
-        if (partieTerminee) { return; }
-        if (accueil && accueil.classList.contains('active')) { return; }
-        terminerPartie('manuelle');
-    });
-}
-if (rankingTabs) {
-    rankingTabs.addEventListener('click', function (event) {
-        const cible = event.target && event.target.dataset ? event.target.dataset.rank : '';
-        if (cible) { renderClassement(cible); }
-    });
-}
-
-majLignes();
-
-// ÉCRAN D'ACCUEIL : on propose de JOUER ou de consulter le CLASSEMENT local.
-function demarrerJeu() {
-    // JOUER = une PARTIE NEUVE : score, bourriche, lignes, statistiques et état
-    // de pêche repartent de zéro (le carnet, l'XP carrière et le classement restent).
-    recommencerPartie();
-    if (accueil) { accueil.classList.remove('active'); }
-    majModalBackdrop();
-    ensureSound();
-    statusDisplay.textContent = 'Maintiens sur l’eau, puis relâche pour lancer.';
-}
-function afficherAccueil() {
-    if (classement) { classement.classList.remove('active'); }
-    if (gameOver) { gameOver.classList.remove('active'); }
-    if (accueil) { accueil.classList.add('active'); }
-    majModalBackdrop();
-}
-if (playButton) { playButton.addEventListener('click', demarrerJeu); }
-if (accueilClassement) { accueilClassement.addEventListener('click', ouvrirClassement); }
-if (techniqueSelect) {
-    techniqueSelect.addEventListener('change', function () {
-        setTechnique(this.value);
-    });
-}
 
 window.__game = {
     scene: scene,

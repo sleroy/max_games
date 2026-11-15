@@ -67,6 +67,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `entrees.js` | Entrées : pointeur, clavier et boutons de l’écran de jeu (état via `etat`) | 225 | Entrées / UI |
 | `cheat.js` | Cheat : mot secret « poisson » (+50 XP) (état via `etat`) | 123 | Cheat / tests |
 | `boucle.js` | Boucle d’animation : une image du jeu, ragondin, pause, horloge (état via `etat`) | 212 | Boucle / rendu |
+| `partie.js` | Partie : lignes (vies), remontée trop rapide, classement, fin de partie, accueil (état via `etat`) | 465 | Partie / règles |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |
