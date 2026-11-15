@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v144**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v173**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -228,20 +228,31 @@
 
 ## 14. À faire — demandes du 2026-11-15
 
-### 14.1 Étang trop petit → étang moyen avec zones profondes
+### 14.1 Étang trop petit → étang moyen avec zones profondes — LIVRÉ v173
 
-- [ ] **Agrandir l'étang** : rayon nominal **55 → 90** unités (environ 45 m de rayon,
-  ≈ 0,64 ha au lieu de 0,23 ha). Décision prise : « étang moyen + zones profondes ».
-- [ ] **Zones profondes supplémentaires** : fosses plus profondes et plus larges,
-  pour que la barque serve vraiment à atteindre le poisson de fond.
-- [ ] **Adapter ce qui ne suit pas le rayon automatiquement** :
-  - [ ] carte de placement (`CARTE_3D_MONDE = 170`, `CARTE_3D_SEGMENTS = 96`) ;
-  - [ ] maillages eau et terrain (`makeWaterGeometry`, résolution du relief) ;
-  - [ ] distances de caméra et brume (`NORMAL_CAM_POS`, brouillard) ;
-  - [ ] carte du carnet (échelle du SVG, `rendreCarteEtang`).
-- [ ] **Plus de poissons** (voir 14.4), sinon le grand plan d'eau paraîtra vide.
-- [ ] **Vérifier les performances** (nombre de poissons × maillage plus fin) sur un
-  ordinateur modeste et sur téléphone.
+- [x] **Agrandir l'étang** : rayon nominal **55 → 90** unités (contour 71–104,
+  ≈ 0,64 ha au lieu de 0,23 ha). Centre déplacé de (0, −40) à (0, −71) pour que la
+  rive sud (poste de départ) reste en place. Décision : « étang moyen + zones profondes ».
+- [x] **Zones profondes** : **3 fosses** (rayons 22 / 18 / 16, +3,6 / +3,3 / +3,8) →
+  profondeur max **8,14 unités (≈ 4 m)** au lieu de 6,6. Les deux grandes sont à plus
+  de 60 unités de la rive (portée de lancer 52) : **il faut la barque**.
+  La ligne descend à 9,0 (7,0 avant) pour que tous les bouchons atteignent le fond.
+- [x] **Adapter ce qui ne suit pas le rayon** :
+  - [x] shader d'eau (profondeur codée en dur → attribut `aDepth`) et maillages
+    eau 40×128 / rive 430 ;
+  - [x] carte de placement (terrain 260, caméra ×1,7) ;
+  - [x] brume 150–480, ciel 520, caméra far 900, ombres et soleil relatifs au pêcheur ;
+  - [x] carte du carnet (échelle = rayon max + couronne) ;
+  - [x] décor en densité de surface : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars ;
+  - [x] **bug corrigé** : les bornes de rame se calculaient au rayon de l'angle de
+    départ (la barque pouvait traverser le centre en tournant beaucoup) → pas de rame 2,4.
+- [x] **Plus de poissons** : population = surface × 90/ha = **58** (`FISH_COUNT = 64`
+  n'est plus qu'un plafond) ; ≥ 10 espèces, 1 silure max, 2 de chaque autre solitaire,
+  biomasse ≈ **160 kg/ha** (fourchette réaliste 100–300). Silure, anguille et sandre
+  naissent **en fosse** ; les espèces de fond naissent collées au relief et le suivent
+  2× plus vite.
+- [~] **Performances** : suite complète verte et chargement vérifié dans Chromium ;
+  **reste à mesurer sur un téléphone réel** (maillage 40×128 + 58 poissons).
 
 ### 14.2 Obstacles aquatiques et semi-aquatiques (à modéliser en 3D)
 
@@ -346,7 +357,7 @@ bruitages à remplacer, banc d'origine à rejoindre après une capture.
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **1588 vérifications vertes** (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **1926 vérifications vertes** (v173) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
