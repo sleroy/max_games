@@ -3,9 +3,10 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual, checkClose,
-    G, el, fire, state, step,
+    G, el, fire, state, step, stepUntil,
     resetToIdle, clearLilyPads, castTo, forceBite, startFight, crankTurns
 } from './harness.mjs';
+import { chargerCarnet, sauverCarnet } from '../carnet.js';
 
 /** Amène un poisson au bord jusqu'à l'avoir « en main » (étape bourriche). */
 function amenerUnPoissonEnMain() {
@@ -259,6 +260,60 @@ export function run() {
     checkEqual('une nouvelle partie range le sonar', el('sonarPanel').hidden, true);
     checkEqual('le sonar reste acquis dans la nouvelle partie', el('sonarButton').hidden, false);
 
+    group('63) Recharges : stock limité, achat et choix du fil');
+    const acheter = id => fire('boutique', 'click', { target: { dataset: { action: 'recharger', id } } });
+    checkEqual('une nouvelle partie commence avec 3 boules', el('feedButton').textContent, '🥣 Amorce (3)');
+    G().setExperience(0);
+    acheter('amorce');
+    checkEqual('sans XP, le lot n’est pas ajouté', el('feedButton').textContent, '🥣 Amorce (3)');
+    G().setExperience(100);
+    acheter('amorce');
+    checkEqual('le lot ajoute 3 boules', el('feedButton').textContent, '🥣 Amorce (6)');
+    checkEqual('le lot d’amorce coûte 12 XP', G().getExperience(), 88);
+    G().recommencerPartie();
+    checkEqual('les boules achetées restent en réserve après Rejouer', el('feedButton').textContent, '🥣 Amorce (6)');
+    G().startFeedCharge({ x: 0, y: 0, z: -25 });
+    fire('toolToggle', 'click');
+    fire('toolToggle', 'click');
+    checkEqual('annuler un geste ne dépense pas de boule', el('feedButton').textContent, '🥣 Amorce (6)');
+    for (let i = 0; i < 6; i++) {
+        G().startFeedCharge({ x: 0, y: 0, z: -25 });
+        G().releaseFeed();
+        stepUntil(() => G().getFeedState() === 'idle', 3);
+    }
+    checkEqual('les six lancers épuisent le stock', el('feedButton').textContent, '🥣 Amorce (0)');
+    G().setFeedMode(true);
+    G().startFeedCharge({ x: 0, y: 0, z: -25 });
+    checkEqual('sans boule, aucune charge ne commence', G().getFeedState(), 'idle');
+    checkEqual('sans boule, le jeu n’arme pas l’amorçage', G().isFeedMode(), false);
+
+    acheter('fluorocarbone');
+    checkEqual('le fluorocarbone coûte 28 XP', G().getExperience(), 60);
+    checkEqual('trois nouveaux fils s’ajoutent aux cinq fils de départ', G().getLignes(), 8);
+    el('lineSelect').value = 'fluorocarbone';
+    fire('lineSelect', 'change');
+    G().setDifficulty('normal');
+    G().setTangleChance(null);
+    checkClose('le fluorocarbone divise le risque par deux', G().getTangleChance(), 0.04, 1e-9);
+    G().setTangleChance(0);
+    for (let i = 0; i < 3; i++) { G().casserLigne('Test'); }
+    checkEqual('les casses débitent le fil équipé', G().getLignes(), 5);
+    checkEqual('quand le lot est épuisé, on reprend le nylon', el('lineSelect').value, 'nylon');
+
+    const store = { value: '', getItem() { return this.value; }, setItem(key, value) { this.value = value; } };
+    const reserves = { amorce: 0, nylon: 0, fluorocarbone: 0, tresse: 0 };
+    const data = { recharges: { ...reserves } };
+    store.value = '{"experience":42}';
+    chargerCarnet({ store, data });
+    checkEqual('un ancien carnet conserve son XP', data.experience, 42);
+    checkEqual('un ancien carnet commence sans recharge achetée', data.recharges.amorce, 0);
+    sauverCarnet({ store, data: { recharges: { ...reserves, tresse: 3, amorce: 2 }, ligne: 'tresse' } });
+    chargerCarnet({ store, data });
+    checkEqual('le carnet restaure le nombre de boules achetées', data.recharges.amorce, 2);
+    checkEqual('le carnet restaure les lignes achetées', data.recharges.tresse, 3);
+    checkEqual('le carnet restaure le type équipé', data.ligne, 'tresse');
+
+    G().recommencerPartie();
     G().setExperience(0);
     resetToIdle();
     G().setFloatType('anglaise');

@@ -3,12 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=123';
+import { SoundEngine } from './sound.js?v=124';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
 import { creerClassement } from './classement.js';
-import { chargerCarnet, sauverCarnet } from './carnet.js';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=124';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -23,6 +23,7 @@ const catchMessage = document.getElementById('catchMessage');
 const windFill = document.getElementById('windFill');
 const windArrow = document.getElementById('windArrow');
 const soundToggle = document.getElementById('soundToggle');
+const lineSelect = document.getElementById('lineSelect');
 const feedButton = document.getElementById('feedButton');
 const feedGauge = document.getElementById('feedGauge');
 const feedGaugeFill = document.getElementById('feedGaugeFill');
@@ -302,7 +303,7 @@ crank.addEventListener('pointermove', event => {
         const toursParSeconde = (crankSpeedRad / TWO_PI) / crankSpeedWindow;
         crankSpeedRad = 0;
         crankSpeedWindow = 0;
-        if (toursParSeconde > VITESSE_MANIVELLE_MAX) {
+        if (toursParSeconde > VITESSE_MANIVELLE_MAX * filEquipe().resistance) {
             crankSpeedStrikes += 1;
             if (crankSpeedStrikes >= 2) {
                 crankSpeedStrikes = 0;
@@ -2266,13 +2267,18 @@ function updateFeedGauge() {
 function setFeedMode(on) {
     // On peut amorcer à tout moment où le moulinet est libre : au repos OU
     // avec la ligne à l'eau (l'amorçage attire les poissons vers le bouchon).
+    if (on && partieTerminee) { return; }
+    if (on && stockAmorce() === 0) {
+        statusDisplay.textContent = 'Plus de boules d’amorce. Recharge dans Carnet → Boutique.';
+        return;
+    }
     if (on && floatState !== 'idle' && floatState !== 'inWater') {
         statusDisplay.textContent = 'Attends la fin de l’action pour pouvoir amorcer.';
         return;
     }
     feedMode = !!on && (floatState === 'idle' || floatState === 'inWater');
     feedButton.classList.toggle('active', feedMode);
-    feedButton.textContent = feedMode ? '🥣 Nourrir (armé)' : '🥣 Nourrir';
+    majAmorce();
     if (feedMode) {
         statusDisplay.textContent = 'Amorçage : clique et maintiens sur l’eau pour viser, puis relâche pour doser la puissance.';
     } else if (feedState === 'idle') {
@@ -2281,7 +2287,7 @@ function setFeedMode(on) {
 }
 
 function startFeedCharge(point) {
-    if (feedState !== 'idle') {
+    if (partieTerminee || feedState !== 'idle' || stockAmorce() === 0) {
         return;
     }
     feedState = 'charging';
@@ -2337,6 +2343,14 @@ function releaseFeed() {
     if (feedState !== 'charging') {
         return;
     }
+    if (stockAmorce() === 0) { cancelFeed(); return; }
+    if (amorceDepartRestante > 0) {
+        amorceDepartRestante -= 1;
+    } else {
+        journal.recharges.amorce -= 1;
+        saveJournal();
+    }
+    renderBoutique();
     feedState = 'flying';
     feedFlyT = 0;
     feedGauge.classList.remove('active');
@@ -2501,7 +2515,8 @@ toolToggle.addEventListener('click', () => {
 function updateToolDock() {
     const resting = (floatState === 'idle' || floatState === 'inWater') && cameraMode === 'normal';
     cameraButton.disabled = !resting || paused;
-    feedButton.disabled = !resting || paused;
+    feedButton.disabled = !resting || paused || stockAmorce() === 0;
+    lineSelect.disabled = floatState !== 'idle' || castState !== 'idle';
     updateDepthButtons(bornesProfondeur(), resting && !paused && !cameraViewActive && castState === 'idle');
     sonarButton.disabled = !sonarBuoy.visible && (!resting || paused);
     if (cameraViewActive && !resting) { setCameraView(false); }
@@ -3289,7 +3304,84 @@ sonarButton.addEventListener('click', () => {
     fermerOutils();
 });
 
-const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false, technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice() };
+const MAX_LIGNES = 5;
+const AMORCE_DEPART = 3;
+const RECHARGES = [
+    { id: 'amorce', nom: 'Boules d’amorce', prix: 12, desc: 'Attirent les poissons vers le point de chute.' },
+    { id: 'nylon', nom: 'Nylon', prix: 18, resistance: 1, emmelement: 1, desc: 'Le fil standard.' },
+    { id: 'fluorocarbone', nom: 'Fluorocarbone', prix: 28, resistance: 1, emmelement: 0.5,
+        desc: 'Réduit de moitié le risque d’emmêlement si tu oublies de tendre le fil.' },
+    { id: 'tresse', nom: 'Tresse', prix: 36, resistance: 1.25, emmelement: 1,
+        desc: 'Supporte mieux les poissons qui tirent et la remontée rapide.' }
+];
+const TYPES_DE_FIL = RECHARGES.slice(1);
+const TAILLE_LOT = 3;
+let lignesRestantes = MAX_LIGNES;
+let amorceDepartRestante = AMORCE_DEPART;
+const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false,
+    technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice(), ligne: 'nylon',
+    recharges: Object.fromEntries(RECHARGES.map(article => [article.id, 0])) };
+
+function stockAmorce() {
+    return amorceDepartRestante + journal.recharges.amorce;
+}
+
+function majAmorce() {
+    feedButton.textContent = (feedMode ? '🥣 Amorce prête' : '🥣 Amorce') + ' (' + stockAmorce() + ')';
+}
+
+function stockFil(id) {
+    return journal.recharges[id] + (id === 'nylon' ? lignesRestantes : 0);
+}
+
+function totalLignes() {
+    return TYPES_DE_FIL.reduce((total, fil) => total + stockFil(fil.id), 0);
+}
+
+function filEquipe() {
+    return TYPES_DE_FIL.find(fil => fil.id === journal.ligne) || TYPES_DE_FIL[0];
+}
+
+function selectionnerFilDisponible() {
+    if (stockFil(journal.ligne) > 0) { return; }
+    journal.ligne = TYPES_DE_FIL.find(fil => stockFil(fil.id) > 0)?.id || 'nylon';
+}
+
+function debiterLigne() {
+    const id = filEquipe().id;
+    if (id === 'nylon' && lignesRestantes > 0) {
+        lignesRestantes -= 1;
+    } else if (journal.recharges[id] > 0) {
+        journal.recharges[id] -= 1;
+    }
+    selectionnerFilDisponible();
+    saveJournal();
+    majLignes();
+    renderBoutique();
+}
+
+function acheterRecharge(id) {
+    const article = RECHARGES.find(recharge => recharge.id === id);
+    if (!article || journal.experience < article.prix) { return false; }
+    journal.experience -= article.prix;
+    journal.recharges[id] += TAILLE_LOT;
+    selectionnerFilDisponible();
+    saveJournal();
+    renderJournal();
+    majLignes();
+    return true;
+}
+
+lineSelect.addEventListener('change', () => {
+    const id = lineSelect.value;
+    if (floatState === 'idle' && castState === 'idle'
+            && TYPES_DE_FIL.some(fil => fil.id === id) && stockFil(id) > 0) {
+        journal.ligne = id;
+        saveJournal();
+    }
+    lineSelect.value = journal.ligne;
+});
+
 // Compteur de la PARTIE en cours (la bourriche), distinct du carnet persistant
 // (`journal.total` = total de toutes les parties).
 let bourricheCount = 0;
@@ -3462,11 +3554,23 @@ function renderBoutique() {
     if (bouchonPossede(flotteurChoix)) {
         floatSelect.value = flotteurChoix;
     }
+    selectionnerFilDisponible();
+    lineSelect.innerHTML = TYPES_DE_FIL.map(fil => '<option value="' + fil.id + '"'
+        + (stockFil(fil.id) ? '' : ' disabled') + '>' + fil.nom + ' (' + stockFil(fil.id) + ')</option>').join('');
+    lineSelect.value = journal.ligne;
+    majAmorce();
     if (!boutique) {
         return;
     }
     // 2) La boutique : un bouton « Équiper » ou « Acheter » pour chaque bouchon.
-    let html = '';
+    let html = RECHARGES.map(article => {
+        const disponible = article.id === 'amorce' ? stockAmorce() : stockFil(article.id);
+        return '<div class="shop-item"><div class="shop-name">' + article.nom + ' · ' + disponible
+            + ' en stock</div><div class="shop-desc">' + article.desc + '</div>'
+            + '<button class="shop-btn buy" data-action="recharger" data-id="' + article.id + '"'
+            + (journal.experience < article.prix ? ' disabled' : '')
+            + '>Acheter ×' + TAILLE_LOT + ' · ' + article.prix + ' XP</button></div>';
+    }).join('');
     FLOTTEURS.forEach(f => {
         const possede = bouchonPossede(f.id);
         const equipe = f.id === flotteurChoix;
@@ -3527,6 +3631,10 @@ boutique.addEventListener('click', event => {
         return;
     }
     const id = cible.dataset.id;
+    if (cible.dataset.action === 'recharger') {
+        if (acheterRecharge(id)) { sound.catchFish(); }
+        return;
+    }
     if (id === 'sonar' && cible.dataset.action === 'acheter') {
         if (acheterSonar()) { sound.catchFish(); }
         return;
@@ -4006,7 +4114,7 @@ let castTargetPower = 0;
 let castPhase = 0;
 // Ligne tendue pendant le vol : un clic avant l'atterrissage évite l'emmêlement.
 let ligneTendue = false;
-function risqueEmmelement() { return tangleChanceOverride ?? tangleChance; }
+function risqueEmmelement() { return tangleChanceOverride ?? (tangleChance * filEquipe().emmelement); }
 let jeuDemelage = null;
 const castAim = new THREE.Vector3(0, 0.1, -28);
 
@@ -4025,6 +4133,7 @@ function setCastPower(value) {
 }
 
 function startCastCharge(point) {
+    if (partieTerminee || totalLignes() === 0) { return; }
     if (castState !== 'idle' || (floatState !== 'idle' && floatState !== 'inWater') || feedMode) {
         return;
     }
@@ -5263,6 +5372,7 @@ function waterPointFromEvent(event) {
 }
 
 function startCast(target) {
+    if (partieTerminee || totalLignes() === 0) { return; }
     if (floatState !== 'idle') {
         return;
     }
@@ -5568,7 +5678,7 @@ function startStruggle(fish, facteurAvantage) {
         baseLength: baseLength,
         lineLength: startLength,
         minLength: baseLength * STRUGGLE_MIN_FACTOR,
-        maxLength: baseLength * STRUGGLE_MAX_FACTOR,
+        maxLength: baseLength * (1 + (STRUGGLE_MAX_FACTOR - 1) * filEquipe().resistance),
         // Le poisson se DÉFEND, même petit : on ne le ramène pas « à la vitesse
         // du moulinet ». Il tire sur la ligne en continu, et donne des coups
         // brusques (une petite ablette secoue le bouchon aussi fort qu'une carpe !).
@@ -6020,8 +6130,7 @@ function updateStruggle(dt) {
     if (dragLoosened) {
         tension = Math.min(0.72, tension);
     }
-    // Fil tendu à l'extrême (barre tout à droite) : il casse, le poisson se
-    // décroche — sauf si on a lâché du fil (le frein patine).
+    // Si le fil est trop tendu, le poisson se décroche, sauf si le frein patine.
     if (!dragLoosened && struggle.lineLength >= struggle.maxLength) {
         tension = 1;
         computeStrugglePos();
@@ -6153,6 +6262,7 @@ function endSnag(freed) {
         statusDisplay.textContent = 'Ligne dégagée ! On la ramène.';
         floatState = 'reeling';
     } else {
+        debiterLigne();
         sound.lineBreak();
         floatGroup.visible = false;
         lineBrokenTimer = 1.2;
@@ -6167,6 +6277,7 @@ function endSnag(freed) {
             statusDisplay.textContent = 'La ligne a cassé ! Le bouchon est perdu… (un bouchon de départ : sans regret).';
         }
     }
+    if (!freed && totalLignes() === 0) { terminerPartie(); }
 }
 
 function updateSnag(dt) {
@@ -7328,11 +7439,9 @@ let testTime = 0;
 // trop rapide en coûte une. À zéro : fin de partie, nom du pêcheur et
 // classement local (3 onglets : poissons, poids total, records par espèce).
 // ---------------------------------------------------------------------------
-const MAX_LIGNES = 5;
 const VITESSE_MANIVELLE_MAX = 4.0;     // tours/s EN MOYENNE sur 0,6 s (il faut enchaîner)
 const RANKING_KEY = 'peche_max_games_classement';
 const NOM_KEY = 'peche_max_games_nom';
-let lignesRestantes = MAX_LIGNES;
 let avertissementsVitesse = 0;
 let partieTerminee = false;
 let derniereAlerteVitesse = -10000;
@@ -7341,21 +7450,22 @@ let partieStats = { poissons: 0, poids: 0, records: {} };
 
 function majLignes() {
     if (!lignesLabel) { return; }
-    lignesLabel.textContent = '🧵 Lignes : ' + lignesRestantes + '/' + MAX_LIGNES;
-    lignesLabel.classList.toggle('danger', lignesRestantes <= 1);
+    const total = totalLignes();
+    const reserves = total - lignesRestantes;
+    lignesLabel.textContent = '🧵 Lignes : ' + total + (reserves ? '' : '/' + MAX_LIGNES);
+    lignesLabel.classList.toggle('danger', total <= 1);
 }
 
 function casserLigne(raison) {
     if (partieTerminee) { return; }
     fishButton.hidden = true;
     if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
-    lignesRestantes = Math.max(0, lignesRestantes - 1);
+    debiterLigne();
     avertissementsVitesse = 0;
-    majLignes();
     sound.lineBreak();
     spawnFloatingText('💥 Ligne cassée !', floatGroup.position, '#ff6b57');
     statusDisplay.textContent = '💥 ' + raison + ' : une ligne est perdue ('
-        + lignesRestantes + ' restante' + (lignesRestantes > 1 ? 's' : '') + ').';
+        + totalLignes() + ' restante' + (totalLignes() > 1 ? 's' : '') + ').';
     floatState = 'idle';
     hameconDansLaVase = false;
     fishButton.disabled = false;
@@ -7366,7 +7476,7 @@ function casserLigne(raison) {
     }
     floatGroup.position.copy(floatIdle);
     floatGroup.rotation.z = 0;
-    if (lignesRestantes <= 0) { terminerPartie(); }
+    if (totalLignes() === 0) { terminerPartie(); }
 }
 
 // Remontée trop rapide : un avertissement (toutes les 0,8 s au plus), puis le
@@ -7475,7 +7585,7 @@ function terminerPartie(raison) {
     if (gameOverText) {
         gameOverText.textContent = manuelle
             ? 'Tu as choisi de terminer la partie. Voici ton bilan :'
-            : 'Tu as cassé tes 5 lignes. Voici ta partie :';
+            : 'Tu n’as plus de lignes. Voici ta partie :';
     }
     if (gameOverScore) {
         gameOverScore.innerHTML = '🐟 <b>' + partieStats.poissons + '</b> poisson(s) · ⚖️ <b>'
@@ -7635,6 +7745,7 @@ function reinitialiserPartie() {
     scoreDisplay.textContent = score;
     bourricheCount = 0;
     lignesRestantes = MAX_LIGNES;
+    amorceDepartRestante = AMORCE_DEPART;
     avertissementsVitesse = 0;
     derniereAlerteVitesse = -10000;
     partieTerminee = false;
@@ -7669,7 +7780,7 @@ function recommencerPartie() {
     if (gameOver) { gameOver.classList.remove('active'); }
     fermerClassement();
     majModalBackdrop();
-    statusDisplay.textContent = 'Nouvelle partie : ' + MAX_LIGNES + ' lignes neuves. Bonne pêche !';
+    statusDisplay.textContent = 'Nouvelle partie : ' + totalLignes() + ' lignes et ' + stockAmorce() + ' boules d’amorce.';
 }
 
 // --- Boutons du panneau de fin de partie et du classement ---
@@ -7764,7 +7875,7 @@ window.__game = {
     getStylesCombat: function () { return STYLES_COMBAT; },
     styleEspece: styleEspece,
     // --- Lignes (vies), fin de partie et classement local ---
-    getLignes: function () { return lignesRestantes; },
+    getLignes: totalLignes,
     maxLignes: MAX_LIGNES,
     casserLigne: casserLigne,
     getAvertissements: function () { return avertissementsVitesse; },

@@ -257,6 +257,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **2,5 m** de fond (3,3 m dans les fosses) ; chaque poisson a **exactement sa taille réelle**
   (un gardon de 28 cm fait 28 cm à l'écran) et le bouchon ne s'enfonce que de quelques
   dizaines de centimètres, comme un vrai.
+- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **5
+  lignes en nylon**. **Carnet → Boutique** vend des lots de trois pour l’XP
+  carrière. Les recharges achetées sont conservées entre les parties tant
+  qu’elles n’ont pas servi. Change de fil au repos dans la boutique.
+  Le **fluorocarbone** réduit de moitié le risque d’emmêlement et la **tresse**
+  supporte mieux les fortes tractions et la remontée rapide.
 - **5 lignes… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
   ou une **remontée trop rapide** à la manivelle (avertissements « la ligne souffre », puis
   risque croissant) **casse une ligne**. À zéro ligne, la partie s'arrête : tu saisis ton

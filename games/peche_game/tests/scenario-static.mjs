@@ -235,7 +235,7 @@ export function run() {
     check('le mode quiver est dans un module dédié', /from '\.\/quiver\.js(?:\?v=\d+)?'/.test(script));
     check('les données espèces sont dans un module dédié', script.includes("from './especes.js'"));
     check('le classement est dans un module dédié', script.includes("from './classement.js'"));
-    check('la persistance du carnet est dans un module dédié', script.includes("from './carnet.js'"));
+    check('la persistance du carnet est dans un module dédié', /from '\.\/carnet\.js(?:\?v=\d+)?'/.test(script));
     check('le lancer peut être tendu pendant le vol', script.includes('tendreLigneAuLancer'));
     check('un état « tangle » bloque la pêche', script.includes("floatState = 'tangle'"));
     check('le scion remplace le bouchon en quiver', script.includes('techniqueCourante === \'quiver\'')

@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=123">
+    <link rel="stylesheet" href="style.css?v=124">
 </head>
 <body>
     <div class="game-wrap">
@@ -59,7 +59,7 @@
                     <button id="cameraButton" aria-controls="cameraControls">🎥 Vue</button>
                     <button id="soundToggle" aria-pressed="true">🔊 Son</button>
                     <button id="fullscreenButton">⛶ Plein écran</button>
-                    <button class="feed-button" id="feedButton">🥣 Nourrir</button>
+                    <button class="feed-button" id="feedButton">🥣 Amorce (3)</button>
                     <button class="journal-button" id="journalButton">📖 Carnet</button>
                     <button class="journal-button" id="rankingButton">🏆 Classement</button>
                     <button id="sonarButton" hidden aria-pressed="false">📡 Poser le sonar</button>
@@ -215,14 +215,13 @@
                     </select>
                 </div>
                 <div class="float-info" id="floatInfo"></div>
-                <div class="panel-subtitle">🎣 Boutique de bouchons <span class="shop-xp" id="shopXp">⭐ 0 XP</span></div>
-                <div class="shop-hint">
-                    Range des poissons dans la bourriche pour gagner de l’<b>expérience</b> (XP),
-                    puis achète des bouchons aux <b>capacités spéciales</b> !<br>
-                    ⚠️ Attention : si la ligne <b>casse dans les nénuphars</b>, le bouchon part
-                    avec elle. Un bouchon <b>acheté</b> est alors <b>perdu</b> (il faudra le
-                    racheter) ; les bouchons de départ, eux, sont sans regret.
+                <div class="panel-row">
+                    <label for="lineSelect">Fil équipé</label>
+                    <select id="lineSelect"></select>
                 </div>
+                <div class="panel-subtitle">🎣 Boutique <span class="shop-xp" id="shopXp">⭐ 0 XP</span></div>
+                <div class="shop-hint">Achète des recharges avec l’XP de tes prises.
+                    Un bouchon acheté peut être perdu si la ligne casse dans les nénuphars.</div>
                 <div class="shop-list" id="boutique"></div>
                 </div>
                 <div class="tabpage" id="tabTouches">
@@ -319,6 +318,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=123"></script>
+    <script type="module" src="script.js?v=124"></script>
 </body>
 </html>
