@@ -32,6 +32,7 @@ const FILES = {
     decor: path.join(GAME_DIR, 'decor.js'),
     environnement: path.join(GAME_DIR, 'environnement.js'),
     poissons: path.join(GAME_DIR, 'poissons.js'),
+    splashes: path.join(GAME_DIR, 'splashes.js'),
     messages: path.join(GAME_DIR, 'messages.js'),
     ondulations: path.join(GAME_DIR, 'ondulations.js'),
     bourriche: path.join(GAME_DIR, 'bourriche.js'),
@@ -398,6 +399,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.decor, path.join(tmpDir, 'decor.js'));
     fs.copyFileSync(FILES.environnement, path.join(tmpDir, 'environnement.js'));
     fs.copyFileSync(FILES.poissons, path.join(tmpDir, 'poissons.js'));
+    fs.copyFileSync(FILES.splashes, path.join(tmpDir, 'splashes.js'));
     fs.copyFileSync(FILES.messages, path.join(tmpDir, 'messages.js'));
     fs.copyFileSync(FILES.ondulations, path.join(tmpDir, 'ondulations.js'));
     fs.copyFileSync(FILES.bourriche, path.join(tmpDir, 'bourriche.js'));
