@@ -513,7 +513,11 @@ vient de là, pas du nombre de fonctionnalités.
 - [x] **Modules suivants extraits (v144)** : `bourriche.js` (66 l.),
   `ondulations.js` (~60 l.), `messages.js` (126 l.), `splashes.js` (~50 l.).
   `script.js` : 8 754 → **8 557** lignes.
-- [ ] **Blocage identifié, plan écrit** : les blocs restants (`combat`,
+- [x] **`etat.js` livré (v144)** : objet partagé + pont de 98 accesseurs dans
+  `script.js`. Un module peut écrire `etat.tension = …` et modifier la vraie
+  variable **sans renommer** le code existant. C'est le déblocage des modules
+  restants (4 règles restantes détaillées dans `docs/modules.md` §8.5).
+- [ ] **Blocage résiduel** : les blocs restants (`combat`,
   `comportement`, `bateau`, `boutique`, `fiches`, `lancerPoisson`, `frein`,
   `amorcage`, `carnetUI`, `meteo`, `vie`) **modifient des `let` de `script.js`** :
   un module n'en aurait qu'une copie morte. Déblocage = créer **`etat.js`**

@@ -189,3 +189,38 @@ l'ordre après `etat.js`, comme les autres.
   (risque d'accès avant initialisation).
 - Le harnais réécrit désormais l'import `three` de **tout** module copié
   (liste découverte, plus figée).
+
+### 8.5 Ce que l'essai sur `combat.js` a appris (à faire dans la prochaine passe)
+
+`etat.js` (v144) fonctionne : le pont d'accesseurs permet à un module de modifier
+la vraie variable de `script.js` **sans renommer une seule ligne existante**. Les
+trois règles suivantes manquent encore à l'outil d'extraction ; elles ont été
+identifiées en essayant `combat.js` (≈ 750 lignes, le plus gros bloc restant) :
+
+1. **Chaînes de caractères** : un remplacement global `struggle` → `etat.struggle`
+   a corrompu le littéral `'struggle'` (état du bouchon). Le remplacement doit
+   être fait **hors des chaînes** (`'…'`, `"…"`, `` `…` ``). *Corrigé dans
+   l'outil.*
+2. **Propriétés et clés** : ne jamais remplacer `obj.tension` ni `tension:`
+   (sinon `obj.etat.tension` / clé invalide). *Corrigé (lookbehind + lookahead).*
+3. **Variables déclarées DANS le bloc et affectées ailleurs** : `recordBattu`,
+   `snag`, `catchMessageTimer` (combat) vivaient dans le bloc. Après extraction,
+   `script.js` les reçoit par destructuring (`const`) alors que d'autres fonctions
+   lui **assignent** une valeur → `TypeError: Assignment to constant variable`.
+   Règle à appliquer : ces variables **restent des `let` de `script.js`**, sont
+   retirées de la liste exportée, et le module y accède par `etat.NOM`.
+4. **Fonctions fournies par un autre module** (`spawnRipple`, `spawnSplash`,
+   `spawnFloatingText`, `signalerToucheRatee`) : elles sont déclarées **après** le
+   bloc, donc illisibles à la création → elles doivent aussi passer par le pont
+   `etat`. Le générateur de pont doit scanner **tous** les `etat.X` réellement
+   utilisés par les modules et créer les accesseurs manquants (fait dans
+   `bridge.py`, pas encore dans l'extracteur).
+
+Avec ces quatre règles, `combat.js` puis `comportement.js` (~580 l.) passent.
+Les modules restants ensuite : `bateau`, `boutique`, `fiches`, `lancerPoisson`,
+`lancerCanne`, `frein`, `amorcage`, `carnetUI`, `ligne`, `bouchons`, `meteo`,
+`vie`, `carte_etang`.
+
+**Méthode de travail validée** : extraire → lancer la suite complète (1 662
+vérifications) → si rouge, `git checkout -- .` et supprimer le module ; jamais
+laisser un module à moitié branché.
