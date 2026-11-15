@@ -65,6 +65,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `accrochage.js` | Accrochage dans les nénuphars : détection, accroc, dégagement du fil (état via `etat`) | 188 | Combat / accroc |
 | `ambiance.js` | Ambiance : vent, faune sonore, nuages, ondulation de la queue des poissons (état via `etat`) | 95 | Ambiance / effets |
 | `entrees.js` | Entrées : pointeur, clavier et boutons de l’écran de jeu (état via `etat`) | 225 | Entrées / UI |
+| `cheat.js` | Cheat : mot secret « poisson » (+50 XP) (état via `etat`) | 123 | Cheat / tests |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |

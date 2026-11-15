@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=167';
+import { SoundEngine } from './sound.js?v=168';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -42,6 +42,7 @@ import { creerCycleLigne } from './cycleLigne.js?v=164';
 import { creerAccrochage } from './accrochage.js?v=165';
 import { creerAmbiance } from './ambiance.js?v=166';
 import { creerEntrees } from './entrees.js?v=167';
+import { creerCheat } from './cheat.js?v=168';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -2491,107 +2492,12 @@ creerEntrees({
     majCoupeProfondeur, waterUniforms, fishButton
 });
 
-// ---------------------------------------------------------------------------
-// Cheat : mot secret « poisson »
-// ---------------------------------------------------------------------------
-// Taper le mot secret (n'importe où, hors champ de saisie) offre +50 XP.
-// Les lettres s'accumulent dans un petit tampon : pas besoin d'un seul coup,
-// mais une fausse lettre remet le compteur à zéro.
-
-const CHEAT_MOT = 'poisson';
-const CHEAT_GAIN = 50;
-let cheatTampon = '';
-
-function cheatTouche(touche) {
-    if (typeof touche !== 'string' || touche.length !== 1) { return false; }
-    cheatTampon = (cheatTampon + touche.toLowerCase()).slice(-CHEAT_MOT.length);
-    if (cheatTampon !== CHEAT_MOT) { return false; }
-    cheatTampon = '';
-    journal.experience += CHEAT_GAIN;
-    experiencePartie += CHEAT_GAIN;
-    saveJournal();
-    renderJournal();
-    statusDisplay.textContent = '🪄 Cheat activé : +' + CHEAT_GAIN + ' XP !';
-    catchMessage.textContent = '🪄 CHEAT — +' + CHEAT_GAIN + ' XP !';
-    catchMessage.classList.remove('record', 'rare');
-    catchMessage.classList.add('show');
-    if (catchMessageTimer) { clearTimeout(catchMessageTimer); }
-    catchMessageTimer = setTimeout(function () {
-        catchMessage.classList.remove('show');
-    }, 2500);
-    return true;
-}
-
-window.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
-        if (cameraViewActive) { setCameraView(false); toolToggle.focus?.(); }
-        else if (!paused) { fermerOutils(); }
-        return;
-    }
-    // Cheat : taper « poisson » n'importe où (sauf dans un champ de saisie)
-    // offre +50 XP. Testé AVANT les early-return, pour marcher même en pause.
-    if (event.key.length === 1 && !event.target?.closest?.('input, textarea')) {
-        cheatTouche(event.key);
-    }
-    if (cameraViewActive || paused || toolDock.classList.contains('ouvert')
-            || event.target?.closest?.('button, input, select, textarea')) { return; }
-    if (modeBateau) {
-        // Ramer : flèches ou ZQSD (clavier français). Gauche/droite tournent
-        // autour du centre ; haut = vers le centre (marge PLUS négative),
-        // bas = vers la berge.
-        const touche = event.key;
-        let coup = null;
-        if (touche === 'ArrowUp' || touche === 'z' || touche === 'w') { coup = [0, -BATEAU_PAS_MARGE]; }
-        else if (touche === 'ArrowDown' || touche === 's') { coup = [0, BATEAU_PAS_MARGE]; }
-        else if (touche === 'ArrowLeft' || touche === 'q' || touche === 'a') { coup = [BATEAU_PAS_ANGLE, 0]; }
-        else if (touche === 'ArrowRight' || touche === 'd') { coup = [-BATEAU_PAS_ANGLE, 0]; }
-        if (coup) {
-            event.preventDefault();
-            if (!deplacerBateau(coup[0], coup[1])) {
-                statusDisplay.textContent = 'Le bouchon est dehors : ramène la ligne pour déplacer la barque.';
-            }
-            return;
-        }
-    }
-    if (event.key === ' ' || event.key === 'Enter') {
-        ensureSound();
-        if (feedMode) {
-            return; // en mode amorçage, on lance avec la souris sur l'eau
-        }
-        if (floatState === 'flying') {
-            tendreLigneAuLancer();
-            return;
-        }
-        if (castState === 'charging') {
-            releaseCast();
-            return;
-        }
-        if (floatState === 'holding') {
-            if (fishThrowState === 'charging') {
-                releaseFishThrow();
-            } else {
-                startFishThrow();
-            }
-            return;
-        }
-        if (floatState === 'bite') {
-            hookFish();
-            return;
-        }
-        if (floatState === 'struggle' || floatState === 'snag') {
-            reelClick();
-            return;
-        }
-        if (floatState === 'idle') {
-            raycaster.setFromCamera(pointerNdc, camera);
-            const hits = raycaster.intersectObject(water);
-            if (hits.length) {
-                startCastCharge(hits[0].point.clone());
-            }
-        }
-        // Espace/Entrée à l'eau : idem clic, la ligne ne se remonte plus au
-        // clavier. La manivelle reste le seul moyen de ramener la ligne.
-    }
+const {
+    cheatTouche
+} = creerCheat({
+    saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
+    fermerOutils, toolDock, deplacerBateau, ensureSound, tendreLigneAuLancer, releaseCast,
+    releaseFishThrow, startFishThrow, hookFish, reelClick, camera, water, startCastCharge
 });
 
 // ---------------------------------------------------------------------------
