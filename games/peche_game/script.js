@@ -2782,7 +2782,8 @@ function embarquerBateau() {
 }
 
 function quitterBateau() {
-    if (!modeBateau) { return false; }
+    // Refusé tant que la ligne n'est pas au repos : on reste à bord sinon.
+    if (!modeBateau || floatState !== 'idle') { return false; }
     modeBateau = false;
     return placerALAngle(riveDerniere.angle ?? emplacementAngle, riveDerniere.marge,
         riveDerniere.preset, riveDerniere.libre);
@@ -7804,11 +7805,12 @@ window.addEventListener('keydown', event => {
             || event.target?.closest?.('button, input, select, textarea')) { return; }
     if (modeBateau) {
         // Ramer : flèches ou ZQSD (clavier français). Gauche/droite tournent
-        // autour du centre ; haut/bas avancent ou reculent.
+        // autour du centre ; haut = vers le centre (marge PLUS négative),
+        // bas = vers la berge.
         const touche = event.key;
         let coup = null;
-        if (touche === 'ArrowUp' || touche === 'z' || touche === 'w') { coup = [0, BATEAU_PAS_MARGE]; }
-        else if (touche === 'ArrowDown' || touche === 's') { coup = [0, -BATEAU_PAS_MARGE]; }
+        if (touche === 'ArrowUp' || touche === 'z' || touche === 'w') { coup = [0, -BATEAU_PAS_MARGE]; }
+        else if (touche === 'ArrowDown' || touche === 's') { coup = [0, BATEAU_PAS_MARGE]; }
         else if (touche === 'ArrowLeft' || touche === 'q' || touche === 'a') { coup = [BATEAU_PAS_ANGLE, 0]; }
         else if (touche === 'ArrowRight' || touche === 'd') { coup = [-BATEAU_PAS_ANGLE, 0]; }
         if (coup) {
