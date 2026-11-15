@@ -19,6 +19,7 @@ import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
+import { etat } from './etat.js?v=145';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -8549,6 +8550,99 @@ window.__game = {
 
 // La fiche des touches est construite tout à la fin : le catalogue des touches
 // est déclaré plus bas dans le fichier (on évite ainsi un accès avant création).
+// ---------------------------------------------------------------------------
+
+
+
+// ---------------------------------------------------------------------------
+// ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
+// fichier. Une ligne par variable ; aucune valeur n'est dupliquée : les
+// modules extraits lisent et écrivent la vraie variable de ce fichier.
+// ---------------------------------------------------------------------------
+function lienEtat(nom, lire, ecrire) {
+    Object.defineProperty(etat, nom, { get: lire, set: ecrire, enumerable: true });
+}
+lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
+lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
+lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
+lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
+lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
+lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
+lienEtat('biteCooldown', function () { return biteCooldown; }, function (v) { biteCooldown = v; });
+lienEtat('biteFauxTouche', function () { return biteFauxTouche; }, function (v) { biteFauxTouche = v; });
+lienEtat('biteFenetre', function () { return biteFenetre; }, function (v) { biteFenetre = v; });
+lienEtat('biteFish', function () { return biteFish; }, function (v) { biteFish = v; });
+lienEtat('bitePhase', function () { return bitePhase; }, function (v) { bitePhase = v; });
+lienEtat('biteRetourRot', function () { return biteRetourRot; }, function (v) { biteRetourRot = v; });
+lienEtat('biteRetourY', function () { return biteRetourY; }, function (v) { biteRetourY = v; });
+lienEtat('biteSignalDuree', function () { return biteSignalDuree; }, function (v) { biteSignalDuree = v; });
+lienEtat('biteSignalTimer', function () { return biteSignalTimer; }, function (v) { biteSignalTimer = v; });
+lienEtat('biteSignauxRestants', function () { return biteSignauxRestants; }, function (v) { biteSignauxRestants = v; });
+lienEtat('biteSinkAt', function () { return biteSinkAt; }, function (v) { biteSinkAt = v; });
+lienEtat('biteStyle', function () { return biteStyle; }, function (v) { biteStyle = v; });
+lienEtat('biteTouche', function () { return biteTouche; }, function (v) { biteTouche = v; });
+lienEtat('biteViewActive', function () { return biteViewActive; }, function (v) { biteViewActive = v; });
+lienEtat('biteViewHideTimer', function () { return biteViewHideTimer; }, function (v) { biteViewHideTimer = v; });
+lienEtat('biteViewTimer', function () { return biteViewTimer; }, function (v) { biteViewTimer = v; });
+lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
+lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
+lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
+lienEtat('castAim', function () { return castAim; }, function (v) { castAim = v; });
+lienEtat('castSwing', function () { return castSwing; }, function (v) { castSwing = v; });
+lienEtat('castT', function () { return castT; }, function (v) { castT = v; });
+lienEtat('castTarget', function () { return castTarget; }, function (v) { castTarget = v; });
+lienEtat('castYawAngler', function () { return castYawAngler; }, function (v) { castYawAngler = v; });
+lienEtat('castYawRod', function () { return castYawRod; }, function (v) { castYawRod = v; });
+lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { caughtWeight = v; });
+lienEtat('depuisLancement', function () { return depuisLancement; }, function (v) { depuisLancement = v; });
+lienEtat('elapsed', function () { return elapsed; }, function (v) { elapsed = v; });
+lienEtat('emplacementAngle', function () { return emplacementAngle; }, function (v) { emplacementAngle = v; });
+lienEtat('emplacementLibre', function () { return emplacementLibre; }, function (v) { emplacementLibre = v; });
+lienEtat('emplacementMarge', function () { return emplacementMarge; }, function (v) { emplacementMarge = v; });
+lienEtat('escaped', function () { return escaped; }, function (v) { escaped = v; });
+lienEtat('especeIndex', function () { return especeIndex; }, function (v) { especeIndex = v; });
+lienEtat('experiencePartie', function () { return experiencePartie; }, function (v) { experiencePartie = v; });
+lienEtat('fightAdvantage', function () { return fightAdvantage; }, function (v) { fightAdvantage = v; });
+lienEtat('fishCaught', function () { return fishCaught; }, function (v) { fishCaught = v; });
+lienEtat('fishThrowPhase', function () { return fishThrowPhase; }, function (v) { fishThrowPhase = v; });
+lienEtat('fishThrowPower', function () { return fishThrowPower; }, function (v) { fishThrowPower = v; });
+lienEtat('fishThrowState', function () { return fishThrowState; }, function (v) { fishThrowState = v; });
+lienEtat('fishThrowT', function () { return fishThrowT; }, function (v) { fishThrowT = v; });
+lienEtat('fishThrowTarget', function () { return fishThrowTarget; }, function (v) { fishThrowTarget = v; });
+lienEtat('floatState', function () { return floatState; }, function (v) { floatState = v; });
+lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { flotteurChoix = v; });
+lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
+lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
+lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
+lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
+lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
+lienEtat('nibbleAmplitude', function () { return nibbleAmplitude; }, function (v) { nibbleAmplitude = v; });
+lienEtat('nibbleDebut', function () { return nibbleDebut; }, function (v) { nibbleDebut = v; });
+lienEtat('nibbleDuree', function () { return nibbleDuree; }, function (v) { nibbleDuree = v; });
+lienEtat('nibbleInteretAvant', function () { return nibbleInteretAvant; }, function (v) { nibbleInteretAvant = v; });
+lienEtat('nibblePhase', function () { return nibblePhase; }, function (v) { nibblePhase = v; });
+lienEtat('nibbleRngState', function () { return nibbleRngState; }, function (v) { nibbleRngState = v; });
+lienEtat('nibbleSuivant', function () { return nibbleSuivant; }, function (v) { nibbleSuivant = v; });
+lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
+lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
+lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
+lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
+lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
+lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v; });
+lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
+lienEtat('score', function () { return score; }, function (v) { score = v; });
+lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
+lienEtat('strikeQuality', function () { return strikeQuality; }, function (v) { strikeQuality = v; });
+lienEtat('struggle', function () { return struggle; }, function (v) { struggle = v; });
+lienEtat('struggleAnchor', function () { return struggleAnchor; }, function (v) { struggleAnchor = v; });
+lienEtat('strugglePos', function () { return strugglePos; }, function (v) { strugglePos = v; });
+lienEtat('struggleTimeLeft', function () { return struggleTimeLeft; }, function (v) { struggleTimeLeft = v; });
+lienEtat('tangleChance', function () { return tangleChance; }, function (v) { tangleChance = v; });
+lienEtat('techniqueCourante', function () { return techniqueCourante; }, function (v) { techniqueCourante = v; });
+lienEtat('tension', function () { return tension; }, function (v) { tension = v; });
+lienEtat('timeoutEscape', function () { return timeoutEscape; }, function (v) { timeoutEscape = v; });
+lienEtat('waitTimer', function () { return waitTimer; }, function (v) { waitTimer = v; });
+
 renderFicheTouches();
 // Et on ouvre le carnet sur l'onglet « Prises ».
 montrerOnglet('prises');
