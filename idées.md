@@ -236,7 +236,7 @@
   - [ ] maillages eau et terrain (`makeWaterGeometry`, résolution du relief) ;
   - [ ] distances de caméra et brume (`NORMAL_CAM_POS`, brouillard) ;
   - [ ] carte du carnet (échelle du SVG, `rendreCarteEtang`).
-- [ ] **Plus de poissons** (voir 14.3), sinon le grand plan d'eau paraîtra vide.
+- [ ] **Plus de poissons** (voir 14.4), sinon le grand plan d'eau paraîtra vide.
 - [ ] **Vérifier les performances** (nombre de poissons × maillage plus fin) sur un
   ordinateur modeste et sur téléphone.
 
@@ -266,7 +266,42 @@ Deux rôles de jeu, comme demandé :
 - [ ] **Tests** : placement déterministe, accrochage, attraction par espèce,
   non-chevauchement avec les postes de berge et la zone de la bourriche.
 
-### 14.3 Nombre de poissons réaliste par rapport à la surface
+> Les **types de fond** (sable, gravier, vase, roche, herbier — section 14.3) jouent
+> le même rôle d'attraction par espèce : les deux idées vont ensemble.
+
+### 14.3 Types de fond de l'étang (attirent certaines espèces)
+
+Aujourd'hui le fond est **uniforme** : une seule texture de vase (`assets/vase.jpg`,
+ambientCG Ground054, CC0) appliquée à tout le bassin. Or, en pêche réelle, c'est le
+**substrat** qui décide quels poissons vivent là.
+
+- [ ] **Découper le fond en zones de substrat**, chacune avec sa texture et sa couleur :
+  - [ ] **sable clair** : anses abritées et hauts-fonds doux ;
+  - [ ] **gravier / galets** : hauts-fonds exposés au vent ;
+  - [ ] **vase** : fosses profondes et anses sans courant (texture actuelle) ;
+  - [ ] **roche** : tombants et bordures des fosses ;
+  - [ ] **herbier** : zones élargies autour des nénuphars et des roseaux.
+- [ ] **Rendu** : mélange de textures par zone (masque ou maillages séparés), en
+  gardant les textures CC0/KTX2 déjà en place pour ne pas casser les performances.
+- [ ] **Rôle halieutique** : chaque substrat **attire ou repousse** certaines espèces,
+  à relier aux `COMPORTEMENTS` d'`especes.js` (comme la zone de vie actuelle) :
+  - [ ] vase → **tanche, carpe, brème, anguille** (espèces qui fouillent) ;
+  - [ ] sable → **gardon, goujon, ablette** ;
+  - [ ] gravier → **perche, chevesne** ;
+  - [ ] roche → **perche, sandre** ;
+  - [ ] herbier → **brochet, black-bass** (embuscade) et **gardon** (abri).
+- [ ] **Lisibilité pour le joueur** : la **carte du carnet** affiche les fonds avec
+  une légende, et le widget de profondeur indique le **type de fond sous l'hameçon**
+  (utile pour choisir où lancer depuis la barque).
+- [ ] **Risques associés** : la **vase** reste l'accrochage qui aspire ; l'**herbier**
+  accroche comme les nénuphars ; la **roche** peut user la ligne (nouveau risque à
+  définir, ou simple accrochage plus court).
+- [ ] **Sons** : un bruit différent selon le fond (cailloux qui cognent, vase qui
+  aspire) — réutiliser les sons déjà crédités.
+- [ ] **Tests** : répartition déterministe des substrats, attraction par espèce
+  mesurée sur une simulation, cohérence entre la carte, le fond rendu et les poissons.
+
+### 14.4 Nombre de poissons réaliste par rapport à la surface
 
 - [ ] **Densité réaliste** : un étang extensif porte environ **100–300 kg de
   poisson par hectare**. Aujourd'hui : 20 poissons sur ≈ 0,23 ha (réaliste en
@@ -280,7 +315,7 @@ Deux rôles de jeu, comme demandé :
 - [ ] **Mesurer l'effet sur les performances** et sur le rythme des touches (ne pas
   rendre la pêche trop facile en densifiant).
 
-### 14.4 Détritus quand on pêche trop près du fond
+### 14.5 Détritus quand on pêche trop près du fond
 
 - [ ] **Attraper des détritus** au lieu d'un poisson quand l'hameçon est posé au
   ras du fond : bouteille, chiffon, bottine, branche, sac plastique.
@@ -293,7 +328,7 @@ Deux rôles de jeu, comme demandé :
 - [ ] **Tests** : probabilité pilotable, aucune entrée « détritus » dans le carnet
   des espèces, message affiché.
 
-### 14.5 Reste à faire (reporté des passes précédentes)
+### 14.6 Reste à faire (reporté des passes précédentes)
 
 Voir la section **11** (elle reste la référence) : bug d'affichage des bouchons,
 suppression du retour automatique de la ligne, sons non branchés (`playTonnerre`,
