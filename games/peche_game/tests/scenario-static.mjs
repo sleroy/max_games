@@ -13,7 +13,7 @@ function read(name) {
 // Certaines règles portent sur « le code du jeu » sans se soucier du module qui
 // le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
 // modules fusionnés : script.js + les modules extraits.
-const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js'];
+const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js'];
 
 function readModules() {
     return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))
@@ -22,7 +22,7 @@ function readModules() {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'splashes.js', 'messages.js', 'ondulations.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'splashes.js', 'messages.js', 'ondulations.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
@@ -151,21 +151,21 @@ export function run() {
     check('la carte est cliquable (pointer-events + touch-action)',
         /\.carte-placement\s*\{[^}]*pointer-events:\s*auto[^}]*touch-action:\s*none/.test(css));
     check('le relief 3D est construit à partir d’un champ de hauteur',
-        script.includes('function hauteurCarte') && script.includes('carteTerrain'));
+        code.includes('function hauteurCarte') && code.includes('carteTerrain'));
     check('le plan d’eau fixe la hauteur du lac',
-        script.includes('CARTE_3D_EAU_Y = 0'));
+        code.includes('CARTE_3D_EAU_Y = 0'));
     check('le clic passe par un raycast sur le relief',
-        script.includes('intersectObject(carteTerrain)'));
+        code.includes('intersectObject(carteTerrain)'));
     check('la carte indique le nord et le soleil',
         html.includes('carte-3d-nord') && html.includes('carte-3d-soleil'));
     check('un repère écran suit la position choisie',
         html.includes('id="cartePlacementRepere"')
-        && script.includes('cartePlacementRepere.style.left'));
+        && code.includes('cartePlacementRepere.style.left'));
     check('la couronne de placement est un ruban 3D',
-        script.includes('zone-placement') && script.includes('PLACEMENT_MARGE_MIN'));
+        code.includes('zone-placement') && code.includes('PLACEMENT_MARGE_MIN'));
     check('le clic et le glisser sont branchés sur la carte',
-        script.includes("addEventListener('pointerdown'")
-        && script.includes('emplacementDepuisCarte'));
+        code.includes("addEventListener('pointerdown'")
+        && code.includes('emplacementDepuisCarte'));
 
     group('9) La vase est tenace');
     check('la vase impose un temps de récupération entre deux clics',
