@@ -106,4 +106,9 @@ export function run() {
     G().setTechnique('bouchon');
     step(0.1);
     checkEqual('retour au bouchon : la profondeur réglée revient', G().getHookDepth(), reglage);
+
+    // 6) Non-régression : le shader de l'eau déclare tous les uniforms qu'il utilise
+    // (un « uNormalsOn » oublié rendait l'eau invisible en ligne).
+    const src = readFileSync(new URL('../script.js', import.meta.url), 'utf8');
+    check('le shader d’eau déclare uNormalsOn', /uniform float uNormalsOn;/.test(src));
 }
