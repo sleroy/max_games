@@ -2,7 +2,7 @@
 // Scénario 70 : cheat « poisson ». Taper le mot secret n'importe où offre
 // +50 XP ; un mot incomplet, faux ou une touche spéciale n'offrent rien.
 // ---------------------------------------------------------------------------
-import { group, check, checkEqual, G, resetToIdle } from './harness.mjs';
+import { group, checkEqual, G, resetToIdle } from './harness.mjs';
 
 export function run() {
     group('70) Cheat « poisson » : +50 XP');
@@ -43,10 +43,27 @@ export function run() {
     // --- Robustesse ---
     checkEqual('une touche spéciale (Shift) est ignorée', G().cheatTouche('Shift'), false);
 
+    // --- Intégration : vraies frappes clavier via l'écouteur « window » ---
+    G().setExperience(0);
+    const partieAvantClavier = G().getExperiencePartie();
+    'poisson'.split('').forEach(function (lettre) {
+        globalThis.fireWindowEvent('keydown', { key: lettre });
+    });
+    checkEqual('le vrai clavier déclenche aussi le cheat (+50 XP)',
+        G().getExperience(), 50);
+    checkEqual('l\'XP de partie suit via le vrai clavier',
+        G().getExperiencePartie(), partieAvantClavier + 50);
+
+    // --- Saisie dans un champ de texte : pas de cheat ---
+    G().setExperience(0);
+    const champFactice = { closest: () => ({}) };   // simule target dans <input>
+    'poisson'.split('').forEach(function (lettre) {
+        globalThis.fireWindowEvent('keydown', { key: lettre, target: champFactice });
+    });
+    checkEqual('aucun cheat depuis un champ de saisie', G().getExperience(), 0);
+
     // Ménage : on ne laisse pas d'XP de cheat aux scénarios suivants.
     G().setExperience(0);
-    check('le message de cheat est bien passé par le bandeau',
-        true, 'vérification faite via cheatTouche() + statusDisplay en jeu');
 }
 
 export default run;

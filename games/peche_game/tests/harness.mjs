@@ -322,8 +322,22 @@ export function installEnvironment() {
     globalThis.devicePixelRatio = 1;
     globalThis.innerWidth = 1280;
     globalThis.innerHeight = 720;
-    globalThis.addEventListener = () => {};
-    globalThis.removeEventListener = () => {};
+    globalThis.__windowListeners = {};                  // écouteurs « window » enregistrés par le jeu
+    globalThis.addEventListener = (type, fn) => {
+        (globalThis.__windowListeners[type] = globalThis.__windowListeners[type] || []).push(fn);
+    };
+    globalThis.removeEventListener = (type, fn) => {
+        const list = globalThis.__windowListeners[type] || [];
+        const i = list.indexOf(fn);
+        if (i >= 0) { list.splice(i, 1); }
+    };
+    // Déclenche un événement « window » (p. ex. keydown) sur tous les écouteurs du jeu.
+    globalThis.fireWindowEvent = (type, event = {}) => {
+        const list = globalThis.__windowListeners[type] || [];
+        const e = { target: null, preventDefault: () => {}, stopPropagation: () => {}, ...event };
+        for (const fn of list.slice()) { fn(e); }
+        return e;
+    };
     globalThis.requestAnimationFrame = () => 0;         // la boucle de rendu ne tourne pas
     globalThis.cancelAnimationFrame = () => {};
     globalThis.setTimeout = fakeSetTimeout;             // timers pilotés par step()
