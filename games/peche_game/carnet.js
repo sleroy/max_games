@@ -38,6 +38,7 @@ export function chargerCarnet(options) {
         if (typeof saved.bouchon === 'string') { setFlotteur(saved.bouchon); }
         data.experience = Math.max(0, Math.floor(saved.experience || 0));
         data.sonar = saved.sonar === true;
+        data.bateau = saved.bateau === true;
         if (data.recharges) {
             for (const id of Object.keys(data.recharges)) {
                 const nombre = saved.recharges?.[id];

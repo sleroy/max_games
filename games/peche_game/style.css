@@ -1860,6 +1860,9 @@ body.calm .struggle-marker {
 
     .hud-counters {
         gap: 0 7px;
+        /* Trois compteurs (score, lignes, XP) sur un écran étroit : on
+           resserre la police pour qu'ils tiennent sur une seule ligne. */
+        font-size: 0.76rem;
     }
 }
 

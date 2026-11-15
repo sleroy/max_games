@@ -3,12 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=134';
+import { SoundEngine } from './sound.js?v=135';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=134';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
 import { creerClassement } from './classement.js';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=134';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -42,6 +42,8 @@ const calmToggle = document.getElementById('calmToggle');
 const effectsToggle = document.getElementById('effectsToggle');
 const bourricheLabel = document.getElementById('bourricheLabel');
 const xpLabel = document.getElementById('xpLabel');
+// XP de la partie, rappelée dans la barre du haut (le menu est souvent fermé).
+const xpTop = document.getElementById('xpTop');
 const depthLabel = document.getElementById('depthLabel');
 const depthMinus = document.getElementById('depthMinus');
 const depthPlus = document.getElementById('depthPlus');
@@ -101,6 +103,7 @@ let especeIndex = 0;             // poisson affiché dans l'onglet « Espèces �
 const toolDock = document.getElementById('toolDock');
 const sonarButton = document.getElementById('sonarButton');
 const sonarPanel = document.getElementById('sonarPanel');
+const boatButton = document.getElementById('boatButton');
 const sonarRadar = document.getElementById('sonarRadar');
 const sonarCount = document.getElementById('sonarCount');
 const cameraButton = document.getElementById('cameraButton');
@@ -2712,6 +2715,142 @@ const ANGLE_BASE = Math.atan2(
 let emplacementAngle = ANGLE_BASE;
 let emplacementMarge = POSTE_MARGE;
 
+// ---------------------------------------------------------------------------
+// MODE BATEAU (acheté en boutique avec l'XP)
+// Embarquer DÉPLACE le poste au milieu de l'eau : même matériel, même caméra,
+// même lancer — seul l'endroit change. Les flèches (ou ZQSD) font ramer.
+// La marge (distance au bord LOCAL) devient NÉGATIVE : on est dans l'eau.
+// ---------------------------------------------------------------------------
+const BATEAU_PAS_ANGLE = 0.055;   // pas de rotation (flèches gauche / droite)
+const BATEAU_PAS_MARGE = 1.6;     // pas d'avancée / recul (flèches haut / bas)
+const BATEAU_MARGE_BORD = 4;      // au plus près : 4 unités DANS l'eau du bord
+const BATEAU_MIN_CENTRE = 10;     // jamais à moins de 10 unités du centre (la
+                                  // visée a besoin d'une direction vers le milieu)
+
+const bateauGroupe = new THREE.Group();
+bateauGroupe.visible = false;
+scene.add(bateauGroupe);
+const coqueMateriau = new THREE.MeshStandardMaterial({ color: 0x2e6da4, roughness: 0.6 });
+const boisMateriau = new THREE.MeshStandardMaterial({ color: 0x8a5a33, roughness: 0.85 });
+// Coque : profil vu de dessus (la proue = +z local, comme le regard du
+// pêcheur), extrudée vers le bas. Le dessus de l'extrusion est le plancher.
+const coqueForme = new THREE.Shape();
+coqueForme.moveTo(-0.8, -1.9);
+coqueForme.lineTo(0.8, -1.9);
+coqueForme.lineTo(0.8, 0.4);
+coqueForme.quadraticCurveTo(0.75, 1.5, 0, 2.3);
+coqueForme.quadraticCurveTo(-0.75, 1.5, -0.8, 0.4);
+coqueForme.closePath();
+const coqueGeometrie = new THREE.ExtrudeGeometry(coqueForme, { depth: 0.8, bevelEnabled: false });
+coqueGeometrie.rotateX(Math.PI / 2);   // l'extrusion (+z) part vers le bas
+const coque = new THREE.Mesh(coqueGeometrie, coqueMateriau);
+coque.castShadow = true;
+bateauGroupe.add(coque);
+const banc = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.09, 0.5), boisMateriau);
+banc.position.set(0, 0.34, 0.35);
+bateauGroupe.add(banc);
+// Deux avirons posés en travers : ils suffisent à « lire » la barque de loin.
+const avironMateriau = new THREE.MeshStandardMaterial({ color: 0xb08b52, roughness: 0.8 });
+for (const cote of [-1, 1]) {
+    const avironGeometrie = new THREE.CylinderGeometry(0.05, 0.07, 2.6, 8);
+    avironGeometrie.rotateZ(Math.PI / 2);
+    const aviron = new THREE.Mesh(avironGeometrie, avironMateriau);
+    aviron.rotation.y = cote * 0.35;
+    aviron.position.set(cote * 0.95, 0.42, 0.1);
+    bateauGroupe.add(aviron);
+}
+
+// État du mode bateau ; `riveDerniere` garde l'emplacement de berge pour
+// revenir exactement au même endroit en débarquant.
+let modeBateau = false;
+const riveDerniere = { angle: null, marge: POSTE_MARGE, preset: 0, libre: false };
+
+// Embarquer : à peu près à mi-étang, dans l'axe du poste actuel.
+function margeBateauMilieu(angle) {
+    const distance = Math.max(BATEAU_MIN_CENTRE, rayonEtang(angle) * 0.5);
+    return distance - rayonEtang(angle);
+}
+
+function embarquerBateau() {
+    if (modeBateau || !journal.bateau || floatState !== 'idle') { return false; }
+    riveDerniere.angle = emplacementAngle;
+    riveDerniere.marge = emplacementMarge;
+    riveDerniere.preset = posteActuel;
+    riveDerniere.libre = emplacementLibre;
+    modeBateau = true;
+    return placerALAngle(emplacementAngle, margeBateauMilieu(emplacementAngle), -1, true);
+}
+
+function quitterBateau() {
+    if (!modeBateau) { return false; }
+    modeBateau = false;
+    return placerALAngle(riveDerniere.angle ?? emplacementAngle, riveDerniere.marge,
+        riveDerniere.preset, riveDerniere.libre);
+}
+
+// Un placement « de berge » (raccourci de poste ou carte d'accueil) débarque
+// la barque. On ne le fait que si le placement peut réussir (ligne au repos),
+// sinon l'état resterait cohérent : toujours à bord, ligne dehors.
+function atterirBateau() {
+    if (modeBateau && floatState === 'idle') { modeBateau = false; }
+}
+
+// Fait tourner / avancer / reculer la barque. Refusé tant que la ligne n'est
+// pas au repos : le bouchon ne peut pas être remorqué.
+function deplacerBateau(deltaAngle, deltaMarge) {
+    if (!modeBateau || floatState !== 'idle') { return false; }
+    const rayon = rayonEtang(emplacementAngle);
+    let marge = emplacementMarge + deltaMarge;
+    marge = Math.max(BATEAU_MIN_CENTRE - rayon, Math.min(-BATEAU_MARGE_BORD, marge));
+    const ok = placerALAngle(emplacementAngle + deltaAngle, marge, -1, true);
+    if (ok) {
+        spawnRipple({ x: angler.position.x, y: 0, z: angler.position.z });
+    }
+    return ok;
+}
+
+if (boatButton) {
+    boatButton.addEventListener('click', function () {
+        if (!journal.bateau || paused) { return; }
+        ensureSound();
+        let ok;
+        if (modeBateau) {
+            ok = quitterBateau();
+            if (ok) {
+                statusDisplay.textContent = '🐟 De retour sur la rive.';
+                sound.playPiece();
+            }
+        } else {
+            ok = embarquerBateau();
+            if (ok) {
+                statusDisplay.textContent = '🚤 À bord ! Flèches (ou ZQSD) pour ramer, clic sur l’eau pour pêcher.';
+                sound.playPiece();
+            } else if (floatState !== 'idle') {
+                statusDisplay.textContent = 'Range ta ligne (bouchon au repos) avant de monter à bord.';
+            }
+        }
+        if (ok) {
+            boatButton.textContent = modeBateau ? '🐟 Rive' : '🚤 Bateau';
+            boatButton.setAttribute('aria-pressed', String(modeBateau));
+        }
+    });
+}
+
+// La barque flotte : elle suit la houle et prend une légère inclinaison
+// avant-arrière (la proue et la poupe ne portent pas la même hauteur d'eau).
+function updateBateau(time) {
+    if (!bateauGroupe.visible) { return; }
+    const x = bateauGroupe.position.x;
+    const z = bateauGroupe.position.z;
+    bateauGroupe.position.y = 0.3 + waterWaveHeightAt(x, z, time) * 0.5;
+    const avant = Math.sin(bateauGroupe.rotation.y);
+    const cote = Math.cos(bateauGroupe.rotation.y);
+    const houleProue = waterWaveHeightAt(x + avant * 2.2, z + cote * 2.2, time);
+    const houlePoupe = waterWaveHeightAt(x - avant * 2.2, z - cote * 2.2, time);
+    bateauGroupe.rotation.x = THREE.MathUtils.clamp(
+        (houlePoupe - houleProue) * 0.12, -0.09, 0.09);
+}
+
 // Exposition lumineuse du poste demandé (par défaut : le plus proche).
 function expositionPoste(index) {
     const poste = POSTES[(typeof index === 'number') ? index : posteActuel];
@@ -2763,6 +2902,7 @@ function azimutPosteTexte(angle) {
 }
 
 function nomEmplacementCourant() {
+    if (modeBateau) { return 'bateau'; }
     return emplacementLibre
         ? azimutPosteTexte(emplacementAngle)
         : POSTES[posteActuel].nom.toLowerCase();
@@ -2803,9 +2943,15 @@ function placerALAngle(angle, marge, presetIndex, libre) {
     if (floatState !== 'idle' || !Number.isFinite(angle)) {
         return false;
     }
-    const margeVoulue = Math.max(PLACEMENT_MARGE_MIN,
-        Math.min(PLACEMENT_MARGE_MAX,
-            Number.isFinite(marge) ? marge : POSTE_MARGE));
+    // Sur la rive : marge positive bornée. En bateau : marge NÉGATIVE (dans
+    // l'eau), bornée par le filet de sécurité ; le vrai bornage est fait dans
+    // deplacerBateau (le rayon dépend de l'angle).
+    const margeBrute = Number.isFinite(marge) ? marge : POSTE_MARGE;
+    const margeVoulue = modeBateau
+        ? Math.max(BATEAU_MIN_CENTRE - RAYON_ETANG_MAX,
+            Math.min(-BATEAU_MARGE_BORD, margeBrute))
+        : Math.max(PLACEMENT_MARGE_MIN,
+            Math.min(PLACEMENT_MARGE_MAX, margeBrute));
     emplacementAngle = angle;
     emplacementMarge = margeVoulue;
     emplacementLibre = !!libre;
@@ -2845,6 +2991,15 @@ function placerALAngle(angle, marge, presetIndex, libre) {
         repere.x += decalX;
         repere.z += decalZ;
     });
+
+    // 3) BATEAU : la coque se glisse sous le pêcheur, tournée comme lui (proue
+    //    vers l'étang). La girouette, matériel de berge, reste rangée à quai.
+    bateauGroupe.visible = modeBateau;
+    vaneGroup.visible = !modeBateau;
+    if (modeBateau) {
+        bateauGroupe.position.set(angler.position.x, 0.3, angler.position.z);
+        bateauGroupe.rotation.y = anglerYawBase;
+    }
 
     // Canne : pivot à la nouvelle base, orienté vers l'étang.
     rodPivot.position.copy(rodBase);
@@ -2891,12 +3046,14 @@ function placerAuPoste(index) {
     if (!poste) {
         return false;
     }
+    atterirBateau();
     return placerALAngle(ANGLE_BASE - poste.delta, POSTE_MARGE, index, false);
 }
 
 // Choix libre depuis la carte vue de dessus : un angle + une distance à la
 // berge. Si le clic est très proche d'un raccourci, on le rattache à ce poste.
 function choisirEmplacement(angle, marge) {
+    atterirBateau();
     const preset = plusProchePresetIndex(angle);
     const cible = ANGLE_BASE - POSTES[preset].delta;
     const libre = ecartAngulaire(angle, cible) > (2 * Math.PI / 180);
@@ -3284,6 +3441,7 @@ const fishThrowOrigin = new THREE.Vector3();
 // Carnet de pêche (conservé dans le navigateur quand c'est possible)
 // ---------------------------------------------------------------------------
 const SONAR_PRICE = 150;
+const BATEAU_PRIX = 180;
 const SONAR_RADIUS = 24; // 12 m à l’échelle du jeu.
 const sonarBuoy = new THREE.Mesh(new THREE.SphereGeometry(0.29, 12, 8),
     new THREE.MeshStandardMaterial({ color: 0xffb62e, roughness: 0.55 }));
@@ -3296,6 +3454,16 @@ function acheterSonar() {
     if (journal.sonar || journal.experience < SONAR_PRICE) { return false; }
     journal.experience -= SONAR_PRICE;
     journal.sonar = true;
+    saveJournal();
+    renderJournal();
+    return true;
+}
+
+// Achète la barque (un seul achat, pour toujours). Renvoie true si réussi.
+function acheterBateau() {
+    if (journal.bateau || journal.experience < BATEAU_PRIX) { return false; }
+    journal.experience -= BATEAU_PRIX;
+    journal.bateau = true;
     saveJournal();
     renderJournal();
     return true;
@@ -3360,6 +3528,13 @@ sonarButton.addEventListener('click', () => {
         if (paused || (floatState !== 'idle' && floatState !== 'inWater')) { return; }
         if (floatState === 'inWater') {
             sonarBuoy.position.copy(floatGroup.position);
+        } else if (modeBateau) {
+            // Depuis la barque : le sonar part DEVANT, vers le centre de l'étang.
+            const dx = POND_CENTER.x - angler.position.x;
+            const dz = POND_CENTER.z - angler.position.z;
+            const d = Math.hypot(dx, dz) || 1;
+            sonarBuoy.position.set(angler.position.x + (dx / d) * 8, 0.13,
+                angler.position.z + (dz / d) * 8);
         } else {
             const angle = Math.atan2(angler.position.z - POND_CENTER.z, angler.position.x - POND_CENTER.x);
             const distance = rayonEtang(angle) - 4;
@@ -3390,7 +3565,7 @@ const TYPES_DE_FIL = RECHARGES.slice(1);
 const TAILLE_LOT = 3;
 let lignesRestantes = MAX_LIGNES;
 let amorceDepartRestante = AMORCE_DEPART;
-const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false,
+const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false, bateau: false,
     technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice(), scions: SCIONS_DE_DEPART.slice(), scion: SCIONS_DE_DEPART[0], ligne: 'nylon',
     recharges: Object.fromEntries(RECHARGES.map(article => [article.id, 0])) };
 
@@ -3521,6 +3696,9 @@ function renderJournal() {
     bourricheLabel.textContent = '🧺 Bourriche : ' + bourricheCount;
     // L'XP de partie repart à 0 ; l'XP carrière reste visible pour la boutique.
     xpLabel.textContent = '⭐ ' + experiencePartie + ' XP · ' + journal.experience + ' carrière';
+    // Barre du haut : la version courte (l'XP de la partie en cours, comme le
+    // score). Le détail « carrière » reste dans le menu.
+    if (xpTop) { xpTop.textContent = '⭐ ' + experiencePartie + ' XP'; }
     shopXp.textContent = '⭐ ' + journal.experience + ' XP';
     // Le carnet a changé (XP, prises…) : la boutique doit se rafraîchir aussi,
     // sinon les boutons d'achat restent grisés alors qu'on a assez d'expérience.
@@ -3702,12 +3880,23 @@ function renderBoutique() {
     html += '</div><div class="shop-section">📡 Matériel</div><div class="shop-grid">';
     const owned = journal.sonar;
     sonarButton.hidden = !owned;
+    const bateauPossede = journal.bateau;
+    if (boatButton) { boatButton.hidden = !bateauPossede; }
     html += '<div class="shop-item' + (owned ? ' owned' : '') + '">'
         + '<div class="shop-name">📡 Sonar flottant</div>'
         + '<div class="shop-desc">Repère les poissons à 12 m autour du sonar. Pose-le depuis le menu.</div>'
         + (owned ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
             : '<button class="shop-btn buy" data-id="sonar" data-action="acheter"'
                 + (journal.experience < SONAR_PRICE ? ' disabled' : '') + '>Acheter · ' + SONAR_PRICE + ' XP</button>')
+        + '</div>';
+    html += '<div class="shop-item' + (bateauPossede ? ' owned' : '') + '">'
+        + '<div class="shop-name">🚤 Barque de pêche</div>'
+        + '<div class="shop-desc">Pêche au milieu de l’étang, là où sont les gros ! Une fois à bord : '
+            + 'flèches ou ZQSD pour ramer, clic sur l’eau pour lancer. '
+            + 'Le bouton « Bateau » apparaît en bas à gauche.</div>'
+        + (bateauPossede ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
+            : '<button class="shop-btn buy" data-id="bateau" data-action="acheter"'
+                + (journal.experience < BATEAU_PRIX ? ' disabled' : '') + '>Acheter · ' + BATEAU_PRIX + ' XP</button>')
         + '</div></div>';
     boutique.innerHTML = html;
 }
@@ -3746,6 +3935,15 @@ boutique.addEventListener('click', event => {
     }
     if (id === 'sonar' && cible.dataset.action === 'acheter') {
         if (acheterSonar()) { sound.playPiece(); }
+        return;
+    }
+    if (id === 'bateau' && cible.dataset.action === 'acheter') {
+        if (acheterBateau()) {
+            sound.playPiece();
+            statusDisplay.textContent = '🚤 Barque achetée ! Le bouton « Bateau » t’attend en bas à gauche.';
+        } else {
+            statusDisplay.textContent = 'Pas assez d’expérience pour la barque.';
+        }
         return;
     }
     if (cible.dataset.action === 'equiper-scion') {
@@ -7604,6 +7802,23 @@ window.addEventListener('keydown', event => {
     }
     if (cameraViewActive || paused || toolDock.classList.contains('ouvert')
             || event.target?.closest?.('button, input, select, textarea')) { return; }
+    if (modeBateau) {
+        // Ramer : flèches ou ZQSD (clavier français). Gauche/droite tournent
+        // autour du centre ; haut/bas avancent ou reculent.
+        const touche = event.key;
+        let coup = null;
+        if (touche === 'ArrowUp' || touche === 'z' || touche === 'w') { coup = [0, BATEAU_PAS_MARGE]; }
+        else if (touche === 'ArrowDown' || touche === 's') { coup = [0, -BATEAU_PAS_MARGE]; }
+        else if (touche === 'ArrowLeft' || touche === 'q' || touche === 'a') { coup = [BATEAU_PAS_ANGLE, 0]; }
+        else if (touche === 'ArrowRight' || touche === 'd') { coup = [-BATEAU_PAS_ANGLE, 0]; }
+        if (coup) {
+            event.preventDefault();
+            if (!deplacerBateau(coup[0], coup[1])) {
+                statusDisplay.textContent = 'Le bouchon est dehors : ramène la ligne pour déplacer la barque.';
+            }
+            return;
+        }
+    }
     if (event.key === ' ' || event.key === 'Enter') {
         ensureSound();
         if (feedMode) {
@@ -7890,6 +8105,7 @@ function animate() {
         updateWater(elapsed);
         updateFish(dt, elapsed);
         updateSonar(dt, elapsed);
+        updateBateau(elapsed);
         updateFloat(dt, elapsed);
         // La coupe de l'eau suit le bouchon (5 fois par seconde suffit).
         if (elapsed - dernierCoupe > 0.2) {
@@ -8560,6 +8776,23 @@ window.__game = {
             z: angler.position.z,
             direction: azimutPosteTexte(emplacementAngle),
             libre: emplacementLibre
+        };
+    },
+    // Mode bateau (barque achetée en boutique) — exposés pour les tests.
+    isBateau: function () { return modeBateau; },
+    acheterBateau: acheterBateau,
+    embarquerBateau: embarquerBateau,
+    quitterBateau: quitterBateau,
+    deplacerBateau: deplacerBateau,
+    getBateauPrix: function () { return BATEAU_PRIX; },
+    getBateau: function () {
+        return {
+            visible: bateauGroupe.visible,
+            x: bateauGroupe.position.x,
+            y: bateauGroupe.position.y,
+            z: bateauGroupe.position.z,
+            marge: emplacementMarge,
+            angle: emplacementAngle
         };
     },
     getPlacementMap: function () {

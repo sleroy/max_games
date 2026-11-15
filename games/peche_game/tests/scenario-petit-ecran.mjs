@@ -39,6 +39,17 @@ export function run() {
         el('bourricheLabel').textContent);
     check('l’XP reste accessible dans le menu',
         el('xpLabel').textContent.indexOf('XP') >= 0, el('xpLabel').textContent);
+    // L'XP de la partie est AUSSI rappelée dans la barre du haut, sans ouvrir le menu.
+    check('l’XP de la partie est dans la barre du haut',
+        el('xpTop').textContent.indexOf('XP') >= 0, el('xpTop').textContent);
+    checkEqual('le dock est toujours fermé', G().isOutilsOuverts(), false);
+    const avantXp = el('xpTop').textContent;
+    G().gagnerExperience(1);
+    check('la barre du haut suit les gains d’XP',
+        el('xpTop').textContent.indexOf(String(G().getExperiencePartie())) >= 0,
+        avantXp + ' -> ' + el('xpTop').textContent);
+    check('la barre du haut n’affiche pas le détail carrière (menu fermé)',
+        el('xpTop').textContent.indexOf('carrière') < 0, el('xpTop').textContent);
     check('les lignes restantes sont indiquées',
         el('lignesLabel').textContent.indexOf('Lignes') >= 0,
         el('lignesLabel').textContent);

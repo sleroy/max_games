@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=134">
+    <link rel="stylesheet" href="style.css?v=135">
 </head>
 <body>
     <div class="game-wrap">
@@ -20,6 +20,7 @@
                 <div class="hud-counters">
                     <span>Score : <span id="score">0</span></span>
                     <span id="lignesLabel">🧵 Lignes : 5/5</span>
+                    <span id="xpTop" title="XP de la partie en cours">⭐ 0 XP</span>
                 </div>
                 <div class="wind-gauge">
                     <span class="wind-label">Vent</span>
@@ -287,6 +288,8 @@
                     aria-label="Scion de la canne (technique quiver)"></canvas>
                 <span>Scion</span>
             </div>
+            <button class="boat-button" id="boatButton" hidden
+                aria-pressed="false" title="Monter à bord ou revenir sur la rive">🚤 Bateau</button>
             <div class="hud-bottom">
                 <div class="status" id="status">Clique sur l'eau pour lancer la ligne.</div>
                 <button id="fishButton" hidden disabled>Tendre le fil</button>
@@ -319,6 +322,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=134"></script>
+    <script type="module" src="script.js?v=135"></script>
 </body>
 </html>
