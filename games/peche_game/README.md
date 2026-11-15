@@ -73,7 +73,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   l’arrivée dans l’eau. Un clic sur l’étang pendant le vol fait la même chose.
   Un fil tendu écarte le risque d’emmêlement. Sans ce geste, le risque est de
   **0 % en Facile**, **8 % en Normal** et **15 % en Dur**.
-- **Démêlage** : suis le câble du départ vert à l’arrivée rouge. Un tracé réussi
+- **Démêlage** : suis le fil du départ vert à l’arrivée rouge. Si tu dévies ou
+  lèves le doigt, reprends à l’extrémité de la partie verte. Un tracé réussi
   libère la ligne. Un abandon ou un temps écoulé coûte une ligne. Les accrochages
   aux nénuphars ou au fond dépendent de l’endroit visé et de la profondeur.
 - **Deux techniques** : **bouchon** (flotteur classique) ou **quiver** (scion de

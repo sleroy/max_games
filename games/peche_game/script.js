@@ -3,8 +3,8 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=117';
-import { creerJeuDemelage } from './demelage.js';
+import { SoundEngine } from './sound.js?v=118';
+import { creerJeuDemelage } from './demelage.js?v=118';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
 import { creerClassement } from './classement.js';
@@ -1895,7 +1895,9 @@ const LINE_SEGMENTS = 12;
 const linePositions = new Float32Array((LINE_SEGMENTS + 1) * 3);
 const lineGeometry = new THREE.BufferGeometry();
 lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({ color: 0x222222 }));
+const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({
+    color: 0x232c2b, transparent: true, opacity: 0.58, depthWrite: false
+}));
 line.frustumCulled = false;
 scene.add(line);
 
@@ -1928,7 +1930,7 @@ floatGroup.add(floatStick);
 // Ligne + hameçon sous le bouchon
 const hookLine = new THREE.Mesh(
     // Long bas de ligne : environ 1,3 m sous le bouchon (2 unités ≈ 1 m).
-    new THREE.CylinderGeometry(0.005, 0.005, 3.0, 4),
+    new THREE.CylinderGeometry(0.0005, 0.0005, 3.0, 4),
     new THREE.MeshStandardMaterial({ color: 0xdddddd, transparent: true })
 );
 hookLine.position.y = -1.8;    // du bas du bouchon jusqu'à l'hameçon
@@ -2034,8 +2036,8 @@ function majCoupeProfondeur() {
     const profLocale = profondeurLocale(px, pz);
     // Le fond, en % de la hauteur du schéma (jamais collé aux bords).
     const fondPct = Math.min(96, Math.max(8, (profLocale / COUPE_REF) * 100));
-    depthBottomLine.style.top = (100 - fondPct).toFixed(1) + '%';
-    depthBottomLine.style.height = fondPct.toFixed(1) + '%';
+    depthBottomLine.style.top = fondPct.toFixed(1) + '%';
+    depthBottomLine.style.height = (100 - fondPct).toFixed(1) + '%';
     // L'hameçon et le fil qui le relie au bouchon.
     const hameconPct = Math.min(100, (profondeurLigne / COUPE_REF) * 100);
     depthHookDot.style.top = hameconPct.toFixed(1) + '%';
@@ -7256,7 +7258,7 @@ jeuDemelage = creerJeuDemelage({
         updateCrankVisibility();
     },
     onPerdu: function (raison) {
-        casserLigne('Ligne emmêlée non réparée : ' + raison);
+        casserLigne('Démêlage : ' + raison.toLowerCase());
     },
     onStatus: function (texte) {
         statusDisplay.textContent = texte;

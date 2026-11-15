@@ -185,6 +185,9 @@ export function run() {
     checkEqual('le schéma nomme la couche d’eau (fond)', el('depthZoneLabel').textContent, 'fond');
     check('le schéma donne la profondeur du fond', el('depthHint').textContent.indexOf('fond à') >= 0,
         el('depthHint').textContent);
+    G().setProfondeur(2.5);
+    check('à 1,25 m dans 2,5 m d’eau, l’hameçon est au-dessus du trait du fond',
+        parseFloat(el('depthHook').style.top) < parseFloat(el('depthBottomLine').style.top));
     // L'hameçon dans le fond : alerte rouge sur le schéma.
     resetToIdle();
     clearLilyPads();

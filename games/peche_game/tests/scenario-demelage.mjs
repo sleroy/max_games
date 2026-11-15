@@ -75,7 +75,17 @@ export function run() {
     const parcours = G().getDemelagePath();
     check('le parcours est exposé aux tests', parcours.length > 20,
         parcours.length + ' points');
-    parcours.forEach(function (p) { G().pointerDemelage(p.x, p.y); });
+    parcours.slice(0, 20).forEach(p => G().pointerDemelage(p.x, p.y));
+    const avantPause = G().getTangle();
+    for (let i = 0; i < 12; i++) { G().pointerDemelage(-100, -100); }
+    checkEqual('une sortie du tracé ne fait pas perdre la ligne', G().isTangleActif(), true);
+    checkEqual('les événements hors du tracé ne retirent pas de temps', G().getTangle().timeLeft,
+        avantPause.timeLeft);
+    fire('tangleCanvas', 'pointerup');
+    const reprise = parcours[avantPause.progress];
+    G().pointerDemelage(reprise.x, reprise.y);
+    checkEqual('le joueur reprend au même endroit', G().getTangle().progress, avantPause.progress);
+    parcours.slice(avantPause.progress + 1).forEach(p => G().pointerDemelage(p.x, p.y));
     checkEqual('le chemin complet libère la ligne', G().isTangleActif(), false);
     checkEqual('le panneau de démêlage se ferme',
         el('tangleGame').classList.contains('active'), false);

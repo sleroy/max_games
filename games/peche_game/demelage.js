@@ -2,7 +2,7 @@
 // demelage.js — MINI-JEU DE DÉMÊLAGE (« suivre le serpent »).
 //
 // Module autonome (aucun three.js) : il dessine un câble sinueux sur un canvas
-// et vérifie que le doigt suit le fil, dans le bon sens, sans sortir du câble.
+// et vérifie que le doigt suit le fil dans le bon sens, avec une marge tactile.
 // Le joueur colorie le câble au fur et à mesure. Temps limité ; en cas d'échec
 // ou d'abandon, le jeu principal perd une ligne (callback onPerdu).
 // ---------------------------------------------------------------------------
@@ -13,8 +13,8 @@ export function creerJeuDemelage(options) {
     const ctx = canvas.getContext ? canvas.getContext('2d') : null;
     if (!canvas.width) { canvas.width = 640; }
     if (!canvas.height) { canvas.height = 360; }
-    const LARGEUR_CABLE = 18;
-    const RAYON_DEPART = 26;
+    const TOLERANCE_TACTILE = 20; // pixels CSS, indépendants de la taille du canvas.
+    const RAYON_REPRISE = 26;
     const DUREE_DEFAUT = 14;
     const conteneur = opts.conteneur || null;
     const timerEl = opts.timerEl || null;
@@ -76,8 +76,8 @@ export function creerJeuDemelage(options) {
         ctx.fillRect(0, 0, w, h);
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#5a4030';
-        ctx.lineWidth = 26;
+        ctx.strokeStyle = '#d7e4df';
+        ctx.lineWidth = 5;
         ctx.beginPath();
         etat.points.forEach(function (p, i) {
             if (i === 0) { ctx.moveTo(p.x, p.y); } else { ctx.lineTo(p.x, p.y); }
@@ -85,7 +85,7 @@ export function creerJeuDemelage(options) {
         ctx.stroke();
         if (etat.progress > 0) {
             ctx.strokeStyle = '#7ed957';
-            ctx.lineWidth = 16;
+            ctx.lineWidth = 4;
             ctx.beginPath();
             for (let i = 0; i <= etat.progress; i++) {
                 const p = etat.points[i];
@@ -105,14 +105,14 @@ export function creerJeuDemelage(options) {
         ctx.fillText('ARRIVÉE', fin.x - 30, fin.y + 28);
     }
 
-    function pointLePlusProche(x, y) {
+    function pointLePlusProche(x, y, scaleX, scaleY) {
         if (!etat) { return null; }
         const min = Math.max(0, etat.progress - 1);
         const max = Math.min(etat.points.length - 1, etat.progress + 20);
         let meilleur = null;
         for (let i = min; i <= max; i++) {
             const p = etat.points[i];
-            const d = Math.hypot(p.x - x, p.y - y);
+            const d = Math.hypot((p.x - x) * scaleX, (p.y - y) * scaleY);
             if (!meilleur || d < meilleur.distance) {
                 meilleur = { index: i, distance: d };
             }
@@ -120,48 +120,40 @@ export function creerJeuDemelage(options) {
         return meilleur;
     }
 
-    function pointerDown(x, y) {
-        if (!etat || !etat.active) { return; }
-        const debut = etat.points[0];
-        if (Math.hypot(debut.x - x, debut.y - y) <= RAYON_DEPART) {
-            etat.tracing = true;
-            etat.progress = 0;
-            if (messageEl) { messageEl.textContent = 'Suis le fil sans sortir du câble…'; }
-            if (opts.onStatus) { opts.onStatus('🧶 Démêle le fil : pars du point vert et suis le câble jusqu’à l’arrivée.'); }
-            dessiner();
-        } else if (messageEl) {
-            messageEl.textContent = 'Pars du point vert (DÉPART) pour commencer !';
+    function pointerDown(x, y, scaleX = 1, scaleY = 1) {
+        if (!etat || !etat.active) { return false; }
+        const point = etat.points[etat.progress];
+        if (Math.hypot((point.x - x) * scaleX, (point.y - y) * scaleY) > RAYON_REPRISE) {
+            if (messageEl) {
+                messageEl.textContent = etat.progress ? 'Reprends au bout du fil vert.' : 'Commence au point vert.';
+            }
+            return false;
         }
+        etat.tracing = true;
+        if (messageEl) { messageEl.textContent = 'Suis le fil jusqu’au point rouge.'; }
+        if (opts.onStatus) { opts.onStatus('🧶 Suis le fil jusqu’au point rouge.'); }
+        return true;
     }
 
-    function pointerMove(x, y) {
+    function pointerMove(x, y, scaleX = 1, scaleY = 1) {
         if (!etat || !etat.active || !etat.tracing) { return; }
-        const proche = pointLePlusProche(x, y);
-        if (!proche) { return; }
-        if (proche.distance <= LARGEUR_CABLE) {
-            if (proche.index > etat.progress) { etat.progress = proche.index; }
-            if (messageEl) { messageEl.textContent = 'Continue… tu colories le fil !'; }
-            majHud();
-            dessiner();
-            if (etat.progress >= etat.points.length - 1) {
-                reussir();
-            }
-        } else {
-            etat.fautes += 1;
-            etat.timeLeft = Math.max(0, etat.timeLeft - 0.35);
-            if (messageEl) { messageEl.textContent = 'Reste sur le câble ! Tu l’as dépassé.'; }
-            majHud();
-            if (etat.fautes >= 8) {
-                echouer('Trop de sorties du câble');
-            }
+        const proche = pointLePlusProche(x, y, scaleX, scaleY);
+        if (!proche || proche.distance > TOLERANCE_TACTILE) {
+            if (messageEl) { messageEl.textContent = 'Reviens au bout du fil vert.'; }
+            return;
         }
+        if (proche.index > etat.progress) { etat.progress = proche.index; }
+        if (messageEl) { messageEl.textContent = 'Continue jusqu’au point rouge.'; }
+        majHud();
+        dessiner();
+        if (etat.progress >= etat.points.length - 1) { reussir(); }
     }
 
     function pointerUp() {
-        if (!etat || !etat.active) { return; }
+        if (!etat || !etat.active || !etat.tracing) { return; }
         etat.tracing = false;
-        if (etat.progress < etat.points.length - 1 && messageEl) {
-            messageEl.textContent = 'Reprends le fil là où tu t’es arrêté, depuis le départ.';
+        if (messageEl) {
+            messageEl.textContent = etat.progress ? 'Reprends au bout du fil vert.' : 'Commence au point vert.';
         }
     }
 
@@ -194,13 +186,12 @@ export function creerJeuDemelage(options) {
             points: genererParcours(),
             progress: 0,
             tracing: false,
-            fautes: 0,
             timeLeft: duree,
             active: true
         };
         if (conteneur && conteneur.classList) { conteneur.classList.add('active'); }
         if (messageEl) {
-            messageEl.textContent = 'Suis le fil du DÉPART (vert) à l’ARRIVÉE (rouge), sans sortir du câble.';
+            messageEl.textContent = 'Suis le fil du point vert au point rouge. Tu peux reprendre là où tu t’arrêtes.';
         }
         majHud();
         dessiner();
@@ -230,7 +221,6 @@ export function creerJeuDemelage(options) {
             active: etat.active,
             progress: etat.progress,
             timeLeft: etat.timeLeft,
-            fautes: etat.fautes,
             nbPoints: etat.points.length,
             start: { x: etat.points[0].x, y: etat.points[0].y },
             end: {
@@ -246,23 +236,29 @@ export function creerJeuDemelage(options) {
 
     function coords(event) {
         const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
-        if (!rect) { return { x: 0, y: 0 }; }
+        if (!rect || !rect.width || !rect.height) { return null; }
+        const scaleX = rect.width / largeur();
+        const scaleY = rect.height / hauteur();
         return {
-            x: ((event.clientX || 0) - rect.left) / (rect.width || 1) * largeur(),
-            y: ((event.clientY || 0) - rect.top) / (rect.height || 1) * hauteur()
+            x: (event.clientX - rect.left) / scaleX,
+            y: (event.clientY - rect.top) / scaleY,
+            scaleX,
+            scaleY
         };
     }
 
     if (canvas.addEventListener) {
         canvas.addEventListener('pointerdown', function (event) {
             const p = coords(event);
-            pointerDown(p.x, p.y);
-            if (event.preventDefault) { event.preventDefault(); }
+            if (!p || !pointerDown(p.x, p.y, p.scaleX, p.scaleY)) { return; }
+            canvas.setPointerCapture?.(event.pointerId);
+            event.preventDefault?.();
         });
         canvas.addEventListener('pointermove', function (event) {
             const p = coords(event);
-            pointerMove(p.x, p.y);
+            if (p) { pointerMove(p.x, p.y, p.scaleX, p.scaleY); }
         });
+        canvas.addEventListener('lostpointercapture', pointerUp);
         canvas.addEventListener('pointerup', pointerUp);
         canvas.addEventListener('pointercancel', pointerUp);
     }

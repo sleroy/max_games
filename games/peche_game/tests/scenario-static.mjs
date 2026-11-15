@@ -224,7 +224,7 @@ export function run() {
         script.includes('PREDATOR_ATTACK_ADVANTAGE'));
 
     group('15) Démêlage et quiver');
-    check('le mini-jeu est dans un module dédié', script.includes("from './demelage.js'"));
+    check('le mini-jeu est dans un module dédié', /from '\.\/demelage\.js(?:\?v=\d+)?'/.test(script));
     check('le mode quiver est dans un module dédié', script.includes("from './quiver.js'"));
     check('les données espèces sont dans un module dédié', script.includes("from './especes.js'"));
     check('le classement est dans un module dédié', script.includes("from './classement.js'"));
