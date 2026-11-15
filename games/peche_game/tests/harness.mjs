@@ -30,6 +30,7 @@ const FILES = {
     carnet: path.join(GAME_DIR, 'carnet.js'),
     portraits: path.join(GAME_DIR, 'portraits.js'),
     decor: path.join(GAME_DIR, 'decor.js'),
+    environnement: path.join(GAME_DIR, 'environnement.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -391,6 +392,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.carnet, path.join(tmpDir, 'carnet.js'));
     fs.copyFileSync(FILES.portraits, path.join(tmpDir, 'portraits.js'));
     fs.copyFileSync(FILES.decor, path.join(tmpDir, 'decor.js'));
+    fs.copyFileSync(FILES.environnement, path.join(tmpDir, 'environnement.js'));
     fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
@@ -399,7 +401,7 @@ export async function loadGame() {
         source.replace("from 'three'", "from './three-stub.mjs'"));
     // Les modules qui importent eux aussi three (decor.js, futurs modules 3D)
     // reçoivent le même stub : le jeu n'est jamais modifié.
-    for (const fichier of ['decor.js']) {
+    for (const fichier of ['decor.js', 'environnement.js']) {
         const chemin = path.join(tmpDir, fichier);
         const code = fs.readFileSync(chemin, 'utf8');
         if (code.includes("from 'three'")) {

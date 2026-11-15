@@ -13,7 +13,7 @@ function read(name) {
 // Certaines règles portent sur « le code du jeu » sans se soucier du module qui
 // le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
 // modules fusionnés : script.js + les modules extraits.
-const MODULES = ['decor.js'];
+const MODULES = ['decor.js', 'environnement.js'];
 
 function readModules() {
     return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))
@@ -22,7 +22,7 @@ function readModules() {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'portraits.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
@@ -139,7 +139,7 @@ export function run() {
 
     group('7) Étang généré (idee 3)');
     check('le contour vient d’un bruit radial déterministe',
-        script.includes('function rayonEtang') && script.includes('const BRUIT_ETANG'));
+        code.includes('function rayonEtang') && code.includes('const BRUIT_ETANG'));
     check('la rive et l’eau suivent ce contour',
         script.includes('makeShoreGeometry') && script.includes('rayonEtang(a)'));
     check('la carte du carnet affiche le contour généré',

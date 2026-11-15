@@ -17,14 +17,14 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 
 // Modules extraits (tout ce qui n'est pas l'orchestrateur).
 const MODULES = [
-    'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
+    'environnement.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
     'especes.js', 'classement.js', 'carnet.js', 'sound.js'
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 9450;
+const PLAFOND_SCRIPT = 9320;
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;
@@ -58,6 +58,7 @@ export function run() {
 
     // --- API attendue (le point d'entrée que script.js appelle) ------------
     const attendus = {
+        'environnement.js': 'export function ajouterFond(',
         'decor.js': 'export function creerDecor(',
         'portraits.js': 'export function dessinerPortrait(',
         'demelage.js': 'export function creerJeuDemelage(',
@@ -89,6 +90,9 @@ export function run() {
         'creerDecor');
     checkEqual('le décor ne construit plus les arbres dans script.js',
         script.includes('trunkInst'), false);
+    checkEqual('l’étang n’est plus construit dans script.js',
+        script.includes('const POND_CENTER = new THREE.Vector3'), false);
+    check('script.js importe l’environnement', /from '\.\/environnement\.js\?v=\d+'/.test(script));
 }
 
 export default run;

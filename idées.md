@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v141**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v142**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -498,8 +498,13 @@ vient de là, pas du nombre de fonctionnalités.
   nénuphars. Frontière parfaite : le module reçoit 6 dépendances et ne rend que
   `lilyPads`. `script.js` passe de 9 581 à 9 424 lignes.
 - [x] **Garde-fou en place** : `tests/scenario-modules.mjs` (plafond 800 lignes /
-  module, **cliquet** sur `script.js` à 9 450, pas de cycle, module documenté,
-  API d'entrée présente).
+  module, **cliquet** sur `script.js`, pas de cycle, module documenté,
+  API d'entrée présente). Cliquet abaissé à 9 320 en v142.
+- [x] **Deuxième module extrait : `environnement.js`** (v142) — centre de l'étang,
+  contour par harmoniques, relief et fosses, `profondeurLocale`, `fondY`, fond 3D.
+  Comportement **strictement identique** (contour, rayon max 67,1, profondeur
+  centrale 5,0, fond double face vérifiés). `script.js` : 9 424 → **9 306** lignes.
+  C'était le prérequis de l'étang agrandi (14.1).
 
 Un module = une responsabilité, avec **injection de dépendances** comme le font
 déjà `demelage.js` et `quiver.js` (`creerXxx({ canvas, panel, … })`) : aucun accès
