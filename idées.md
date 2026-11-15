@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v142**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v143**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -505,6 +505,11 @@ vient de là, pas du nombre de fonctionnalités.
   Comportement **strictement identique** (contour, rayon max 67,1, profondeur
   centrale 5,0, fond double face vérifiés). `script.js` : 9 424 → **9 306** lignes.
   C'était le prérequis de l'étang agrandi (14.1).
+- [x] **Troisième module extrait : `poissons.js`** (v143) — fabrique 3D des poissons,
+  peuplement par bancs, spécimens hors norme, respawn, punition après une touche
+  ratée. Code **copié tel quel** (mêmes tirages, mêmes poids) ; `horsNormeChance`
+  exposé par un lecteur car c'est un nombre. `script.js` : 9 306 → **8 753** lignes,
+  cliquet abaissé à 8 800. Vérifié : 20 poissons, 7 espèces, 1 hors norme.
 
 Un module = une responsabilité, avec **injection de dépendances** comme le font
 déjà `demelage.js` et `quiver.js` (`creerXxx({ canvas, panel, … })`) : aucun accès

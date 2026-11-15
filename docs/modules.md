@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v142**
+> Dernière mise à jour : **2026-11-15** · jeu **v143**
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -39,8 +39,9 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 
 | Module | Rôle | Lignes | Propriétaire / à qui le modifier |
 |---|---|---|---|
-| `script.js` | Orchestrateur : scène 3D, boucle, entrées, câblage | ~9 300 | **Personne en parallèle** — à réduire |
+| `script.js` | Orchestrateur : scène 3D, boucle, entrées, câblage | ~8 750 | **Personne en parallèle** — à réduire |
 | `environnement.js` | Étang : centre, contour, relief/fosses, profondeur, fond 3D | 151 | Monde (à faire seul) |
+| `poissons.js` | Population : fabrique 3D, bancs, spécimens hors norme, respawn | 619 | Poissons / contenu |
 | `sound.js` | Moteur audio (samples + synthèse) | 798 | Audio |
 | `portraits.js` | Portraits 2D des espèces (fond transparent) | 282 | Combat / UI |
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
@@ -50,7 +51,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
 | `carnet.js` | Persistance du carnet (localStorage) | 88 | Persistance |
 
-**Somme ≈ 11 500 lignes**, dont **~80 % encore dans `script.js`**.
+**Somme ≈ 11 900 lignes**, dont **~74 % encore dans `script.js`**.
 
 ## 4. Découpage à faire (ordre = valeur pour le parallélisme)
 
@@ -61,7 +62,6 @@ lignes différentes **sans se rencontrer**.
 |---|---|---|---|
 | `eau.js` | maillage + shader d'eau, reflet planaire, ondulations | 1124–1310 | moyen |
 | `meteo.js` | jour/nuit, météo, vent, girouette | 751–790, 4951–5041 | moyen |
-| `poissons.js` | peuplement, déplacement, bancs, vision, zone de vie, spécimens | 5194–5762, 7275–7853 | moyen |
 | `combat.js` | épreuve de force, frein, accrochages | 6176–7013 | moyen |
 | `pecheur.js` | pêcheur, canne, geste de lancer | 1652–1884 | faible |
 | `ligne.js` | fil, bouchon, profondeur, flotteurs achetables | 1956–2304 | faible |
@@ -76,7 +76,9 @@ lignes différentes **sans se rencontrer**.
 **Ordre recommandé** (le plus gros gain d'abord, mais un module par livraison) :
 
 1. ~~`environnement.js`~~ — **fait (v142)** : indispensable avant d'agrandir l'étang (14.1).
-2. `poissons.js` — cœur du jeu, et prérequis des fonds (14.3) et de la densité (14.4).
+2. ~~`poissons.js`~~ — **fait (v143) pour la population** ; reste le **comportement**
+   (déplacement, bancs, vision, zone de vie) à extraire dans `comportement.js`,
+   prérequis des fonds (14.3) et de la densité (14.4).
 3. `combat.js` — prérequis de l'épuisette et du frein (15.3).
 4. `pecheur.js`, `ligne.js`, `amorcage.js`, `bourriche.js` (petits, sûrs).
 5. `meteo.js`, `ambiance.js`, `placement.js`, `carnetUI.js`, `boutique.js`.
@@ -101,7 +103,7 @@ lignes différentes **sans se rencontrer**.
 `tests/scenario-modules.mjs` échoue si :
 
 - un module dépasse **800 lignes** ;
-- `script.js` dépasse son plafond courant (**ratchet** à 9 320 en v142 : il ne peut que baisser —
+- `script.js` dépasse son plafond courant (**ratchet** à 8 800 en v143 : il ne peut que baisser —
   le passer à la baisse à chaque extraction, ce qui empêche de regonfler le fichier) ;
 - un module importe `script.js` (cycle) ;
 - un module du dossier n'est pas listé dans ce document ;
