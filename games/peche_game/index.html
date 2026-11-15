@@ -8,16 +8,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=112">
+    <link rel="stylesheet" href="style.css?v=113">
 </head>
 <body>
     <div class="game-wrap">
         <canvas id="gameCanvas"></canvas>
         <div class="hud">
-            <h1 class="hud-title">L'étang du Bois Neuf</h1>
-            <button class="sound-toggle" id="soundToggle">🔊</button>
-            <button class="pause-button" id="pauseButton">⏸</button>
-            <button class="fullscreen-button" id="fullscreenButton">⛶</button>
+            <button class="tool-toggle" id="toolToggle" aria-label="Ouvrir le menu"
+                aria-controls="toolDock" aria-expanded="false">☰ Menu</button>
             <div class="feed-gauge" id="feedGauge">
                 <div class="feed-gauge-bar">
                     <div class="feed-gauge-fill" id="feedGaugeFill"></div>
@@ -26,6 +24,16 @@
                 <div class="feed-gauge-label">Puissance — relâche sur le repère !</div>
             </div>
             <div class="tool-dock" id="toolDock">
+                <div class="tool-actions">
+                    <button id="pauseButton">⏸ Pause</button>
+                    <button id="cameraButton" aria-controls="cameraControls">🎥 Vue</button>
+                    <button id="soundToggle" aria-pressed="true">🔊 Son</button>
+                    <button id="fullscreenButton">⛶ Plein écran</button>
+                    <button class="feed-button" id="feedButton">🥣 Nourrir</button>
+                    <button class="journal-button" id="journalButton">📖 Carnet</button>
+                    <button class="journal-button" id="rankingButton">🏆 Classement</button>
+                    <button class="end-game-button" id="endGameButton">🏁 Terminer</button>
+                </div>
                 <div class="depth-panel" id="depthPanel">
                     <div class="depth-panel-head">
                         <span class="depth-title">🌊 Profondeur</span>
@@ -47,19 +55,28 @@
                     <div class="depth-hint" id="depthHint">Fond ici : —</div>
                     <div class="depth-range" id="depthRange">Bouchon : —</div>
                 </div>
-                <button class="feed-button" id="feedButton">🥣 Nourrir</button>
-                <button class="journal-button" id="journalButton">📖 Carnet</button>
-                <button class="journal-button" id="rankingButton">🏆 Classement</button>
+                <div class="stats-strip" id="statsStrip">
+                    <div class="bourriche-label" id="bourricheLabel">🧺 Bourriche : 0</div>
+                    <div class="bourriche-label" id="xpLabel">⭐ 0 XP</div>
+                    <div class="bourriche-label" id="lignesLabel">🧵 Lignes : 5/5</div>
+                </div>
+                <div class="hud-compass" id="compass">🧭 Nord en haut · ☀️ soleil au sud-ouest</div>
+                <div class="wind-gauge">
+                    <span class="wind-label">Vent</span>
+                    <div class="wind-bar"><div class="wind-fill" id="windFill"></div></div>
+                    <span class="wind-arrow" id="windArrow">➤</span>
+                </div>
             </div>
-            <div class="stats-strip" id="statsStrip">
-                <div class="bourriche-label" id="bourricheLabel">🧺 Bourriche : 0</div>
-                <div class="bourriche-label" id="xpLabel">⭐ 0 XP</div>
-                <div class="bourriche-label" id="lignesLabel">🧵 Lignes : 5/5</div>
+            <div class="camera-controls" id="cameraControls" hidden role="group" aria-label="Commandes de la caméra">
+                <div class="camera-turn">
+                    <button id="cameraLeft" aria-label="Tourner la vue à gauche">↶</button>
+                    <button id="cameraRight" aria-label="Tourner la vue à droite">↷</button>
+                    <button id="cameraFarther" aria-label="Éloigner la vue">−</button>
+                    <button id="cameraCloser" aria-label="Rapprocher la vue">+</button>
+                </div>
+                <button id="cameraReset">Recentrer</button>
+                <button id="cameraDone">Reprendre</button>
             </div>
-            <button class="tool-toggle" id="toolToggle" aria-label="Afficher les outils"
-                aria-controls="toolDock" aria-expanded="false">🎒</button>
-            <button class="end-game-button" id="endGameButton"
-                aria-label="Terminer la partie et revenir à l’accueil">🏁 Terminer</button>
             <div class="modal-backdrop active" id="modalBackdrop" aria-hidden="true"></div>
             <div class="overlay-panel active" id="accueil" role="dialog" aria-modal="true"
                 aria-labelledby="accueilTitre">
@@ -246,12 +263,6 @@
                 </div>
             </div>
             <div class="hud-score">Score : <span id="score">0</span></div>
-            <div class="hud-compass" id="compass">🧭 Nord en haut · ☀️ soleil au sud-ouest</div>
-            <div class="wind-gauge">
-                <span class="wind-label">Vent</span>
-                <div class="wind-bar"><div class="wind-fill" id="windFill"></div></div>
-                <span class="wind-arrow" id="windArrow">➤</span>
-            </div>
             <div class="catch-message" id="catchMessage"></div>
             <div class="struggle" id="struggle">
                 <div class="struggle-info" id="struggleInfo">Poisson</div>
@@ -300,6 +311,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=112"></script>
+    <script type="module" src="script.js?v=113"></script>
 </body>
 </html>

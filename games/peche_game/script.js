@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=112';
+import { SoundEngine } from './sound.js?v=113';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -98,6 +98,9 @@ const especeFiche = document.getElementById('especeFiche');
 const tabBtnEspeces = document.getElementById('tabBtnEspeces');
 let especeIndex = 0;             // poisson affiché dans l'onglet « Espèces »
 const toolDock = document.getElementById('toolDock');
+const depthPanel = document.getElementById('depthPanel');
+const cameraButton = document.getElementById('cameraButton');
+const cameraControls = document.getElementById('cameraControls');
 const toolToggle = document.getElementById('toolToggle');
 const dragButton = document.getElementById('dragButton');
 const journalEspeces = document.getElementById('journalEspeces');
@@ -138,7 +141,8 @@ soundToggle.addEventListener('click', () => {
     ensureSound();
     sound.enabled = !sound.enabled;
     sound.setEnabled(sound.enabled);
-    soundToggle.textContent = sound.enabled ? '🔊' : '🔇';
+    soundToggle.textContent = sound.enabled ? '🔊 Son' : '🔇 Son coupé';
+    soundToggle.setAttribute('aria-pressed', String(sound.enabled));
 });
 
 // Bouton plein écran (très pratique sur téléphone : masque la barre du navigateur).
@@ -175,6 +179,7 @@ function toggleFullscreen() {
 fullscreenButton.addEventListener('click', () => {
     ensureSound();
     toggleFullscreen();
+    fermerOutils();
 });
 
 // Si le navigateur ne gère pas le plein écran, on masque le bouton.
@@ -189,10 +194,8 @@ const pauseButton = document.getElementById('pauseButton');
 
 pauseButton.addEventListener('click', () => {
     paused = !paused;
-    pauseButton.textContent = paused ? '▶' : '⏸';
-    if (paused) {
-        statusDisplay.textContent = 'Pause — appuie sur ▶ pour reprendre.';
-    }
+    pauseButton.textContent = paused ? '▶ Reprendre' : '⏸ Pause';
+    if (!paused) { fermerOutils(); }
 });
 
 // Manivelle : on la fait tourner pour ramener la ligne.
@@ -263,6 +266,7 @@ function crankPointerAngle(event) {
 }
 
 crank.addEventListener('pointerdown', event => {
+    if (paused) { return; }
     ensureSound();
     crankDragging = true;
     crankLastAngle = crankPointerAngle(event);
@@ -526,6 +530,74 @@ const cameraTarget = NORMAL_CAM_TARGET.clone();
 let cameraMode = 'normal';
 camera.position.copy(NORMAL_CAM_POS);
 camera.lookAt(cameraTarget);
+
+const cameraAxis = new THREE.Vector3(0, 1, 0);
+const adjustedCameraPosition = new THREE.Vector3();
+const cameraTouches = new Map();
+let cameraViewActive = false;
+let cameraAngle = 0;
+let cameraDistance = 1;
+let previousCameraGesture = null;
+
+function adjustCamera(angle, distanceFactor) {
+    cameraAngle = THREE.MathUtils.clamp(cameraAngle + angle, -Math.PI / 4, Math.PI / 4);
+    cameraDistance = THREE.MathUtils.clamp(cameraDistance * distanceFactor, 0.72, 1.25);
+}
+
+function resetCameraView() {
+    cameraAngle = 0;
+    cameraDistance = 1;
+}
+
+function setCameraView(active) {
+    cameraViewActive = active;
+    cameraControls.hidden = !active;
+    toolToggle.hidden = active;
+    cameraTouches.clear();
+    previousCameraGesture = null;
+    if (active) {
+        fermerOutils();
+        document.getElementById('cameraDone').focus?.();
+    }
+}
+
+cameraButton.addEventListener('click', () => setCameraView(true));
+document.getElementById('cameraLeft').addEventListener('click', () => adjustCamera(-Math.PI / 12, 1));
+document.getElementById('cameraRight').addEventListener('click', () => adjustCamera(Math.PI / 12, 1));
+document.getElementById('cameraCloser').addEventListener('click', () => adjustCamera(0, 0.88));
+document.getElementById('cameraFarther').addEventListener('click', () => adjustCamera(0, 1.14));
+document.getElementById('cameraReset').addEventListener('click', resetCameraView);
+document.getElementById('cameraDone').addEventListener('click', () => {
+    setCameraView(false);
+    toolToggle.focus?.();
+});
+
+function updateCameraGesture() {
+    if (cameraTouches.size !== 2) {
+        previousCameraGesture = null;
+        return;
+    }
+    const [a, b] = cameraTouches.values();
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance < 8) {
+        previousCameraGesture = null;
+        return;
+    }
+    const angle = Math.atan2(dy, dx);
+    if (previousCameraGesture) {
+        const delta = angle - previousCameraGesture.angle;
+        adjustCamera(Math.atan2(Math.sin(delta), Math.cos(delta)), previousCameraGesture.distance / distance);
+    }
+    previousCameraGesture = { angle, distance };
+}
+
+function updateCameraPosition(dt) {
+    adjustedCameraPosition.copy(NORMAL_CAM_POS).sub(NORMAL_CAM_TARGET)
+        .multiplyScalar(cameraDistance).applyAxisAngle(cameraAxis, cameraAngle).add(NORMAL_CAM_TARGET);
+    camera.position.lerp(adjustedCameraPosition, 1 - Math.pow(0.0001, dt));
+}
 
 function resize() {
     const w = window.innerWidth;
@@ -2393,51 +2465,38 @@ function updateArm(dt) {
     arm.position.y = 2.1 + armSwing * 0.4 + Math.max(0, cast) * 0.15;
 }
 
-// La barre d'outils du pêcheur (Nourrir / Carnet / compteur) reste à un endroit
-// FIXE, en bas à gauche (juste à côté du pêcheur), et disparaît pendant
-// l'action (ferrage, combat, remontée, lancer) pour ne rien masquer.
-// Sur petit écran, elle devient un TIROIR repliable : les compteurs restent
-// visibles dans la barre de stats, et le bouton 🎒 ouvre/ferme les outils.
+// Le menu reste accessible pendant l’action pour permettre la pause.
 function mettreAJourBoutonOutils() {
-    if (!toolToggle || !toolDock) {
-        return;
-    }
     const ouvert = toolDock.classList.contains('ouvert');
-    toolToggle.textContent = ouvert ? '✕' : '🎒';
-    if (typeof toolToggle.setAttribute === 'function') {
-        toolToggle.setAttribute('aria-label',
-            ouvert ? 'Fermer les outils' : 'Afficher les outils');
-        toolToggle.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
-    }
+    toolToggle.textContent = ouvert ? '✕ Fermer' : '☰ Menu';
+    toolToggle.setAttribute('aria-label', ouvert ? 'Fermer le menu' : 'Ouvrir le menu');
+    toolToggle.setAttribute('aria-expanded', String(ouvert));
 }
 
 function fermerOutils() {
-    if (toolDock) {
-        toolDock.classList.remove('ouvert');
-    }
+    toolDock.classList.remove('ouvert');
     mettreAJourBoutonOutils();
 }
 
-if (toolToggle) {
-    toolToggle.addEventListener('click', function () {
-        ensureSound();
-        toolDock.classList.toggle('ouvert');
-        mettreAJourBoutonOutils();
-    });
-}
+toolToggle.addEventListener('click', () => {
+    ensureSound();
+    if (cameraViewActive) {
+        setCameraView(false);
+        return;
+    }
+    if (paused && toolDock.classList.contains('ouvert')) { return; }
+    cancelCast();
+    cancelFeed();
+    toolDock.classList.toggle('ouvert');
+    mettreAJourBoutonOutils();
+});
 
 function updateToolDock() {
-    const resting = floatState === 'idle' || floatState === 'inWater';
-    const visible = resting && cameraMode === 'normal';
-    toolDock.classList.toggle('hidden', !visible);
-    if (toolToggle) {
-        toolToggle.classList.toggle('hidden', !visible);
-    }
-    if (!visible) {
-        fermerOutils();
-    }
-    // On ne peut amorcer qu'au repos, sans ligne à l'eau.
-    feedButton.disabled = !(floatState === 'idle' || floatState === 'inWater');
+    const resting = (floatState === 'idle' || floatState === 'inWater') && cameraMode === 'normal';
+    cameraButton.disabled = !resting || paused;
+    feedButton.disabled = !resting || paused;
+    depthPanel.classList.toggle('indisponible', !resting || paused);
+    if (cameraViewActive && !resting) { setCameraView(false); }
 }
 
 // ---------------------------------------------------------------------------
@@ -2698,6 +2757,7 @@ function placerALAngle(angle, marge, presetIndex, libre) {
 
     // Bourriche et caméra suivent le décalage radial.
     bourriche.position.copy(BOURRICHE_POS);
+    resetCameraView();
     camera.position.copy(NORMAL_CAM_POS);
     cameraTarget.copy(NORMAL_CAM_TARGET);
     camera.lookAt(cameraTarget);
@@ -6683,6 +6743,18 @@ canvas.addEventListener('pointermove', event => {
 });
 
 canvas.addEventListener('pointerdown', event => {
+    if (cameraViewActive) {
+        if (event.pointerType === 'touch' && cameraTouches.size < 2) {
+            cameraTouches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            canvas.setPointerCapture?.(event.pointerId);
+            updateCameraGesture();
+        }
+        return;
+    }
+    if (toolDock.classList.contains('ouvert') || paused) {
+        if (!paused) { fermerOutils(); }
+        return;
+    }
     if (event.button !== 0) {
         return;
     }
@@ -6735,8 +6807,24 @@ canvas.addEventListener('pointerdown', event => {
     }
 });
 
+canvas.addEventListener('pointermove', event => {
+    if (cameraTouches.has(event.pointerId)) {
+        cameraTouches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        updateCameraGesture();
+    }
+});
+
+function endCameraTouch(event) {
+    if (cameraTouches.delete(event.pointerId)) { updateCameraGesture(); }
+}
+canvas.addEventListener('lostpointercapture', endCameraTouch);
+
 // Relâcher = on dose la puissance et la boule part.
 canvas.addEventListener('pointerup', event => {
+    if (cameraViewActive) {
+        endCameraTouch(event);
+        return;
+    }
     if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
         canvas.releasePointerCapture(event.pointerId);
     }
@@ -6754,6 +6842,10 @@ canvas.addEventListener('pointerup', event => {
 });
 
 canvas.addEventListener('pointercancel', event => {
+    if (cameraViewActive) {
+        endCameraTouch(event);
+        return;
+    }
     if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
         canvas.releasePointerCapture(event.pointerId);
     }
@@ -6807,6 +6899,7 @@ majCoupeProfondeur();
 waterUniforms.uNormalsOn.value = waterUniforms.uNormals.value ? 1 : 0;
 
 fishButton.addEventListener('click', () => {
+    if (paused || cameraViewActive || toolDock.classList.contains('ouvert')) { return; }
     ensureSound();
     if (castState === 'charging') {
         releaseCast();
@@ -6840,6 +6933,13 @@ fishButton.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        if (cameraViewActive) { setCameraView(false); toolToggle.focus?.(); }
+        else if (!paused) { fermerOutils(); }
+        return;
+    }
+    if (cameraViewActive || paused || toolDock.classList.contains('ouvert')
+            || event.target?.closest?.('button, input, select, textarea')) { return; }
     if (event.key === ' ' || event.key === 'Enter') {
         ensureSound();
         if (feedMode) {
@@ -7050,7 +7150,7 @@ if (tangleGiveUp) {
 function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
-    if (!paused) {
+    if (!paused && !cameraViewActive) {
         elapsed += dt;
         updateWind(dt);
         updateClouds(dt);
@@ -7087,8 +7187,7 @@ function animate() {
         updateLine();
     }
     updateCrankVisibility();
-    // Vue RÉALISTE unique : la caméra reste toujours à distance, jamais de zoom.
-    camera.position.lerp(NORMAL_CAM_POS, 1 - Math.pow(0.0001, dt));
+    updateCameraPosition(dt);
     cameraTarget.lerp(NORMAL_CAM_TARGET, 1 - Math.pow(0.0001, dt));
     if (shake > 0) {
         shake = Math.max(0, shake - dt * 1.5);
@@ -7228,6 +7327,7 @@ function fermerClassement() {
 // `raison` vaut 'lignes' (défaut) ou 'manuelle'.
 function terminerPartie(raison) {
     if (partieTerminee) { return; }
+    setCameraView(false);
     if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
     const manuelle = raison === 'manuelle';
     partieTerminee = true;
@@ -7441,7 +7541,9 @@ function reinitialiserPartie() {
     fishButton.textContent = 'Lancer la canne';
     fishButton.classList.remove('cooldown');
     paused = false;
-    pauseButton.textContent = '⏸';
+    setCameraView(false);
+    resetCameraView();
+    pauseButton.textContent = '⏸ Pause';
     fermerOutils();
     majLignes();
     renderJournal();      // bourriche de la partie + XP persistant
@@ -8073,6 +8175,11 @@ window.__game = {
     },
     setPaused: function (value) { paused = value; },
     step: function (dt) {
+        if (cameraViewActive) {
+            updateCameraPosition(dt);
+            camera.lookAt(cameraTarget);
+            return;
+        }
         testTime += dt;
         updateWind(dt);
         updateClouds(dt);

@@ -50,10 +50,11 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
   l'eau). L'**XP de partie** affichée repart aussi à 0 ; le **carnet**, l'**XP
   carrière** (boutique), les **bouchons achetés** et le **classement** sont conservés.
-- **Petits écrans** : le dock d'outils se replie derrière le bouton **🎒** pour
-  laisser la **bourriche** et la **girouette** visibles ; **Bourriche / XP / Lignes**
-  restent affichés dans une barre de stats, et le **FOV s'élargit** automatiquement
-  quand l'écran est étroit.
+- **Menu** : pendant la pêche, l’écran affiche le score et l’action en cours.
+  Le menu regroupe la pause, le son, le plein écran, les outils et les statistiques.
+- **Vue** : ouvre `Menu → Vue` entre deux actions. Écarte ou rapproche deux doigts
+  pour zoomer, tourne-les pour orienter la caméra, ou utilise les boutons à droite.
+  **Recentrer** rétablit la vue d’origine et **Reprendre** rend la main à la pêche.
 - **Remontée trop rapide** : l'avertissement s'affiche en **popup 3D près du
   bouchon** (« ⚠️ Trop vite ! »), comme « FERRÉ ! » ou « Trop tôt ! », en plus du
   message de statut.
@@ -208,9 +209,6 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   automatiquement** si le rendu échoue.
 - **Qualité automatique** : la résolution s'adapte toute seule si les images baissent
   (et remonte quand ça va mieux) → 60 images/s visées.
-- **Interface rangée** : la barre d'outils du pêcheur (🥣 Nourrir, 📖 Carnet, compteur)
-  est **fixe en bas à gauche**, à côté du pêcheur, et **disparaît pendant l'action**
-  (ferrage, combat, remontée, lancer) pour ne rien masquer.
 - **Canne vivante** : la canne **plie** quand le fil est tendu et la ligne se raidit.
 - **Poissons plus vivants** : ondulation du corps, inclinaison dans les virages,
   sillage près de la surface, **éclaboussures** au ferrage.

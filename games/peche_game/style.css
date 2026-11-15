@@ -31,80 +31,6 @@ canvas {
     pointer-events: none;
 }
 
-.hud-title {
-    position: absolute;
-    top: 14px;
-    left: 18px;
-    margin: 0;
-    font-size: 1.3em;
-    color: #fff;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-}
-
-.sound-toggle {
-    position: absolute;
-    top: 52px;
-    left: 18px;
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #fff;
-    border-radius: 8px;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.fullscreen-button {
-    position: absolute;
-    top: 92px;
-    left: 18px;
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #fff;
-    border-radius: 8px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.pause-button {
-    position: absolute;
-    top: 52px;
-    left: 66px;
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #fff;
-    border-radius: 8px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.hud-score {
-    position: absolute;
-    top: 14px;
-    right: 18px;
-    font-size: 1.3em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-}
-
-.wind-gauge {
-    position: absolute;
-    top: 52px;
-    right: 18px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #fff;
-    font-size: 0.9em;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-}
-
 .wind-label {
     font-weight: bold;
 }
@@ -629,36 +555,6 @@ button, .crank {
 }
 
 /* Zones sûres : on évite les encoches et les barres système du téléphone. */
-.hud-title {
-    top: calc(14px + env(safe-area-inset-top, 0px));
-    left: calc(18px + env(safe-area-inset-left, 0px));
-}
-
-.sound-toggle {
-    top: calc(52px + env(safe-area-inset-top, 0px));
-    left: calc(18px + env(safe-area-inset-left, 0px));
-}
-
-.pause-button {
-    top: calc(52px + env(safe-area-inset-top, 0px));
-    left: calc(66px + env(safe-area-inset-left, 0px));
-}
-
-.fullscreen-button {
-    top: calc(92px + env(safe-area-inset-top, 0px));
-    left: calc(18px + env(safe-area-inset-left, 0px));
-}
-
-.hud-score {
-    top: calc(14px + env(safe-area-inset-top, 0px));
-    right: calc(18px + env(safe-area-inset-right, 0px));
-}
-
-.wind-gauge {
-    top: calc(52px + env(safe-area-inset-top, 0px));
-    right: calc(18px + env(safe-area-inset-right, 0px));
-}
-
 .hud-bottom {
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
@@ -697,15 +593,6 @@ button, .crank {
 
 /* Doigt : boutons plus gros et HUD un peu plus compact. */
 @media (pointer: coarse), (max-width: 820px) {
-    .hud-title {
-        font-size: 1rem;
-    }
-
-    .sound-toggle, .fullscreen-button, .pause-button {
-        font-size: 1.05rem;
-        padding: 8px 12px;
-    }
-
     .feed-button {
         font-size: 1rem;
         padding: 9px 14px;
@@ -741,15 +628,12 @@ button, .crank {
         font-size: 0.76rem;
     }
 
-    /* La jauge passe au-dessus de la barre d'outils. */
+    /* La jauge reste au-dessus du bouton de lancer. */
     .feed-gauge {
         width: min(58vw, 340px);
         top: auto;
         bottom: calc(210px + env(safe-area-inset-bottom, 0px));
     }
-
-    /* Statut + bouton : on laisse la place à la barre d'outils (gauche) et à
-       la manivelle (droite) — largeur fixée plus bas dans ce bloc. */
 
     button {
         padding: 12px 26px;
@@ -772,26 +656,11 @@ button, .crank {
     }
 
     .hud-bottom {
+        width: min(78vw, 390px);
+    }
+
+    .hud:has(.crank.active) .hud-bottom {
         width: min(40vw, 330px);
-    }
-}
-
-/* Écrans très bas (paysage de téléphone) : on gagne de la place en haut. */
-@media (max-height: 430px) {
-    .hud-title {
-        display: none;
-    }
-
-    .sound-toggle {
-        top: calc(10px + env(safe-area-inset-top, 0px));
-    }
-
-    .fullscreen-button {
-        top: calc(52px + env(safe-area-inset-top, 0px));
-    }
-
-    .wind-gauge {
-        top: calc(10px + env(safe-area-inset-top, 0px));
     }
 }
 
@@ -814,23 +683,6 @@ button, .crank {
     white-space: nowrap;
 }
 
-/* Barre d'outils du pêcheur : fixe, en bas à gauche, jamais pendant l'action. */
-.tool-dock {
-    position: absolute;
-    left: calc(12px + env(safe-area-inset-left, 0px));
-    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    pointer-events: none;
-    z-index: 6;
-}
-
-.tool-dock.hidden {
-    display: none;
-}
-
 /* Compteur affiché à côté du pêcheur. */
 .bourriche-label {
     position: static;
@@ -843,43 +695,6 @@ button, .crank {
     font-size: 0.9rem;
     font-weight: bold;
     white-space: nowrap;
-}
-
-/* Compteurs toujours visibles, séparés du dock (qui devient repliable sur
-   petit écran). Ils restent affichés pendant les actions. */
-.stats-strip {
-    position: absolute;
-    left: calc(12px + env(safe-area-inset-left, 0px));
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    z-index: 7;
-    pointer-events: none;
-}
-
-/* Bouton d'ouverture du dock sur petit écran (masqué sur grand écran). */
-.tool-toggle {
-    display: none;
-    position: absolute;
-    left: calc(12px + env(safe-area-inset-left, 0px));
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-    min-height: 44px;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    color: #fff;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    pointer-events: auto;
-    z-index: 8;
-}
-
-.tool-toggle.hidden {
-    display: none;
 }
 
 /* Panneau (carnet / réglages). */
@@ -1393,36 +1208,6 @@ body.calm .struggle-marker {
     display: block;
 }
 
-/* Bouton de fin de partie, toujours accessible pendant la pêche. */
-.end-game-button {
-    position: absolute;
-    top: 132px;
-    right: 18px;
-    z-index: 8;
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.42);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: #fff;
-    border-radius: 8px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.end-game-button:hover {
-    border-color: #fff;
-}
-
-@media (max-width: 820px), (max-height: 430px) {
-    .end-game-button {
-        top: auto;
-        bottom: 92px;
-        right: 12px;
-        font-size: 0.78rem;
-        padding: 4px 8px;
-    }
-}
-
 /* Mini-jeu de démêlage : suit le câble au doigt, dans le bon sens. */
 .tangle-game {
     position: fixed;
@@ -1796,92 +1581,146 @@ body.calm .struggle-marker {
 }
 
 
-/* Boussole / orientation du soleil (idee 2 de idees.md, premiere brique). */
-.hud-compass {
+/* Le menu regroupe les actions secondaires hors de la zone de pêche. */
+.tool-toggle,
+.tool-dock,
+.camera-controls {
     position: absolute;
-    top: calc(90px + env(safe-area-inset-top, 0px));
-    right: calc(18px + env(safe-area-inset-right, 0px));
-    font-size: 0.8rem;
+    pointer-events: auto;
+    z-index: 10;
     color: #fff;
-    opacity: 0.85;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-    pointer-events: none;
 }
 
-/* ---------------------------------------------------------------------------
-   PETITS ÉCRANS : le dock d'outils devient un TIROIR repliable pour laisser
-   la bourriche et la girouette visibles dans la scène 3D. Les compteurs
-   (bourriche / XP / lignes) restent dans la barre de stats, toujours visible.
-   --------------------------------------------------------------------------- */
-@media (max-width: 820px), (max-height: 430px) {
-    .tool-toggle {
-        display: block;
-    }
-
-    .tool-toggle.hidden {
-        display: none;
-    }
-
-    .tool-dock {
-        display: none;
-    }
-
-    .tool-dock.ouvert:not(.hidden) {
-        display: flex;
-        left: calc(8px + env(safe-area-inset-left, 0px));
-        bottom: calc(150px + env(safe-area-inset-bottom, 0px));
-        width: min(94vw, 330px);
-        max-height: calc(100vh - 160px);
-        overflow-y: auto;
-        padding: 8px;
-        gap: 6px;
-        background: rgba(8, 20, 28, 0.96);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
-        z-index: 9;
-        pointer-events: auto;
-    }
-
-    .tool-dock.ouvert .depth-panel {
-        width: 100%;
-        max-width: none;
-    }
-
-    .tool-dock.ouvert .depth-cross {
-        height: 64px;
-    }
-
-    .tool-dock.ouvert .depth-btn {
-        min-height: 44px;
-        padding: 6px 4px;
-        font-size: 0.86rem;
-    }
-
-    .tool-dock.ouvert .depth-hint,
-    .tool-dock.ouvert .depth-range {
-        font-size: 0.72rem;
-    }
-
-    .tool-dock.ouvert .feed-button,
-    .tool-dock.ouvert .journal-button {
-        width: 100%;
-        padding: 8px 10px;
-        font-size: 0.9rem;
-    }
+.tool-toggle {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    min-height: 44px;
+    padding: 6px 12px;
+    background: #102a36;
+    color: #fff;
+    font-size: 1rem;
+    border: 1px solid #b5cbd2;
 }
 
-/* Écrans très bas : on garde les commandes de profondeur, on masque le schéma
-   pour que le tiroir tienne sans trop défiler. */
+.tool-dock,
+.camera-controls {
+    background: #102a36;
+    border: 1px solid #7896a0;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 8px 24px #06192488;
+}
+
+.tool-dock {
+    display: none;
+    top: calc(60px + env(safe-area-inset-top, 0px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    width: min(380px, calc(100% - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    height: fit-content;
+    max-height: calc(100% - 68px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.tool-dock.ouvert {
+    display: grid;
+    gap: 10px;
+}
+
+.tool-actions,
+.camera-turn {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.tool-actions button,
+.camera-controls button {
+    min-height: 44px;
+    padding: 6px;
+    font-size: 0.9rem;
+    white-space: normal;
+}
+
+.tool-actions .end-game-button {
+    background: #552b2e;
+    color: #fff;
+    border-color: #aa777a;
+}
+
+.tool-dock .depth-panel {
+    width: 100%;
+    max-width: none;
+}
+
+.tool-dock .depth-panel.indisponible {
+    display: none;
+}
+
+.stats-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.hud-compass,
+.wind-gauge {
+    font-size: 0.8rem;
+}
+
+.wind-gauge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.camera-controls {
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 6px;
+}
+
+.camera-controls[hidden] {
+    display: none;
+}
+
+.tool-dock.ouvert ~ .hud-bottom,
+.camera-controls:not([hidden]) ~ .hud-bottom {
+    visibility: hidden;
+}
+
+.hud-score {
+    position: absolute;
+    color: #fff;
+    font-weight: bold;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: #102a36;
+    font-size: 1rem;
+}
+
 @media (max-height: 430px) {
-    .tool-dock.ouvert .depth-cross,
-    .tool-dock.ouvert .depth-hint,
-    .tool-dock.ouvert .depth-range {
+    .tool-dock .depth-cross,
+    .tool-dock .depth-hint,
+    .tool-dock .depth-range {
         display: none;
     }
 
-    /* La boussole reste sous la jauge de vent (elle est remontée à 10 px). */
-    .hud-compass {
-        top: calc(52px + env(safe-area-inset-top, 0px));
+    .hud-bottom {
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        gap: 4px;
+    }
+
+    .status {
+        font-size: 0.88rem;
+    }
+
+    #fishButton {
+        min-height: 48px;
+        padding: 7px 16px;
     }
 }

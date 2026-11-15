@@ -189,17 +189,18 @@ export function run() {
         && !script.includes('journal.experience = 0'));
 
     group('13) Petit écran : dock repliable et FOV');
-    check('les compteurs sont sortis du dock dans une barre de stats',
-        html.includes('id="statsStrip"') && html.includes('id="bourricheLabel"'));
-    check('un bouton d’outils est présent', html.includes('id="toolToggle"'));
-    check('le dock devient un tiroir sur petit écran',
-        css.includes('.tool-dock.ouvert') && css.includes('.tool-toggle'));
-    check('les compteurs restent affichés hors du dock',
-        css.includes('.stats-strip'));
+    const toolsStart = html.indexOf('id="toolDock"');
+    const toolsEnd = html.indexOf('id="cameraControls"');
+    const menu = html.slice(toolsStart, toolsEnd);
+    check('les compteurs, le vent et les commandes secondaires sont dans le menu',
+        ['statsStrip', 'compass', 'windFill', 'endGameButton', 'pauseButton'].every(
+            id => menu.includes('id="' + id + '"')));
+    check('le menu se replie derrière un seul bouton',
+        html.includes('id="toolToggle"') && css.includes('.tool-dock.ouvert'));
+    check('les commandes de caméra sont masquées au départ',
+        html.includes('id="cameraControls" hidden'));
     check('un FOV horizontal minimum est prévu pour les écrans étroits',
         script.includes('function fovPourAspect') && script.includes('H_FOV_MIN'));
-    check('la boussole ne chevauche plus la jauge de vent',
-        /\.hud-compass\s*\{[^}]*top:\s*calc\(90px/.test(css));
     check('l’avertissement de remontée trop rapide est une popup 3D',
         script.includes('Trop vite !') && script.includes('spawnFloatingText'));
     check('le message interdit « Ça bouge » n’est jamais affiché',

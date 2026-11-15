@@ -170,6 +170,7 @@ function makeContext2d() {
 
 function makeElement(id) {
     const handlers = new Map();
+    const attributes = new Map();
     return {
         id,
         style: {},
@@ -187,6 +188,8 @@ function makeElement(id) {
             return RECTS[id] || { left: 0, top: 0, width: 1280, height: 720 };
         },
         getContext(kind) { return kind === '2d' ? makeContext2d() : null; },
+        setAttribute(name, value) { attributes.set(name, String(value)); },
+        getAttribute(name) { return attributes.get(name) ?? null; },
         setPointerCapture() {},
         releasePointerCapture() {},
         /** Envoie un événement aux écouteurs du jeu (utilisé par les tests). */
@@ -374,7 +377,6 @@ export async function loadGame() {
     await import(pathToFileURL(path.join(tmpDir, 'game.mjs')).href);
     SoundClass = (await import(pathToFileURL(path.join(tmpDir, 'sound.js')).href)).SoundEngine;
     game = globalThis.__game;
-    game.setPaused(true);
     game.setTangleChance(0);       // les casts des tests ne s'emmêlent pas
     game.setHorsNormeChance(0);    // monde de test sans spécimen hors norme
     game.setTechnique('bouchon');  // les tests historiques pêchent au bouchon
