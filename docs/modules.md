@@ -216,7 +216,16 @@ identifiées en essayant `combat.js` (≈ 750 lignes, le plus gros bloc restant)
    utilisés par les modules et créer les accesseurs manquants (fait dans
    `bridge.py`, pas encore dans l'extracteur).
 
-Avec ces quatre règles, `combat.js` puis `comportement.js` (~580 l.) passent.
+5. **État dédoublé (la règle qui manquait encore)** : une variable *déclarée dans
+   le bloc* et **lue** ailleurs (`floatState`, `snag`, `biteFish`…) ne doit pas
+   être exportée sous forme de valeur — sinon le module modifie sa copie et
+   `script.js` garde la sienne. Seules les **fonctions** du bloc sont exportables ;
+   toute `let`/`const`/`var` du bloc utilisée à l'extérieur doit rester un `let`
+   de `script.js` et passer par `etat`. Test de contrôle : après extraction, un
+   lancer doit produire `floatState === 'inWater'` ; si l'on obtient `'idle'`,
+   c'est exactement ce symptôme.
+
+Avec ces cinq règles, `combat.js` puis `comportement.js` (~580 l.) passent.
 Les modules restants ensuite : `bateau`, `boutique`, `fiches`, `lancerPoisson`,
 `lancerCanne`, `frein`, `amorcage`, `carnetUI`, `ligne`, `bouchons`, `meteo`,
 `vie`, `carte_etang`.
