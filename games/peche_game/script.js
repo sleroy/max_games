@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=168';
+import { SoundEngine } from './sound.js?v=169';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -43,6 +43,7 @@ import { creerAccrochage } from './accrochage.js?v=165';
 import { creerAmbiance } from './ambiance.js?v=166';
 import { creerEntrees } from './entrees.js?v=167';
 import { creerCheat } from './cheat.js?v=168';
+import { creerBoucle } from './boucle.js?v=169';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -135,6 +136,7 @@ lienEtat('castYawRod', function () { return castYawRod; }, function (v) { castYa
 lienEtat('catchMessageTimer', function () { return catchMessageTimer; }, function (v) { catchMessageTimer = v; });
 lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { caughtWeight = v; });
 lienEtat('chum', function () { return chum; }, function (v) { chum = v; });
+lienEtat('clock', function () { return clock; }, function (v) { clock = v; });
 lienEtat('coupePrete', function () { return coupePrete; }, function (v) { coupePrete = v; });
 lienEtat('dayPhase', function () { return dayPhase; }, function (v) { dayPhase = v; });
 lienEtat('depthRange', function () { return depthRange; }, function (v) { depthRange = v; });
@@ -202,6 +204,10 @@ lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; 
 lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
 lienEtat('ragondin', function () { return ragondin; }, function (v) { ragondin = v; });
+lienEtat('ragondinAuto', function () { return ragondinAuto; }, function (v) { ragondinAuto = v; });
+lienEtat('ragondinHits', function () { return ragondinHits; }, function (v) { ragondinHits = v; });
+lienEtat('ragondinTimer', function () { return ragondinTimer; }, function (v) { ragondinTimer = v; });
+lienEtat('ragondinVolTimer', function () { return ragondinVolTimer; }, function (v) { ragondinVolTimer = v; });
 lienEtat('rainPoints', function () { return rainPoints; }, function (v) { rainPoints = v; });
 lienEtat('raycaster', function () { return raycaster; }, function (v) { raycaster = v; });
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
@@ -2485,7 +2491,7 @@ const {
 
 creerEntrees({
     canvas, waterPointFromEvent, moveCastAim, moveFeedAim, cameraTouches, updateCameraGesture,
-    toolDock, fermerOutils, ensureSound, tendreLigneAuLancer, clicSurRagondin, hitRagondin,
+    toolDock, fermerOutils, ensureSound, tendreLigneAuLancer, clicSurRagondin: (...args) => clicSurRagondin(...args), hitRagondin: (...args) => hitRagondin(...args),
     statusDisplay, startFishThrow, startFeedCharge, hookFish, reelClick, startCastCharge,
     releaseCast, releaseFishThrow, releaseFeed, cancelCast, cancelFeed, setFeedMode, feedButton,
     quickFeedButton, setProfondeur, depthMinus, depthPlus, majEtiquetteProfondeur,
@@ -2500,196 +2506,21 @@ const {
     releaseFishThrow, startFishThrow, hookFish, reelClick, camera, water, startCastCharge
 });
 
-// ---------------------------------------------------------------------------
-// Boucle d'animation
-// ---------------------------------------------------------------------------
-const clock = new THREE.Clock();
-let elapsed = 0;
-let paused = false;
-
-// LE RAGONDIN VOLEUR — aléa rare : il sort de l'eau près de la bourriche pour
-// voler un poisson. 3 clics SUR LUI le font fuir ; ses clics passent AVANT le
-// ferrage, donc impossible de ferrer en le chassant.
-const RAGONDIN_CLICS = 3;
-let ragondin = null;
-// Première visite plus tôt (18–30 s) : le joueur doit pouvoir la voir.
-// Seulement s'il y a un poisson à voler (score > 0).
-let ragondinTimer = 18 + rand() * 12;
-let ragondinHits = 0;
-let ragondinVolTimer = 0;   // secondes restantes avant le vol
-let ragondinAuto = true;    // désactivable par les tests
-
-function makeRagondin() {
-    const group = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x6b5138, roughness: 0.9 });
-    const corps = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), mat);
-    corps.scale.set(1.9, 0.95, 0.9);
-    corps.position.y = 0.2;
-    group.add(corps);
-    const tete = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), mat);
-    tete.position.set(0.44, 0.24, 0);
-    group.add(tete);
-    [-1, 1].forEach(function (cote) {
-        const oreille = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), mat);
-        oreille.position.set(0.37, 0.35, cote * 0.09);
-        group.add(oreille);
-    });
-    const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.05, 0.5, 6), mat);
-    queue.rotation.z = Math.PI / 2.4;
-    queue.position.set(-0.55, 0.24, 0);
-    group.add(queue);
-    return group;
-}
-
-function spawnRagondin() {
-    if (ragondin || partieTerminee) { return null; }
-    const modele = makeRagondin();
-    // Tout près de la bourriche (et face au pêcheur) : il est visible.
-    modele.position.set(BOURRICHE_POS.x + 2.2, 0, BOURRICHE_POS.z + 1.2);
-    modele.scale.setScalar(1.8);   // ~50 cm à l'échelle du monde : bien visible
-    modele.rotation.y = Math.PI;
-    scene.add(modele);
-    ragondinHits = 0;
-    ragondinVolTimer = 12;     // 12 s pour le chasser
-    ragondin = modele;
-    ensureSound();
-    sound.ragondinArrive();
-    if (ragondinAlert) { ragondinAlert.classList.add('active'); }
-    spawnFloatingText('🐀 RAGONDIN !',
-        new THREE.Vector3(BOURRICHE_POS.x + 5, BOURRICHE_POS.y, BOURRICHE_POS.z),
-        '#ffb347');
-    statusDisplay.textContent = '🐀 Un RAGONDIN rôde près de ta bourriche ! Clique 3 fois sur lui pour le chasser (sinon il vole un poisson).';
-    return modele;
-}
-
-function volerUnPoissonRagondin() {
-    if (!ragondin) { return false; }
-    let pris = false;
-    if (bourricheCount > 0) {
-        bourricheCount -= 1;
-        pris = true;
-    }
-    if (score > 0) {
-        score -= 1;
-        scoreDisplay.textContent = score;
-        pris = true;
-    }
-    if (bourricheLabel) {
-        bourricheLabel.textContent = '🧺 Bourriche : ' + bourricheCount;
-    }
-    spawnFloatingText('🐀 Il a volé un poisson !', BOURRICHE_POS, '#ff6b57');
-    statusDisplay.textContent = pris
-        ? '🐀 Trop tard : le ragondin a volé un poisson de la bourriche et s’est échappé !'
-        : '🐀 Le ragondin est reparti sans rien voler…';
-    sound.ragondinRonge(8);
-    sound.escape();
-    effrayerRagondin();
-    return true;
-}
-
-function effrayerRagondin() {
-    if (!ragondin) { return; }
-    scene.remove(ragondin);
-    ragondin = null;
-    sound.ragondinMusiqueStop();
-    ragondinHits = 0;
-    if (ragondinAlert) { ragondinAlert.classList.remove('active'); }
-    ragondinTimer = 45 + rand() * 30;
-}
-
-function hitRagondin() {
-    if (!ragondin) { return false; }
-    ragondinHits += 1;
-    sound.splash();
-    sound.ragondinCri(true);
-    ragondin.position.x += 1.2;
-    if (ragondinHits >= RAGONDIN_CLICS) {
-        spawnFloatingText('🐀 Il s’enfuit !', ragondin.position, '#ffd166');
-        effrayerRagondin();
-        statusDisplay.textContent = '🐀 Le ragondin a fui ! Tes poissons sont saufs.';
-        return true;
-    }
-    spawnFloatingText('🐀 Il détale !', ragondin.position, '#ffd166');
-    statusDisplay.textContent = '🐀 Touché ! Encore ' + (RAGONDIN_CLICS - ragondinHits) + ' clic(s) pour le chasser.';
-    return false;
-}
-
-// Zone de clic GÉNÉREUSE autour du ragondin (en pixels CSS). Le modèle 3D est
-// petit et l'animal bouge : exiger un clic pile sur lui rendait la chasse
-// pénible (surtout au doigt). On accepte donc un clic « à côté ».
-const RAGONDIN_CLIC_RADIUS = 70;
-
-/** Position du ragondin À L'ÉCRAN (pixels CSS), ou null s'il est derrière nous. */
-function ragondinALEcran() {
-    if (!ragondin) { return null; }
-    const rect = canvas.getBoundingClientRect();
-    const centre = ragondin.position.clone();
-    centre.y += 0.35;                       // le corps, pas les pattes
-    const projete = centre.project(camera);
-    if (projete.z > 1) {                    // derrière la caméra
-        return null;
-    }
-    return {
-        x: rect.left + (projete.x * 0.5 + 0.5) * rect.width,
-        y: rect.top + (-projete.y * 0.5 + 0.5) * rect.height
-    };
-}
-
-function clicSurRagondin(event) {
-    if (!ragondin) { return false; }
-    const rect = canvas.getBoundingClientRect();
-    // 1) Test à l'écran : la distance au ragondin PROJETÉ. Il ne dépend ni de la
-    //    taille du modèle ni de l'inclinaison de la caméra.
-    const ecran = ragondinALEcran();
-    if (ecran) {
-        const dx = event.clientX - ecran.x;
-        const dy = event.clientY - ecran.y;
-        if (dx * dx + dy * dy <= RAGONDIN_CLIC_RADIUS * RAGONDIN_CLIC_RADIUS) {
-            return true;
-        }
-    }
-    // 2) Test 3D exact : si le clic tombe vraiment sur le modèle, on le prend
-    //    aussi (utile quand il sort du cadre de la zone d'écran).
-    pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointerNdc, camera);
-    return raycaster.intersectObject(ragondin, true).length > 0;
-}
-
-function updateRagondin(dt) {
-    if (!ragondin) {
-        if (!ragondinAuto) { return; }
-        ragondinTimer -= dt;
-        if (ragondinTimer <= 0) {
-            // Il ne sort que s'il y a réellement un poisson à voler, et
-            // SEULEMENT quand le joueur ne fait rien (au repos) ou quand le
-            // bouchon est déjà à l'eau. Rien pendant un lancer, un ferrage, une
-            // épreuve de force ou un accrochage : sa visite ne doit pas tomber
-            // au milieu d'une action.
-            const momentCalme = floatState === 'idle' || floatState === 'inWater';
-            if (score > 0 && momentCalme) {
-                if (spawnRagondin()) { ragondinTimer = 45 + rand() * 30; }
-            } else {
-                ragondinTimer = 8 + rand() * 5;   // on revérifie bientôt
-            }
-        }
-        return;
-    }
-    const dx = BOURRICHE_POS.x - ragondin.position.x;
-    const dz = BOURRICHE_POS.z - ragondin.position.z;
-    const d = Math.hypot(dx, dz);
-    if (d > 0.7) {
-        ragondin.position.x += (dx / d) * 1.1 * dt;
-        ragondin.position.z += (dz / d) * 1.1 * dt;
-        ragondin.rotation.y = Math.atan2(-dz, dx);
-    }
-    ragondin.position.y = Math.abs(Math.sin(elapsed * 6)) * 0.04;
-    ragondinVolTimer -= dt;
-    if (ragondinVolTimer <= 0) {
-        volerUnPoissonRagondin();
-        return;
-    }
-}
+let clock;
+let elapsed;
+let paused;
+let ragondin;
+let ragondinTimer;
+let ragondinHits;
+let ragondinVolTimer;
+let ragondinAuto;
+const {
+    spawnRagondin, volerUnPoissonRagondin, effrayerRagondin, hitRagondin, ragondinALEcran,
+    clicSurRagondin, updateRagondin
+} = creerBoucle({
+    rand, BOURRICHE_POS, scene, ensureSound, sound, ragondinAlert, spawnFloatingText,
+    statusDisplay, scoreDisplay, bourricheLabel, canvas, camera
+});
 
 // ---------------------------------------------------------------------------
 // Mini-jeu de démêlage : module autonome (demelage.js).
