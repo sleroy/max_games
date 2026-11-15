@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v173**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v179**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -354,32 +354,35 @@ suppression du retour automatique de la ligne, sons non branchés (`playTonnerre
 `playPas`, `playClic`, `playFilTendu`, `playSaut`), captures d'écran du README,
 bruitages à remplacer, banc d'origine à rejoindre après une capture.
 
-### 14.7 Bug — le sonar doit être LANCÉ comme une amorce
+### 14.7 Bug — le sonar doit être LANCÉ comme une amorce — LIVRÉ v179
 
-Aujourd'hui le sonar (150 XP, `sonar.js`) n'est pas lancé : un clic sur **📡** le
-**téléporte** à une position **calculée** (`rayonEtang(angle) − 4` depuis la berge,
-`+8` vers le centre depuis la barque), puis le rend visible. Le joueur **ne choisit
-pas** où il tombe, il n'y a **ni visée, ni puissance, ni arc, ni plouf**, et depuis
-l'ajout des obstacles (14.2) la bouée peut atterrir dans une roche ou sur la ligne.
+Avant (v178), le sonar n'était pas lancé : un clic sur **📡** **téléportait** la
+bouée à une position **calculée** (`rayonEtang(angle) − 4` depuis la berge, `+8` vers
+le centre depuis la barque), sans visée, sans puissance, sans arc ni plouf, et le scan
+partait **immédiatement**.
 
-- [ ] **Même geste que l'amorce** : clic sur **📡** → mode visée, **maintien pour
-  doser la puissance** (même jauge que l'amorce), relâchement → la bouée part de la
-  main du pêcheur en **arc**, **plouf**, puis flotte et commence à pinger.
-- [ ] **Réutiliser `amorcage.js`**, ne pas dupliquer : extraire le geste de lancer
-  (charge → `computeFeedLanding` → `releaseFeed` → `landFeed`) en fonction commune,
-  utilisée par les deux (amorce et sonar).
-- [ ] **Le sonar tombe là où il tombe** : le radar de 12 m se centre sur le point
-  d'impact réel, pas sur une position imposée. Viser loin = radar loin.
-- [ ] **Pas de ping avant le plouf** : le scan démarre seulement quand la bouée a
-  touché l'eau (le `sonarDernierPing = -Infinity` actuel fait pinger dès le clic).
-- [ ] **Mêmes règles d'accès** qu'aujourd'hui : seulement ligne au repos (`idle` /
-  `inWater`) et hors combat / emmêlement ; depuis la barque, le lancer suit la même
-  règle (direction de la caméra, pas « vers le centre » en dur).
-- [ ] **Ranger** le sonar reste immédiat (clic sur 📡 quand il flotte).
-- [ ] **Tests** (scénario 71 à étendre) : charger/relâcher produit un point d'impact
-  **dans la direction visée** et **fonction de la puissance** (pas de position fixe) ;
-  aucun ping avant le plouf ; ping après l'impact ; sonar refusé en combat /
-  emmêlement ; lancer possible depuis la barque ; `Ranger` immédiat.
+- [x] **Même geste que l'amorce** : clic sur **📡** → mode visée ; **maintien** =
+  puissance (même jauge, même repère) ; **relâchement** = bouée en **arc** ; **plouf** ;
+  puis flottaison et scan.
+- [x] **Geste extrait, pas dupliqué** : nouveau module **`lancer.js`** (243 lignes) ;
+  `amorcage.js` ne garde que la boule, le nuage et le bras (**364 → 205 lignes**). Les
+  objets lançables s'enregistrent via `etat.declarerProjectile` (amorce, sonar).
+- [x] **Le radar suit l'impact réel** : `sonarBuoy.position` = point d'impact ; un
+  petit maintien tombe **près** (< 25 unités), un long **plus loin** ; visée respectée
+  à **< 2°**.
+- [x] **Pas de ping avant le plouf** : aucun ping ni onde pendant le vol ; ping **au
+  plouf** ; le `sonarDernierPing = -Infinity` posé au clic a disparu.
+- [x] **Mêmes règles d'accès** : refusé en **combat**, **accrochage**, **emmêlement**
+  et pendant un vol ; depuis la barque la direction suit la **visée**, plus « vers le
+  centre » en dur.
+- [x] **Cohérence obstacles (v174–v178)** : impact sur **ponton / écluse / roches
+  refusé** (même règle que le lancer de ligne) ; impact **hors de l'eau** → la bouée
+  tombe sur la rive, message, **aucun ping**, aucun plantage.
+- [x] **Ranger reste immédiat** : bouée, radar et ondes effacés tout de suite.
+- [x] **Tests** : scénario **71 + 71b**, **+136 vérifications** (2 174 → **2 310**).
+  Adaptés **sans suppression** : scénario 62 (boutique) et 71 (grand étang) ne
+  supposent plus un sonar posé par un clic.
+- Note : `script.js` 3 000 → **2 998** lignes (cliquet 2 999), versions `?v=179`.
 
 ### 14.8 Bug — la détection du FOND doit se faire sous le bouchon, à son arrivée
 
@@ -459,7 +462,7 @@ manivelle **ramène la ligne** (`comportement.js:490-491`), il n'attire personne
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **1926 vérifications vertes** (v173) (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **2310 vérifications vertes** (v179) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
