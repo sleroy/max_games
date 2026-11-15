@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=118';
+import { SoundEngine } from './sound.js?v=119';
 import { creerJeuDemelage } from './demelage.js?v=118';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -3841,7 +3841,7 @@ function startHoldingFish(fish) {
     fishThrowState = 'idle';
     fishThrowTarget = fishThrowPowerFor(bourricheDistance());
     fishButton.disabled = true;
-    fishButton.textContent = 'Lance le poisson !';
+    fishButton.hidden = true;
     const espece = fish.userData.espece ? fish.userData.espece + ' ' : '';
     spawnFloatingText((fish.userData.espece || 'Poisson') + ' au bord !', fish.position, '#9ef0c0');
     statusDisplay.textContent = espece + 'au bord ! Lance-le dans la bourriche 🧺 (appuie, maintiens, relâche au bon moment).';
@@ -3898,7 +3898,7 @@ function finishHolding() {
     fishThrowState = 'idle';
     feedGauge.classList.remove('active');
     fishButton.disabled = false;
-    fishButton.textContent = 'Lancer la canne';
+    fishButton.hidden = true;
     floatState = 'idle';
     fishCaught = false;
     escaped = false;
@@ -5288,7 +5288,8 @@ function startCast(target) {
     floatState = 'flying';
     const peutEmmeler = risqueEmmelement() > 0;
     fishButton.disabled = !peutEmmeler;
-    fishButton.textContent = peutEmmeler ? 'Tendre le fil' : 'Lancer la canne';
+    fishButton.hidden = !peutEmmeler;
+    fishButton.textContent = 'Tendre le fil';
     statusDisplay.textContent = peutEmmeler
         ? 'Lancer… appuie sur « Tendre le fil » avant l’arrivée dans l’eau.'
         : 'Lancer… la ligne va se poser.';
@@ -5608,7 +5609,7 @@ function startStruggle(fish, facteurAvantage) {
     struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
     updateStruggleBar();
     fishButton.disabled = true;
-    fishButton.textContent = 'Tourne la manivelle !';
+    fishButton.hidden = true;
     statusDisplay.textContent = 'Poisson ferré ! Tourne la manivelle pour le ramener !';
 }
 
@@ -5951,7 +5952,7 @@ function endStruggle(success, timedOut) {
     strugglePanel.classList.remove('active');
     setDragLoosened(false);
     fishButton.disabled = false;
-    fishButton.textContent = 'Lancer la canne';
+    fishButton.hidden = true;
     struggle = null;
     if (success) {
         fishCaught = true;
@@ -6111,6 +6112,7 @@ function startSnag(mode) {
     updateStruggleBar();
     fishButton.disabled = false;
     fishButton.textContent = 'Dégager !';
+    fishButton.hidden = false;
     statusDisplay.textContent = dansLaVase
         ? 'Ton hameçon s’est enfoncé dans la vase ! Tire en rythme (≈ 3 clics/s) pour le dégager, puis règle une ligne moins profonde.'
         : 'La ligne s’est accrochée aux nénuphars ! Clique pour la dégager.';
@@ -6138,7 +6140,7 @@ function majIndiceSnag() {
 
 function endSnag(freed) {
     strugglePanel.classList.remove('active');
-    fishButton.textContent = 'Lancer la canne';
+    fishButton.hidden = true;
     if (fishButton.classList) {
         fishButton.classList.remove('cooldown');
     }
@@ -6613,7 +6615,7 @@ function updateFloat(dt, time) {
         if (castT >= 1) {
             castT = 1;
             fishButton.disabled = true;
-            fishButton.textContent = 'Lancer la canne';
+            fishButton.hidden = true;
             floatGroup.position.copy(castTarget);
             spawnRipple(castTarget);
             sound.splash();
@@ -7024,36 +7026,8 @@ fishButton.addEventListener('click', () => {
     ensureSound();
     if (floatState === 'flying') {
         tendreLigneAuLancer();
-        return;
-    }
-    if (castState === 'charging') {
-        releaseCast();
-        return;
-    }
-    if (floatState === 'holding') {
-        if (fishThrowState === 'charging') {
-            releaseFishThrow();
-        } else {
-            startFishThrow();
-        }
-        return;
-    }
-    if (floatState === 'bite') {
-        hookFish();
-        return;
-    }
-    if (floatState === 'struggle' || floatState === 'snag') {
+    } else if (floatState === 'snag') {
         reelClick();
-        return;
-    }
-    if (floatState === 'idle') {
-        raycaster.setFromCamera(pointerNdc, camera);
-        const hits = raycaster.intersectObject(water);
-        if (hits.length) {
-            startCastCharge(hits[0].point.clone());
-        }
-    } else if (floatState === 'inWater') {
-        startReel();
     }
 });
 
@@ -7371,6 +7345,7 @@ function majLignes() {
 
 function casserLigne(raison) {
     if (partieTerminee) { return; }
+    fishButton.hidden = true;
     if (jeuDemelage && jeuDemelage.estActif()) { jeuDemelage.fermer(); }
     lignesRestantes = Math.max(0, lignesRestantes - 1);
     avertissementsVitesse = 0;
@@ -7671,7 +7646,7 @@ function reinitialiserPartie() {
     feedButton.classList.remove('active');
     crank.classList.remove('active');
     fishButton.disabled = false;
-    fishButton.textContent = 'Lancer la canne';
+    fishButton.hidden = true;
     fishButton.classList.remove('cooldown');
     paused = false;
     setCameraView(false);
@@ -7738,7 +7713,7 @@ function demarrerJeu() {
     if (accueil) { accueil.classList.remove('active'); }
     majModalBackdrop();
     ensureSound();
-    statusDisplay.textContent = 'Bonne pêche ! Clique sur l’eau, maintiens pour doser la puissance, puis relâche.';
+    statusDisplay.textContent = 'Maintiens sur l’eau, puis relâche pour lancer.';
 }
 function afficherAccueil() {
     if (classement) { classement.classList.remove('active'); }

@@ -1593,12 +1593,13 @@ body.calm .struggle-marker {
     position: absolute;
     top: calc(6px + env(safe-area-inset-top, 0px));
     left: calc(8px + env(safe-area-inset-left, 0px));
-    right: calc(8px + env(safe-area-inset-right, 0px));
+    width: max(50%, 19rem);
+    max-width: calc(100% - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     min-height: 44px;
     padding-inline-end: 10px;
     border-radius: 10px;
@@ -1620,7 +1621,7 @@ body.calm .struggle-marker {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 2px 12px;
+    gap: 2px 8px;
     margin-inline-start: auto;
     font-size: 0.83rem;
     font-weight: bold;
@@ -1745,7 +1746,7 @@ body.calm .struggle-marker {
 }
 
 .hud-top .wind-bar {
-    width: clamp(24px, 7vw, 78px);
+    width: clamp(22px, 4vw, 48px);
 }
 
 .sonar-panel {

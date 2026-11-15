@@ -50,7 +50,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   statistiques repartent de zéro (même avec un poisson en main ou une ligne à
   l'eau). L'**XP de partie** affichée repart aussi à 0 ; le **carnet**, l'**XP
   carrière** (boutique), les **bouchons achetés** et le **classement** sont conservés.
-- **Interface** : la barre du haut regroupe le menu, le score, les lignes et
+- **Interface** : la barre compacte du haut regroupe le menu, le score, les lignes et
   un indicateur de vent (force et direction). À gauche, la coupe de l’eau
   montre le fond et l’hameçon. Règle la profondeur avec **−** et **+**.
 - **Sonar flottant** : débloque-le pour **150 XP carrière** dans **Carnet →
@@ -69,7 +69,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   carnassier prend sa place avec un **avantage** (combat plus dur, chrono plus court).
   Un **popup 3D** (« 🐟 Brochet attaque ! ») s'affiche **près du bouchon**, en
   plus du message de statut, pour prévenir immédiatement le joueur.
-- **Lancer tendu** : après avoir relâché, appuie sur **Tendre le fil** avant
+- **Lancer tendu** : maintiens le doigt sur l’eau puis relâche pour lancer.
+  Après avoir relâché, appuie sur **Tendre le fil** avant
   l’arrivée dans l’eau. Un clic sur l’étang pendant le vol fait la même chose.
   Un fil tendu écarte le risque d’emmêlement. Sans ce geste, le risque est de
   **0 % en Facile**, **8 % en Normal** et **15 % en Dur**.

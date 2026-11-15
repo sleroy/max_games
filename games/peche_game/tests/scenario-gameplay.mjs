@@ -34,6 +34,7 @@ export function run() {
     checkEqual('les poissons sont dans l\'étang', G().fishes.length, FISH_COUNT);
     checkEqual('un tour de manivelle = 2 unités de fil', G().getUnitsPerTurn(), 2);
     checkEqual('état initial : repos', state(), 'idle');
+    check('au repos, le bouton de lancer est masqué', el('fishButton').hidden !== false);
     checkEqual('caméra initiale : normale', G().getCameraMode(), 'normal');
     checkEqual('mode bouchon inactif', G().isBiteViewActive(), false);
     checkEqual('manivelle cachée au repos', crankWidgetActive(), false);
@@ -120,8 +121,7 @@ export function run() {
         el('struggleInfo').textContent);
     check('le panneau indique le nombre de tours',
         el('struggleTimer').textContent.includes('de manivelle'), el('struggleTimer').textContent);
-    check('le bouton invite à tourner la manivelle',
-        el('fishButton').textContent.includes('manivelle'), el('fishButton').textContent);
+    checkEqual('la manivelle remplace le bouton pendant le combat', el('fishButton').hidden, true);
     checkEqual('le bouton est désactivé pendant le combat', el('fishButton').disabled, true);
 
     // Pendant la remontée, on finit de ramener la ligne : aucun autre poisson
@@ -223,8 +223,7 @@ export function run() {
     check('le bouton existe toujours (il sert à dégager la ligne)', clicks > 0);
     checkClose('un clic ne ramène plus de fil pendant le combat',
         G().getLineLength(), lineBeforeClick, 1e-9);
-    check('le bouton invite à tourner la manivelle',
-        el('fishButton').textContent.includes('manivelle'), el('fishButton').textContent);
+    checkEqual('la manivelle remplace le bouton pendant le combat', el('fishButton').hidden, true);
 
     group('17) Gagner le combat en tournant la manivelle');
     startFight(0, -30);
@@ -242,7 +241,7 @@ export function run() {
     check('le combat n\'est pas sans fin', turnsDone <= announcedTurns * 4, turnsDone.toFixed(2) + ' tours');
     checkClose('la tension est retombée à zéro', G().getTension(), 0, 1e-9);
     checkEqual('le panneau de combat est fermé', el('struggle').classList.contains('active'), false);
-    checkEqual('le bouton redevient « Lancer la canne »', el('fishButton').textContent, 'Lancer la canne');
+    checkEqual('après la remontée, le lancer se fait directement sur l’eau', el('fishButton').hidden, true);
 
     group('18) Remonter le poisson, puis le ranger dans la bourriche');
     const caughtFish = startFight(0, -30);
@@ -353,6 +352,7 @@ export function run() {
     checkEqual('panneau d\'accrochage affiché', el('struggle').classList.contains('active'), true);
     checkEqual('texte d\'accrochage', el('struggleInfo').textContent, 'Ligne accrochée aux nénuphars');
     checkEqual('bouton « Dégager ! »', el('fishButton').textContent, 'Dégager !');
+    checkEqual('le bouton contextuel apparaît pour dégager la ligne', el('fishButton').hidden, false);
     checkEqual('manivelle cachée pendant l\'accrochage', crankWidgetActive(), false);
     guard = 0;
     while (state() === 'snag' && guard++ < 400) {

@@ -38,6 +38,7 @@ export function run() {
         el('status').textContent.includes('Tendre le fil'), el('status').textContent);
     checkEqual('le bouton indique le geste à faire', el('fishButton').textContent, 'Tendre le fil');
     checkEqual('le bouton est utilisable pendant le vol', el('fishButton').disabled, false);
+    checkEqual('le bouton est visible pendant le vol', el('fishButton').hidden, false);
     fire('fishButton', 'click');
     checkEqual('le jeu confirme le geste', el('fishButton').textContent, '✓ Fil tendu');
     checkEqual('la ligne est marquée tendue', G().isLigneTendue(), true);
