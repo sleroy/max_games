@@ -13,7 +13,7 @@ function read(name) {
 // Certaines règles portent sur « le code du jeu » sans se soucier du module qui
 // le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
 // modules fusionnés : script.js + les modules extraits.
-const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js'];
+const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js'];
 
 function readModules() {
     return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))
@@ -22,7 +22,7 @@ function readModules() {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'splashes.js', 'messages.js', 'ondulations.js', 'bourriche.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'splashes.js', 'messages.js', 'ondulations.js', 'bourriche.js', 'combat.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
@@ -232,7 +232,7 @@ export function run() {
     check('le message interdit « Ça bouge » n’est jamais affiché',
         !script.includes('Ça bouge') && !script.includes('Ca bouge'));
     check('le seul message d’approche est « Un poisson s’approche »',
-        script.includes('Un poisson s’approche'));
+        code.includes('Un poisson s’approche'));
 
     group('14) Attaque de carnassier');
     check('les petites proies et les carnassiers sont définis',
