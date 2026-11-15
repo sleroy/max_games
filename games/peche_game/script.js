@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=110';
+import { SoundEngine } from './sound.js?v=111';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -1228,33 +1228,38 @@ function updateWater(t) {
 function makeShoreGeometry(outer, segments) {
     const positions = [];
     const uvs = [];
+    const colors = [];
     const indices = [];
-    for (let s = 0; s < segments; s++) {
-        const a = (s / segments) * Math.PI * 2;
-        const cos = Math.cos(a);
-        const sin = Math.sin(a);
-        const rIn = rayonEtang(a);
-        const xIn = cos * rIn;
-        const zIn = sin * rIn;
-        const xOut = cos * outer;
-        const zOut = sin * outer;
-        positions.push(xIn, 0, zIn, xOut, 0, zOut);
-        uvs.push((xIn / outer + 1) / 2, (zIn / outer + 1) / 2,
-            (xOut / outer + 1) / 2, (zOut / outer + 1) / 2);
-    }
-    for (let s = 0; s < segments; s++) {
-        const s1 = (s + 1) % segments;
-        const i0 = s * 2;
-        const o0 = s * 2 + 1;
-        const i1 = s1 * 2;
-        const o1 = s1 * 2 + 1;
-        // Ordre des sommets choisi pour que les normales pointent vers le HAUT.
-        indices.push(i0, o1, o0);
-        indices.push(i0, i1, o1);
+    const coast = new THREE.Color(0xa08465);
+    const transition = new THREE.Color(0xd7c7a7);
+    const grass = new THREE.Color(0xffffff);
+    for (let segment = 0; segment < segments; segment++) {
+        const angle = segment / segments * Math.PI * 2;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const inner = rayonEtang(angle);
+        const edgeWidth = 1.7 + 0.8 * Math.sin(7 * angle) + 0.4 * Math.cos(13 * angle);
+        const rings = [inner, inner + edgeWidth, inner + edgeWidth * 2, outer];
+        for (let ring = 0; ring < rings.length; ring++) {
+            const x = cos * rings[ring];
+            const z = sin * rings[ring];
+            positions.push(x, 0, z);
+            uvs.push((x / outer + 1) / 2, (z / outer + 1) / 2);
+            const color = ring === 0 ? coast : ring === 1 ? transition : grass;
+            colors.push(color.r, color.g, color.b);
+        }
+        const next = ((segment + 1) % segments) * rings.length;
+        for (let ring = 0; ring < rings.length - 1; ring++) {
+            const current = segment * rings.length + ring;
+            const adjacent = next + ring;
+            indices.push(current, adjacent + 1, current + 1,
+                current, adjacent, adjacent + 1);
+        }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;
@@ -1264,8 +1269,10 @@ const grassTexture = chargerTexture('sol-herbe.jpg', 180, 180);
 const shore = new THREE.Mesh(
     makeShoreGeometry(220, 96),
     new THREE.MeshStandardMaterial({
-        color: 0xe5e0c9, roughness: 0.94, map: grassTexture,
-        bumpMap: isMobileDevice ? null : grassTexture, bumpScale: 0.12
+        color: 0xe5e0c9, roughness: 0.94, map: grassTexture, vertexColors: true,
+        normalMap: isMobileDevice ? null : chargerTexture('herbe-normales.jpg', 180, 180, false),
+        normalScale: new THREE.Vector2(0.55, 0.55),
+        roughnessMap: isMobileDevice ? null : chargerTexture('herbe-rugosite.jpg', 180, 180, false)
     })
 );
 shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);

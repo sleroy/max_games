@@ -90,13 +90,14 @@ export function run() {
     // --- 4) La rive (anneau) suit le contour, sans rotation ---
     const rive = G().getShoreMesh();
     const segmentsRive = 96;
-    checkEqual('la rive a un sommet intérieur et un extérieur par segment',
-        rive.geometry.attributes.position.count, segmentsRive * 2);
+    const anneauxRive = 4;
+    checkEqual('la rive a quatre sommets par segment pour le dégradé de berge',
+        rive.geometry.attributes.position.count, segmentsRive * anneauxRive);
     let ecartRive = 0;
     let ecartExterieur = 0;
     for (let s = 0; s < segmentsRive; s++) {
-        const interieur = rayonDuSommet(rive, s * 2);
-        const exterieur = rayonDuSommet(rive, s * 2 + 1);
+        const interieur = rayonDuSommet(rive, s * anneauxRive);
+        const exterieur = rayonDuSommet(rive, s * anneauxRive + anneauxRive - 1);
         ecartRive = Math.max(ecartRive,
             Math.abs(interieur.rayon - G().getRayonEtang(interieur.angle)));
         ecartExterieur = Math.max(ecartExterieur, Math.abs(exterieur.rayon - 220));
