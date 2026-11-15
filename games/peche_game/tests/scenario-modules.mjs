@@ -24,7 +24,7 @@ const MODULES = [
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 2984;   // 2984 en v184 (câblage de esches.js : +4) ; 2980 en v183 (câblage de substrats.js : +9, comme obstacles.js en v174) ; 3030 avant la v173, 2995 en v173 ; 3001 en v174-178 (câblage de obstacles.js) ; 2999 en v179 (geste de lancer extrait dans lancer.js) ; 2971 en v180 (coupe de l'eau déplacée dans ligne.js)
+const PLAFOND_SCRIPT = 3006;   // 3006 en v185 (graine du monde variable : +22) ; 2984 en v184 (câblage de esches.js : +4) ; 2980 en v183 (câblage de substrats.js : +9, comme obstacles.js en v174) ; 3030 avant la v173, 2995 en v173 ; 3001 en v174-178 (câblage de obstacles.js) ; 2999 en v179 (geste de lancer extrait dans lancer.js) ; 2971 en v180 (coupe de l'eau déplacée dans ligne.js)
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;

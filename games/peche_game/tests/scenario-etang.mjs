@@ -180,6 +180,31 @@ export function run() {
 
     G().placerAuPoste(0);
     G().demarrerJeu();
+
+    // --- Graine du monde : VARIABLE à chaque chargement, mais rejouable ----------
+    // Un F5 doit donner un étang neuf. La graine est donc tirée au chargement
+    // (window.__PECHE_SEED, ?graine=N, sinon crypto/Math.random + Date.now).
+    group('55g) Graine du monde : étang neuf à chaque chargement, rejouable');
+    const graine = G().getGraine();
+    check('la graine est un entier 32 bits', Number.isInteger(graine) && graine >= 0 && graine < 4294967296,
+        String(graine));
+    checkEqual('la graine peut être imposée (monde rejouable)', G().setGraine(123456), 123456);
+    checkEqual('la graine imposée est relue', G().getGraine(), 123456);
+
+    function peuplement() {
+        return G().fishes.slice(0, 12).map(function (f) {
+            return (f.userData.especeId || '?') + ':' + f.userData.homeX.toFixed(2) + ',' + f.userData.homeZ.toFixed(2);
+        }).join('|');
+    }
+    G().setGraine(111);
+    G().repeuplerEtang();
+    const mondeA = peuplement();
+    G().setGraine(222);
+    G().repeuplerEtang();
+    const mondeB = peuplement();
+    check('deux graines différentes donnent deux peuplements différents', mondeA !== mondeB);
+    G().setGraine(20240101);
+    G().repeuplerEtang();
 }
 
 export default run;

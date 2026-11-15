@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v181**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v185**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -789,6 +789,30 @@ mètres**. Avant, un tour de manivelle **ramenait** seulement la ligne.
   petit coup : poisson 2,5 → 2,0 unités, ligne toujours à l'eau ; un tour : rappel de
   4 unités. Cache `?v=181`.
 
+### 14.10 Bug — le générateur aléatoire avait une graine FIGÉE (monde identique à chaque F5)
+
+Constat (joueur) : « quand on fait F5, la partie n'est pas réinitialisée ». Vérifié :
+la **partie** repart bien de zéro (accueil, score 0, 5/5 lignes), mais le **monde**
+était identique — `script.js` faisait `let rngState = 20240101 >>> 0`, une graine
+**constante**. Donc mêmes poissons, mêmes décors, mêmes places à chaque chargement.
+
+- [x] **Graine tirée au chargement** (v185) : `graineDeDepart()` prend
+  `crypto.getRandomValues`, sinon `Math.random`, et la mélange avec `Date.now()`.
+  Un F5 donne un **étang neuf** (vérifié : deux chargements → deux graines et deux
+  peuplements différents).
+- [x] **Monde rejouable** : `?graine=N` dans l'URL rejoue un étang précis (vérifié
+  deux chargements identiques), et `window.__PECHE_SEED` impose la graine.
+- [x] **Tests déterministes** : le harnais pose `__PECHE_SEED = 20240101` avant de
+  charger le jeu ; `__game.getGraine()` / `setGraine(n)` sont exposés.
+- [x] **Suite instable corrigée** : le test de densité des substrats dépendait de
+  l'aléatoire consommé par les scénarios précédents (le jeu consomme `rand()` à
+  chaque image, donc le nombre de tirages varie avec le temps réel). La mesure repart
+  maintenant d'une graine imposée → **3 exécutions vertes d'affilée** (2 609
+  vérifications), là où il fallait relancer pour passer.
+- Tests : `scenario-etang` 55g (graine 32 bits, graine imposable/relue, deux graines
+  → deux peuplements), `scenario-static` 3e (plus de graine littérale, tirage
+  `crypto`/`Date.now`, support `?graine=`).
+
 ## Scénarios de test ajoutés (v131–v139)
 
 - **57** : mode bateau (achat XP, embarquement au milieu, bornes de déplacement,
@@ -797,7 +821,7 @@ mètres**. Avant, un tour de manivelle **ramenait** seulement la ligne.
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **2386 vérifications vertes** (v181) (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **2609 vérifications vertes** (v185) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 

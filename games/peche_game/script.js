@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=184';
+import { SoundEngine } from './sound.js?v=185';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=183';
@@ -419,8 +419,27 @@ const sound = new SoundEngine();
 // Aléatoire du jeu : notre propre générateur « seedé », pour que le monde soit
 // reproductible indépendamment du nombre d'objets créés par three.js (chaque
 // objet de three.js consomme de l'aléatoire pour son identifiant interne).
+//
+// La GRAINE, elle, change à chaque chargement : un F5 doit donner un étang
+// neuf (poissons et décors ailleurs). Elle reste pilotable pour rejouer un
+// monde précis : `window.__PECHE_SEED` (harnais de test) ou `?graine=N`.
 // ---------------------------------------------------------------------------
-let rngState = 20240101 >>> 0;
+function graineDeDepart() {
+    if (typeof window !== 'undefined' && window.__PECHE_SEED !== undefined) {
+        const forcee = Number(window.__PECHE_SEED);
+        if (Number.isFinite(forcee)) { return forcee >>> 0; }
+    }
+    if (typeof location !== 'undefined' && location && location.search) {
+        const rejouee = Number(new URLSearchParams(location.search).get('graine'));
+        if (Number.isFinite(rejouee)) { return rejouee >>> 0; }
+    }
+    const alea = (typeof crypto !== 'undefined' && crypto.getRandomValues)
+        ? crypto.getRandomValues(new Uint32Array(1))[0]
+        : Math.floor(Math.random() * 4294967296);
+    return (alea ^ (Date.now() >>> 0)) >>> 0;
+}
+
+let rngState = graineDeDepart();
 
 function rand() {
     rngState = (rngState + 0x6d2b79f5) >>> 0;
@@ -2351,6 +2370,9 @@ window.__game = {
     getRecordBattu: function () { return recordBattu ? Object.assign({}, recordBattu) : null; },
     spawnFish: spawnFish,
     repeuplerEtang: repeuplerEtang,
+    // Graine du monde : lisible et pilotable (tests : monde reproductible).
+    getGraine: function () { return rngState; },
+    setGraine: function (graine) { rngState = Number(graine) >>> 0; return rngState; },
     // Population : cible calculée d'après la surface, plafond technique, bornes réalistes.
     getPopulation: function () {
         const stats = statsPopulation();

@@ -360,6 +360,9 @@ export class FakeAudioContext {
 // ---------------------------------------------------------------------------
 export function installEnvironment() {
     setSeed(20240101);
+    // Le jeu tire sa graine au chargement : on l'impose pour que la suite de
+    // tests voie TOUJOURS le même monde (sinon chaque exécution changerait).
+    globalThis.__PECHE_SEED = 20240101;
     Math.random = rng;                                  // monde reproductible
     globalThis.window = globalThis;
     globalThis.__PECHE_RARE__ = 0;                     // tests : pas de spécimen rare

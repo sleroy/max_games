@@ -167,6 +167,10 @@ export function run() {
         surPlace.length + ' / ' + installes.length);
 
     // --- 4) Attraction MESURÉE sur une simulation ------------------------------------
+    // La mesure ne doit pas dépendre de l'aléatoire consommé par les scénarios
+    // précédents (le jeu consomme rand() à chaque image : le nombre de tirages
+    // varie avec le temps réel). On repart donc d'une graine imposée.
+    G().setGraine(20240101);
     resetToIdle();
     const aGarder = G().fishes.length;
     // Espèces MESURÉES : celles qui n'ont qu'un seul substrat (la perche et le gardon se partagent entre deux).

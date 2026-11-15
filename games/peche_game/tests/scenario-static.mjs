@@ -64,6 +64,14 @@ export function run() {
         checkEqual('même version pour sound.js et index.html', soundImport[1], jsVersion[1]);
     }
 
+    group('3e) Graine du monde tirée au chargement (pas de graine figée)');
+    check('script.js ne fige plus la graine en dur',
+        !/rngState\s*=\s*20240101/.test(script), 'graine littérale encore présente');
+    check('la graine vient d’un tirage (crypto ou Math.random + Date.now)',
+        /getRandomValues/.test(script) && /__PECHE_SEED/.test(script) && /Date\.now\(\)/.test(script));
+    check('la graine reste pilotable pour rejouer un monde (?graine=N)',
+        /URLSearchParams\(location\.search\)/.test(script));
+
     group('3d) Bouton 📖 du carnet à droite du menu');
     const carnetTopButton = html.match(/<button class="tool-toggle carnet-top" id="carnetTopButton"[^>]*>/);
     check('le bouton carnet de la barre du haut est dans index.html', !!carnetTopButton);
