@@ -60,6 +60,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `sonar.js` | Sonar : bouée, radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 199 | Sonar / boutique |
 | `stocks.js` | Stocks : lignes de rechange, fils, amorce de départ, achat de recharges (état via `etat`) | 104 | Boutique / stocks |
 | `journal.js` | Carnet de pêche : chargement/sauvegarde, rendu, ajout d’une prise (état via `etat`) | 112 | Carnet / persistance |
+| `touches.js` | Catalogue des touches : durées, mouvements du bouchon, tirage vrai/faux (état via `etat`) | 165 | Touches / contenu |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |
