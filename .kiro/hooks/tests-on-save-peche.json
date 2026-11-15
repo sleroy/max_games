@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Tests pêche à l'enregistrement",
+      "trigger": "PostFileSave",
+      "description": "Lance les tests de non-régression (~2 s).",
+      "matcher": "games/peche_game/[^/]*\\.js$",
+      "action": {
+        "type": "command",
+        "command": "node games/peche_game/tests/run.mjs | tail -3",
+        "timeout": 60
+      }
+    }
+  ]
+}

@@ -8,7 +8,7 @@
 import {
     group, check, checkEqual, checkClose,
     G, el, resetToIdle, clearLilyPads, castTo, forceBite, strike,
-    step, stepFor, state
+    step, stepFor, state, adapterAuBouchon
 } from './harness.mjs';
 
 /** Prend le premier poisson disponible et le place dans la zone de l'hameçon. */
@@ -19,6 +19,7 @@ function poissonInteresse() {
     }
     fish.userData.profondeurZone = [G().getHookDepth() - 0.2, G().getHookDepth() + 0.2];
     fish.userData.depth = G().getHookDepth();
+    adapterAuBouchon(fish);
     fish.userData.vx = 0;
     fish.userData.vz = 0;
     return fish;

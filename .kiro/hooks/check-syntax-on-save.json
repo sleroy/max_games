@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Syntaxe JS à l'enregistrement",
+      "trigger": "PostFileSave",
+      "description": "Vérifie la syntaxe des JS des jeux (rapide).",
+      "matcher": "games/.*\\.m?js$",
+      "action": {
+        "type": "command",
+        "command": "node scripts/check-syntax.mjs",
+        "timeout": 30
+      }
+    }
+  ]
+}

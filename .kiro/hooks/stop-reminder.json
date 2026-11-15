@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Rappel fin de tâche",
+      "trigger": "Stop",
+      "description": "Rappelle version, tests, commit et push.",
+      "action": {
+        "type": "command",
+        "command": "git status --short | head -20; echo \"Rappel AGENTS.md : si games/peche_game/*.js a changé, incrémenter script.js?v= ; puis lancer les tests, git add -A, commit, git push origin main.\"",
+        "timeout": 15
+      }
+    }
+  ]
+}

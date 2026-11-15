@@ -1,0 +1,21 @@
+# CircleCI — vérifications du dépôt max_games (site statique, aucune dépendance).
+version: 2.1
+
+jobs:
+  tests:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Vérification de la syntaxe JavaScript
+          command: node scripts/check-syntax.mjs
+      - run:
+          name: Tests de non-régression (jeu de pêche)
+          command: node games/peche_game/tests/run.mjs
+
+workflows:
+  verifier:
+    jobs:
+      - tests

@@ -48,3 +48,35 @@ Versions courtes, recadrées et normalisées en MP3 mono.
 - pluie.mp3 : « Rain.ogg », ジダネ, domaine public. Les extrémités se fondent
   pour permettre la lecture en boucle.
   https://commons.wikimedia.org/wiki/File:Rain.ogg
+
+--- Bruitages ajoutés (faune, météo, interface) ---
+Tous recadrés, normalisés et convertis en MP3 mono 22 kHz. Licences CC BY / CC BY-SA :
+attribution requise (auteur + lien ci-dessous), partage à l'identique pour CC BY-SA.
+- heron.mp3 : « Ardea cinerea - Grey Heron XC531166 », Benoît Van Hecke (xeno-canto), CC BY-SA 4.0.
+  https://commons.wikimedia.org/wiki/File:Ardea_cinerea_-_Grey_Heron_XC531166.mp3
+- grenouilles-nuit.mp3 : « Frogs croak calling chorus at night », JogiAsad, CC BY-SA 4.0 (extrait de 20 s, boucle).
+  https://commons.wikimedia.org/wiki/File:Frogs_croak_calling_chorus_at_night.ogg
+- grenouille.mp3 : « Single Frog Croak », MichaeltheFox8621, CC BY-SA 4.0.
+  https://commons.wikimedia.org/wiki/File:Single_Frog_Croak.oga
+- grillons-nuit.mp3 : « Field cricket unedited », Thatcher, CC BY-SA 3.0 (extrait de 10 s, boucle).
+  https://commons.wikimedia.org/wiki/File:Field_cricket_unedited.ogg
+- tonnerre.mp3 : « Thunder 01 », Amuzujoe, CC BY-SA 4.0.
+  https://commons.wikimedia.org/wiki/File:Thunder_01.ogg
+- pas-gravier.mp3 : « Footstep on Gravel (Gravity Sound) », Gravity Sound, CC BY 4.0.
+  https://commons.wikimedia.org/wiki/File:Footstep_on_Gravel_(Gravity_Sound).mp3
+- martin-pecheur.mp3 : « Alcedo atthis - Common Kingfisher XC476785 », Marie-Lan Taÿ Pamart (xeno-canto), CC BY-SA 4.0.
+  https://commons.wikimedia.org/wiki/File:Alcedo_atthis_-_Common_Kingfisher_XC476785.mp3
+- corneille.mp3 : « Corvus corone - Carrion Crow XC509842 », Marie-Lan Taÿ Pamart (xeno-canto), CC BY-SA 4.0.
+  https://commons.wikimedia.org/wiki/File:Corvus_corone_-_Carrion_Crow_XC509842.mp3
+- canard.mp3 : « Anas platyrhynchos - Mallard - XC62258 », Jonathon Jongsma (xeno-canto), CC BY-SA 3.0.
+  https://commons.wikimedia.org/wiki/File:Anas_platyrhynchos_-_Mallard_-_XC62258.ogg
+- plouf.mp3 : « Bubble 01 nevit », Nevit Dilmen, CC BY-SA 3.0.
+  https://commons.wikimedia.org/wiki/File:Bubble_01_nevit.ogg
+- pieces.mp3 : « Coins dropped in wooden moneybox », ezwa (PDSounds), domaine public.
+  https://commons.wikimedia.org/wiki/File:Coins_dropped_in_wooden_moneybox.ogg
+- cloche.mp3 : « Gong or bell vibrant (short) », PDSounds, CC0 1.0.
+  https://commons.wikimedia.org/wiki/File:Gong_or_bell_vibrant_(short).ogg
+- carillon.mp3 : « Chime (1) Sample », UnKnownrNone, CC0 1.0.
+  https://commons.wikimedia.org/wiki/File:Chime_(1)_Sample.wav
+- clic.mp3, fouet-canne.mp3, epuisette.mp3, poisson-sol.mp3, fil-tendu.mp3 : sons synthétisés
+  avec ffmpeg (bruit filtré / sinus) pour ce jeu. Aucune attribution requise (CC0 1.0).

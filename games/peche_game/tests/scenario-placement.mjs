@@ -143,11 +143,9 @@ export function run() {
     checkClose('le glisser change la distance', glisse.marge, 4, 0.35);
 
     // --- Les raccourcis restent disponibles ---
-    fire('posteNord', 'click');
+    G().placerAuPoste(2);
     checkEqual('le raccourci Nord replace au nord', G().getPoste().id, 'nord');
     checkEqual('le raccourci n’est pas « libre »', G().getPoste().libre, false);
-    checkEqual('le bouton Nord est actif', el('posteNord').classList.contains('actif'), true);
-    checkEqual('le bouton Sud n’est pas actif', el('posteSud').classList.contains('actif'), false);
 
     // --- Pas de téléportation avec la ligne à l'eau ---
     resetToIdle();

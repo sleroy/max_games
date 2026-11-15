@@ -17,6 +17,16 @@ publiés sur **GitHub Pages**.
 | 🟢 **Slime Adventure** | Jeu de plateforme par niveaux | [`games/slime_game/`](games/slime_game/) |
 | 📄 **Page de démo** | Exemple de contenu statique | [`games/page 1/`](games/page%201/) |
 
+## Captures d'écran
+
+| | |
+|---|---|
+| ![Page d'accueil du site](docs/screenshots/accueil.jpg) **Accueil** | ![Jeu de pêche : choix de la place sur la carte en relief](docs/screenshots/peche-accueil.jpg) **Pêche : choix de la place** |
+| ![Jeu de pêche : vue 3D de l'étang](docs/screenshots/peche-jeu.jpg) **Pêche : l'étang en 3D** | ![Jeu de pêche : mode quiver avec le scion de canne](docs/screenshots/peche-quiver.jpg) **Pêche : mode quiver** |
+| ![Minecraft en JavaScript](docs/screenshots/minecraft.jpg) **Minecraft JS** | ![Minecraft JS, version online](docs/screenshots/minecraft-online.jpg) **Minecraft JS Online** |
+| ![Minecraft Trap PVP](docs/screenshots/minecraft-trap-pvp.jpg) **Minecraft Trap PVP** | ![Jeu de morpion](docs/screenshots/morpion.jpg) **Morpion** |
+| ![Slime Adventure](docs/screenshots/slime.jpg) **Slime Adventure** | ![Page de démo](docs/screenshots/demo.jpg) **Page de démo** |
+
 ## Structure
 
 ```
@@ -62,3 +72,10 @@ chaque jeu est accessible à l'URL `https://sleroy.github.io/max_games/games/<do
 - 🏠 Accueil : <https://sleroy.github.io/max_games/>
 - 💻 Code : <https://github.com/sleroy/max_games>
 - 🎣 Exemple : <https://sleroy.github.io/max_games/games/peche_game/>
+
+## Licence
+
+Le code de ce dépôt est publié sous licence [MIT](LICENSE) (© 2026 sleroy).
+
+Les ressources tierces (images, sons, textures, bibliothèques comme three.js) gardent
+**leur propre licence** : voir [`games/peche_game/assets/CREDITS.txt`](games/peche_game/assets/CREDITS.txt).

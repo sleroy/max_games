@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=125">
+    <link rel="stylesheet" href="style.css?v=127">
 </head>
 <body>
     <div class="game-wrap">
@@ -113,18 +113,8 @@
                             </div>
                         </div>
                         <div class="carte-placement-aide" id="cartePlacementAide">Chargement du relief…</div>
-                        <div class="poste-boutons">
-                            <button class="poste-btn actif" id="posteSud" data-poste="0"
-                                aria-pressed="true" aria-label="Se placer au sud">Sud</button>
-                            <button class="poste-btn" id="posteEst" data-poste="1"
-                                aria-pressed="false" aria-label="Se placer à l’est">Est</button>
-                            <button class="poste-btn" id="posteNord" data-poste="2"
-                                aria-pressed="false" aria-label="Se placer au nord">Nord</button>
-                            <button class="poste-btn" id="posteOuest" data-poste="3"
-                                aria-pressed="false" aria-label="Se placer à l’ouest">Ouest</button>
-                        </div>
                         <span class="poste-choix-hint">Clique ou glisse sur le relief autour de l’étang
-                            (1,4 à 6 unités de la berge). Les boutons sont des raccourcis.</span>
+                            (1,4 à 6 unités de la berge).</span>
                     </div>
                 </div>
                 <div class="accueil-actions">
@@ -148,6 +138,7 @@
             </div>
             <div class="overlay-panel" id="classement" role="dialog" aria-modal="true"
                 aria-labelledby="classementTitre">
+                <button class="btn-croix" id="closeRanking" aria-label="Fermer le classement" title="Fermer">✕</button>
                 <h2 class="overlay-title" id="classementTitre">🏆 Classement local</h2>
                 <div class="tabs" id="rankingTabs">
                     <button class="tab active" data-rank="poissons">🐟 Poissons</button>
@@ -155,7 +146,6 @@
                     <button class="tab" data-rank="records">🥇 Records</button>
                 </div>
                 <div class="overlay-list" id="rankingList"></div>
-                <button class="journal-button" id="closeRanking">Fermer</button>
             </div>
             <div class="tangle-game" id="tangleGame" role="dialog" aria-modal="true"
                 aria-labelledby="tangleTitle">
@@ -173,6 +163,7 @@
                 </div>
             </div>
             <div class="panel" id="journal">
+                <button id="journalClose" class="btn-croix" aria-label="Fermer le carnet" title="Fermer">✕</button>
                 <h2 class="panel-title">📖 Carnet de pêche</h2>
                 <div class="tabs" id="journalTabs">
                     <button class="tab active" data-tab="prises">🐟 Prises</button>
@@ -261,7 +252,6 @@
                 </div>
                 <button id="tutorialOpen">📖 Revoir le tutoriel</button>
                 </div>
-                <button id="journalClose">Fermer</button>
             </div>
             <div class="tutorial" id="tutorial">
                 <div class="tutorial-card">
@@ -322,6 +312,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=125"></script>
+    <script type="module" src="script.js?v=127"></script>
 </body>
 </html>

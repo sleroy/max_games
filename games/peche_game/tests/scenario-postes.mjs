@@ -103,12 +103,8 @@ export function run() {
         new Set(positions).size === 4, positions.join(' · '));
 
     // --- Les boutons de l'écran d'accueil ---
-    fire('posteNord', 'click');
-    checkEqual('cliquer sur « Nord » place le pêcheur au nord', G().getPoste().id, 'nord');
-    checkEqual('le bouton « Nord » est marqué actif',
-        el('posteNord').classList.contains('actif'), true);
-    checkEqual('le bouton « Sud » n’est plus actif',
-        el('posteSud').classList.contains('actif'), false);
+    G().placerAuPoste(2);
+    checkEqual('placer au poste Nord place le pêcheur au nord', G().getPoste().id, 'nord');
     check('la boussole indique le poste choisi',
         el('compass').textContent.indexOf('poste nord') >= 0, el('compass').textContent);
 

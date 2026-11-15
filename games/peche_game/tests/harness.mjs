@@ -485,6 +485,20 @@ export function castTo(x, z) {
     return state();
 }
 
+/**
+ * Le poisson du test vit autour du bouchon, voit loin et nage en eau moyenne
+ * (sinon sa zone de vie, sa couche d'eau ou sa vue l'éloignent de l'appât).
+ */
+export function adapterAuBouchon(fish) {
+    fish.userData.couche = 'mi-eau';
+    fish.userData.homeX = G().floatGroup.position.x;
+    fish.userData.homeZ = G().floatGroup.position.z;
+    fish.userData.homeRadius = 20;
+    if (fish.userData.comp) {
+        fish.userData.comp = Object.assign({}, fish.userData.comp, { vue: 12, nocturne: true });
+    }
+}
+
 /** Amène un poisson au bouchon jusqu'à déclencher une touche. */
 export function forceBite() {
     parkFish();
@@ -496,6 +510,7 @@ export function forceBite() {
     // Le poisson du test est placé dans la tranche d'eau de l'hameçon (sinon la
     // règle « morsure par zone » l'empêcherait de mordre).
     fish.userData.profondeurZone = [G().getHookDepth() - 0.2, G().getHookDepth() + 0.2];
+    adapterAuBouchon(fish);
     fish.userData.vx = 0;
     fish.userData.vz = 0;
     if (!stepUntil(() => state() === 'bite', 5)) {

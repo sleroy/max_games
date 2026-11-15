@@ -1,13 +1,13 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-14** · version du jeu : **v108**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v126**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
 ## 1. Monde et emplacement
 
 - [x] **Choisir son emplacement autour de l'étang avant de pêcher.**
-  Carte 3D en relief + choix libre angle/distance (v93), 4 boutons Sud/Est/Nord/Ouest.
+  Carte 3D en relief + choix libre angle/distance (v93). Boutons Sud/Est/Nord/Ouest retirés de l'accueil (v126) ; `placerAuPoste()` reste pour les tests.
 - [x] **Soleil positionné correctement (nord/sud) et luminosité selon le poste.**
   Soleil fixe au sud-ouest, `uSunDir` dans le shader, exposition par poste (v88–v92).
 - [x] **Étang de forme générée en 3D, avec placement autour.**
@@ -129,3 +129,35 @@
 - **64** : fin volontaire, accueil modal, XP de partie, distribution, spécimens hors norme.
 - **65** : ligne tendue, emmêlement, mini-jeu de démêlage, abandon/temps écoulé.
 - **66** : bouchon / quiver, scion, canne inclinée, ferrage, retour au bouchon.
+
+## 11. Passe v126 — réalisme des poissons, quiver, sons, dépôt
+
+- [x] **Quiver = pêche au FOND.** L'hameçon est posé juste au-dessus de la vase à l'endroit
+  du lancer (`poserHameconAuFond`), profondeur non réglable, retour au réglage du bouchon
+  en repassant en bouchon (scénario 67).
+- [x] **Retirer les boutons Nord/Sud/Est/Ouest de l'accueil** (la carte 3D suffit).
+- [x] **Sons** : 18 nouveaux sons libres (Wikimedia Commons + synthèse CC0) crédités dans
+  `assets/CREDITS.txt`, branchés : fouet de canne, épuisette, poisson au sol, pièces
+  (boutique), cloche (record), faune diurne (héron, martin-pêcheur, corneille, canard),
+  ambiance nocturne (grenouilles, grillons).
+  - [ ] À brancher plus tard : `playTonnerre` (orage), `playPas`, `playClic`, `playFilTendu`, `playSaut`.
+- [x] **Vision réaliste** : portée par espèce, réduite la nuit (sauf nocturnes : sandre,
+  silure, anguille, tanche) et sous la pluie, champ de vision ±120° (derrière lui : 2,2 unités).
+- [x] **Poissons dans leur zone de pêche** : domaine propre à l'espèce ; l'appât hors du
+  domaine n'intéresse pas ; rappel progressif + demi-tour franchement à 110 % ; test : ≥ 98 % du temps dedans.
+- [x] **Caractéristiques par espèce** (`COMPORTEMENTS`, `especes.js`) : couche (surface /
+  mi-eau / fond), taille de banc, cohésion, vitesse de croisière et de pointe, agilité de
+  virage, humeur (errant / embuscade / fouille).
+- [x] **Mouvements réalistes** : cap + virage limité, banc (cohésion, alignement), brochet
+  et black-bass en embuscade (guet puis bond), tanche/carpe/brème qui fouillent le fond,
+  espèces « de fond » qui suivent le relief.
+- [x] **Licence MIT**, **CircleCI** (gratuit : plan Free + crédits open source), **skills**
+  Kiro/Codex, **steering**, **hooks**, **AGENTS.md** enrichi.
+- [~] **Captures d'écran dans le README** (voir `docs/screenshots/`).
+- [ ] Idée : remplacer les 5 bruitages synthétisés par de vrais enregistrements.
+- [ ] Idée : les poissons d'un banc remplacé à la capture rejoignent le banc d'origine.
+
+## Scénario de test ajouté (v126)
+
+- **67** : accueil sans boutons de poste, données de comportement, bancs, simulation de
+  4 min (zone de vie, vitesse), quiver au fond.

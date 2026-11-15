@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Bloquer git push --force",
+      "trigger": "PreToolUse",
+      "description": "Refuse les push forcés.",
+      "matcher": "execute_bash|shell|bash",
+      "action": {
+        "type": "command",
+        "command": "if grep -Eq 'git +push[^\"]*(--force|-f( |\")|--force-with-lease)'; then echo \"git push --force interdit (AGENTS.md) sans demande explicite.\" >&2; exit 2; fi; exit 0",
+        "timeout": 10
+      }
+    }
+  ]
+}

@@ -780,8 +780,29 @@ button, .crank {
     padding: 6px 8px;
 }
 
-#journalClose {
+/* Croix de fermeture, en haut à droite (comme une fenêtre Windows). */
+.btn-croix {
+    position: sticky;
+    top: 0;
+    align-self: flex-end;
     flex: 0 0 auto;
+    width: 36px;
+    height: 30px;
+    margin: -8px -10px -22px 0;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 5;
+}
+.btn-croix:hover,
+.btn-croix:focus-visible {
+    background: #e81123;
+    border-color: #e81123;
 }
 
 /* Réglage de la profondeur de la ligne (dans la barre d'outils). */

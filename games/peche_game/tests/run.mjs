@@ -28,6 +28,7 @@ import scenarioVase from './scenario-vase.mjs';
 import scenarioOndulations from './scenario-ondulations.mjs';
 import scenarioLancer from './scenario-lancer.mjs';
 import scenarioJouer from './scenario-jouer.mjs';
+import { run as scenarioComportement } from './scenario-comportement.mjs';
 import scenarioPetitEcran from './scenario-petit-ecran.mjs';
 import scenarioMessages from './scenario-messages.mjs';
 import scenarioCarnassier from './scenario-carnassier.mjs';
@@ -68,6 +69,7 @@ try {
     scenarioFin();              // fin volontaire, accueil modal, XP de partie, rares
     scenarioDemelage();         // ligne tendue, emmêlement et mini-jeu de démêlage
     scenarioQuiver();           // bouchon / quiver : scion, canne inclinée, ferrage
+    scenarioComportement();     // poissons réalistes, quiver au fond, accueil épuré
 } catch (error) {
     crashed = error;
 } finally {

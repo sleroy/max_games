@@ -288,6 +288,53 @@ Préfère les ressources **CC0**.
 > 💡 Le compteur en haut de `index.html` se **calcule automatiquement** en JavaScript.
 > Pour un dossier contenant un espace, encode l'URL : `page 1/` → `page%201/`.
 
+### 🧪 Commandes de test
+
+```bash
+node games/peche_game/tests/run.mjs   # non-régression du jeu de pêche (~2 s, Node seul)
+node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
+```
+
+- Après une modif de `games/peche_game/*.js` : incrémenter `script.js?v=N` dans
+  `games/peche_game/index.html`.
+- Nouvelle fonctionnalité du jeu de pêche : ajouter `tests/scenario-*.mjs` + l'importer dans `tests/run.mjs`.
+- Si l'utilisateur dit explicitement de ne pas committer/pousser, cela prime sur la règle de push automatique.
+
+### 🎣 Carte rapide de `games/peche_game/`
+
+| Fichier | Rôle |
+|---|---|
+| `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI |
+| `especes.js` | données : espèces, styles de combat, silhouettes, touches |
+| `carnet.js` | persistance du carnet de pêche (localStorage) |
+| `classement.js` | classement local |
+| `demelage.js` | mini-jeu de démêlage (canvas 2D) |
+| `quiver.js` | indicateur de scion de canne |
+| `sound.js` | moteur audio |
+| `tests/` | harnais Node (`harness.mjs`, `three-stub.mjs`) + `scenario-*.mjs` |
+
+Suivi des idées : `idées.md` à la racine (ignoré par git, ne pas modifier sans demande).
+
+### 🧰 Skills, steering et hooks
+
+- **Steering Kiro** : `.kiro/steering/{product,tech,structure,conventions}.md` (toujours inclus).
+- **Hooks Kiro** : `.kiro/hooks/*.json` (syntaxe + tests à l'enregistrement, rappel de fin de tâche, blocage de `git push --force`).
+- **Skills installés** : `.kiro/skills/` (Kiro) et `.agents/skills/` (Codex), copies identiques ;
+  liste, sources et licences dans `.kiro/skills/README.md`.
+  Actuels : `frontend-design`, `webapp-testing`, `threejs-fundamentals`, `threejs-performance`,
+  `threejs-shaders`, `threejs-lighting`.
+- Codex lit ce `AGENTS.md` et `.agents/skills/` ; Kiro lit aussi `.kiro/`.
+
+### 🚦 CI
+
+CircleCI (`.circleci/config.yml`, image `cimg/node:22.12`) : lance `check-syntax.mjs` puis les tests de pêche.
+Aucune dépendance à installer.
+
+### 📜 Licence
+
+Code sous licence MIT (`LICENSE`). Les ressources tierces gardent leur licence
+(voir `games/peche_game/assets/CREDITS.txt`).
+
 ## 📖 Petit glossaire
 
 - **Canvas** : la zone rectangulaire où l'on dessine.

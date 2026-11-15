@@ -3,10 +3,10 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=125';
+import { SoundEngine } from './sound.js?v=127';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
+import { SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
 import { creerClassement } from './classement.js';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=124';
 
@@ -76,10 +76,6 @@ const techniqueSelect = document.getElementById('techniqueSelect');
 const quiverPanel = document.getElementById('quiverPanel');
 const quiverCanvas = document.getElementById('quiverCanvas');
 const compassDisplay = document.getElementById('compass');
-const posteSud = document.getElementById('posteSud');
-const posteEst = document.getElementById('posteEst');
-const posteNord = document.getElementById('posteNord');
-const posteOuest = document.getElementById('posteOuest');
 const cartePlacement = document.getElementById('cartePlacement');
 const cartePlacementAide = document.getElementById('cartePlacementAide');
 const cartePlacementRepere = document.getElementById('cartePlacementRepere');
@@ -1853,8 +1849,35 @@ function updateRod(dt) {
 // ---------------------------------------------------------------------------
 // Mode QUIVER : le module quiver.js gère le dessin du scion et ses mouvements.
 // ---------------------------------------------------------------------------
+// Le quiver se pêche AU FOND (comme la pêche à l'anglaise « posée ») : l'hameçon
+// repose sur le relief à l'endroit où la ligne est tombée.
+let profondeurBouchonMemo = null;
+function poserHameconAuFond(lieu) {
+    if (profondeurBouchonMemo === null) { profondeurBouchonMemo = profondeurLigne; }
+    const enEau = floatState !== 'idle' && floatState !== 'flying';
+    const px = lieu ? lieu.x : (enEau ? floatGroup.position.x : castTarget.x);
+    const pz = lieu ? lieu.z : (enEau ? floatGroup.position.z : castTarget.z);
+    const fond = Math.max(0.6, profondeurLocale(px, pz) - 0.55);   // posé juste au-dessus de la vase
+    if (Math.abs(fond - profondeurLigne) > 0.001) {
+        profondeurLigne = fond;
+        HOOK_DEPTH = -fond;
+        appliquerProfondeurVisuelle();
+        majEtiquetteProfondeur();
+        majCoupeProfondeur();
+    }
+}
+
 function updateQuiver(dt) {
-    if (!modeQuiver.estActif()) { return; }
+    if (!modeQuiver.estActif()) {
+        if (profondeurBouchonMemo !== null) {
+            // Retour au bouchon : on retrouve le réglage de profondeur d'avant.
+            const memo = profondeurBouchonMemo;
+            profondeurBouchonMemo = null;
+            setProfondeur(memo);
+        }
+        return;
+    }
+    poserHameconAuFond();
     // Pas de bouchon : la ligne entre directement dans l'eau.
     floatGroup.visible = false;
     modeQuiver.update(dt, floatState);
@@ -1991,8 +2014,10 @@ function majEtiquetteProfondeur() {
 }
 
 function updateDepthButtons(bornes, adjustable = true) {
-    depthMinus.disabled = !adjustable || profondeurLigne <= bornes[0] + 0.01;
-    depthPlus.disabled = !adjustable || profondeurLigne >= bornes[1] - 0.01;
+    // Au quiver, la profondeur n'est pas réglable : l'hameçon est posé au fond.
+    const fixe = modeQuiver.estActif();
+    depthMinus.disabled = fixe || !adjustable || profondeurLigne <= bornes[0] + 0.01;
+    depthPlus.disabled = fixe || !adjustable || profondeurLigne >= bornes[1] - 0.01;
 }
 
 let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
@@ -2046,10 +2071,11 @@ function majCoupeProfondeur() {
     const hameconPct = Math.min(100, (profondeurLigne / COUPE_REF) * 100);
     depthHookDot.style.top = hameconPct.toFixed(1) + '%';
     depthHookLine.style.height = hameconPct.toFixed(1) + '%';
-    const zone = profondeurLigne < 1.6 ? 'surface' : (profondeurLigne < 3.2 ? 'mi-eau' : 'fond');
+    const zone = modeQuiver.estActif() ? 'au fond (quiver)'
+        : (profondeurLigne < 1.6 ? 'surface' : (profondeurLigne < 3.2 ? 'mi-eau' : 'fond'));
     depthZoneLabel.textContent = zone;
     // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
-    const dansLeFond = profondeurLigne > profLocale - 0.25;
+    const dansLeFond = !modeQuiver.estActif() && profondeurLigne > profLocale - 0.25;
     depthHookDot.classList.toggle('danger', dansLeFond);
     depthHint.classList.toggle('alerte', dansLeFond);
     depthHint.textContent = dansLeFond
@@ -2358,6 +2384,16 @@ function releaseFeed() {
     feedFlyT = 0;
     feedGauge.classList.remove('active');
     computeFeedLanding();
+    // La boule part de la main du pêcheur (où qu'il soit sur la berge),
+    // un peu en avant de lui, vers la zone visée.
+    {
+        const dx = feedLanding.x - angler.position.x;
+        const dz = feedLanding.z - angler.position.z;
+        const dn = Math.hypot(dx, dz) || 1;
+        feedOrigin.set(angler.position.x + (dx / dn) * 0.9,
+            angler.position.y + 2.6,
+            angler.position.z + (dz / dn) * 0.9);
+    }
     feedBall.position.copy(feedOrigin);
     feedBall.visible = true;
     sound.throwItem();
@@ -2701,26 +2737,6 @@ function majEtiquettePoste() {
         + ' · 📍 poste ' + nomEmplacementCourant();
 }
 
-const posteBoutons = [
-    { element: posteSud, index: 0 },
-    { element: posteEst, index: 1 },
-    { element: posteNord, index: 2 },
-    { element: posteOuest, index: 3 }
-];
-
-function majBoutonsPoste() {
-    posteBoutons.forEach(function (bouton) {
-        if (!bouton.element) {
-            return;
-        }
-        const actif = bouton.index === boutonPosteActif;
-        bouton.element.classList.toggle('actif', actif);
-        if (typeof bouton.element.setAttribute === 'function') {
-            bouton.element.setAttribute('aria-pressed', actif ? 'true' : 'false');
-        }
-    });
-}
-
 // Place tout le matériel du pêcheur à un ANGLE et une MARGE (distance au bord
 // local) donnés. Refusé si une ligne est en l'air ou à l'eau.
 //   presetIndex : index du raccourci (0-3) ou -1 pour un choix libre.
@@ -2806,7 +2822,6 @@ function placerALAngle(angle, marge, presetIndex, libre) {
 
     majCoupeProfondeur();
     majEtiquettePoste();
-    majBoutonsPoste();
     renderCartePlacement();
     return true;
 }
@@ -3193,15 +3208,6 @@ if (cartePlacement) {
     cartePlacement.addEventListener('pointerleave', relacherCarte);
 }
 
-posteBoutons.forEach(function (bouton) {
-    if (!bouton.element) {
-        return;
-    }
-    bouton.element.addEventListener('click', function () {
-        placerAuPoste(bouton.index);
-    });
-});
-majBoutonsPoste();
 majEtiquettePoste();
 
 
@@ -3645,11 +3651,11 @@ boutique.addEventListener('click', event => {
     }
     const id = cible.dataset.id;
     if (cible.dataset.action === 'recharger') {
-        if (acheterRecharge(id)) { sound.catchFish(); }
+        if (acheterRecharge(id)) { sound.playPiece(); }
         return;
     }
     if (id === 'sonar' && cible.dataset.action === 'acheter') {
-        if (acheterSonar()) { sound.catchFish(); }
+        if (acheterSonar()) { sound.playPiece(); }
         return;
     }
     if (cible.dataset.action === 'equiper') {
@@ -3660,7 +3666,7 @@ boutique.addEventListener('click', event => {
         if (acheterBouchon(id)) {
             ensureSound();
             setFloatType(id);
-            sound.catchFish();
+            sound.playPiece();
             const f = trouverFlotteur(id);
             statusDisplay.textContent = f.nom + ' acheté et équipé ! ' + f.atout;
         } else {
@@ -3947,6 +3953,7 @@ function fishThrowPowerFor(distance) {
 
 // Le poisson est amené au bord : on le garde en main et on invite à le lancer.
 function startHoldingFish(fish) {
+    sound.playEpuisette();
     heldFish = fish;
     hookedFish = null;
     fish.userData.hooked = false;
@@ -4029,6 +4036,7 @@ function finishHolding() {
 // Réussi : le poisson tombe dans la bourriche (score + carnet).
 function storeHeldFish() {
     const fish = heldFish;
+    if (fish) { sound.playPoissonSol(); }
     finishHolding();
     heldFish = null;
     if (!fish) {
@@ -5025,8 +5033,8 @@ function distributionAttendue() {
     });
 }
 
-function spawnFish() {
-    const espece = pickSpecies();
+function spawnFish(especeImposee, groupe) {
+    const espece = especeImposee || pickSpecies();
     // Longueur réelle tirée dans la fourchette de l'espèce (cm).
     let longueurCm = espece.cm[0] + rand() * (espece.cm[1] - espece.cm[0]);
     // Spécimen hors norme : la taille peut dépasser le maximum de l'espèce.
@@ -5053,6 +5061,25 @@ function spawnFish() {
     fish.userData.vx = v.vx;
     fish.userData.vz = v.vz;
     fish.userData.phase = rand() * Math.PI * 2;
+    const comp = COMPORTEMENTS[espece.id] || null;
+    fish.userData.comp = comp;
+    fish.userData.couche = comp ? comp.couche : 'mi-eau';
+    if (groupe) {
+        // Un banc naît groupé : même coin d'étang, même cap, vitesses voisines.
+        const a = comportementRand() * Math.PI * 2;
+        const r = comportementRand() * 2.2;
+        fish.position.x = groupe.centre.x + Math.cos(a) * r;
+        fish.position.z = groupe.centre.z + Math.sin(a) * r;
+        const cap = groupe.cap + (comportementRand() - 0.5) * 0.5;
+        const vit = comp ? comp.croisiere : 1.5;
+        fish.userData.vx = Math.cos(cap) * vit;
+        fish.userData.vz = Math.sin(cap) * vit;
+        fish.userData.groupeId = groupe.id;
+    } else if (comp) {
+        const cap = Math.atan2(v.vz, v.vx);
+        fish.userData.vx = Math.cos(cap) * comp.croisiere;
+        fish.userData.vz = Math.sin(cap) * comp.croisiere;
+    }
     // Profondeur du DOS du poisson : chaque espèce a SA zone (un sandre reste au
     // fond, une ablette près de la surface). Déduite de la phase (déjà aléatoire)
     // pour ne pas décaler le monde reproductible des tests.
@@ -5067,9 +5094,10 @@ function spawnFish() {
     fish.userData.profondeurZone = plage.slice();
     // Domaine vital : chaque poisson reste dans SON coin d'étang (il ne traverse
     // pas tout l'étang). Rayon déduit de la phase, sans tirage aléatoire en plus.
-    fish.userData.homeX = fish.position.x;
-    fish.userData.homeZ = fish.position.z;
-    fish.userData.homeRadius = 10 + tProf * 12;                 // 10 à 22 unités
+    fish.userData.homeX = groupe ? groupe.centre.x : fish.position.x;
+    fish.userData.homeZ = groupe ? groupe.centre.z : fish.position.z;
+    fish.userData.homeRadius = comp ? comp.domaine * (0.85 + tProf * 0.3)
+        : 10 + tProf * 12;                                      // zone de vie propre à l'espèce
     fish.userData.power = power;
     fish.userData.aggression = aggression;
     fish.userData.type = espece.form;
@@ -5097,8 +5125,60 @@ function spawnFish() {
     return fish;
 }
 
-for (let i = 0; i < FISH_COUNT; i++) {
-    spawnFish();
+// Générateur LOCAL pour les comportements : il ne décale pas le hasard du monde.
+let comportementRngState = 0x2c1b3a77 >>> 0;
+function comportementRand() {
+    comportementRngState = (comportementRngState + 0x6d2b79f5) >>> 0;
+    let t = comportementRngState;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+// Peuplement de l'étang : les espèces de banc arrivent EN GROUPE, les solitaires
+// (brochet, silure, anguille…) seuls. Le tirage reste pondéré par l'abondance :
+// on divise le poids par la taille moyenne du groupe (l'abondance compte des poissons).
+function pickEspeceGroupe() {
+    let total = 0;
+    const poids = SPECIES.map(function (esp) {
+        const c = COMPORTEMENTS[esp.id];
+        const moy = c ? (c.banc[0] + c.banc[1]) / 2 : 1;
+        total += esp.abondance / moy;
+        return esp.abondance / moy;
+    });
+    let r = rand() * total;
+    for (let i = 0; i < SPECIES.length; i++) {
+        r -= poids[i];
+        if (r <= 0) { return SPECIES[i]; }
+    }
+    return SPECIES[0];
+}
+
+let compteurGroupes = 0;
+function peuplerEtang() {
+    while (fishes.length < FISH_COUNT) {
+        const esp = pickEspeceGroupe();
+        const c = COMPORTEMENTS[esp.id];
+        let n = c ? c.banc[0] + Math.floor(rand() * (c.banc[1] - c.banc[0] + 1)) : 1;
+        n = Math.max(1, Math.min(n, FISH_COUNT - fishes.length));
+        const groupe = n > 1 ? {
+            id: ++compteurGroupes,
+            centre: randomFishPosition(),
+            cap: rand() * Math.PI * 2
+        } : null;
+        for (let i = 0; i < n; i++) {
+            spawnFish(esp, groupe);
+        }
+    }
+}
+
+peuplerEtang();
+
+// Vide l'étang puis le repeuple (tests, nouvelle partie).
+function repeuplerEtang() {
+    fishes.forEach(function (f) { scene.remove(f); });
+    fishes.length = 0;
+    peuplerEtang();
 }
 
 function respawnFish(fish) {
@@ -5419,6 +5499,7 @@ function startCast(target) {
         ? 'Lancer… appuie sur « Tendre le fil » avant l’arrivée dans l’eau.'
         : 'Lancer… la ligne va se poser.';
     sound.cast();
+    sound.playFouet();
 }
 
 // Clic pendant le vol : on tend la ligne avant que le bouchon ne se pose.
@@ -5509,7 +5590,7 @@ function findBitingFish() {
         }
         // Seuls les poissons dont la tranche d'eau contient l'hameçon peuvent mordre.
         const zone = data.profondeurZone;
-        if (zone && (HOOK_DEPTH < zone[0] - 0.5 || HOOK_DEPTH > zone[1] + 0.5)) {
+        if (!hameconDansZone(data, zone)) {
             continue;
         }
         const dx = fish.position.x - floatGroup.position.x;
@@ -5591,6 +5672,7 @@ let recordBattu = null;
 
 // Annonce un NOUVEAU RECORD pour une espèce : message doré + statut détaillé.
 function annoncerRecord(weight, espece, ancienRecord, horsNorme) {
+    sound.playCloche();
     const nom = espece || 'Poisson';
     recordBattu = {
         espece: nom,
@@ -6534,6 +6616,25 @@ function updateWind(dt) {
     windFill.style.width = (wind.strength * 100).toFixed(0) + '%';
     windArrow.style.transform = 'rotate(' + (wind.dir * 180 / Math.PI).toFixed(0) + 'deg)';
     sound.setWind(wind.strength);
+    updateFauneSonore(dt);
+}
+
+// Ambiance vivante : la nuit les grenouilles et les grillons chantent en continu ;
+// le jour un héron, un martin-pêcheur, une corneille ou un canard se font entendre
+// de loin en loin (intervalles aléatoires, sans toucher au hasard du monde).
+let delaiFaune = 12;
+function updateFauneSonore(dt) {
+    const jour = Math.max(0, Math.sin(dayPhase * Math.PI * 2));
+    sound.setNuit(1 - Math.min(1, jour * 1.6));
+    delaiFaune -= dt;
+    if (delaiFaune > 0) { return; }
+    delaiFaune = 9 + Math.random() * 18;
+    if (jour < 0.15) { return; }
+    const r = Math.random();
+    if (r < 0.3) { sound.playHeron(); }
+    else if (r < 0.55) { sound.playMartinPecheur(); }
+    else if (r < 0.8) { sound.playCorneille(); }
+    else { sound.playCanard(); }
 }
 
 function updateClouds(dt) {
@@ -6564,8 +6665,179 @@ function animateFishMesh(data, phase, amplitude) {
     data.tailPivot.rotation.y = Math.sin(phase - 1.45) * amplitude * 3.2;
 }
 
+// ---------------------------------------------------------------------------
+// COMPORTEMENT DES POISSONS : vue, zone de vie, banc, vitesse et humeur propres
+// à chaque espèce (voir COMPORTEMENTS dans especes.js).
+// ---------------------------------------------------------------------------
+function lumiereDuJour() {
+    return Math.max(0, Math.sin(dayPhase * Math.PI * 2));
+}
+
+// Distance à laquelle le poisson repère l'appât (unités).
+function rayonVueEspece(data) {
+    const c = data.comp;
+    const base = c ? c.vue : BITE_INTEREST_RADIUS;
+    const jour = lumiereDuJour();
+    const lumiere = c && c.nocturne ? 1 + 0.4 * (1 - jour) : 0.45 + 0.55 * jour;
+    return base * lumiere * (1 - 0.25 * weatherPluie);
+}
+
+// L'appât est-il devant ou sur le côté du poisson (±120°) ?
+function dansChampDeVision(data, bx, bz, bd) {
+    const sp = Math.hypot(data.vx, data.vz);
+    if (sp < 0.02 || bd < 0.001) { return true; }
+    return (data.vx * bx + data.vz * bz) / (sp * bd) > -0.5;
+}
+
+// Le poisson ne quitte (presque) pas sa zone de vie : un appât trop loin d'elle
+// ne l'intéresse pas.
+function baitDansDomaine(data) {
+    if (data.homeX === undefined) { return true; }
+    const d = Math.hypot(floatGroup.position.x - data.homeX, floatGroup.position.z - data.homeZ);
+    return d < data.homeRadius * 1.25 + 1;
+}
+
+// L'hameçon est-il dans la couche d'eau de l'espèce ? Une espèce « de fond » mord
+// si l'hameçon est posé près du relief, quelle que soit la profondeur de l'étang.
+function hameconDansZone(data, zone) {
+    if (data.couche === 'fond') {
+        const haut = HOOK_DEPTH - fondY(floatGroup.position.x, floatGroup.position.z);
+        return haut <= 1.2 && haut >= -0.4;
+    }
+    return !zone || (HOOK_DEPTH >= zone[0] - 0.5 && HOOK_DEPTH <= zone[1] + 0.5);
+}
+
+const etatsGroupes = {};
+
+// Humeur : l'espèce alterne ses phases (le brochet guette puis bondit, la tanche
+// fouille le fond, le gardon nage presque sans arrêt). Un banc partage son humeur.
+function humeurCourante(data, dt, time) {
+    const c = data.comp;
+    const porteur = data.groupeId !== undefined
+        ? (etatsGroupes[data.groupeId] || (etatsGroupes[data.groupeId] = { t: 0, etat: 'nage', vu: -1 }))
+        : data;
+    if (porteur.vu === time) { return porteur.etat || 'nage'; }
+    porteur.vu = time;
+    porteur.t = (porteur.t === undefined ? 0 : porteur.t) - dt;
+    if (porteur.t <= 0 || porteur.etat === undefined) {
+        const r = comportementRand();
+        if (c.humeur === 'embuscade') {
+            if (porteur.etat === 'guet') { porteur.etat = 'bond'; porteur.t = 0.7 + r * 0.6; }
+            else { porteur.etat = 'guet'; porteur.t = 4 + r * 6; }
+        } else if (c.humeur === 'fouille') {
+            if (porteur.etat === 'fouille') { porteur.etat = 'nage'; porteur.t = 3 + r * 4; }
+            else { porteur.etat = 'fouille'; porteur.t = 2 + r * 4; }
+        } else if (r < 0.12) {
+            porteur.etat = 'repos'; porteur.t = 1 + comportementRand() * 2;
+        } else {
+            porteur.etat = 'nage'; porteur.t = 4 + r * 8;
+        }
+    }
+    return porteur.etat;
+}
+
+function angleEntre(a, b) {
+    let d = b - a;
+    while (d > Math.PI) { d -= Math.PI * 2; }
+    while (d < -Math.PI) { d += Math.PI * 2; }
+    return d;
+}
+
+function nageNaturelle(fish, data, dt, time) {
+    const c = data.comp;
+    if (!c) { return; }
+    const etat = humeurCourante(data, dt, time);
+    // Vitesse visée selon l'humeur.
+    let vitCible = c.croisiere;
+    if (etat === 'guet') { vitCible = 0.04; }
+    else if (etat === 'bond') { vitCible = c.pointe * 0.75; }
+    else if (etat === 'fouille') { vitCible = c.croisiere * 0.2; }
+    else if (etat === 'repos') { vitCible = c.croisiere * 0.35; }
+    // Un poisson ferré puis perdu reste nerveux (voir punishFish) : il se calme peu à peu.
+    const sp = Math.hypot(data.vx, data.vz);
+    let cap = sp > 0.01 ? Math.atan2(data.vz, data.vx) : (data.cap || 0);
+    // Direction souhaitée = cap + dérive douce + attirances.
+    cap += (Math.sin(time * 0.9 + data.phase * 3) * 0.6 + Math.sin(time * 2.3 + data.phase) * 0.4)
+        * c.virage * 0.35 * dt;
+    let ux = Math.cos(cap);
+    let uz = Math.sin(cap);
+    const g = data.groupeId !== undefined ? groupesFrame[data.groupeId] : null;
+    if (g && g.n > 1 && c.cohesion > 0) {
+        const gx = g.x / g.n - fish.position.x;
+        const gz = g.z / g.n - fish.position.z;
+        const gd = Math.hypot(gx, gz);
+        // Trop loin du banc : on le rejoint ; très près : on s'écarte un peu.
+        if (gd > 1.6) {
+            const w = Math.min(1.5, (gd - 1.6) * 0.5) * c.cohesion;
+            ux += (gx / gd) * w; uz += (gz / gd) * w;
+        } else if (gd < 0.5 && gd > 0.001) {
+            ux -= (gx / gd) * 0.3; uz -= (gz / gd) * 0.3;
+        }
+        // Même direction que ses voisins.
+        const gv = Math.hypot(g.vx, g.vz);
+        if (gv > 0.01) {
+            ux += (g.vx / gv) * 0.5 * c.cohesion;
+            uz += (g.vz / gv) * 0.5 * c.cohesion;
+        }
+        // Nage à l'allure du banc.
+        vitCible += ((gv / g.n) - vitCible) * 0.4 * c.cohesion;
+    }
+    // Zone de vie : rappel de plus en plus fort près de la limite.
+    const hx = data.homeX - fish.position.x;
+    const hz = data.homeZ - fish.position.z;
+    const hd = Math.hypot(hx, hz);
+    const limite = data.homeRadius;
+    if (hd > limite * 0.6 && hd > 0.001) {
+        const w = Math.min(4, ((hd - limite * 0.6) / (limite * 0.4)) * 2);
+        ux += (hx / hd) * w; uz += (hz / hd) * w;
+    }
+    // Évitement du bord de l'étang : on vire AVANT de toucher la rive.
+    const ex = fish.position.x - POND_CENTER.x;
+    const ez = fish.position.z - POND_CENTER.z;
+    const ed = Math.hypot(ex, ez);
+    const bordLocal = rayonEtang(Math.atan2(ez, ex)) - 5;
+    if (ed > bordLocal - 4 && ed > 0.001) {
+        const w = Math.min(3, (ed - (bordLocal - 4)) * 0.8);
+        ux -= (ex / ed) * w; uz -= (ez / ed) * w;
+    }
+    // Virage limité par l'agilité de l'espèce (un brochet ne vire pas sur place).
+    const voulu = Math.atan2(uz, ux);
+    const maxTurn = c.virage * (etat === 'bond' ? 1.6 : 1) * dt;
+    cap += Math.max(-maxTurn, Math.min(maxTurn, angleEntre(cap, voulu)));
+    // Près de la limite de sa zone, le poisson fait demi-tour franchement.
+    if (hd > limite * 1.1 && hd > 0.001) {
+        cap += angleEntre(cap, Math.atan2(hz, hx)) * Math.min(1, dt * 3);
+    }
+    data.cap = cap;
+    const nouvelle = sp + (vitCible - sp) * Math.min(1, dt * (etat === 'bond' ? 6 : 1.6));
+    const v = Math.min(c.pointe, Math.max(0, nouvelle));
+    data.vx = Math.cos(cap) * v;
+    data.vz = Math.sin(cap) * v;
+    // Un poisson « de fond » suit le relief ; les autres gardent leur tranche d'eau.
+    if (data.couche === 'fond') {
+        const cibleY = fondY(fish.position.x, fish.position.z) + 0.45;
+        data.depth += (cibleY - data.depth) * Math.min(1, dt * 1.5);
+    }
+}
+
+// Barycentre et direction moyenne de chaque banc, recalculés à chaque image.
+const groupesFrame = {};
+function majGroupes() {
+    for (const id in groupesFrame) { groupesFrame[id].n = 0; }
+    fishes.forEach(function (f) {
+        const d = f.userData;
+        if (d.groupeId === undefined || d.hooked || d.biting) { return; }
+        const g = groupesFrame[d.groupeId]
+            || (groupesFrame[d.groupeId] = { x: 0, z: 0, vx: 0, vz: 0, n: 0 });
+        if (g.n === 0) { g.x = 0; g.z = 0; g.vx = 0; g.vz = 0; }
+        g.x += f.position.x; g.z += f.position.z;
+        g.vx += d.vx; g.vz += d.vz; g.n++;
+    });
+}
+
 function updateFish(dt, time) {
     baitInterest = false;
+    majGroupes();
     fishes.forEach(fish => {
         const data = fish.userData;
         if (fish === heldFish) {
@@ -6608,6 +6880,7 @@ function updateFish(dt, time) {
             return;
         }
         data.targeting = false;
+        data.attire = false;
         // L'amorce attire les poissons vers le nuage de miettes.
         if (chum && chum.strength > 0) {
             const cx = chum.position.x - fish.position.x;
@@ -6618,6 +6891,7 @@ function updateFish(dt, time) {
                 if (Math.abs(data.depth - chum.position.y) > 1.6) {
                     return;
                 }
+                data.attire = true;
                 const accel = CHUM_ATTRACT_ACCEL * chum.strength * dt;
                 data.vx += (cx / cd) * accel;
                 data.vz += (cz / cd) * accel;
@@ -6646,13 +6920,15 @@ function updateFish(dt, time) {
             const bx = floatGroup.position.x - fish.position.x;
             const bz = floatGroup.position.z - fish.position.z;
             const bd = Math.hypot(bx, bz);
-            // Sous la pluie, les poissons s'intéressent de plus loin.
-            const rayonInteret = BITE_INTEREST_RADIUS * (1 + 0.25 * weatherPluie);
-            // Le poisson ne vient à l'hameçon que s'il est DANS SA tranche d'eau
-            // (un gardon de surface ne plonge pas à 2,5 m pour mordre).
+            // VUE RÉALISTE : chaque espèce repère l'appât à SA distance, réduite la nuit
+            // (sauf les chasseurs nocturnes) et par eau trouble (pluie). Le poisson
+            // voit devant et sur les côtés, pas dans son dos : derrière lui, il ne
+            // sent l'appât que de très près (ligne latérale, odorat, barbillons).
+            const rayonInteret = rayonVueEspece(data);
             const zoneEsp = data.profondeurZone;
-            const dansSaZone = !zoneEsp
-                || (HOOK_DEPTH >= zoneEsp[0] - 0.5 && HOOK_DEPTH <= zoneEsp[1] + 0.5);
+            const dansSaZone = hameconDansZone(data, zoneEsp)
+                && baitDansDomaine(data)
+                && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd));
             if (bd < rayonInteret && dansSaZone) {
                 baitInterest = true;
                 data.targeting = true;
@@ -6664,18 +6940,10 @@ function updateFish(dt, time) {
                 data.depth += (HOOK_DEPTH - data.depth) * Math.min(1, dt * 2.5);
             }
         }
-        // Domaine vital : au-delà de sa zone, le poisson revient doucement (un
-        // sandre ne traverse pas tout l'étang). Il oublie sa zone pour venir à
-        // l'hameçon quand il le sent.
-        if (!data.targeting && data.homeX !== undefined) {
-            const hx = data.homeX - fish.position.x;
-            const hz = data.homeZ - fish.position.z;
-            const hd = Math.hypot(hx, hz);
-            if (hd > data.homeRadius) {
-                const k = Math.min(1, dt * 0.8);
-                data.vx += (hx / hd) * 1.5 * k;
-                data.vz += (hz / hd) * 1.5 * k;
-            }
+        // Nage naturelle (cap, vitesse, banc, pauses, domaine vital) tant que le
+        // poisson ne poursuit ni l'appât ni l'amorce.
+        if (!data.targeting && !data.attire) {
+            nageNaturelle(fish, data, dt, time);
         }
         fish.position.x += data.vx * dt;
         fish.position.z += data.vz * dt;
@@ -6757,6 +7025,7 @@ function updateFloat(dt, time) {
                 floatState = 'inWater';
                 waitTimer = 0;
                 depuisLancement = 0;
+                if (modeQuiver.estActif()) { poserHameconAuFond(castTarget); }
                 const profLocale = profondeurLocale(castTarget.x, castTarget.z);
                 // Hameçon BEAUCOUP trop profond : il s'enfonce dans la vase et
                 // s'y accroche (il faut le dégager à la main !).
@@ -7260,6 +7529,8 @@ function spawnRagondin() {
     ragondinHits = 0;
     ragondinVolTimer = 12;     // 12 s pour le chasser
     ragondin = modele;
+    ensureSound();
+    sound.ragondinArrive();
     statusDisplay.textContent = '🐀 Un RAGONDIN rôde près de ta bourriche ! Clique 3 fois sur lui pour le chasser (sinon il vole un poisson).';
     return modele;
 }
@@ -7272,6 +7543,7 @@ function volerUnPoissonRagondin() {
     }
     spawnFloatingText('🐀 Il a volé un poisson !', BOURRICHE_POS, '#ff6b57');
     statusDisplay.textContent = '🐀 Trop tard : le ragondin a volé un poisson et s’est échappé !';
+    sound.ragondinRonge(8);
     sound.escape();
     effrayerRagondin();
     return true;
@@ -7281,6 +7553,7 @@ function effrayerRagondin() {
     if (!ragondin) { return; }
     scene.remove(ragondin);
     ragondin = null;
+    sound.ragondinMusiqueStop();
     ragondinHits = 0;
     ragondinTimer = 160 + rand() * 140;
 }
@@ -7289,6 +7562,7 @@ function hitRagondin() {
     if (!ragondin) { return false; }
     ragondinHits += 1;
     sound.splash();
+    sound.ragondinCri(true);
     ragondin.position.x += 1.2;
     if (ragondinHits >= RAGONDIN_CLICS) {
         spawnFloatingText('🐀 Il s’enfuit !', ragondin.position, '#ffd166');
@@ -7945,6 +8219,7 @@ window.__game = {
     },
     getRecordBattu: function () { return recordBattu ? Object.assign({}, recordBattu) : null; },
     spawnFish: spawnFish,
+    repeuplerEtang: repeuplerEtang,
     setHorsNormeChance: setHorsNormeChance,
     getHorsNormeChance: function () { return horsNormeChance; },
     getHorsNormeCount: function () {

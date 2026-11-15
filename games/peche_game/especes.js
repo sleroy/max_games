@@ -3,40 +3,75 @@
 // Extraites de script.js pour alléger l'orchestrateur 3D.
 // ---------------------------------------------------------------------------
 
+// Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [
-    { id: 'gardon', nom: 'Gardon', form: 'fusiforme', cm: [12, 32], k: 1.1, abondance: 12,
+    { id: 'gardon', nom: 'Gardon', form: 'fusiforme', cm: [10, 42], k: 1.1, abondance: 12,
       profondeur: [-1.6, -0.7], combativite: [0.5, 0.8], agressivite: [0.55, 0.85], style: 'nerveux', couleur: 0xbfcbd0, motif: 'argent' },
-    { id: 'rotengle', nom: 'Rotengle', form: 'fusiforme', cm: [15, 35], k: 1.1, abondance: 8,
+    { id: 'rotengle', nom: 'Rotengle', form: 'fusiforme', cm: [10, 50], k: 1.1, abondance: 8,
       profondeur: [-1.6, -0.7], combativite: [0.5, 0.85], agressivite: [0.6, 0.9], style: 'nerveux', couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
-    { id: 'ablette', nom: 'Ablette', form: 'petit', cm: [8, 18], k: 0.9, abondance: 9,
+    { id: 'ablette', nom: 'Ablette', form: 'petit', cm: [8, 25], k: 0.9, abondance: 9,
       profondeur: [-1.3, -0.7], combativite: [0.4, 0.65], agressivite: [0.6, 0.95], style: 'nerveux', couleur: 0xd2dcdf, motif: 'argent' },
     { id: 'goujon', nom: 'Goujon', form: 'petit', cm: [10, 22], k: 1.3, abondance: 7,
       profondeur: [-3.0, -2.0], combativite: [0.4, 0.7], agressivite: [0.5, 0.8], style: 'teigneux', couleur: 0xc2a878, motif: 'taches' },
-    { id: 'breme', nom: 'Brème', form: 'plat', cm: [25, 60], k: 1.8, abondance: 6,
+    { id: 'breme', nom: 'Brème', form: 'plat', cm: [15, 75], k: 1.8, abondance: 6,
       profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], style: 'aspirateur', couleur: 0x9d8f63, motif: 'ecailles' },
-    { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [25, 55], k: 1.7, abondance: 5,
+    { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [15, 70], k: 1.7, abondance: 5,
       profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
-    { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [35, 95], k: 2.3, abondance: 6,
+    { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [20, 105], k: 2.3, abondance: 6,
       profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], style: 'lourd', couleur: 0xa8853f, motif: 'ecailles' },
-    { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [18, 40], k: 2.2, abondance: 5,
+    { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [10, 50], k: 2.2, abondance: 5,
       profondeur: [-2.8, -1.9], combativite: [0.6, 0.9], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0xb08b3a, motif: 'ecailles' },
-    { id: 'perche', nom: 'Perche', form: 'bossu', cm: [15, 45], k: 1.4, abondance: 7,
+    { id: 'perche', nom: 'Perche', form: 'bossu', cm: [10, 50], k: 1.4, abondance: 7,
       profondeur: [-2.6, -1.5], combativite: [0.7, 1.05], agressivite: [0.9, 1.25], style: 'teigneux', couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
-    { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [25, 60], k: 1.2, abondance: 5,
+    { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [12, 70], k: 1.2, abondance: 5,
       profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], style: 'fonceur', couleur: 0x9aa39c, motif: 'argent' },
-    { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [40, 120], k: 0.9, abondance: 3,
+    { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [25, 130], k: 0.9, abondance: 3,
       profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], style: 'fonceur', couleur: 0x4c5c33, motif: 'tachesClaires' },
-    { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [35, 90], k: 0.8, abondance: 2,
+    { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [20, 110], k: 0.8, abondance: 2,
       profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], style: 'glisseur', couleur: 0x8f9a83, motif: 'barres' },
-    { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [25, 55], k: 1.6, abondance: 2,
+    { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [15, 70], k: 1.6, abondance: 2,
       profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], style: 'fonceur', couleur: 0x556a3f, motif: 'bandeLaterale' },
-    { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [20, 55], k: 1.2, abondance: 2,
+    { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [15, 80], k: 1.2, abondance: 2,
       profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], style: 'fonceur', couleur: 0x7d6a4a, motif: 'pointsRouges' },
-    { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [40, 110], k: 0.2, abondance: 2,
+    { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [30, 130], k: 0.2, abondance: 2,
       profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], style: 'glisseur', couleur: 0x3f4a30, motif: 'aucun' },
-    { id: 'silure', nom: 'Silure', form: 'barbu', cm: [80, 200], k: 1.0, abondance: 1,
+    { id: 'silure', nom: 'Silure', form: 'barbu', cm: [60, 220], k: 1.0, abondance: 1,
       profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd', couleur: 0x474b42, motif: 'marbrures' }
 ];
+
+// ---------------------------------------------------------------------------
+// COMPORTEMENTS : où et comment chaque espèce vit (d'après les fiches Wikipédia).
+//   couche    : 'surface' | 'mi-eau' | 'fond'. Une espèce « fond » reste collée au
+//               relief ; elle mord si l'hameçon est posé près du fond, où qu'il soit.
+//   banc      : [min, max] poissons dans un groupe (1 = solitaire).
+//   cohesion  : 0 → 1, attirance vers le groupe.
+//   croisiere : vitesse de nage tranquille (unités/s ; 2 unités ≈ 1 m).
+//   pointe    : vitesse maximale (fuite, attaque, chasse).
+//   virage    : agilité (rad/s de changement de cap) ; un brochet vire peu.
+//   domaine   : rayon de la zone de vie (unités) ; le poisson y reste presque tout le temps.
+//   vue       : distance à laquelle il repère un appât (unités) par bonne visibilité.
+//   humeur    : 'errant' (nage en continu), 'embuscade' (immobile puis bond),
+//               'fouille' (lent, s'arrête souvent pour fouiller le fond).
+//   nocturne  : voit et chasse mieux la nuit (vue × 1,4 la nuit au lieu de × 0,45).
+// ---------------------------------------------------------------------------
+export const COMPORTEMENTS = {
+    gardon:   { couche: 'mi-eau',  banc: [4, 6], cohesion: 0.9, croisiere: 1.3, pointe: 3.6, virage: 1.6, domaine: 14, vue: 6.0, humeur: 'errant' },
+    rotengle: { couche: 'surface', banc: [3, 5], cohesion: 0.8, croisiere: 1.2, pointe: 3.4, virage: 1.5, domaine: 12, vue: 6.0, humeur: 'errant' },
+    ablette:  { couche: 'surface', banc: [5, 8], cohesion: 1.0, croisiere: 2.2, pointe: 4.8, virage: 2.4, domaine: 18, vue: 5.5, humeur: 'errant' },
+    goujon:   { couche: 'fond',    banc: [3, 5], cohesion: 0.8, croisiere: 0.8, pointe: 3.0, virage: 1.8, domaine: 8,  vue: 4.0, humeur: 'fouille' },
+    breme:    { couche: 'fond',    banc: [3, 5], cohesion: 0.7, croisiere: 1.0, pointe: 3.0, virage: 1.0, domaine: 20, vue: 4.5, humeur: 'fouille' },
+    tanche:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 2.6, virage: 0.9, domaine: 9,  vue: 3.5, humeur: 'fouille', nocturne: true },
+    carpe:    { couche: 'fond',    banc: [1, 3], cohesion: 0.5, croisiere: 0.9, pointe: 4.0, virage: 0.9, domaine: 16, vue: 4.5, humeur: 'fouille' },
+    carassin: { couche: 'fond',    banc: [2, 4], cohesion: 0.6, croisiere: 0.8, pointe: 3.0, virage: 1.1, domaine: 10, vue: 4.0, humeur: 'fouille' },
+    perche:   { couche: 'mi-eau',  banc: [3, 5], cohesion: 0.9, croisiere: 1.5, pointe: 5.0, virage: 1.7, domaine: 12, vue: 7.0, humeur: 'errant' },
+    chevesne: { couche: 'mi-eau',  banc: [2, 4], cohesion: 0.6, croisiere: 1.6, pointe: 5.0, virage: 1.4, domaine: 18, vue: 6.5, humeur: 'errant' },
+    brochet:  { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 0.4, pointe: 8.5, virage: 0.8, domaine: 7,  vue: 8.0, humeur: 'embuscade' },
+    sandre:   { couche: 'fond',    banc: [1, 2], cohesion: 0.4, croisiere: 0.9, pointe: 6.5, virage: 1.0, domaine: 14, vue: 7.5, humeur: 'errant', nocturne: true },
+    'black-bass': { couche: 'mi-eau', banc: [1, 1], cohesion: 0, croisiere: 0.7, pointe: 6.0, virage: 1.3, domaine: 8, vue: 7.0, humeur: 'embuscade' },
+    truite:   { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 1.4, pointe: 6.5, virage: 1.8, domaine: 11, vue: 7.0, humeur: 'errant' },
+    anguille: { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 3.2, virage: 1.4, domaine: 8,  vue: 2.5, humeur: 'fouille', nocturne: true },
+    silure:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.6, pointe: 4.5, virage: 0.6, domaine: 10, vue: 3.5, humeur: 'embuscade', nocturne: true }
+};
 
 export const STYLES_COMBAT = {
     nerveux: {
