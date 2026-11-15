@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v186**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v189**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -848,7 +848,7 @@ Ce qui reste dans le code (vérifié) :
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **2689 vérifications vertes** (v186) (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **2794 vérifications vertes** (v189) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
@@ -860,12 +860,14 @@ du poisson dans la bourriche.
 
 ### 15.1 Physique de l'eau (gain réalisme le plus fort, effort moyen)
 
-- [ ] **Température de l'eau + saisons + thermocline.** Eau froide (< 8 °C) :
-  poissons léthargiques, carnassiers encore actifs. Eau chaude (> 22 °C) : poissons
-  au fond, meilleure pêche à l'aube et au crépuscule. En été, la thermocline sépare
-  l'eau chaude de surface de l'eau froide profonde (le poisson se tient juste
-  au-dessus). À brancher sur les `COMPORTEMENTS` d'`especes.js` (vitesse, couche,
-  activité) ; rend les fosses et la barque vraiment utiles.
+- [x] **Température de l'eau + saisons + thermocline** — LIVRÉ v189. Température de surface = saison
+  (≈ 24 °C mi-été, ≈ 3 °C mi-hiver) + heure (± 1,5 °C) + météo, avec inertie (aucun à-coup) ; 4 saisons de
+  2 jours de jeu. Eau froide (< 8 °C) : léthargie (délai × 1 + 1,5 L, nage plus lente), carnassiers
+  (brochet, sandre, perche, black-bass) encore actifs. Eau chaude (> 22 °C) : poissons à la couche la plus
+  basse permise, meilleure pêche à l'aube et au crépuscule (× 0,8 contre × 1,8 à midi à 26 °C). **Thermocline**
+  en été (1,4 à 2,0 m) : les poissons se tiennent juste au-dessus ; absente en hiver (eau brassée). Une seule
+  source (`etat.thermocline`) pour la nage, le widget de profondeur (bande + « 🌡 été · eau 25,5 °C ·
+  thermocline à 2,0 m ») et le carnet. L'effet température multiplie le facteur de l'étape A (un seul chemin).
 - [x] **Heures actives** — LIVRÉ v186. La touche dépend de l'heure (`physique.js`) : aube et crépuscule
   = meilleures heures (délai × 0,75), midi neutre pour un diurne (× 1,0), nuit × 2,5 ; les espèces
   `nocturne` (sandre, silure, anguille, tanche) font l'inverse (nuit × 1,0, midi × 2,5). Facteur

@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import { etat } from './etat.js?v=145';
-import { ESCHES, ESCHE_DEPART } from './esches.js?v=184';
+import { ESCHES, ESCHE_DEPART } from './esches.js?v=189';
 
 export function creerStocks(deps) {
     const {

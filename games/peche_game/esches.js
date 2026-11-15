@@ -95,7 +95,8 @@ export function creerEsches(deps) {
         const pos = etat.floatGroup.position;
         const quiver = modeQuiver.estActif();
         const verdict = verdictFond(pos.x, pos.z, etat.profondeurLigne, quiver);
-        return { couche: coucheHamecon(etat.profondeurLigne, verdict.profondeurEau, quiver), substrat: verdict.substrat };
+        // §15.1 : en été, la thermocline fait office de fond pour les poissons (etat.profondeurUtile).
+        return { couche: coucheHamecon(etat.profondeurLigne, etat.profondeurUtile(verdict.profondeurEau), quiver), substrat: verdict.substrat };
     }
 
     function probabilite(especeId) {

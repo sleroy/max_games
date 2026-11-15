@@ -154,6 +154,8 @@ export function creerCarnetUI(deps) {
             + (FOND_BORD / 2).toFixed(1).replace('.', ',') + ' m</b> au bord → <b>'
             + (FOND_CENTRE / 2).toFixed(1).replace('.', ',') + ' m</b> au centre → <b>'
             + (profMax / 2).toFixed(1).replace('.', ',') + ' m</b> dans les fosses — plus c’est foncé, plus c’est profond.</div>';
+        // §15.1 : saison, température et thermocline (le même texte que le widget de profondeur).
+        legende += '<div class="map-profondeur" id="carnetEau">' + etat.texteEau() + '</div>';
         legende += '<div class="map-legende">';
         etat.ZONES_CARTE.forEach(function (zone) {
             const noms = SPECIES.filter(function (s) {

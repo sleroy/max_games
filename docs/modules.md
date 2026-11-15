@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v188** (cheat « aquarium » : eau transparente)
+> Dernière mise à jour : **2026-11-15** · jeu **v189** (saisons, température et thermocline : `physique.js`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -82,7 +82,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `obstacles.js` | Obstacles aquatiques (§14.2) : ponton (aussi poste de pêche), écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 671 | Monde / obstacles |
 | `esches.js` | Esches (§15.2) : maïs, ver, pain / flocons, bouillette, vif / leurre. Modèle pur (`ESCHES`, `coucheHamecon`, `efficaciteEsche` : espèce × couche × substrat) et système (`creerEsches` : décision d'un poisson arrivé sur l'hameçon, une fois par poisson et par lancer, message discret après plusieurs refus, étiquette du widget). Générateur local, jamais `rand()` | 150 | Esches / pêche |
 | `substrats.js` | Types de fond (§14.3) : sable, gravier, vase, roche, herbier. Grille déterministe (sans `rand()`) dérivée du relief, des fosses, de l'exposition au vent et des nénuphars/roseaux du décor. Source unique de la texture du fond (`pixelsFond`, `habillerFond`), de la carte du carnet (`rectsCarte`), du verdict de fond sous l'hameçon (`verdictFond`, accrochages vase / herbier / roche) et de l'habitat des poissons (`attirer`, `COMPORTEMENTS[...].substrats`). Plafond 800 | 522 | Monde / fonds |
-| `physique.js` | Physique de l'eau (§15.1) : heures actives et pression. Modèle pur (`heureDeJeu`, `phaseDeHeure`, `periodeDeJournee`, `texteHeure`, `activiteHoraire`, `facteurHoraire`, `PRESSION_CIBLE`, `facteurPression`, `limiterFacteur`, `flecheTendance`) et système (`creerPhysique` : pression suivie image par image, `etat.facteurTouche(comp)` appelé par `combat.js`, ligne « heure · pression » du HUD, `crochets` de test repris dans `window.__game` par `script.js`). Aucun `rand()`. Plafond 800 | ~230 | Météo / physique |
+| `physique.js` | Physique de l'eau (§15.1) : heures actives, pression, **saisons, température de l'eau, thermocline**. Modèle pur (`heureDeJeu`, `phaseDeHeure`, `periodeDeJournee`, `texteHeure`, `activiteHoraire`, `facteurHoraire`, `PRESSION_CIBLE`, `facteurPression`, `limiterFacteur`, `flecheTendance`, `saisonDe`, `temperatureSaison`, `temperatureJour`, `temperatureCible`, `intensiteThermocline`, `profondeurThermocline`, `temperatureEnProfondeur`, `facteurTemperature`, `vitaliteThermique`, `texteEauPour`) et système (`creerPhysique` : pression, année, température et thermocline suivies image par image, `etat.facteurTouche(comp)` appelé par `combat.js`, `etat.thermocline` = **seule** source de la couche d'eau chaude, lignes de HUD et de widget, `crochets` de test repris dans `window.__game` par `script.js`). Aucun `rand()`. Plafond 800 | ~410 | Météo / physique |
 | `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars (expose aussi leurs positions à `obstacles.js`) | 220 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
@@ -512,3 +512,32 @@ Demande du joueur : `idées.md` §15.1 (la touche était purement aléatoire : `
   `setPression(1013, 0)` : facteur ×1 posé explicitement pour les scénarios historiques. `forceBite(nocturne = false)` : le poisson du
   test est diurne (il était `nocturne: true` pour la vue ; à midi les deux voient pareil).
 - Tests : `scenario-physique.mjs` (78).
+
+
+## 17. Saisons, température de l'eau et thermocline (v189) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §15.1 (température + saisons + thermocline), étape B.
+
+- **Saisons** : 4 saisons × 2 jours de jeu (840 s), année de 56 min ; `anneePhase` 0 = début du printemps, départ à 0,12 (printemps, ≈ 13 °C).
+  L'année n'avance que si l'horloge tourne (`etat.horlogeGelee` la fige) : les tests restent déterministes.
+- **Température de surface** = `temperatureSaison` (13,5 °C ± 10,5 : ≈ 24 °C mi-été, ≈ 3 °C mi-hiver) + `temperatureJour` (± 1,5 °C, max 16 h) +
+  météo (rafales − 0,5, pluie − 1,2), suivie avec une inertie de 35 s (aucun à-coup).
+- **Thermocline** (`etat.thermocline` : `actif`, `profondeur`, `intensite`, `plafondPoisson`, `tSurface`, `tFond`) : intensité = (T de saison − 15) / 6
+  bornée à [0 ; 1] (la température imposée la remplace), profondeur 2,8 + 1,2 × intensité unités (1,4 à 2,0 m), active dès 0,1 : de la mi-printemps à la
+  mi-automne ; **absente en hiver** (eau brassée). Plafond des poissons = −profondeur + 0,3. Température sous la thermocline ≈ 9 °C.
+- **Qui lit `etat.thermocline`** (une seule valeur, aucune copie) : `comportement.js` (nage : `ajusterCouche`, `plancherPoisson`, `hameconDansZone` ; vitesse :
+  `vitaliteEau`), `ligne.js` (bande dans la coupe de l'eau + couche d'esche), `esches.js` (`profondeurUtile`), `carnetUI.js` (ligne sous la carte, même texte
+  `etat.texteEau()` que le widget `#depthEau`), `physique.js` (`etat.facteurTouche`).
+- **Effets** : eau froide (< 8 °C) = léthargie : délai × (1 + 1,5 L), carnassiers (`COMPORTEMENTS[…].carnassier`, **les mêmes que `CARNASSIERS` de `poissons.js`** :
+  brochet, sandre, perche, black-bass) × (1 + 0,3 L) ; nage × (1 − 0,55 L) (carnassiers 0,15). Eau chaude (> 22 °C) : poissons à la couche la plus basse permise
+  (juste au-dessus de la thermocline) ; délai × (1 + 0,8 C) à midi, × (1 − 0,2 C) à l'aube et au crépuscule. **Un seul chemin de calcul** :
+  `facteurTouche = limiter(horaire × pression × température)`, borné à [0,5 ; 6].
+- **Poissons** : un poisson de fond reste collé au relief SAUF sous la thermocline (il se tient au-dessus) ; un poisson de mi-eau trop profond remonte ;
+  `data.profNat` mémorise sa couche naturelle et il la retrouve quand l'eau est brassée. L'hameçon d'un poisson de fond doit être à la thermocline
+  (fosse, été) ; plongé dessous, il n'attire rien.
+- **Crochets de test** (`window.__game`) : `setSaison(nom | null)`, `getSaison()`, `setTemperatureEau(t | null)`, `getTemperatureEau()`, `getTemperatureCible()`,
+  `getThermocline()`, `getTemperatureEnProfondeur(z)`, `getTexteEau()`.
+- **Harnais** : `debutScenario()` pose aussi `setTemperatureEau(15)` (ni léthargie, ni chaleur, ni thermocline : facteur ×1, poissons à leur couche).
+- **Versions** : `?v=189` partout (index.html, script.js, imports de `especes`, `esches`, `poissons`, `substrats`, `stocks`, `ligne`, `comportement`, `combat`, `meteo`,
+  `carnetUI`, `physique`, `sound`) : les importeurs d'un module modifié portent la même version, sinon un navigateur garde l'ancien fichier en cache.
+- `script.js` : +2 lignes (ratchet 3011 → 3013). Tests : `scenario-physique-eau.mjs` (79).

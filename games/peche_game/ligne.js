@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
 import { etat } from './etat.js?v=145';
-import { coucheHamecon } from './esches.js?v=184';
+import { coucheHamecon } from './esches.js?v=189';
 
 export function creerLigne(deps) {
     const {
@@ -161,8 +161,15 @@ export function creerLigne(deps) {
         coupe.fil.style.height = hameconPct.toFixed(1) + '%';
         // La même couche que celle des esches (esches.js) : ce que montre le schéma est ce qui compte.
         const zone = etat.modeQuiver.estActif() ? 'au fond (quiver)'
-            : coucheHamecon(etat.profondeurLigne, profLocale, false);
+            : coucheHamecon(etat.profondeurLigne, etat.profondeurUtile(profLocale), false);   // §15.1 : thermocline = fond des poissons
         coupe.zone.textContent = zone;
+        // §15.1 : la thermocline (même valeur que la nage des poissons et que le carnet).
+        if (coupe.thermo) {
+            const tc = etat.thermocline;
+            const visible = !!tc && tc.actif && tc.profondeur < profLocale;
+            coupe.thermo.hidden = !visible;
+            if (visible) { coupe.thermo.style.top = Math.min(96, (tc.profondeur / COUPE_REF) * 100).toFixed(1) + '%'; }
+        }
         // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
         // Accroché dans la vase, la décision du jeu (accrochage) fait foi : le bouchon
         // tremble de quelques centièmes, ce qui ne doit pas faire clignoter l'alerte.

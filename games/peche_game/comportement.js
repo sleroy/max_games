@@ -60,11 +60,36 @@ export function creerComportement(deps) {
         if (data.couche === 'fond') {
             // Sur le sable ou le gravier, l'hameçon trop long REPOSE sur le fond (§14.3) : il ne
             // passe pas dessous. Ailleurs (vase, herbier, roche) il s'accroche : plus de touche.
-            const fond = fondY(floatGroup.position.x, floatGroup.position.z);
-            const haut = Math.max(etat.HOOK_DEPTH, fond) - fond;
+            // §15.1 : en été la thermocline relève ce « fond » (le poisson de fond reste au-dessus d'elle).
+            const fondReel = fondY(floatGroup.position.x, floatGroup.position.z) + 0.45;
+            const fondUtile = plancherPoisson(fondReel);
+            const fond = fondUtile - 0.45;
+            // Thermocline : un hameçon plongé SOUS elle (eau froide) n'attire personne ; sur un vrai fond,
+            // un hameçon « plus bas que le relief » repose dessus (comme avant).
+            const haut = (fondUtile > fondReel ? etat.HOOK_DEPTH : Math.max(etat.HOOK_DEPTH, fond)) - fond;
             return haut <= 1.2 && haut >= -0.4;
         }
-        return !zone || (etat.HOOK_DEPTH >= zone[0] - 0.5 && etat.HOOK_DEPTH <= zone[1] + 0.5);
+        const tranche = etat.zoneUtile ? etat.zoneUtile(zone) : zone;
+        return !tranche || (etat.HOOK_DEPTH >= tranche[0] - 0.5 && etat.HOOK_DEPTH <= tranche[1] + 0.5);
+    }
+
+    // §15.1 (physique.js) : la thermocline et la chaleur gardent le poisson au-dessus de l'eau froide ;
+    // l'eau froide le ralentit. Hors saison chaude, ces trois fonctions ne changent rien.
+    function plancherPoisson(y) { return etat.plancherPoisson ? etat.plancherPoisson(y) : y; }
+    function vitaliteEau(c) { return etat.vitaliteEau ? etat.vitaliteEau(c) : 1; }
+    function ajusterCouche(data, dt) {
+        if (!etat.profondeurPhysique) { return; }
+        const ref = data.profNat === undefined ? data.depth : data.profNat;
+        const voulue = etat.profondeurPhysique(ref);
+        if (data.profNat === undefined) {
+            if (Math.abs(voulue - data.depth) < 1e-6) { return; }       // rien à changer : on ne touche à rien
+            data.profNat = data.depth;                                  // on garde la profondeur naturelle
+        }
+        data.depth += (voulue - data.depth) * Math.min(1, dt * 1.5);
+        if (voulue === data.profNat && Math.abs(data.depth - data.profNat) < 0.01) {
+            data.depth = data.profNat;                                   // l'eau est brassée : il retrouve sa couche
+            data.profNat = undefined;
+        }
     }
 
     // ---------------------------------------------------------------------------
@@ -169,6 +194,7 @@ export function creerComportement(deps) {
         else if (etat === 'bond') { vitCible = c.pointe * 0.75; }
         else if (etat === 'fouille') { vitCible = c.croisiere * 0.2; }
         else if (etat === 'repos') { vitCible = c.croisiere * 0.35; }
+        vitCible *= vitaliteEau(c);          // eau froide : léthargie (physique.js)
         // Un poisson ferré puis perdu reste nerveux (voir punishFish) : il se calme peu à peu.
         const sp = Math.hypot(data.vx, data.vz);
         let cap = sp > 0.01 ? Math.atan2(data.vz, data.vx) : (data.cap || 0);
@@ -231,10 +257,12 @@ export function creerComportement(deps) {
         data.vz = Math.sin(cap) * v;
         // Un poisson « de fond » suit le relief ; les autres gardent leur tranche d'eau.
         if (data.couche === 'fond') {
-            const cibleY = fondY(fish.position.x, fish.position.z) + 0.45;
+            const cibleY = plancherPoisson(fondY(fish.position.x, fish.position.z) + 0.45);
             // Suivi du relief : 3 par seconde (1,5 avant). Les bords des fosses ont des
             // pentes de 30 % ; à 1,5 un poisson lancé à 4 unités/s décollait de > 1,4.
             data.depth += (cibleY - data.depth) * Math.min(1, dt * 3);
+        } else {
+            ajusterCouche(data, dt);
         }
     }
 

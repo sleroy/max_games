@@ -3,44 +3,44 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=188';
+import { SoundEngine } from './sound.js?v=189';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=183';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
 import { creerClassement } from './classement.js';
 import { dessinerPortrait } from './portraits.js?v=140';
-import { creerPoissons } from './poissons.js?v=183';
+import { creerPoissons } from './poissons.js?v=189';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
     ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=183';
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
-import { creerSubstrats } from './substrats.js?v=183';
-import { creerEsches } from './esches.js?v=184';
+import { creerSubstrats } from './substrats.js?v=189';
+import { creerEsches } from './esches.js?v=189';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=184';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=186';
-import { creerComportement } from './comportement.js?v=184';
+import { creerCombat } from './combat.js?v=189';
+import { creerComportement } from './comportement.js?v=189';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
-import { creerCarnetUI } from './carnetUI.js?v=184';
+import { creerCarnetUI } from './carnetUI.js?v=189';
 import { creerBoutique } from './boutique.js?v=184';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
 import { creerAmorcage } from './amorcage.js?v=179';
 import { creerFrein } from './frein.js?v=182';
-import { creerLigne } from './ligne.js?v=184';
+import { creerLigne } from './ligne.js?v=189';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
-import { creerMeteo } from './meteo.js?v=186';
-import { creerPhysique } from './physique.js?v=186';
+import { creerMeteo } from './meteo.js?v=189';
+import { creerPhysique } from './physique.js?v=189';
 import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=179';
-import { creerStocks } from './stocks.js?v=184';
+import { creerStocks } from './stocks.js?v=189';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=184';
@@ -1574,7 +1574,7 @@ const {
     coupe: {
         cadre: document.getElementById('depthCross'), fond: document.getElementById('depthBottomLine'),
         fil: document.getElementById('depthHookLine'), hamecon: document.getElementById('depthHook'),
-        zone: document.getElementById('depthZoneLabel'), indice: document.getElementById('depthHint'), substrat: document.getElementById('depthFond')
+        zone: document.getElementById('depthZoneLabel'), indice: document.getElementById('depthHint'), substrat: document.getElementById('depthFond'), thermo: document.getElementById('depthThermo')
     }
 });
 
@@ -1895,7 +1895,7 @@ const {
 } = creerMeteo({
     POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound
 });
-const physique = creerPhysique({ weatherName, setWeather, hud: document.getElementById('heureEau') });
+const physique = creerPhysique({ weatherName, setWeather, hud: document.getElementById('heureEau'), hudEau: document.getElementById('depthEau'), dureeJour: DAY_LENGTH });
 
 let birds;
 let libellules;

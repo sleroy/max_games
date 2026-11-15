@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE
-} from './especes.js?v=183';
+} from './especes.js?v=189';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;

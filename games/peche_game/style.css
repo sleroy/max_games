@@ -993,6 +993,32 @@ button, .crank {
     text-overflow: ellipsis;
 }
 
+/* Température de l'eau, saison et thermocline (§15.1) : sous l'esche. */
+.depth-eau {
+    margin-top: 2px;
+    font-size: 0.66rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Thermocline dans la coupe de l'eau : une bande étroite, orangée au-dessus (chaud), bleue au-dessous (froid). */
+.depth-thermo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 30%;
+    height: 7px;
+    margin-top: -3px;
+    background: linear-gradient(rgba(255, 170, 90, 0.55), rgba(90, 160, 255, 0.55));
+    border-top: 1px solid rgba(255, 210, 150, 0.9);
+    pointer-events: none;
+}
+
+.depth-thermo[hidden] {
+    display: none;
+}
+
 /* Plage de profondeur du bouchon équipé (« Anglaise : 0,3 à 2 m »). */
 .depth-range {
     margin-top: 2px;

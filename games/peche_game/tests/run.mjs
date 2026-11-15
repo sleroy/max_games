@@ -56,15 +56,18 @@ import { run as scenarioDandine } from './scenario-dandine.mjs';
 import { run as scenarioSubstrats } from './scenario-substrats.mjs';
 import { run as scenarioEsches } from './scenario-esches.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
+import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
 // historiques supposent un facteur ×1 : on le pose explicitement (midi, 1013 hPa stable)
-// au lieu de laisser l'heure et la météo dériver d'un scénario à l'autre.
+// au lieu de laisser l'heure et la météo dériver d'un scénario à l'autre. Même chose pour l'eau :
+// 15 °C = ni léthargie, ni chaleur, ni thermocline (l'eau est brassée) : facteur ×1, poissons à leur couche.
 function debutScenario() {
     G().setGraine(GRAINE_TESTS);
     G().setHeure(12);
     G().setPression(1013, 0);
+    G().setTemperatureEau(15);
 }
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
@@ -154,6 +157,8 @@ try {
     scenarioEsches();           // esches (v184) : profils, touches, stock, persistance, boutique
     debutScenario();
     scenarioPhysique();         // physique de l'eau (v186) : heures actives, pression, facteur de touche
+    debutScenario();
+    scenarioPhysiqueEau();      // physique de l'eau (v189) : température, saisons, thermocline
     debutScenario();
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
 } catch (error) {
