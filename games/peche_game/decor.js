@@ -102,8 +102,13 @@ export function creerDecor(deps) {
     scene.add(foliageInst);
     let trunkCount = 0;
     let foliageCount = 0;
+    // Positions du décor exposées à obstacles.js (aucun tirage de plus : simples copies).
+    const arbres = [];
+    const rochers = [];
+    const roseaux = [];
 
     function addTree(x, z, scale) {
+        arbres.push({ x: x, z: z, r: 1.2 * scale });
         _vec.set(x, 1.5 * scale + RIVE_Y, z);
         _scl.set(scale, scale, scale);
         _quat.identity();
@@ -184,6 +189,7 @@ export function creerDecor(deps) {
         _scl.set(1, h, 1);
         _mat4.compose(_vec, _quat, _scl);
         reedInst.setMatrixAt(reedCount++, _mat4);
+        roseaux.push({ x: x, z: z });
     }
     reedInst.count = reedCount;
     reedInst.instanceMatrix.needsUpdate = true;
@@ -206,9 +212,10 @@ export function creerDecor(deps) {
         _scl.set(s, s, s);
         _mat4.compose(_vec, _quat, _scl);
         rockInst.setMatrixAt(i, _mat4);
+        rochers.push({ x: _vec.x, z: _vec.z, r: s });
     }
     rockInst.instanceMatrix.needsUpdate = true;
     scene.add(rockInst);
 
-    return { lilyPads: lilyPads };
+    return { lilyPads: lilyPads, arbres: arbres, rochers: rochers, roseaux: roseaux };
 }

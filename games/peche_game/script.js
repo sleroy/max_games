@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=173';
+import { SoundEngine } from './sound.js?v=174';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=173';
@@ -13,7 +13,8 @@ import { creerPoissons } from './poissons.js?v=173';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
     ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=173';
-import { creerDecor } from './decor.js?v=173';
+import { creerDecor } from './decor.js?v=174';
+import { creerObstacles } from './obstacles.js?v=174';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
@@ -1369,7 +1370,7 @@ scene.add(shore);
 // Décor fixe (arbres, roseaux, rochers, nénuphars) : module dédié.
 // Appelé ICI et pas ailleurs : le décor consomme rand() dans un ordre
 // précis, qui conditionne la génération du reste du monde.
-const { lilyPads } = creerDecor({
+const decor = creerDecor({
     scene: scene,
     chargerTexture: chargerTexture,
     rand: rand,
@@ -1377,6 +1378,7 @@ const { lilyPads } = creerDecor({
     POND_CENTER: POND_CENTER,
     RIVE_Y: RIVE_Y
 });
+const { lilyPads } = decor;
 
 // ---------------------------------------------------------------------------
 // Vent + girouette
@@ -1687,6 +1689,9 @@ const ANGLE_BASE = Math.atan2(
     POSTE_ANGLER.z - POND_CENTER.z, POSTE_ANGLER.x - POND_CENTER.x);
 let emplacementAngle = ANGLE_BASE;
 let emplacementMarge = POSTE_MARGE;
+// Obstacles aquatiques (ponton, écluse, roches, souches…) : placement sans rand().
+const obstacles = creerObstacles({ scene, POND_CENTER, rayonEtang, fondY, FOSSES, lilyPads, decor, ANGLE_BASE,
+    POSTES, POSTE_ANGLER, POSTE_BOURRICHE, POSTE_MARGE, RIVE_Y });
 
 let BATEAU_PAS_ANGLE = 0.055;
 let BATEAU_PAS_MARGE = 2.4;   // v173 : étang 1,6 × plus grand → pas d'avancée × 1,5
@@ -2285,6 +2290,7 @@ window.__game = {
     angler: angler,
     makeFish: makeFish,
     lilyPads: lilyPads,
+    obstacles: obstacles,
     startCast: startCast,
     hookFish: hookFish,
     getState: function () { return floatState; },

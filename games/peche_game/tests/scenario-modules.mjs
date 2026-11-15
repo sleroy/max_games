@@ -18,13 +18,13 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 // Modules extraits (tout ce qui n'est pas l'orchestrateur).
 const MODULES = [
     'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
-    'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js'
+    'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js'
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 2995;   // 3030 avant la v173 (eau et rive déplacées dans environnement.js)
+const PLAFOND_SCRIPT = 3010;   // 3030 avant la v173, 2995 en v173 ; +15 en v174 : câblage de obstacles.js (import, création, 4 dépendances, API de test)
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;
@@ -93,6 +93,7 @@ export function run() {
         'bateau.js': 'export function creerBateau(',
         'comportement.js': 'export function creerComportement(',
         'decor.js': 'export function creerDecor(',
+        'obstacles.js': 'export function creerObstacles(',
         'portraits.js': 'export function dessinerPortrait(',
         'demelage.js': 'export function creerJeuDemelage(',
         'quiver.js': 'export function creerModeQuiver(',

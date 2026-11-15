@@ -65,6 +65,7 @@ const FILES = {
     lancerPoisson: path.join(GAME_DIR, 'lancerPoisson.js'),
     bateau: path.join(GAME_DIR, 'bateau.js'),
     comportement: path.join(GAME_DIR, 'comportement.js'),
+    obstacles: path.join(GAME_DIR, 'obstacles.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -461,6 +462,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.lancerPoisson, path.join(tmpDir, 'lancerPoisson.js'));
     fs.copyFileSync(FILES.bateau, path.join(tmpDir, 'bateau.js'));
     fs.copyFileSync(FILES.comportement, path.join(tmpDir, 'comportement.js'));
+    fs.copyFileSync(FILES.obstacles, path.join(tmpDir, 'obstacles.js'));
     fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);

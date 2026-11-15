@@ -78,6 +78,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `portraits.js` | Portraits 2D des espèces (fond transparent) | 282 | Combat / UI |
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
 | `especes.js` | **Données** espèces, comportements, styles, touches | 228 | Contenu (ajout d'espèces) |
+| `obstacles.js` | Obstacles aquatiques (§14.2) : ponton, écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 700 | Monde / obstacles |
 | `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars | 214 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
