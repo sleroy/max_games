@@ -281,7 +281,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   espèce attrapée.
 - **Carte de l'étang** dans le carnet : où chercher les poissons (herbiers, roseaux,
   pleine eau, fond).
-- **Tutoriel d'accueil** (montré à la première visite, avec une main animée) et
+- **Tutoriel d'accueil** (accessible depuis l’écran d’accueil, avec une main animée) et
   reboutonnable depuis le carnet.
 - **Reflets sur l'eau** (option du carnet) : un cube-mapping rendu de temps en temps
   (désactivé par défaut car coûteux) ; **désactivé automatiquement** si le rendu échoue.

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=108';
+import { SoundEngine } from './sound.js?v=109';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -3872,7 +3872,7 @@ dragButton.addEventListener('pointerup', () => setDragLoosened(false));
 dragButton.addEventListener('pointercancel', () => setDragLoosened(false));
 dragButton.addEventListener('pointerleave', () => setDragLoosened(false));
 
-// --- Tutoriel d'accueil (montré à la première visite) ----------------------
+// --- Tutoriel d'accueil (accessible depuis l’écran d’accueil) ----------------------
 const TUTORIAL_STEPS = [
     { main: '👆', texte: 'Bienvenue à l’étang du Bois Neuf ! Clique sur l’eau, maintiens pour doser la puissance, puis relâche pour lancer la ligne.' },
     { main: '✊', texte: 'Quand le bouchon mordille puis s’enfonce, clique vite pour ferrer le poisson : un seul essai !' },
@@ -3880,9 +3880,6 @@ const TUTORIAL_STEPS = [
     { main: '🐟', texte: 'Garde le poisson en main et lance-le dans la bourriche 🧺 (comme l’amorce) pour le ranger dans ton carnet.' }
 ];
 let tutorialStepIndex = 0;
-const tutorialStore = (typeof localStorage !== 'undefined') ? localStorage : null;
-const TUTORIAL_KEY = 'peche_tuto_vu';
-
 function renderTutorial() {
     const etape = TUTORIAL_STEPS[tutorialStepIndex];
     tutorialText.textContent = etape.texte;
@@ -3895,13 +3892,6 @@ function openTutorial() {
     tutorialStepIndex = 0;
     renderTutorial();
     tutorial.classList.add('open');
-    if (tutorialStore) {
-        try {
-            tutorialStore.setItem(TUTORIAL_KEY, '1');
-        } catch (error) {
-            // Stockage indisponible : le tutoriel réapparaîtra.
-        }
-    }
 }
 
 function closeTutorial() {
@@ -3911,6 +3901,7 @@ function closeTutorial() {
 function nextTutorialStep() {
     if (tutorialStepIndex >= TUTORIAL_STEPS.length - 1) {
         closeTutorial();
+        if (accueil && accueil.classList.contains('active')) { demarrerJeu(); }
         return;
     }
     tutorialStepIndex += 1;
@@ -3924,17 +3915,8 @@ tutorialOpen.addEventListener('click', () => {
     openTutorial();
 });
 
-let tutorielDejaVu = false;
-if (tutorialStore) {
-    try {
-        tutorielDejaVu = tutorialStore.getItem(TUTORIAL_KEY) === '1';
-    } catch (error) {
-        tutorielDejaVu = false;
-    }
-}
-if (!tutorielDejaVu) {
-    openTutorial();
-}
+const accueilTutoriel = document.getElementById('accueilTutoriel');
+if (accueilTutoriel) { accueilTutoriel.addEventListener('click', openTutorial); }
 
 // --- Carnet : ouverture, difficulté, accessibilité -------------------------
 journalButton.addEventListener('click', () => {

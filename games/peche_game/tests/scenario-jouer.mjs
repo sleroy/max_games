@@ -112,7 +112,16 @@ export function run() {
             G().floatGroup.position.z - G().rodTip.z), 0, 0.01);
     checkEqual('le score reste à zéro', G().getScore(), 0);
 
-    G().demarrerJeu();
+    G().afficherAccueil();
+    fire('accueilTutoriel', 'click');
+    checkEqual('le bouton d’accueil ouvre le tutoriel', G().isTutorialOpen(), true);
+    fire('tutorialClose', 'click');
+    checkEqual('passer le tutoriel laisse le menu ouvert', G().isAccueilVisible(), true);
+    fire('accueilTutoriel', 'click');
+    for (let stepIndex = 0; stepIndex < 4; stepIndex++) {
+        fire('tutorialNext', 'click');
+    }
+    checkEqual('terminer le tutoriel démarre la partie', G().isAccueilVisible(), false);
 }
 
 export default run;
