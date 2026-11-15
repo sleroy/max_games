@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v139**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v140**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -222,6 +222,9 @@
   jeu (deux horloges mélangées) (v138).
 - [x] **Bug corrigé** : bouton **Amorce** et bouton **Bateau** superposés en bas à
   gauche — l'amorce monte au-dessus dès que la barque est débloquée (v139).
+- [x] **Barque pilotable au DOIGT** (v140) : pad **◀ ▲ ▶** dans le pouce droit
+  (tap = un pas, maintenir = ramer en continu), affiché seulement à bord et ligne
+  au repos. Avant, la barque ne se pilotait qu'au clavier : impossible sur tablette.
 
 ## 14. À faire — demandes du 2026-11-15
 
@@ -343,7 +346,7 @@ bruitages à remplacer, banc d'origine à rejoindre après une capture.
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **1577 vérifications vertes** (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **1588 vérifications vertes** (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
@@ -371,6 +374,15 @@ du poisson dans la bourriche.
   fermée, puis coup de feu juste après la pluie.
 - [ ] **Eau trouble après la pluie.** La vision par espèce existe déjà : ajouter une
   turbidité qui la réduit (pluie, vent fort, barque qui remue le fond).
+- [ ] **Pluie = surface agitée → plus de fausses touches.** Sous la pluie, la surface
+  vit (gouttes, clapot) : le bouchon bouge pour de mauvaises raisons. Réaliste et
+  déjà cohérent avec le catalogue de fausses touches existant : augmenter leur
+  nombre et/ou leur amplitude quand `weatherPluie` monte. **Rien de tel aujourd'hui**
+  (vérifié : la pluie n'a aucun effet sur les touches).
+- [ ] **Vent fort = houle plus marquée.** Le vent fait déjà DÉRIVER le bouchon
+  (`appliquerMouvement`, ligne tenue) : le rendre plus lisible quand les rafales
+  montent (amplitude de la houle et dérive accrues), pour que le joueur comprenne
+  que la lecture du bouchon devient plus difficile.
 
 ### 15.2 L'esche — le manque le plus visible
 
@@ -424,7 +436,32 @@ du poisson dans la bourriche.
 - **Marées et cycle lunaire** : un étang n'a pas de marée ; la lune n'aurait aucun
   effet mécanique crédible ici.
 
-### 15.7 Ordre suggéré
+### 15.7 Ce qui est DÉJÀ réaliste (vérifié dans le code — ne pas refaire)
+
+Ces points de la liste de départ existent et fonctionnent : ils sont notés ici pour
+qu'on ne les « rajoute » pas une deuxième fois.
+
+- [x] **Le poisson goûte et recrache** : c'est exactement le rôle des **fausses
+  touches** (`TOUCHES` / `choisirTouche(false, …)`), propres à chaque espèce.
+- [x] **Ferrage trop tard** : la touche ratée existe (fenêtre de ferrage
+  `BITE_WINDOW` × sensibilité du bouchon) ; le poisson repart et devient plus
+  méfiant (`punishFish` : plus agressif, plus rapide, plus difficile).
+- [x] **Canne qui plie selon le poisson** : `rodBend` déforme le blank pendant le
+  combat et le lancer.
+- [x] **Vase et algues** : la vase est un accrochage à part entière (elle « aspire »,
+  rythme de clics ≈ 3/s) et les nénuphars accrochent aussi.
+- [x] **Sons d'éclaboussure et de poisson** : éclaboussure réelle (domaine public),
+  plouf de l'amorce, poisson qui saute (Pixabay), poisson au sol, épuisette.
+- [x] **Vent sur la ligne** : le vent fait dériver le bouchon pendant la touche, et
+  dévie le lancer du poisson dans la bourriche (`FISH_THROW_WIND`).
+- [x] **Vision réaliste** : portée par espèce, réduite la nuit (sauf nocturnes) et
+  sous la pluie, champ de vision ±120°.
+- [x] **Zone de vie par espèce** : chaque poisson reste dans son domaine et sa
+  couche (surface / mi-eau / fond).
+- [x] **Frein « manuel »** : le bouton **Lâcher du fil** (maintenir = laisser filer)
+  existe ; ce qui manque est le réglage fin et le « run » du poisson (15.3).
+
+### 15.8 Ordre suggéré
 
 1. **Température / saisons / heures actives** (15.1) — change la sensation de jeu.
 2. **Appâts** (15.2) — comble le manque le plus visible.
@@ -434,3 +471,85 @@ du poisson dans la bourriche.
 Ces idées s'articulent avec les **fonds** (14.3) et les **obstacles** (14.2) : un
 substrat + une température + une heure + une esche, c'est ce qui décide vraiment
 qu'un poisson mord.
+
+## 16. Packaging et découpage — garder des fichiers JS petits (coût LLM)
+
+**Constat mesuré (2026-11-15)** : `script.js` fait **9 581 lignes** ; tout le reste
+tient déjà bien : `sound.js` 798, `portraits.js` 282, `demelage.js` 281,
+`especes.js` 228, `classement.js` 111, `quiver.js` 105, `carnet.js` 88
+(total ≈ 11 474 lignes de JS). Chaque modification d'une fonctionnalité oblige donc
+à ouvrir un fichier de 9,5 k lignes : le coût (temps, contexte, risque de régression)
+vient de là, pas du nombre de fonctionnalités.
+
+### 16.1 Objectif chiffré
+
+- [ ] **Aucun module au-dessus de ~700–800 lignes** (hors liste de dérogations
+  temporaires, qui doit se réduire à chaque passe).
+- [ ] **`script.js` devient un simple orchestrateur** : importe les modules, branche
+  les événements, garde la boucle `animate()`. Cible : **< 800 lignes**.
+- [ ] **Une modification de fonctionnalité touche 1 à 2 fichiers** (le module + son
+  scénario de test).
+
+### 16.2 Découpage proposé (ordre de valeur décroissante)
+
+Un module = une responsabilité, avec **injection de dépendances** comme le font
+déjà `demelage.js` et `quiver.js` (`creerXxx({ canvas, panel, … })`) : aucun accès
+direct aux variables globales, donc testable sans navigateur.
+
+- [ ] `environnement.js` — étang : contour par harmoniques, relief/fosses,
+  `profondeurLocale`, `rayonEtang`, rive, maillage d'eau et shader.
+- [ ] `meteo.js` — cycle jour/nuit, météo (beau / rafales / pluie), vent, et plus
+  tard la pression et la température (section 15.1).
+- [ ] `poissons.js` — peuplement, déplacement, bancs, vision, zone de vie,
+  spécimens hors norme, punition après une touche ratée.
+- [ ] `combat.js` — épreuve de force, frein, épuisette (15.3), accrochages
+  (vase / nénuphars / futurs obstacles).
+- [ ] `boutique.js` — XP, achats, rendu de la boutique (bouchons, scions, esches).
+- [ ] `hud.js` — compteurs, panneaux, messages, infobulles, mise en page.
+- [ ] `bateau.js` — modèle, textures générées, déplacement, pad tactile.
+- [ ] `obstacles.js` — ponton, roches, arbres immergés (section 14.2), avec leur
+  accrochage et leur attraction de poissons.
+
+### 16.3 Règles de découpage (pour rester peu coûteux)
+
+- [ ] **Données séparées de la logique** : tout le contenu (espèces, bouchons,
+  scions, esches, obstacles) en fichiers de données purs (`especes.js` est le
+  modèle à suivre). Une nouvelle espèce = une ligne de données, pas de la logique.
+- [ ] **Un scénario de test par module** (`scenario-<module>.mjs`), branché dans
+  `tests/run.mjs` : on peut modifier un module sans relire les autres.
+- [ ] **`docs/modules.md`** : tableau *fonctionnalité → fichier → responsabilité →
+  lignes max → scénario de test*. Un agent (ou un humain) lit ce tableau puis
+  ouvre **un seul** fichier au lieu de fouiller 9,5 k lignes.
+- [ ] **Pas de big-bang** : une extraction par livraison, tests verts à chaque fois
+  (comme les extractions v106–v108 de `especes.js`, `classement.js`, `carnet.js`).
+- [ ] **Garde-fou automatisé** : un test statique (`scenario-static.mjs`) échoue si
+  un module dépasse son plafond de lignes → la règle reste vraie dans le temps.
+- [ ] **Versions de cache** : conserver `?v=N` sur chaque import (exigence du test
+  statique actuel : `sound.js` et `index.html` doivent partager la même version) ;
+  centraliser l'incrément pour ne pas l'oublier.
+
+### 16.4 Chargement et packaging de production
+
+- [ ] **Le développement reste sans build** : modules ES natifs, `importmap` déjà en
+  place pour `three`. On ouvre `index.html` via un serveur statique, rien d'autre.
+- [ ] **Chargement paresseux** (`import()` dynamique) pour les fonctionnalités rares
+  ou lourdes : mini-jeu de démêlage, portraits d'espèces, sonar, future épuisette.
+  Le téléphone télécharge et évalue moins de code au démarrage.
+- [ ] **Build de production optionnel** (jamais une dépendance pour développer ni
+  pour tester) : `esbuild` → un fichier minifié + *hash* de contenu dans
+  `dist/`, publié sur GitHub Pages. Avantages : un seul aller-retour réseau, cache
+  immutable, code source inchangé et lisible.
+- [ ] **Assets** : garder les textures/sons CC0 dans `assets/` (KTX2 compressé déjà
+  utilisé) et ne jamais inliner de binaire dans le JS.
+- [ ] **Mesure du gain** : compter les lignes par module avant/après, et vérifier
+  qu'une modification typique ne touche qu'un ou deux fichiers.
+
+### 16.5 Ordre suggéré
+
+1. `environnement.js` (le plus gros bloc, et il bougera avec l'étang agrandi 14.1).
+2. `poissons.js` puis `combat.js` (le cœur du jeu, et les futurs 15.1/15.3).
+3. `hud.js` et `boutique.js`.
+4. `bateau.js`, puis `meteo.js` / `obstacles.js` quand leurs sections arrivent.
+
+> Faire le découpage **avant** l'étang agrandi (14.1) et les fonds (14.3) évite de
+> déplacer du code deux fois.
