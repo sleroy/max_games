@@ -60,6 +60,7 @@ export function run() {
     const attendus = {
         'environnement.js': 'export function ajouterFond(',
         'poissons.js': 'export function creerPoissons(',
+        'messages.js': 'export function creerMessages(',
         'ondulations.js': 'export function creerOndulations(',
         'bourriche.js': 'export function creerBourriche(',
         'decor.js': 'export function creerDecor(',
