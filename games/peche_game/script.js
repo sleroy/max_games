@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=161';
+import { SoundEngine } from './sound.js?v=162';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -36,6 +36,7 @@ import { creerMeteo } from './meteo.js?v=158';
 import { creerVie } from './vie.js?v=159';
 import { creerSonar } from './sonar.js?v=160';
 import { creerStocks } from './stocks.js?v=161';
+import { creerJournal } from './journal.js?v=162';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -165,6 +166,7 @@ lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish =
 lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
 lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuDemelage = v; });
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
+lienEtat('journalStore', function () { return journalStore; }, function (v) { journalStore = v; });
 lienEtat('libellules', function () { return libellules; }, function (v) { libellules = v; });
 lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
 lienEtat('lignesRestantes', function () { return lignesRestantes; }, function (v) { lignesRestantes = v; });
@@ -180,6 +182,7 @@ lienEtat('nibbleInteretAvant', function () { return nibbleInteretAvant; }, funct
 lienEtat('nibblePhase', function () { return nibblePhase; }, function (v) { nibblePhase = v; });
 lienEtat('nibbleRngState', function () { return nibbleRngState; }, function (v) { nibbleRngState = v; });
 lienEtat('nibbleSuivant', function () { return nibbleSuivant; }, function (v) { nibbleSuivant = v; });
+lienEtat('partieStats', function () { return partieStats; }, function (v) { partieStats = v; });
 lienEtat('partieTerminee', function () { return partieTerminee; }, function (v) { partieTerminee = v; });
 lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
 lienEtat('poidsRealisteKilos', function () { return poidsRealisteKilos; }, function (v) { poidsRealisteKilos = v; });
@@ -1972,7 +1975,7 @@ const {
     acheterScion, trouverFlotteur, capaciteBouchon
 } = creerBouchons({
     SCIONS_DE_DEPART, SCIONS, appliquerProfondeurVisuelle, floatSelect, floatInfo, setProfondeur,
-    saveJournal, scionSelect, renderJournal
+    saveJournal: (...args) => saveJournal(...args), scionSelect, renderJournal: (...args) => renderJournal(...args)
 });
 
 floatInfo.textContent = flotteurCourant().desc;
@@ -1998,7 +2001,7 @@ const {
     updateArm, fermerOutils, updateToolDock
 } = creerAmorcage({
     scene, angler, feedGaugeFill, feedGaugeTarget, stockAmorce: (...args) => stockAmorce(...args), statusDisplay, feedButton,
-    majAmorce: (...args) => majAmorce(...args), feedGauge, ensureSound, POND_CENTER, wind, rayonEtang, saveJournal, sound, arm,
+    majAmorce: (...args) => majAmorce(...args), feedGauge, ensureSound, POND_CENTER, wind, rayonEtang, saveJournal: (...args) => saveJournal(...args), sound, arm,
     toolDock, toolToggle, setCameraView, cameraButton, depthPanel, quickFeedButton, lineSelect,
     updateDepthButtons, bornesProfondeur, sonarButton
 });
@@ -2115,7 +2118,7 @@ let sonarPings;
 const {
     acheterSonar, acheterBateau, rangerSonar, updateSonar
 } = creerSonar({
-    scene, sonarRadar, saveJournal, renderJournal, sonarPanel, sonarButton, waterWaveHeightAt,
+    scene, sonarRadar, saveJournal: (...args) => saveJournal(...args), renderJournal: (...args) => renderJournal(...args), sonarPanel, sonarButton, waterWaveHeightAt,
     sound, sonarCount, POND_CENTER, angler, rayonEtang, fermerOutils
 });
 
@@ -2131,8 +2134,8 @@ const {
     stockAmorce, majAmorce, stockFil, totalLignes, filEquipe, selectionnerFilDisponible,
     debiterLigne, acheterRecharge
 } = creerStocks({
-    SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal, majLignes,
-    renderJournal, lineSelect
+    SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal: (...args) => saveJournal(...args), majLignes,
+    renderJournal: (...args) => renderJournal(...args), lineSelect
 });
 
 // Compteur de la PARTIE en cours (la bourriche), distinct du carnet persistant
@@ -2144,98 +2147,13 @@ let experiencePartie = 0;
 // Technique de pêche : 'bouchon' (flotteur) ou 'quiver' (scion de canne).
 const modeQuiver = creerModeQuiver({ canvas: quiverCanvas, panel: quiverPanel });
 
-const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null;
-const JOURNAL_KEY = 'peche_carnet_v1';
-
-function loadJournal() {
-    chargerCarnet({
-        store: journalStore,
-        key: JOURNAL_KEY,
-        data: journal,
-        bouchonsDepart: BOUCHONS_DE_DEPART,
-        trouverFlotteur: trouverFlotteur,
-        setFlotteur: function (id) { flotteurChoix = id; },
-        getFlotteur: function () { return flotteurChoix; },
-        scionsDepart: SCIONS_DE_DEPART,
-        trouverScion: trouverScion,
-        setScion: function (id) { scionChoix = id; }
-    });
-}
-
-function saveJournal() {
-    sauverCarnet({ store: journalStore, key: JOURNAL_KEY, data: journal });
-}
-
-function fmtPoids(value) {
-    return (value < 1 ? value.toFixed(2) : value.toFixed(1)).replace('.', ',') + ' kg';
-}
-
-function renderJournal() {
-    const nbEspeces = Object.keys(journal.especes).length;
-    if (journal.total === 0) {
-        journalStats.textContent = 'Aucune prise pour l’instant… Lance la canne !';
-    } else {
-        journalStats.textContent = 'Prises : ' + journal.total
-            + ' · Poids total : ' + fmtPoids(journal.totalWeight)
-            + ' · Record : ' + fmtPoids(journal.best)
-            + ' · Espèces : ' + nbEspeces;
-    }
-    // Pas de appendChild ici : le carnet s'affiche en texte simple.
-    journalList.textContent = journal.last.length
-        ? journal.last.map(prise => '🐟 ' + prise.espece + ' — ' + fmtPoids(prise.kg)).join('\n')
-        : '';
-    // Fiche des espèces : nombre de prises et record pour chaque espèce attrapée.
-    const nomsEspeces = Object.keys(journal.especes);
-    journalEspeces.textContent = nomsEspeces.length
-        ? nomsEspeces.map(nom => {
-            const fiche = journal.especes[nom];
-            return '🐟 ' + nom + ' — ' + fiche.n + (fiche.n > 1 ? ' prises' : ' prise')
-                + ' · record ' + fmtPoids(fiche.record || 0);
-        }).join('\n')
-        : 'Attrape ton premier poisson pour remplir la fiche !';
-    bourricheLabel.textContent = '🧺 Bourriche : ' + bourricheCount;
-    // L'XP de partie repart à 0 ; l'XP carrière reste visible pour la boutique.
-    xpLabel.textContent = '⭐ ' + experiencePartie + ' XP · ' + journal.experience + ' carrière';
-    // Barre du haut : la version courte (l'XP de la partie en cours, comme le
-    // score). Le détail « carrière » reste dans le menu.
-    if (xpTop) { xpTop.textContent = '⭐ ' + experiencePartie + ' XP'; }
-    shopXp.textContent = '⭐ ' + journal.experience + ' XP';
-    // Le carnet a changé (XP, prises…) : la boutique doit se rafraîchir aussi,
-    // sinon les boutons d'achat restent grisés alors qu'on a assez d'expérience.
-    renderBoutique();
-}
-
-function addJournalEntry(weight, espece) {
-    journal.total += 1;
-    journal.totalWeight = Math.round((journal.totalWeight + weight) * 100) / 100;
-    if (weight > journal.best) {
-        journal.best = weight;
-    }
-    const nom = espece || 'Poisson';
-    journal.last.unshift({ kg: Math.round(weight * 100) / 100, espece: nom });
-    if (journal.last.length > 12) {
-        journal.last.length = 12;
-    }
-    journal.especes[nom] = journal.especes[nom] || { n: 0, record: 0 };
-    const fiche = journal.especes[nom];
-    const ancienRecord = fiche.record || 0;
-    fiche.n += 1;
-    // Un record est BATTU si le poisson est plus lourd que le précédent (le
-    // tout premier poisson d'une espèce établit son record).
-    const nouveauRecord = weight > ancienRecord;
-    if (nouveauRecord) {
-        fiche.record = Math.round(weight * 100) / 100;
-    }
-    partieStats.poissons += 1;
-    partieStats.poids = Math.round((partieStats.poids + weight) * 100) / 100;
-    const ancienPartie = partieStats.records[nom] || 0;
-    if (weight > ancienPartie) {
-        partieStats.records[nom] = Math.round(weight * 100) / 100;
-    }
-    saveJournal();
-    renderJournal();
-    return { nouveauRecord: nouveauRecord, ancienRecord: ancienRecord };
-}
+let journalStore;
+const {
+    loadJournal, saveJournal, fmtPoids, renderJournal, addJournalEntry
+} = creerJournal({
+    chargerCarnet, trouverFlotteur, SCIONS_DE_DEPART, trouverScion, sauverCarnet, journalStats,
+    journalList, journalEspeces, bourricheLabel, xpLabel, xpTop, shopXp
+});
 
 const {
     xpPourPrise, gagnerExperience, bouchonPossede, acheterBouchon, perdreLeBouchon,
