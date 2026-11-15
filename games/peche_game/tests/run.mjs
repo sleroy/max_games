@@ -35,6 +35,7 @@ import scenarioCarnassier from './scenario-carnassier.mjs';
 import scenarioFin from './scenario-fin.mjs';
 import scenarioDemelage from './scenario-demelage.mjs';
 import scenarioQuiver from './scenario-quiver.mjs';
+import { run as scenarioRemontee } from './scenario-remontee.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -70,6 +71,7 @@ try {
     scenarioDemelage();         // ligne tendue, emmêlement et mini-jeu de démêlage
     scenarioQuiver();           // bouchon / quiver : scion, canne inclinée, ferrage
     scenarioComportement();     // poissons réalistes, quiver au fond, accueil épuré
+    scenarioRemontee();         // la manivelle seule ramène la ligne (plus de clic)
 } catch (error) {
     crashed = error;
 } finally {
