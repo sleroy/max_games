@@ -423,6 +423,34 @@ Ce que fait le code aujourd'hui (vérifié) :
   (d) un lancer au bord et un lancer en fosse à profondeur égale donnent des
   verdicts opposés.
 
+### 14.9 Idée — un petit coup de moulinet attire les poissons tout proches
+
+En pêche réelle, on « dandine » : un **léger mouvement du moulinet** fait bouger
+l'esche sur place, crée un léger remous et **ravive l'intérêt des poissons qui sont
+déjà à quelques mètres** du bouchon. Aujourd'hui ce geste n'existe pas : un tour de
+manivelle **ramène la ligne** (`comportement.js:490-491`), il n'attire personne.
+
+- [ ] **Effet d'attraction locale** : quand le joueur donne un **petit coup de
+  moulinet** (course courte, pas un tour complet de rappel), les poissons situés à
+  **courte distance du bouchon** se rapprochent de lui pendant quelques secondes.
+- [ ] **« Vraiment à proximité »** : rayon volontairement **petit** (nettement en
+  dessous de `BITE_INTEREST_RADIUS = 7`, p. ex. ≈ 3 unités) — un poisson à l'autre
+  bout de l'étang **ne doit pas** venir. Sinon c'est un aimant à poissons.
+- [ ] **Effet temporaire et décroissant** : l'intérêt retombe en quelques secondes
+  quand on arrête de mouliner ; il ne se cumule pas (pas d'empilement en martelant
+  la manivelle).
+- [ ] **Compromis assumé** : mouliner franchement **ramène la ligne** (mécanique
+  actuelle) et fait donc **quitter le poste** — le joueur arbitre entre « raviver »
+  et « ramener ».
+- [ ] **Respect des comportements** (`COMPORTEMENTS`, `especes.js`) : les poissons de
+  fond restent près du fond, les carnassiers en embuscade réagissent au remous, les
+  espèces méfiantes moins fort ; l'attraction déplace l'intérêt, pas la couche d'eau.
+- [ ] **Sans effet** pendant le combat, l'accrochage, l'emmêlement ou le rangement.
+- [ ] **Tests** : un poisson à ≈ 2 unités se rapproche du bouchon après un petit coup
+  de moulinet ; un poisson à 20 unités **ne bouge pas** ; l'effet décroît et
+  s'annule après quelques secondes ; répéter le geste ne dépasse pas un plafond ;
+  aucun effet en combat / accrochage.
+
 ## Scénarios de test ajoutés (v131–v139)
 
 - **57** : mode bateau (achat XP, embarquement au milieu, bornes de déplacement,
