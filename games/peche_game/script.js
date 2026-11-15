@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=152';
+import { SoundEngine } from './sound.js?v=153';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -27,6 +27,7 @@ import { creerCarnetUI } from './carnetUI.js?v=149';
 import { creerBoutique } from './boutique.js?v=150';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
+import { creerAmorcage } from './amorcage.js?v=153';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -42,10 +43,14 @@ lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function 
 lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
 lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
 lienEtat('CAST_DURATION', function () { return CAST_DURATION; }, function (v) { CAST_DURATION = v; });
+lienEtat('CHUM_ATTRACT_ACCEL', function () { return CHUM_ATTRACT_ACCEL; }, function (v) { CHUM_ATTRACT_ACCEL = v; });
 lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
+lienEtat('FEED_MAX_RANGE', function () { return FEED_MAX_RANGE; }, function (v) { FEED_MAX_RANGE = v; });
+lienEtat('FEED_MIN_RANGE', function () { return FEED_MIN_RANGE; }, function (v) { FEED_MIN_RANGE = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
 lienEtat('ZONES_CARTE', function () { return ZONES_CARTE; }, function (v) { ZONES_CARTE = v; });
+lienEtat('amorceDepartRestante', function () { return amorceDepartRestante; }, function (v) { amorceDepartRestante = v; });
 lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
 lienEtat('annoncerRecord', function () { return annoncerRecord; }, function (v) { annoncerRecord = v; });
 lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
@@ -71,6 +76,8 @@ lienEtat('biteViewTimer', function () { return biteViewTimer; }, function (v) { 
 lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
 lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
 lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
+lienEtat('cameraViewActive', function () { return cameraViewActive; }, function (v) { cameraViewActive = v; });
+lienEtat('cancelCast', function () { return cancelCast; }, function (v) { cancelCast = v; });
 lienEtat('castAim', function () { return castAim; }, function (v) { castAim = v; });
 lienEtat('castPhase', function () { return castPhase; }, function (v) { castPhase = v; });
 lienEtat('castPower', function () { return castPower; }, function (v) { castPower = v; });
@@ -95,7 +102,14 @@ lienEtat('emplacementMarge', function () { return emplacementMarge; }, function 
 lienEtat('escaped', function () { return escaped; }, function (v) { escaped = v; });
 lienEtat('especeIndex', function () { return especeIndex; }, function (v) { especeIndex = v; });
 lienEtat('experiencePartie', function () { return experiencePartie; }, function (v) { experiencePartie = v; });
+lienEtat('feedAim', function () { return feedAim; }, function (v) { feedAim = v; });
+lienEtat('feedBall', function () { return feedBall; }, function (v) { feedBall = v; });
+lienEtat('feedFlyT', function () { return feedFlyT; }, function (v) { feedFlyT = v; });
+lienEtat('feedLanding', function () { return feedLanding; }, function (v) { feedLanding = v; });
 lienEtat('feedMode', function () { return feedMode; }, function (v) { feedMode = v; });
+lienEtat('feedPower', function () { return feedPower; }, function (v) { feedPower = v; });
+lienEtat('feedState', function () { return feedState; }, function (v) { feedState = v; });
+lienEtat('feedTargetPower', function () { return feedTargetPower; }, function (v) { feedTargetPower = v; });
 lienEtat('fightAdvantage', function () { return fightAdvantage; }, function (v) { fightAdvantage = v; });
 lienEtat('fishCaught', function () { return fishCaught; }, function (v) { fishCaught = v; });
 lienEtat('fishThrowPhase', function () { return fishThrowPhase; }, function (v) { fishThrowPhase = v; });
@@ -129,6 +143,7 @@ lienEtat('posteActuel', function () { return posteActuel; }, function (v) { post
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
 lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
+lienEtat('renderBoutique', function () { return renderBoutique; }, function (v) { renderBoutique = v; });
 lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v; });
 lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
 lienEtat('scionChoix', function () { return scionChoix; }, function (v) { scionChoix = v; });
@@ -137,6 +152,7 @@ lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
 lienEtat('showCatchMessage', function () { return showCatchMessage; }, function (v) { showCatchMessage = v; });
 lienEtat('signalerToucheRatee', function () { return signalerToucheRatee; }, function (v) { signalerToucheRatee = v; });
 lienEtat('snag', function () { return snag; }, function (v) { snag = v; });
+lienEtat('sonarBuoy', function () { return sonarBuoy; }, function (v) { sonarBuoy = v; });
 lienEtat('spawnFish', function () { return spawnFish; }, function (v) { spawnFish = v; });
 lienEtat('spawnFloatingText', function () { return spawnFloatingText; }, function (v) { spawnFloatingText = v; });
 lienEtat('spawnRipple', function () { return spawnRipple; }, function (v) { spawnRipple = v; });
@@ -2166,352 +2182,30 @@ function capaciteBouchon(f) {
 floatInfo.textContent = flotteurCourant().desc;
 appliquerFlotteurVisuel(flotteurCourant());
 
-// ---------------------------------------------------------------------------
-// Amorçage : lancer une boule de nourriture pour attirer les poissons
-// ---------------------------------------------------------------------------
-// Le joueur arme le mode avec le bouton « Nourrir », clique sur l'eau en
-// maintenant le doigt (ou la souris) pour viser, puis relâche : la puissance
-// dépend du moment du relâchement (la jauge oscille toute seule). La boule suit
-// un arc de cercle, poussée par le vent, et crée à l'atterrissage un nuage de
-// miettes qui attire les poissons — et dérive doucement au vent.
-const FEED_MIN_RANGE = 6;          // distance mini d'un lancer (unités)
-const FEED_MAX_RANGE = 46;         // distance maxi (jauge à fond)
-const FEED_FLIGHT_DURATION = 0.9;  // durée du vol de la boule (s)
-const FEED_OSC_SPEED = 1.5;        // vitesse de base de l'oscillation (tours/s)
-const FEED_WIND_FACTOR = 5;        // décalage dû au vent pendant le vol
-const CHUM_ATTRACT_RADIUS = 20;    // zone où les poissons sentent l'amorce
-const CHUM_ATTRACT_ACCEL = 6;      // force d'attirance (unités/s²)
-const CHUM_DRIFT = 0.25;           // dérive du nuage au vent
-const CHUM_LIFETIME = 16;          // durée de vie du nuage (s)
-
-let feedMode = false;              // le mode amorçage est-il armé ?
-let feedState = 'idle';            // 'idle' | 'charging' | 'flying'
-let feedPower = 0;                 // puissance courante (0..1), oscille
-let feedTargetPower = 0;           // puissance « idéale » pour atteindre la visée
-let feedPhase = 0;                 // phase de l'oscillation
-let feedChargeT = 0;               // temps de maintien
-let feedFlyT = 0;                  // avancement du vol (0..1)
-let chum = null;                   // nuage de miettes en cours
-let armSwing = 0;                  // bras : 0 = repos, 1 = armé (en arrière)
-let armThrow = 0;                  // bras : impulsion de lancer
-
-const feedAim = new THREE.Vector3(0, 0.1, -25);
-const feedLanding = new THREE.Vector3(0, 0.1, -25);
-const feedOrigin = new THREE.Vector3(-3.2, 3.0, 16.6);
-
-// La boule de nourriture : une petite boule beige.
-const feedBall = new THREE.Mesh(
+let FEED_MIN_RANGE = 6;
+let FEED_MAX_RANGE = 46;
+let CHUM_ATTRACT_ACCEL = 6;
+let feedMode = false;
+let feedState = 'idle';
+let feedPower = 0;
+let feedTargetPower = 0;
+let feedFlyT = 0;
+let chum = null;
+let feedAim = new THREE.Vector3(0, 0.1, -25);
+let feedLanding = new THREE.Vector3(0, 0.1, -25);
+let feedBall = new THREE.Mesh(
     new THREE.SphereGeometry(0.32, 12, 12),
     new THREE.MeshStandardMaterial({ color: 0xcdb56f, roughness: 0.95 })
 );
-feedBall.castShadow = true;
-feedBall.visible = false;
-scene.add(feedBall);
-
-// Texture douce d'une « bouffée » de miettes.
-function makeChumTexture() {
-    const c = document.createElement('canvas');
-    c.width = 128;
-    c.height = 128;
-    const g = c.getContext('2d');
-    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    grad.addColorStop(0, 'rgba(226,255,228,0.9)');
-    grad.addColorStop(0.5, 'rgba(184,236,196,0.45)');
-    grad.addColorStop(1, 'rgba(160,220,175,0)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, 128, 128);
-    return new THREE.CanvasTexture(c);
-}
-
-// Distance de visée → puissance nécessaire pour tomber pile dessus.
-function feedPowerForDistance(distance) {
-    return Math.max(0, Math.min(1,
-        (distance - FEED_MIN_RANGE) / (FEED_MAX_RANGE - FEED_MIN_RANGE)));
-}
-
-function feedAimDistance() {
-    return Math.hypot(feedAim.x - angler.position.x, feedAim.z - angler.position.z);
-}
-
-function updateFeedGauge() {
-    feedGaugeFill.style.width = (feedPower * 100).toFixed(0) + '%';
-    feedGaugeTarget.style.left = (feedTargetPower * 100).toFixed(0) + '%';
-}
-
-function setFeedMode(on) {
-    // On peut amorcer à tout moment où le moulinet est libre : au repos OU
-    // avec la ligne à l'eau (l'amorçage attire les poissons vers le bouchon).
-    if (on && partieTerminee) { return; }
-    if (on && stockAmorce() === 0) {
-        statusDisplay.textContent = 'Plus de boules d’amorce. Recharge dans Carnet → Boutique.';
-        return;
-    }
-    if (on && floatState !== 'idle' && floatState !== 'inWater') {
-        statusDisplay.textContent = 'Attends la fin de l’action pour pouvoir amorcer.';
-        return;
-    }
-    feedMode = !!on && (floatState === 'idle' || floatState === 'inWater');
-    feedButton.classList.toggle('active', feedMode);
-    majAmorce();
-    if (feedMode) {
-        statusDisplay.textContent = 'Amorçage : clique et maintiens sur l’eau pour viser, puis relâche pour doser la puissance.';
-    } else if (feedState === 'idle') {
-        statusDisplay.textContent = 'Clique sur l’eau pour lancer la ligne.';
-    }
-}
-
-function startFeedCharge(point) {
-    if (partieTerminee || feedState !== 'idle' || stockAmorce() === 0) {
-        return;
-    }
-    feedState = 'charging';
-    feedChargeT = 0;
-    feedPhase = 0;
-    feedPower = 0;
-    feedAim.set(point.x, 0.1, point.z);
-    feedTargetPower = feedPowerForDistance(feedAimDistance());
-    feedGauge.classList.add('active');
-    updateFeedGauge();
-    ensureSound();
-    statusDisplay.textContent = 'Vise… relâche quand la jauge passe sur le repère !';
-}
-
-function moveFeedAim(point) {
-    if (feedState !== 'charging') {
-        return;
-    }
-    feedAim.set(point.x, 0.1, point.z);
-    feedTargetPower = feedPowerForDistance(feedAimDistance());
-    updateFeedGauge();
-}
-
-function computeFeedLanding() {
-    let ax = feedAim.x - angler.position.x;
-    let az = feedAim.z - angler.position.z;
-    let d = Math.hypot(ax, az);
-    if (d < 0.01) {
-        // Visée collée au pêcheur : on tire vers le centre de l'étang.
-        ax = POND_CENTER.x - angler.position.x;
-        az = POND_CENTER.z - angler.position.z;
-        d = Math.hypot(ax, az) || 1;
-    }
-    const range = FEED_MIN_RANGE + feedPower * (FEED_MAX_RANGE - FEED_MIN_RANGE);
-    let lx = angler.position.x + (ax / d) * range;
-    let lz = angler.position.z + (az / d) * range;
-    // Le vent pousse la boule pendant le vol.
-    lx += Math.cos(wind.dir) * wind.strength * FEED_WIND_FACTOR;
-    lz += Math.sin(wind.dir) * wind.strength * FEED_WIND_FACTOR;
-    // La boule retombe dans l'étang.
-    const dx = lx - POND_CENTER.x;
-    const dz = lz - POND_CENTER.z;
-    const dd = Math.hypot(dx, dz);
-    const maxR = rayonEtang(Math.atan2(dz, dx)) - 2;
-    if (dd > maxR) {
-        lx = POND_CENTER.x + (dx / dd) * maxR;
-        lz = POND_CENTER.z + (dz / dd) * maxR;
-    }
-    feedLanding.set(lx, 0.1, lz);
-}
-
-function releaseFeed() {
-    if (feedState !== 'charging') {
-        return;
-    }
-    if (stockAmorce() === 0) { cancelFeed(); return; }
-    if (amorceDepartRestante > 0) {
-        amorceDepartRestante -= 1;
-    } else {
-        journal.recharges.amorce -= 1;
-        saveJournal();
-    }
-    renderBoutique();
-    feedState = 'flying';
-    feedFlyT = 0;
-    feedGauge.classList.remove('active');
-    computeFeedLanding();
-    // La boule part de la main du pêcheur (où qu'il soit sur la berge),
-    // un peu en avant de lui, vers la zone visée.
-    {
-        const dx = feedLanding.x - angler.position.x;
-        const dz = feedLanding.z - angler.position.z;
-        const dn = Math.hypot(dx, dz) || 1;
-        feedOrigin.set(angler.position.x + (dx / dn) * 0.9,
-            angler.position.y + 2.6,
-            angler.position.z + (dz / dn) * 0.9);
-    }
-    feedBall.position.copy(feedOrigin);
-    feedBall.visible = true;
-    sound.throwItem();
-    statusDisplay.textContent = 'Lancer de l’amorce…';
-}
-
-// Crée le nuage de miettes qui attire les poissons.
-function spawnChum(position) {
-    if (chum) {
-        scene.remove(chum.group);
-        chum = null;
-    }
-    const group = new THREE.Group();
-    const material = new THREE.SpriteMaterial({
-        map: makeChumTexture(), transparent: true, depthWrite: false, opacity: 0
-    });
-    // Quelques « bouffées » disposées en cercle (positions fixes : aucun
-    // tirage aléatoire, pour garder les tests reproductibles).
-    for (let i = 0; i < 6; i++) {
-        const sprite = new THREE.Sprite(material);
-        const angle = (i / 6) * Math.PI * 2;
-        const r = 1.2 + (i % 3) * 1.4;
-        sprite.position.set(Math.cos(angle) * r, 0.4 + (i % 3) * 0.4, Math.sin(angle) * r);
-        const s = 4 + (i % 3) * 1.5;
-        sprite.scale.set(s, s * 0.7, 1);
-        group.add(sprite);
-    }
-    group.position.set(position.x, 0.4, position.z);
-    scene.add(group);
-    chum = {
-        group: group,
-        material: material,
-        position: new THREE.Vector3(position.x, 0.1, position.z),
-        age: 0,
-        lifetime: CHUM_LIFETIME,
-        radius: CHUM_ATTRACT_RADIUS,
-        strength: 0
-    };
-    spawnRipple(position);
-}
-
-function landFeed() {
-    feedState = 'idle';
-    feedBall.visible = false;
-    // Plouf de la BOULE D'AMORCE : son réel dédié (une grosse boule qui tombe),
-    // différent du « ploc » du bouchon et du splash du combat.
-    sound.amorceSplash();
-    spawnSplash(feedLanding);
-    spawnChum(feedLanding);
-    setFeedMode(false);
-    statusDisplay.textContent = 'Amorce lancée ! Les poissons s’approchent du nuage de miettes…';
-}
-
-function cancelFeed() {
-    if (feedState === 'charging') {
-        feedState = 'idle';
-        feedGauge.classList.remove('active');
-        setFeedMode(false);
-    }
-}
-
-function updateChum(dt) {
-    if (!chum) {
-        return;
-    }
-    chum.age += dt;
-    if (chum.age >= chum.lifetime) {
-        scene.remove(chum.group);
-        chum = null;
-        return;
-    }
-    // Le nuage dérive doucement avec le vent.
-    chum.position.x += Math.cos(wind.dir) * wind.strength * CHUM_DRIFT * dt;
-    chum.position.z += Math.sin(wind.dir) * wind.strength * CHUM_DRIFT * dt;
-    const dx = chum.position.x - POND_CENTER.x;
-    const dz = chum.position.z - POND_CENTER.z;
-    const dd = Math.hypot(dx, dz);
-    const maxR = rayonEtang(Math.atan2(dz, dx)) - 6;
-    if (dd > maxR) {
-        chum.position.x = POND_CENTER.x + (dx / dd) * maxR;
-        chum.position.z = POND_CENTER.z + (dz / dd) * maxR;
-    }
-    // Apparition en douceur, puis disparition en fondu.
-    const fadeIn = Math.min(1, chum.age / 1.2);
-    const fadeOut = Math.min(1, Math.max(0, (chum.lifetime - chum.age) / 3));
-    chum.strength = Math.min(fadeIn, fadeOut);
-    // Le nuage COULE jusqu'à la profondeur de la ligne : on amorce là où on pêche.
-    chum.position.y += (HOOK_DEPTH - chum.position.y) * Math.min(1, dt * 0.7);
-    chum.group.position.set(chum.position.x, chum.position.y + 0.35, chum.position.z);
-    chum.material.opacity = 0.55 * chum.strength;
-    const pulse = 1 + Math.sin(chum.age * 1.5) * 0.06;
-    chum.group.scale.set(pulse, pulse, pulse);
-    chum.group.rotation.y += dt * 0.15;
-}
-
-function updateFeed(dt) {
-    if (feedState === 'charging') {
-        feedChargeT += dt;
-        // La jauge oscille de plus en plus vite : il faut choisir son moment.
-        const speed = FEED_OSC_SPEED + Math.min(0.6, feedChargeT * 0.15);
-        feedPhase += speed * dt;
-        const m = ((feedPhase % 2) + 2) % 2;
-        feedPower = m < 1 ? m : 2 - m;
-        updateFeedGauge();
-    } else if (feedState === 'flying') {
-        feedFlyT += dt / FEED_FLIGHT_DURATION;
-        const t = Math.min(1, feedFlyT);
-        const x = feedOrigin.x + (feedLanding.x - feedOrigin.x) * t;
-        const z = feedOrigin.z + (feedLanding.z - feedOrigin.z) * t;
-        const arc = 3 + feedPower * 5;
-        const y = feedOrigin.y + (feedLanding.y - feedOrigin.y) * t + Math.sin(Math.PI * t) * arc;
-        feedBall.position.set(x, y, z);
-        feedBall.rotation.x += dt * 8;
-        feedBall.rotation.z += dt * 6;
-        if (feedFlyT >= 1) {
-            landFeed();
-        }
-    }
-}
-
-// Animation du bras du pêcheur : repos → armé (visée) → lancer.
-function updateArm(dt) {
-    const targetSwing = feedState === 'charging' ? 1 : 0;
-    const targetThrow = feedState === 'flying' ? 1 : 0;
-    armSwing += (targetSwing - armSwing) * Math.min(1, dt * 8);
-    armThrow += (targetThrow - armThrow) * Math.min(1, dt * 12);
-    // Le geste de lancer (canne) entraîne aussi le bras : armé puis détendu.
-    const cast = castSwing;
-    arm.rotation.z = -0.9 - armSwing * 0.9 + armThrow * 1.6 + cast * 0.45;
-    arm.rotation.x = 0.4 - armSwing * 1.0 + armThrow * 0.8 - cast * 0.30;
-    arm.position.y = 2.1 + armSwing * 0.4 + Math.max(0, cast) * 0.15;
-}
-
-// Le menu reste accessible pendant l’action pour permettre la pause.
-function mettreAJourBoutonOutils() {
-    const ouvert = toolDock.classList.contains('ouvert');
-    toolToggle.textContent = ouvert ? '✕ Fermer' : '☰ Menu';
-    toolToggle.setAttribute('aria-label', ouvert ? 'Fermer le menu' : 'Ouvrir le menu');
-    toolToggle.setAttribute('aria-expanded', String(ouvert));
-}
-
-function fermerOutils() {
-    toolDock.classList.remove('ouvert');
-    mettreAJourBoutonOutils();
-}
-
-toolToggle.addEventListener('click', () => {
-    ensureSound();
-    if (cameraViewActive) {
-        setCameraView(false);
-        return;
-    }
-    if (paused && toolDock.classList.contains('ouvert')) { return; }
-    cancelCast();
-    cancelFeed();
-    toolDock.classList.toggle('ouvert');
-    mettreAJourBoutonOutils();
+const {
+    setFeedMode, startFeedCharge, moveFeedAim, releaseFeed, cancelFeed, updateChum, updateFeed,
+    updateArm, fermerOutils, updateToolDock
+} = creerAmorcage({
+    scene, angler, feedGaugeFill, feedGaugeTarget, stockAmorce, statusDisplay, feedButton,
+    majAmorce, feedGauge, ensureSound, POND_CENTER, wind, rayonEtang, saveJournal, sound, arm,
+    toolDock, toolToggle, setCameraView, cameraButton, depthPanel, quickFeedButton, lineSelect,
+    updateDepthButtons, bornesProfondeur, sonarButton
 });
-
-function updateToolDock() {
-    const resting = (floatState === 'idle' || floatState === 'inWater') && cameraMode === 'normal';
-    cameraButton.disabled = !resting || paused;
-    feedButton.disabled = !resting || paused || stockAmorce() === 0;
-    // Au quiver, l'hameçon est posé au fond : le réglage de profondeur ne sert pas.
-    depthPanel.hidden = floatState !== 'idle' || techniqueCourante === 'quiver';
-    quickFeedButton.hidden = floatState !== 'inWater' || cameraViewActive;
-    quickFeedButton.disabled = feedButton.disabled || feedState !== 'idle';
-    lineSelect.disabled = floatState !== 'idle' || castState !== 'idle';
-    updateDepthButtons(bornesProfondeur(),
-        floatState === 'idle' && !paused && !cameraViewActive && castState === 'idle');
-    sonarButton.disabled = !sonarBuoy.visible && (!resting || paused);
-    if (cameraViewActive && !resting) { setCameraView(false); }
-}
 
 const {
     BOURRICHE_POS, BOURRICHE_RADIUS, FISH_THROW_MIN, FISH_THROW_MAX, FISH_THROW_WIND,
