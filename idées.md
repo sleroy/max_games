@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v126**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v130**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -173,3 +173,14 @@
 
 - **67** : accueil sans boutons de poste, données de comportement, bancs, simulation de
   4 min (zone de vie, vitesse), quiver au fond.
+
+## 12. Passe v128–v130
+
+- [x] **Bug en ligne** : l'eau ne s'affichait pas (`uNormalsOn` non déclaré dans le shader d'eau) — corrigé + test.
+- [x] **Quiver : choix du scion** au lieu du bouchon (souple, moyen, rigide offerts ; clochette,
+  carbone, maître à acheter). Le **scion à clochette** sonne à chaque touche.
+- [x] **Quiver : pas de widget de profondeur** (l'hameçon est au fond).
+- [x] **Scion plus grand sur ordinateur** (360×120 px dès 900 px de large).
+- [x] **Bouton rond « Amorcer » en bas à gauche.**
+- [x] **Carnet / boutique façon inventaire Minecraft** : panneau gris biseauté, onglets, cases,
+  sections (fils et amorce, bouchons, scions, matériel), onglet actif mis en avant.

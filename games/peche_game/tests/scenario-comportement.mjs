@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import {
     group, check, checkEqual,
-    G, resetToIdle, castTo, step, stepFor
+    G, el, resetToIdle, castTo, step, stepFor
 } from './harness.mjs';
 import { SPECIES, COMPORTEMENTS } from '../especes.js';
 
@@ -111,4 +111,22 @@ export function run() {
     // (un « uNormalsOn » oublié rendait l'eau invisible en ligne).
     const src = readFileSync(new URL('../script.js', import.meta.url), 'utf8');
     check('le shader d’eau déclare uNormalsOn', /uniform float uNormalsOn;/.test(src));
+
+    // 7) Scions du quiver : sélection à la place du bouchon, clochette à la touche.
+    G().recommencerPartie();
+    resetToIdle();
+    G().setTechnique('quiver');
+    check('trois scions offerts au départ', G().getScionsPossedes().length === 3);
+    checkEqual('le scion de départ est équipé', G().getScion(), 'souple');
+    checkEqual('en quiver, le matériel actif est le scion', G().getFloatType(), 'souple');
+    checkEqual('quiver : pas de widget de profondeur (pêche au fond)', el('depthPanel').hidden, true);
+    checkEqual('un scion non acheté ne s’équipe pas', G().setScion('clochette'), false);
+    checkEqual('un scion possédé s’équipe', G().setScion('rigide'), true);
+    checkEqual('le scion rigide est actif', G().getFloatType(), 'rigide');
+    const achete = G().acheterScion('clochette');
+    checkEqual('l’achat d’un scion l’ajoute au sac (si l’XP suffit)',
+        G().getScionsPossedes().indexOf('clochette') >= 0, achete);
+    G().setTechnique('bouchon');
+    check('retour au bouchon : on retrouve un bouchon', G().getFloatType() !== 'rigide');
+    checkEqual('bouchon : le widget de profondeur revient', el('depthPanel').hidden, false);
 }

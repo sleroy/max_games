@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=128">
+    <link rel="stylesheet" href="style.css?v=130">
 </head>
 <body>
     <div class="game-wrap">
@@ -200,7 +200,11 @@
                     <div class="espece-card" id="especeFiche"></div>
                 </div>
                 <div class="tabpage" id="tabBoutique">
-                <div class="panel-row">
+                <div class="panel-row row-scion">
+                    <label for="scionSelect">Scion (quiver)</label>
+                    <select id="scionSelect"></select>
+                </div>
+                <div class="panel-row row-bouchon">
                     <label for="floatSelect">Bouchon</label>
                     <select id="floatSelect">
                         <option value="anglaise" selected>Anglaise (très sensible)</option>
@@ -315,6 +319,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=128"></script>
+    <script type="module" src="script.js?v=130"></script>
 </body>
 </html>

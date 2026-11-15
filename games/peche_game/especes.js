@@ -198,3 +198,31 @@ export const TOUCHES = [
 
 export const TOUCHES_PAR_ID = {};
 TOUCHES.forEach(function (touche) { TOUCHES_PAR_ID[touche.id] = touche; });
+
+// ---------------------------------------------------------------------------
+// SCIONS (mode quiver) : le bout de la canne remplace le bouchon. Chaque scion a
+// sa sensibilité et ses capacités (mêmes champs que les bouchons).
+//   sonnette : une petite clochette tinte à chaque touche (idéal de nuit).
+// ---------------------------------------------------------------------------
+export const SCIONS_DE_DEPART = ['souple', 'moyen', 'rigide'];
+
+export const SCIONS = [
+    { id: 'souple', nom: 'Scion souple', profondeur: [0.6, 7.0], prix: 0, atout: '🎯 Très sensible',
+      capacite: {}, sensibilite: 1.35, couleur: 0xff6b57,
+      desc: 'Scion souple : il plie à la moindre touche, très sensible. Attention aux fausses touches !' },
+    { id: 'moyen', nom: 'Scion moyen', profondeur: [0.6, 7.0], prix: 0, atout: '⚖ Polyvalent',
+      capacite: {}, sensibilite: 1.0, couleur: 0xffd24d,
+      desc: 'Scion moyen : un bon compromis entre sensibilité et fausses touches.' },
+    { id: 'rigide', nom: 'Scion rigide', profondeur: [0.6, 7.0], prix: 0, atout: '🛡 Peu de fausses touches',
+      capacite: {}, sensibilite: 0.75, couleur: 0x6ec1ff,
+      desc: 'Scion rigide : il ne bouge que pour de vraies touches, mais la fenêtre de ferrage est plus courte.' },
+    { id: 'clochette', nom: 'Scion à clochette', profondeur: [0.6, 7.0], prix: 60, atout: '🔔 Sonne à chaque touche',
+      capacite: { sonnette: true, fenetre: 1.1 }, sensibilite: 1.0, couleur: 0xffe27a,
+      desc: 'Une petite clochette tinte dès qu’un poisson touche : tu l’entends même sans regarder le scion. Un peu plus de temps pour ferrer.' },
+    { id: 'carbone', nom: 'Scion carbone', profondeur: [0.6, 7.0], prix: 90, atout: '🤫 Moins de fausses touches',
+      capacite: { fausses: 0.6 }, sensibilite: 1.2, couleur: 0x39393f,
+      desc: 'Scion en carbone : sensible mais précis, il ignore presque les fausses touches.' },
+    { id: 'maitre', nom: 'Scion du maître', profondeur: [0.6, 7.0], prix: 200, atout: '🏆 Polyvalent + 50 % d’expérience',
+      capacite: { sonnette: true, fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5 }, sensibilite: 1.25, couleur: 0xffd700,
+      desc: 'Le scion du maître pêcheur : clochette, ferrage plus facile, moins de fausses touches et 50 % d’expérience en plus !' }
+];

@@ -54,6 +54,15 @@ export function chargerCarnet(options) {
                 data.bouchons.push(id);
             }
         });
+        // Scions du mode quiver : mêmes règles que les bouchons.
+        const scionsDepart = Array.isArray(opts.scionsDepart) ? opts.scionsDepart : [];
+        const trouverScion = opts.trouverScion || function () { return null; };
+        data.scions = scionsDepart.slice();
+        (Array.isArray(saved.scions) ? saved.scions : []).forEach(function (id) {
+            if (trouverScion(id) && data.scions.indexOf(id) < 0) { data.scions.push(id); }
+        });
+        data.scion = data.scions.indexOf(saved.scion) >= 0 ? saved.scion : scionsDepart[0];
+        if (opts.setScion) { opts.setScion(data.scion); }
         if (data.bouchons.indexOf(getFlotteur()) < 0) {
             setFlotteur(bouchonsDepart[0]);
         }

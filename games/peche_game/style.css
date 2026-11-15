@@ -2106,3 +2106,202 @@ body.calm .struggle-marker {
         font-size: 0.78rem;
     }
 }
+
+/* ===========================================================================
+   CARNET / BOUTIQUE — style « inventaire Minecraft »
+   Panneau gris à biseaux, onglets de type créatif, cases (slots) en grille,
+   police à chasse fixe. Tout est limité à #journal.
+   =========================================================================== */
+#journal {
+    --mc-fond: #c6c6c6;
+    --mc-clair: #ffffff;
+    --mc-sombre: #555555;
+    --mc-case: #8b8b8b;
+    --mc-texte: #3f3f3f;
+    background: var(--mc-fond);
+    color: var(--mc-texte);
+    border: 4px solid #000;
+    border-radius: 0;
+    box-shadow: inset 4px 4px 0 var(--mc-clair), inset -4px -4px 0 var(--mc-sombre),
+        0 12px 40px rgba(0, 0, 0, 0.6);
+    font-family: "Courier New", ui-monospace, monospace;
+    font-weight: bold;
+    padding: 18px 20px;
+}
+
+#journal .panel-title {
+    color: var(--mc-texte);
+    text-align: left;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+}
+
+#journal .panel-subtitle,
+#journal .shop-section {
+    margin: 6px 0 0;
+    padding: 2px 0;
+    font-size: 0.9rem;
+    color: var(--mc-texte);
+    border-bottom: 2px solid var(--mc-sombre);
+}
+
+#journal .shop-section {
+    grid-column: 1 / -1;
+}
+
+#journal .shop-xp {
+    color: #7a5a00;
+    background: #373737;
+    padding: 1px 8px;
+    color: #ffd76e;
+    border: 2px solid #000;
+}
+
+#journal .btn-croix {
+    width: 28px;
+    height: 28px;
+    margin: -10px -12px -20px 0;
+    border-radius: 0;
+    color: #fff;
+    background: var(--mc-case);
+    border: 2px solid #000;
+    box-shadow: inset 2px 2px 0 #c9c9c9, inset -2px -2px 0 #373737;
+    font-family: inherit;
+}
+#journal .btn-croix:hover,
+#journal .btn-croix:focus-visible {
+    background: #b3261e;
+    border-color: #000;
+}
+
+/* Onglets : dessus plat, l'onglet actif rejoint le panneau. */
+#journal .tabs {
+    gap: 2px;
+    border-bottom: 4px solid var(--mc-sombre);
+    padding-bottom: 0;
+}
+#journal .tab {
+    color: var(--mc-texte);
+    background: #a0a0a0;
+    border: 3px solid #000;
+    border-bottom: none;
+    border-radius: 0;
+    box-shadow: inset 2px 2px 0 #d8d8d8, inset -2px 0 0 #6b6b6b;
+    font-family: inherit;
+    font-weight: bold;
+    padding: 7px 8px 5px;
+    margin-bottom: -4px;
+}
+#journal .tab:hover { background: #b9b9b9; }
+#journal .tab.active {
+    background: var(--mc-fond);
+    box-shadow: inset 2px 2px 0 var(--mc-clair), inset -2px 0 0 var(--mc-sombre);
+    padding-bottom: 9px;
+}
+
+/* Textes et listes dans des cadres enfoncés. */
+#journal .journal-stats,
+#journal .journal-help,
+#journal .float-info,
+#journal .shop-hint,
+#journal .journal-list,
+#journal .journal-especes,
+#journal .espece-card,
+#journal .journal-touches {
+    color: #e6e6e6;
+    background: #373737;
+    border: 2px solid #000;
+    box-shadow: inset 2px 2px 0 #1e1e1e, inset -2px -2px 0 #5a5a5a;
+    padding: 8px 10px;
+    border-radius: 0;
+}
+#journal .shop-hint { font-size: 0.75rem; }
+#journal b { color: inherit; }
+
+#journal .panel-row { color: var(--mc-texte); }
+#journal select {
+    font-family: inherit;
+    font-weight: bold;
+    color: #fff;
+    background: #373737;
+    border: 2px solid #000;
+    border-radius: 0;
+    padding: 5px 8px;
+}
+
+/* Boutique : grille de cases. */
+#journal .shop-list {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 6px;
+}
+#journal .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 6px;
+    grid-column: 1 / -1;
+}
+#journal .shop-item {
+    background: var(--mc-case);
+    border: 2px solid #000;
+    border-radius: 0;
+    box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff;
+    padding: 8px 9px;
+    color: #fff;
+    text-shadow: 1px 1px 0 #3a3a3a;
+}
+#journal .shop-item:hover { background: #9a9a9a; }
+#journal .shop-item.owned { box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #7ed957; }
+#journal .shop-name { font-size: 0.85rem; }
+#journal .shop-price { color: #ffe27a; }
+#journal .shop-trait { color: #b6ffd0; }
+#journal .shop-desc { opacity: 1; color: #f0f0f0; font-size: 0.72rem; }
+#journal .shop-btn {
+    color: #fff;
+    background: #5b8731;
+    border: 2px solid #000;
+    border-radius: 0;
+    box-shadow: inset 2px 2px 0 #8fcf55, inset -2px -2px 0 #3a5a1c;
+    font-family: inherit;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #1e3a0c;
+}
+#journal .shop-btn.buy {
+    background: #b8860b;
+    box-shadow: inset 2px 2px 0 #ffd76e, inset -2px -2px 0 #6b4c06;
+    text-shadow: 1px 1px 0 #3a2a00;
+}
+#journal .shop-btn.equipped {
+    background: #6b6b6b;
+    box-shadow: inset 2px 2px 0 #9a9a9a, inset -2px -2px 0 #3a3a3a;
+}
+#journal .shop-btn:disabled { opacity: 0.55; }
+
+/* Réglage bouchon OU scion selon la technique. */
+.row-scion { display: none; }
+body.mode-quiver .row-scion { display: flex; }
+body.mode-quiver .row-bouchon { display: none; }
+
+/* Bouton rond « Amorcer » : en BAS à gauche (à portée du pouce gauche). */
+.quick-feed {
+    top: auto;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    width: 56px;
+    height: 56px;
+    font-size: 1.25rem;
+}
+
+/* Scion du quiver : bien plus grand sur ordinateur (lecture fine des touches). */
+@media (min-width: 900px) and (min-height: 560px) {
+    .quiver-panel {
+        height: auto;
+        padding: 8px 12px;
+        gap: 10px;
+        font-size: 0.95rem;
+        border-radius: 12px;
+    }
+    #quiverCanvas {
+        width: 360px;
+        height: 120px;
+    }
+}

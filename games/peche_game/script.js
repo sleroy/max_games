@@ -3,10 +3,10 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=128';
+import { SoundEngine } from './sound.js?v=130';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
 import { creerClassement } from './classement.js';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=124';
 
@@ -117,6 +117,7 @@ const tutorialNext = document.getElementById('tutorialNext');
 const tutorialClose = document.getElementById('tutorialClose');
 const tutorialOpen = document.getElementById('tutorialOpen');
 const floatSelect = document.getElementById('floatSelect');
+const scionSelect = document.getElementById('scionSelect');
 const floatInfo = document.getElementById('floatInfo');
 
 const sound = new SoundEngine();
@@ -1910,6 +1911,9 @@ function setTechnique(value) {
     journal.technique = nouvelle;
     saveJournal();
     appliquerTechniqueVisuelle();
+    updateToolDock();
+    floatInfo.textContent = flotteurCourant().desc;
+    renderBoutique();
     statusDisplay.textContent = nouvelle === 'quiver'
         ? 'Technique quiver : surveille le scion de la canne (pas de bouchon).'
         : 'Technique bouchon : surveille le bouchon.';
@@ -2146,8 +2150,24 @@ const FLOTTEURS = [
       desc: 'Le bouchon du maître pêcheur : un peu tout à la fois (ferrage plus facile, moins de fausses touches, poisson moins combatif) et 50 % d’expérience en plus !' }
 ];
 let flotteurChoix = 'anglaise';
+// Technique de pêche : 'bouchon' (flotteur) ou 'quiver' (scion de canne, hameçon au fond).
+let techniqueCourante = 'bouchon';
+let scionChoix = SCIONS_DE_DEPART[0];
 
+function trouverScion(id) {
+    for (let i = 0; i < SCIONS.length; i++) {
+        if (SCIONS[i].id === id) { return SCIONS[i]; }
+    }
+    return null;
+}
+
+function scionCourant() {
+    return trouverScion(scionChoix) || SCIONS[0];
+}
+
+// En quiver, le « bouchon » actif est le SCION : sensibilité et capacités suivent.
 function flotteurCourant() {
+    if (techniqueCourante === 'quiver') { return scionCourant(); }
     for (let i = 0; i < FLOTTEURS.length; i++) {
         if (FLOTTEURS[i].id === flotteurChoix) {
             return FLOTTEURS[i];
@@ -2194,6 +2214,32 @@ function setFloatType(id) {
     setProfondeur(profondeurLigne);
     journal.bouchon = f.id;
     saveJournal();
+}
+
+function scionPossede(id) {
+    return journal.scions.indexOf(id) >= 0;
+}
+
+// Équipe un scion possédé (mode quiver).
+function setScion(id) {
+    const f = trouverScion(id);
+    if (!f || !scionPossede(f.id)) { return false; }
+    scionChoix = f.id;
+    journal.scion = f.id;
+    saveJournal();
+    if (scionSelect && scionSelect.value !== f.id) { scionSelect.value = f.id; }
+    if (techniqueCourante === 'quiver') { floatInfo.textContent = f.desc; }
+    return true;
+}
+
+function acheterScion(id) {
+    const f = trouverScion(id);
+    if (!f || scionPossede(id) || journal.experience < f.prix) { return false; }
+    journal.experience -= f.prix;
+    journal.scions.push(id);
+    saveJournal();
+    renderJournal();
+    return true;
 }
 
 // Retrouve un bouchon par son identifiant (ou null).
@@ -2557,7 +2603,8 @@ function updateToolDock() {
     const resting = (floatState === 'idle' || floatState === 'inWater') && cameraMode === 'normal';
     cameraButton.disabled = !resting || paused;
     feedButton.disabled = !resting || paused || stockAmorce() === 0;
-    depthPanel.hidden = floatState !== 'idle';
+    // Au quiver, l'hameçon est posé au fond : le réglage de profondeur ne sert pas.
+    depthPanel.hidden = floatState !== 'idle' || techniqueCourante === 'quiver';
     quickFeedButton.hidden = floatState !== 'inWater' || cameraViewActive;
     quickFeedButton.disabled = feedButton.disabled || feedState !== 'idle';
     lineSelect.disabled = floatState !== 'idle' || castState !== 'idle';
@@ -3334,7 +3381,7 @@ const TAILLE_LOT = 3;
 let lignesRestantes = MAX_LIGNES;
 let amorceDepartRestante = AMORCE_DEPART;
 const journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false,
-    technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice(), ligne: 'nylon',
+    technique: 'bouchon', bouchons: BOUCHONS_DE_DEPART.slice(), scions: SCIONS_DE_DEPART.slice(), scion: SCIONS_DE_DEPART[0], ligne: 'nylon',
     recharges: Object.fromEntries(RECHARGES.map(article => [article.id, 0])) };
 
 function stockAmorce() {
@@ -3412,7 +3459,6 @@ let experiencePartie = 0;
 // Technique de pêche : 'bouchon' (flotteur) ou 'quiver' (scion de canne).
 const modeQuiver = creerModeQuiver({ canvas: quiverCanvas, panel: quiverPanel });
 
-let techniqueCourante = 'bouchon';
 const journalStore = (typeof localStorage !== 'undefined') ? localStorage : null;
 const JOURNAL_KEY = 'peche_carnet_v1';
 
@@ -3424,7 +3470,10 @@ function loadJournal() {
         bouchonsDepart: BOUCHONS_DE_DEPART,
         trouverFlotteur: trouverFlotteur,
         setFlotteur: function (id) { flotteurChoix = id; },
-        getFlotteur: function () { return flotteurChoix; }
+        getFlotteur: function () { return flotteurChoix; },
+        scionsDepart: SCIONS_DE_DEPART,
+        trouverScion: trouverScion,
+        setScion: function (id) { scionChoix = id; }
     });
 }
 
@@ -3546,6 +3595,8 @@ function acheterBouchon(id) {
 // bouchon de départ. Renvoie le bouchon perdu, ou null si c'était un bouchon
 // offert (les bouchons de départ sont toujours dans le sac).
 function perdreLeBouchon() {
+    // Au quiver, pas de bouchon à perdre : le scion reste au bout de la canne.
+    if (techniqueCourante === 'quiver') { return null; }
     const flotteur = flotteurCourant();
     if ((flotteur.prix || 0) <= 0) {
         return null;
@@ -3575,6 +3626,11 @@ function renderBoutique() {
     if (bouchonPossede(flotteurChoix)) {
         floatSelect.value = flotteurChoix;
     }
+    if (scionSelect) {
+        scionSelect.innerHTML = SCIONS.filter(f => scionPossede(f.id))
+            .map(f => '<option value="' + f.id + '">' + f.nom + '</option>').join('');
+        scionSelect.value = scionChoix;
+    }
     selectionnerFilDisponible();
     lineSelect.innerHTML = TYPES_DE_FIL.map(fil => '<option value="' + fil.id + '"'
         + (stockFil(fil.id) ? '' : ' disabled') + '>' + fil.nom + ' (' + stockFil(fil.id) + ')</option>').join('');
@@ -3584,7 +3640,8 @@ function renderBoutique() {
         return;
     }
     // 2) La boutique : un bouton « Équiper » ou « Acheter » pour chaque bouchon.
-    let html = RECHARGES.map(article => {
+    let html = '<div class="shop-section">🧵 Fils et amorce</div><div class="shop-grid">';
+    html += RECHARGES.map(article => {
         const disponible = article.id === 'amorce' ? stockAmorce() : stockFil(article.id);
         return '<div class="shop-item"><div class="shop-name">' + article.nom + ' · ' + disponible
             + ' en stock</div><div class="shop-desc">' + article.desc + '</div>'
@@ -3592,6 +3649,7 @@ function renderBoutique() {
             + (journal.experience < article.prix ? ' disabled' : '')
             + '>Acheter ×' + TAILLE_LOT + ' · ' + article.prix + ' XP</button></div>';
     }).join('');
+    html += '</div><div class="shop-section">🎣 Bouchons</div><div class="shop-grid">';
     FLOTTEURS.forEach(f => {
         const possede = bouchonPossede(f.id);
         const equipe = f.id === flotteurChoix;
@@ -3612,6 +3670,26 @@ function renderBoutique() {
             + '<div class="shop-desc">' + f.desc + '</div>'
             + bouton + '</div>';
     });
+    html += '</div><div class="shop-section">🪄 Scions (quiver)</div><div class="shop-grid">';
+    SCIONS.forEach(f => {
+        const possede = scionPossede(f.id);
+        const equipe = f.id === scionChoix;
+        let bouton;
+        if (possede) {
+            bouton = equipe
+                ? '<button class="shop-btn equipped" disabled>✅ Équipé</button>'
+                : '<button class="shop-btn" data-action="equiper-scion" data-id="' + f.id + '">Équiper</button>';
+        } else {
+            bouton = '<button class="shop-btn buy" data-action="acheter-scion" data-id="' + f.id + '"'
+                + (journal.experience >= f.prix ? '' : ' disabled') + '>Acheter · ' + f.prix + ' XP</button>';
+        }
+        html += '<div class="shop-item' + (possede ? ' owned' : '') + '">'
+            + '<div class="shop-name">' + f.nom
+            + (possede ? '' : ' <span class="shop-price">' + f.prix + ' XP</span>') + '</div>'
+            + '<div class="shop-trait">' + f.atout + '</div>'
+            + '<div class="shop-desc">' + f.desc + '</div>' + bouton + '</div>';
+    });
+    html += '</div><div class="shop-section">📡 Matériel</div><div class="shop-grid">';
     const owned = journal.sonar;
     sonarButton.hidden = !owned;
     html += '<div class="shop-item' + (owned ? ' owned' : '') + '">'
@@ -3620,7 +3698,7 @@ function renderBoutique() {
         + (owned ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
             : '<button class="shop-btn buy" data-id="sonar" data-action="acheter"'
                 + (journal.experience < SONAR_PRICE ? ' disabled' : '') + '>Acheter · ' + SONAR_PRICE + ' XP</button>')
-        + '</div>';
+        + '</div></div>';
     boutique.innerHTML = html;
 }
 
@@ -3660,7 +3738,20 @@ boutique.addEventListener('click', event => {
         if (acheterSonar()) { sound.playPiece(); }
         return;
     }
-    if (cible.dataset.action === 'equiper') {
+    if (cible.dataset.action === 'equiper-scion') {
+        ensureSound();
+        setScion(id);
+        sound.reel();
+    } else if (cible.dataset.action === 'acheter-scion') {
+        if (acheterScion(id)) {
+            ensureSound();
+            setScion(id);
+            sound.playPiece();
+            statusDisplay.textContent = trouverScion(id).nom + ' acheté et équipé !';
+        } else {
+            statusDisplay.textContent = 'Pas assez d’expérience pour ce scion.';
+        }
+    } else if (cible.dataset.action === 'equiper') {
         ensureSound();
         setFloatType(id);
         sound.reel();
@@ -3693,6 +3784,12 @@ function montrerOnglet(nom) {
             }
         }
     });
+    // L'onglet cliqué est mis en avant (comme un onglet d'inventaire).
+    if (journalTabs && journalTabs.querySelectorAll) {
+        journalTabs.querySelectorAll('.tab').forEach(function (bouton) {
+            bouton.classList.toggle('active', bouton.dataset.tab === nom);
+        });
+    }
 }
 
 if (journalTabs) {
@@ -4371,6 +4468,9 @@ journalButton.addEventListener('click', () => {
 });
 journalClose.addEventListener('click', hideJournal);
 difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
+if (scionSelect) {
+    scionSelect.addEventListener('change', () => { setScion(scionSelect.value); renderBoutique(); });
+}
 floatSelect.addEventListener('change', () => {
     setFloatType(floatSelect.value);
     renderBoutique();
@@ -5946,6 +6046,7 @@ function showBiteView(fish) {
     biteOrigine.copy(floatGroup.position);
     spawnRipple(floatGroup.position);
     sound.bite();
+    if (techniqueCourante === 'quiver' && capaciteBouchon().sonnette) { sound.playCarillon(); }
     // Vue RÉALISTE : aucun zoom. Un petit message flottant aide simplement à
     // repérer que quelque chose se passe autour du bouchon / du scion.
     const nomMouvement = techniqueCourante === 'quiver' ? 'scion' : 'bouchon';
@@ -8457,6 +8558,10 @@ window.__game = {
         renderJournal();
     },
     getBouchonsPossedes: function () { return journal.bouchons.slice(); },
+    getScionsPossedes: function () { return journal.scions.slice(); },
+    getScion: function () { return scionChoix; },
+    setScion: setScion,
+    acheterScion: acheterScion,
     getBoutiqueHtml: function () { return boutique ? boutique.innerHTML : ''; },
     acheterBouchon: acheterBouchon,
     perdreLeBouchon: perdreLeBouchon,
