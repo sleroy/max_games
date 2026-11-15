@@ -306,7 +306,9 @@ function attraction(O) {
         const cibles = parEspece[id];
         const m = mesurerDensites(O, id, cibles);
         check(id + ' : plus dense autour de ses obstacles (' + cibles.map(o => o.type).join(', ') + ') que dans l’étang',
-            m.autour > 2 * m.etang && m.proches >= 1,
+            // v183 : seul le PREMIER poisson d'un lot est garanti attiré (les autres : une chance sur deux) et il
+            // peut sortir un instant du cercle de 10 unités : on exige 0,5 poisson près de l'obstacle en moyenne.
+            m.autour > 2 * m.etang && m.proches >= 0.5,
             (m.autour * 1000).toFixed(2) + ' ‰ contre ' + (m.etang * 1000).toFixed(2) + ' ‰ ('
             + m.proches.toFixed(1) + ' sur ' + m.total.toFixed(1) + ')');
     });

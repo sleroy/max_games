@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE
-} from './especes.js?v=173';
+} from './especes.js?v=183';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -30,6 +30,13 @@ export function creerPoissons(deps) {
     const SURFACE_HA = deps.SURFACE_HA;
     // Obstacles aquatiques (obstacles.js) : ils attirent certaines espèces (zone de vie déplacée).
     const obstacles = deps.obstacles;
+    // Types de fond (substrats.js) : l'habitat des poissons qu'aucun obstacle n'a attirés.
+    const substrats = deps.substrats;
+    // Un seul « chez-soi » par poisson : obstacles d'abord, puis le substrat pour les autres.
+    function installerHabitat(poissons) {
+        if (obstacles) { obstacles.attirer(poissons); }
+        if (substrats) { substrats.attirer(poissons); }
+    }
     let peuplement = true;   // vrai pendant le peuplement initial (les bancs sont attirés d'un bloc, après)
 
     // ---------------------------------------------------------------------------
@@ -567,7 +574,7 @@ export function creerPoissons(deps) {
         scene.add(fish);
         fishes.push(fish);
         // Un poisson ajouté plus tard (remplacement) est lui aussi attiré par les obstacles.
-        if (obstacles && !peuplement && !groupe) { obstacles.attirer([fish]); }
+        if (!peuplement && !groupe) { installerHabitat([fish]); }
         return fish;
     }
 
@@ -705,7 +712,7 @@ export function creerPoissons(deps) {
 
     peuplerEtang();
     peuplement = false;
-    if (obstacles) { obstacles.attirer(fishes); }
+    installerHabitat(fishes);
 
     // Vide l'étang puis le repeuple (tests, nouvelle partie).
     function repeuplerEtang() {
@@ -713,7 +720,7 @@ export function creerPoissons(deps) {
         viderEtang();
         peuplerEtang();
         peuplement = false;
-        if (obstacles) { obstacles.attirer(fishes); }
+        installerHabitat(fishes);
     }
 
     function respawnFish(fish) {

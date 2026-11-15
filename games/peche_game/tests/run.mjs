@@ -46,6 +46,7 @@ import scenarioGrandEtang from './scenario-grand-etang.mjs';
 import { run as scenarioObstacles } from './scenario-obstacles.mjs';
 import { run as scenarioFond } from './scenario-fond.mjs';
 import { run as scenarioDandine } from './scenario-dandine.mjs';
+import { run as scenarioSubstrats } from './scenario-substrats.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -91,6 +92,7 @@ try {
     scenarioObstacles();        // obstacles aquatiques (v174) : placement, accrochage, attraction, collision
     scenarioFond();             // fond sous le bouchon (v180) : un seul verdict, dérive comprise
     scenarioDandine();          // petit coup de moulinet (v181) : remous, rayon 3, décroissance, plafond
+    scenarioSubstrats();        // types de fond (v183) : répartition, habitat, risques, carte, widget
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
 } catch (error) {
     crashed = error;

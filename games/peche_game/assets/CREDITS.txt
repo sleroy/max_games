@@ -93,3 +93,8 @@ attribution requise (auteur + lien ci-dessous), partage à l'identique pour CC B
   https://commons.wikimedia.org/wiki/File:Chime_(1)_Sample.wav
 - clic.mp3, fouet-canne.mp3, epuisette.mp3, poisson-sol.mp3, fil-tendu.mp3 : sons synthétisés
   avec ffmpeg (bruit filtré / sinus) pour ce jeu. Aucune attribution requise (CC0 1.0).
+
+--- Types de fond (v183) ---
+La texture du fond de l'étang (sable, gravier, vase, roche, herbier) est GÉNÉRÉE en code (substrats.js) : aucune image,
+aucune licence. Les bruits associés réutilisent des sons déjà crédités ci-dessus (pas-gravier.mp3 pour les cailloux,
+plouf.mp3 pour la bulle de la vase).

@@ -10,8 +10,23 @@ export function creerCarnetUI(deps) {
     const {
         tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
         FOND_CENTRE, FOSSES, PROFONDEUR_MAX, RAYON_CADRE_CARTE, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES,
-        profondeurLocale
+        profondeurLocale, substrats
     } = deps;
+
+    // Les zones de fond (§14.3) viennent de la MÊME grille que la texture du fond et que
+    // l'habitat des poissons (substrats.js). Un seul tracé par substrat, calculé une fois
+    // (la grille ne change jamais) : des rectangles de la grille, en coordonnées de la carte.
+    let tracesFonds = null;
+    function tracerFonds(mx, mz, ech) {
+        if (tracesFonds) { return tracesFonds; }
+        const chemins = {};
+        substrats.rectsCarte().forEach(function (r) {
+            chemins[r.substrat] = (chemins[r.substrat] || '') + 'M' + mx(r.x).toFixed(1) + ' ' + mz(r.z).toFixed(1)
+                + 'h' + (r.w * ech).toFixed(2) + 'v' + (r.h * ech).toFixed(2) + 'h-' + (r.w * ech).toFixed(2) + 'z';
+        });
+        tracesFonds = chemins;
+        return chemins;
+    }
 
     // ---------------------------------------------------------------------------
     // Onglets du carnet : Prises / Boutique / Touches / Options
@@ -85,6 +100,14 @@ export function creerCarnetUI(deps) {
             svg += '<path d="' + cheminContour(Math.sqrt(1 - frac))
                 + '" fill="' + TEINTES[i] + '"/>';
         }
+        // FONDS (§14.3) : sable, gravier, vase, roche, herbier, découpés dans le contour de
+        // l'eau. Semi-transparents : on lit toujours la profondeur dessous.
+        const fonds = tracerFonds(mx, mz, ech);
+        svg += '<clipPath id="clip-fonds"><path d="' + cheminContour(1) + '"/></clipPath><g clip-path="url(#clip-fonds)" opacity="0.72">';
+        substrats.SUBSTRATS.forEach(function (sub) {
+            svg += '<path class="fond-' + sub.id + '" d="' + (fonds[sub.id] || '') + '" fill="' + sub.couleur + '"/>';
+        });
+        svg += '</g>';
         // ISOBATHES : les courbes de 1 m et 2 m (le 3 m n'existe que dans les fosses,
         // annotées juste après), avec leur valeur écrite.
         [2, 4].forEach(function (unites) {
@@ -143,12 +166,27 @@ export function creerCarnetUI(deps) {
                 + zone.couleur + '"></span>' + zone.nom + ' : ' + (noms.join(', ') || '—') + '</div>';
         });
         legende += '</div>';
+        // Légende des FONDS : couleur, part de l'étang, espèces qui y vivent (COMPORTEMENTS).
+        legende += '<div class="map-profondeur">Fonds : chaque poisson vit sur le sien.</div><div class="map-legende map-fonds">';
+        substrats.SUBSTRATS.forEach(function (sub) {
+            const noms = substrats.especesDe(sub.id).map(function (id) {
+                const espece = SPECIES.find(function (s) { return s.id === id; });
+                return espece ? espece.nom : id;
+            });
+            legende += '<div class="map-zone"><span class="map-pastille map-pastille-fond" style="background:' + sub.couleur
+                + '"></span><b>' + sub.nom + '</b> (' + Math.round(substrats.parts[sub.id] * 100) + ' %) : '
+                + (noms.join(', ') || '—') + '</div>';
+        });
+        legende += '</div>';
         // Profondeur à l'endroit du bouchon (et profondeur de l'hameçon).
         if (etat.floatState !== 'idle') {
             const profLocale = profondeurLocale(floatGroup.position.x, floatGroup.position.z);
             legende += '<div class="map-zone">🌊 Ici : ' + (profLocale / 2).toFixed(1).replace('.', ',')
                 + ' m d’eau · hameçon à ' + (etat.profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m'
-                + (etat.hameconDansLaVase ? ' — <b>dans la vase !</b>' : '') + '</div>';
+                + ' · fond : ' + substrats.SUBSTRATS.find(function (f) {
+                    return f.id === (substrats.substratEn(floatGroup.position.x, floatGroup.position.z) || 'vase');
+                }).nom.toLowerCase()
+                + (etat.hameconDansLaVase ? ' — <b>accroché au fond !</b>' : '') + '</div>';
         }
         pondMap.innerHTML = svg + legende;
     }

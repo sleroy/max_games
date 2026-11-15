@@ -101,6 +101,9 @@ export function creerAccrochage(deps) {
         strugglePanel.classList.add('active');
         strugglePanel.classList.add('snagging');
         sound.snag();
+        // Bruit du fond (sons déjà crédités) : cailloux pour la roche, bulle pour la vase.
+        const sonFond = obstacle ? obstacle.son : (dansLaVase ? ['plouf', 0.45] : null);
+        if (sonFond && sound.jouerSample) { sound.jouerSample(sonFond[0], sonFond[1]); }
         struggleInfo.textContent = profil ? profil.message
             : dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
         if (strugglePortrait) { strugglePortrait.hidden = true; }

@@ -288,37 +288,42 @@ Trois rôles de jeu :
 > Les **types de fond** (sable, gravier, vase, roche, herbier — section 14.3) jouent
 > le même rôle d'attraction par espèce : les deux idées vont ensemble.
 
-### 14.3 Types de fond de l'étang (attirent certaines espèces)
+### 14.3 Types de fond de l'étang (attirent certaines espèces) — LIVRÉ v183
 
 Aujourd'hui le fond est **uniforme** : une seule texture de vase (`assets/vase.jpg`,
 ambientCG Ground054, CC0) appliquée à tout le bassin. Or, en pêche réelle, c'est le
 **substrat** qui décide quels poissons vivent là.
 
-- [ ] **Découper le fond en zones de substrat**, chacune avec sa texture et sa couleur :
-  - [ ] **sable clair** : anses abritées et hauts-fonds doux ;
-  - [ ] **gravier / galets** : hauts-fonds exposés au vent ;
-  - [ ] **vase** : fosses profondes et anses sans courant (texture actuelle) ;
-  - [ ] **roche** : tombants et bordures des fosses ;
-  - [ ] **herbier** : zones élargies autour des nénuphars et des roseaux.
-- [ ] **Rendu** : mélange de textures par zone (masque ou maillages séparés), en
+- [x] **Découper le fond en zones de substrat**, chacune avec sa texture et sa couleur :
+  - [x] **sable clair** : anses abritées et hauts-fonds doux ;
+  - [x] **gravier / galets** : hauts-fonds exposés au vent ;
+  - [x] **vase** : fosses profondes et anses sans courant (texture actuelle) ;
+  - [x] **roche** : tombants et bordures des fosses ;
+  - [x] **herbier** : zones élargies autour des nénuphars et des roseaux.
+- [x] **Rendu** : mélange de textures par zone (masque ou maillages séparés), en
   gardant les textures CC0/KTX2 déjà en place pour ne pas casser les performances.
-- [ ] **Rôle halieutique** : chaque substrat **attire ou repousse** certaines espèces,
+- [x] **Rôle halieutique** : chaque substrat **attire ou repousse** certaines espèces,
   à relier aux `COMPORTEMENTS` d'`especes.js` (comme la zone de vie actuelle) :
-  - [ ] vase → **tanche, carpe, brème, anguille** (espèces qui fouillent) ;
-  - [ ] sable → **gardon, goujon, ablette** ;
-  - [ ] gravier → **perche, chevesne** ;
-  - [ ] roche → **perche, sandre** ;
-  - [ ] herbier → **brochet, black-bass** (embuscade) et **gardon** (abri).
-- [ ] **Lisibilité pour le joueur** : la **carte du carnet** affiche les fonds avec
+  - [x] vase → **tanche, carpe, brème, anguille** (espèces qui fouillent) ;
+  - [x] sable → **gardon, goujon, ablette** ;
+  - [x] gravier → **perche, chevesne** ;
+  - [x] roche → **perche, sandre** ;
+  - [x] herbier → **brochet, black-bass** (embuscade) et **gardon** (abri).
+- [x] **Lisibilité pour le joueur** : la **carte du carnet** affiche les fonds avec
   une légende, et le widget de profondeur indique le **type de fond sous l'hameçon**
   (utile pour choisir où lancer depuis la barque).
-- [ ] **Risques associés** : la **vase** reste l'accrochage qui aspire ; l'**herbier**
+- [x] **Risques associés** : la **vase** reste l'accrochage qui aspire ; l'**herbier**
   accroche comme les nénuphars ; la **roche** peut user la ligne (nouveau risque à
   définir, ou simple accrochage plus court).
-- [ ] **Sons** : un bruit différent selon le fond (cailloux qui cognent, vase qui
+- [x] **Sons** : un bruit différent selon le fond (cailloux qui cognent, vase qui
   aspire) — réutiliser les sons déjà crédités.
-- [ ] **Tests** : répartition déterministe des substrats, attraction par espèce
+- [x] **Tests** : répartition déterministe des substrats, attraction par espèce
   mesurée sur une simulation, cohérence entre la carte, le fond rendu et les poissons.
+
+> Livré en v183 : `substrats.js` (grille déterministe 1 × 1 unité : sable 25 %, gravier 14 %, vase 31 %, roche 14 %,
+> herbier 16 %), texture du fond générée en code, habitat des poissons via `COMPORTEMENTS[...].substrats` (même notion que
+> les obstacles), carte du carnet avec légende, widget « Fond : … », accrochages vase / herbier / roche, sons déjà crédités
+> (cailloux = `pas-gravier`, vase = bulle `plouf`). Détails : `docs/modules.md` §14, test `scenario-substrats.mjs`.
 
 ### 14.4 Nombre de poissons réaliste par rapport à la surface
 
@@ -601,37 +606,42 @@ Trois rôles de jeu :
 > Les **types de fond** (sable, gravier, vase, roche, herbier — section 14.3) jouent
 > le même rôle d'attraction par espèce : les deux idées vont ensemble.
 
-### 14.3 Types de fond de l'étang (attirent certaines espèces)
+### 14.3 Types de fond de l'étang (attirent certaines espèces) — LIVRÉ v183
 
 Aujourd'hui le fond est **uniforme** : une seule texture de vase (`assets/vase.jpg`,
 ambientCG Ground054, CC0) appliquée à tout le bassin. Or, en pêche réelle, c'est le
 **substrat** qui décide quels poissons vivent là.
 
-- [ ] **Découper le fond en zones de substrat**, chacune avec sa texture et sa couleur :
-  - [ ] **sable clair** : anses abritées et hauts-fonds doux ;
-  - [ ] **gravier / galets** : hauts-fonds exposés au vent ;
-  - [ ] **vase** : fosses profondes et anses sans courant (texture actuelle) ;
-  - [ ] **roche** : tombants et bordures des fosses ;
-  - [ ] **herbier** : zones élargies autour des nénuphars et des roseaux.
-- [ ] **Rendu** : mélange de textures par zone (masque ou maillages séparés), en
+- [x] **Découper le fond en zones de substrat**, chacune avec sa texture et sa couleur :
+  - [x] **sable clair** : anses abritées et hauts-fonds doux ;
+  - [x] **gravier / galets** : hauts-fonds exposés au vent ;
+  - [x] **vase** : fosses profondes et anses sans courant (texture actuelle) ;
+  - [x] **roche** : tombants et bordures des fosses ;
+  - [x] **herbier** : zones élargies autour des nénuphars et des roseaux.
+- [x] **Rendu** : mélange de textures par zone (masque ou maillages séparés), en
   gardant les textures CC0/KTX2 déjà en place pour ne pas casser les performances.
-- [ ] **Rôle halieutique** : chaque substrat **attire ou repousse** certaines espèces,
+- [x] **Rôle halieutique** : chaque substrat **attire ou repousse** certaines espèces,
   à relier aux `COMPORTEMENTS` d'`especes.js` (comme la zone de vie actuelle) :
-  - [ ] vase → **tanche, carpe, brème, anguille** (espèces qui fouillent) ;
-  - [ ] sable → **gardon, goujon, ablette** ;
-  - [ ] gravier → **perche, chevesne** ;
-  - [ ] roche → **perche, sandre** ;
-  - [ ] herbier → **brochet, black-bass** (embuscade) et **gardon** (abri).
-- [ ] **Lisibilité pour le joueur** : la **carte du carnet** affiche les fonds avec
+  - [x] vase → **tanche, carpe, brème, anguille** (espèces qui fouillent) ;
+  - [x] sable → **gardon, goujon, ablette** ;
+  - [x] gravier → **perche, chevesne** ;
+  - [x] roche → **perche, sandre** ;
+  - [x] herbier → **brochet, black-bass** (embuscade) et **gardon** (abri).
+- [x] **Lisibilité pour le joueur** : la **carte du carnet** affiche les fonds avec
   une légende, et le widget de profondeur indique le **type de fond sous l'hameçon**
   (utile pour choisir où lancer depuis la barque).
-- [ ] **Risques associés** : la **vase** reste l'accrochage qui aspire ; l'**herbier**
+- [x] **Risques associés** : la **vase** reste l'accrochage qui aspire ; l'**herbier**
   accroche comme les nénuphars ; la **roche** peut user la ligne (nouveau risque à
   définir, ou simple accrochage plus court).
-- [ ] **Sons** : un bruit différent selon le fond (cailloux qui cognent, vase qui
+- [x] **Sons** : un bruit différent selon le fond (cailloux qui cognent, vase qui
   aspire) — réutiliser les sons déjà crédités.
-- [ ] **Tests** : répartition déterministe des substrats, attraction par espèce
+- [x] **Tests** : répartition déterministe des substrats, attraction par espèce
   mesurée sur une simulation, cohérence entre la carte, le fond rendu et les poissons.
+
+> Livré en v183 : `substrats.js` (grille déterministe 1 × 1 unité : sable 25 %, gravier 14 %, vase 31 %, roche 14 %,
+> herbier 16 %), texture du fond générée en code, habitat des poissons via `COMPORTEMENTS[...].substrats` (même notion que
+> les obstacles), carte du carnet avec légende, widget « Fond : … », accrochages vase / herbier / roche, sons déjà crédités
+> (cailloux = `pas-gravier`, vase = bulle `plouf`). Détails : `docs/modules.md` §14, test `scenario-substrats.mjs`.
 
 ### 14.4 Nombre de poissons réaliste par rapport à la surface
 

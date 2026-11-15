@@ -15,7 +15,7 @@ export function creerComportement(deps) {
         fishes, animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL,
         ripples, spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
         risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond,
-        verdictFond, majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt,
+        verdictFond, accrochageDe, majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt,
         nibbleRand, MAX_WAIT, consumeCrankTurns, startReel, findBitingFish, showBiteView,
         floatIdle, tenterAttaquePredateur, REEL_IDLE_HELP, REEL_AUTO, REEL_PER_TURN, angler,
         startHoldingFish, endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS,
@@ -58,7 +58,10 @@ export function creerComportement(deps) {
     // si l'hameçon est posé près du relief, quelle que soit la profondeur de l'étang.
     function hameconDansZone(data, zone) {
         if (data.couche === 'fond') {
-            const haut = etat.HOOK_DEPTH - fondY(floatGroup.position.x, floatGroup.position.z);
+            // Sur le sable ou le gravier, l'hameçon trop long REPOSE sur le fond (§14.3) : il ne
+            // passe pas dessous. Ailleurs (vase, herbier, roche) il s'accroche : plus de touche.
+            const fond = fondY(floatGroup.position.x, floatGroup.position.z);
+            const haut = Math.max(etat.HOOK_DEPTH, fond) - fond;
             return haut <= 1.2 && haut >= -0.4;
         }
         return !zone || (etat.HOOK_DEPTH >= zone[0] - 0.5 && etat.HOOK_DEPTH <= zone[1] + 0.5);
@@ -435,8 +438,17 @@ export function creerComportement(deps) {
     function jugerFond() {
         const pos = floatGroup.position;
         const verdict = verdictFond(pos.x, pos.z, etat.profondeurLigne, modeQuiver.estActif());
+        // Sur le sable ou le gravier, un hameçon trop long REPOSE sur le fond (§14.3) : sa
+        // profondeur utile (touche, poissons de fond) est celle du fond, pas celle de la ligne.
+        // Au quiver, poserHameconAuFond règle déjà la profondeur : on n'y touche pas.
+        if (!modeQuiver.estActif()) {
+            etat.HOOK_DEPTH = verdict.surLeFond && !verdict.dansLaVase
+                ? Math.max(-etat.profondeurLigne, -verdict.profondeurEau + 0.1)
+                : -etat.profondeurLigne;
+        }
         const avant = etat.hameconDansLaVase;
         etat.hameconDansLaVase = verdict.dansLaVase;
+        if (verdict.dansLaVase) { etat.fondPris = verdict.dans; }   // « dans la vase », « pris dans l’herbier »…
         if (verdict.dansLaVase === avant) { return false; }
         if (!verdict.dansLaVase) {
             floatGroup.rotation.z = 0;   // le bouchon se redresse
@@ -453,7 +465,8 @@ export function creerComportement(deps) {
         // La ligne accrochée reste là où le bouchon est vraiment.
         castTarget.x = pos.x;
         castTarget.z = pos.z;
-        startSnag('fond');
+        // Selon le fond : vase (aspire), herbier (comme les nénuphars) ou roche (court).
+        startSnag(accrochageDe(verdict.substrat));
         majCoupeProfondeur();
         return true;
     }

@@ -307,7 +307,8 @@ node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
 | `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI — **en cours de découpage** |
 | `decor.js` | décor fixe : arbres, roseaux, rochers, nénuphars (rend `lilyPads`) |
 | `portraits.js` | portraits 2D des espèces sur fond transparent (panneau de combat) |
-| `especes.js` | données : espèces, styles de combat, silhouettes, touches |
+| `especes.js` | données : espèces, styles de combat, silhouettes, touches, `substrats` préférés |
+| `substrats.js` | types de fond (sable, gravier, vase, roche, herbier) : grille, texture, carte, habitat, accrochages |
 | `carnet.js` | persistance du carnet de pêche (localStorage) |
 | `classement.js` | classement local |
 | `demelage.js` | mini-jeu de démêlage (canvas 2D) |

@@ -156,8 +156,13 @@ export function verdictFond(x, z, profondeurLigne, auFond) {
     };
 }
 
+// Demi-côté (unités) du carré centré sur l'étang qui porte la TEXTURE du fond (substrats.js,
+// §14.3) : le contour le plus large + la marge du maillage du fond (2) + un peu d'air.
+export const DEMI_COTE_FOND = Math.ceil(RAYON_ETANG_MAX + 4.5);
+
 // Maillage du fond : un disque « polaire » qui suit le contour, avec une
-// profondeur (`aDepth`) stockée par sommet pour foncer l'eau au large.
+// profondeur (`aDepth`) stockée par sommet pour foncer l'eau au large, et des UV planaires
+// (le carré de côté 2 × DEMI_COTE_FOND centré sur l'étang) pour la texture des substrats.
 export function makeFondGeometry(marge, rings, segments) {
     const positions = [POND_CENTER.x, fondY(POND_CENTER.x, POND_CENTER.z), POND_CENTER.z];
     const indices = [];
@@ -192,6 +197,13 @@ export function makeFondGeometry(marge, rings, segments) {
             POND_CENTER.z + positions[i + 2]));
     }
     geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(depths, 1));
+    const uvs = [];
+    for (let i = 0; i < positions.length; i += 3) {
+        // positions[i] et positions[i + 2] sont relatifs au centre (le maillage y est posé).
+        uvs.push((positions[i] + DEMI_COTE_FOND) / (2 * DEMI_COTE_FOND),
+            1 - (positions[i + 2] + DEMI_COTE_FOND) / (2 * DEMI_COTE_FOND));
+    }
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;

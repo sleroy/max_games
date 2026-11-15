@@ -466,6 +466,14 @@ export async function loadGame() {
     fs.copyFileSync(FILES.comportement, path.join(tmpDir, 'comportement.js'));
     fs.copyFileSync(FILES.obstacles, path.join(tmpDir, 'obstacles.js'));
     fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
+    // Tout autre module du dossier (substrats.js, esches.js…) est copié aussi : la liste
+    // ci-dessus n'a plus à suivre chaque nouveau module.
+    for (const fichier of fs.readdirSync(GAME_DIR)) {
+        if (fichier.endsWith('.js') && fichier !== 'script.js'
+                && !fs.existsSync(path.join(tmpDir, fichier))) {
+            fs.copyFileSync(path.join(GAME_DIR, fichier), path.join(tmpDir, fichier));
+        }
+    }
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
     fs.writeFileSync(path.join(tmpDir, 'three-stub.mjs'), stub);

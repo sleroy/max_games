@@ -7,6 +7,11 @@ import {
     resetToIdle, clearLilyPads, castTo
 } from './harness.mjs';
 
+// §14.3 : le fond n'est plus uniforme. Le point (30, -10) est désormais de l'HERBIER (herbier
+// autour des nénuphars et roseaux) : les tests de la VASE visent un point de vase, au centre du bassin
+// (profondeur ≈ 2 m), toujours à portée de lancer.
+const POINT_VASE = { x: 0, z: -25 };
+
 export function run() {
     group('43) Profondeur de la ligne et relief de l’étang');
 
@@ -101,9 +106,9 @@ export function run() {
     clearLilyPads();
     G().setFloatType('coulisse');
     // Point de lancer toujours à portée, en bord d'étang (peu d'eau).
-    const PROF_BERGE = G().profondeurLocale(30, -10);
+    const PROF_BERGE = G().profondeurLocale(POINT_VASE.x, POINT_VASE.z);
     G().setProfondeur(PROF_BERGE - 0.1);          // un peu trop long : dans la vase
-    castTo(30, -10);
+    castTo(POINT_VASE.x, POINT_VASE.z);
     checkEqual('la ligne est dans la vase', G().isHameconDansLaVase(), true);
     check('le jeu prévient', el('status').textContent.indexOf('vase') >= 0,
         el('status').textContent);
@@ -115,7 +120,7 @@ export function run() {
     resetToIdle();
     clearLilyPads();
     G().setProfondeur(1.0);
-    castTo(30, -10);
+    castTo(POINT_VASE.x, POINT_VASE.z);
     checkEqual('en réglant court, plus de vase', G().isHameconDansLaVase(), false);
     resetToIdle();
     G().setFloatType('anglaise');
@@ -126,7 +131,7 @@ export function run() {
     clearLilyPads();
     G().setFloatType('coulisse');
     G().setProfondeur(PROF_BERGE + 0.6);
-    castTo(30, -10);
+    castTo(POINT_VASE.x, POINT_VASE.z);
     checkEqual('un hameçon trop profond s’accroche dans la vase', state(), 'snag');
     check('le jeu explique l’accrochage', el('status').textContent.indexOf('vase') >= 0,
         el('status').textContent);
@@ -195,7 +200,7 @@ export function run() {
     resetToIdle();
     clearLilyPads();
     G().setProfondeur(PROF_BERGE + 0.6);
-    castTo(30, -10);
+    castTo(POINT_VASE.x, POINT_VASE.z);
     G().majCoupeProfondeur();
     checkEqual('le schéma passe en alerte dans la vase',
         el('depthHook').classList.contains('danger'), true);

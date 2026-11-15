@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v181** (petit coup de moulinet : `dandiner`)
+> Dernière mise à jour : **2026-11-15** · jeu **v183** (types de fond : `substrats.js`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -80,6 +80,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
 | `especes.js` | **Données** espèces, comportements, styles, touches | 228 | Contenu (ajout d'espèces) |
 | `obstacles.js` | Obstacles aquatiques (§14.2) : ponton (aussi poste de pêche), écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 671 | Monde / obstacles |
+| `substrats.js` | Types de fond (§14.3) : sable, gravier, vase, roche, herbier. Grille déterministe (sans `rand()`) dérivée du relief, des fosses, de l'exposition au vent et des nénuphars/roseaux du décor. Source unique de la texture du fond (`pixelsFond`, `habillerFond`), de la carte du carnet (`rectsCarte`), du verdict de fond sous l'hameçon (`verdictFond`, accrochages vase / herbier / roche) et de l'habitat des poissons (`attirer`, `COMPORTEMENTS[...].substrats`). Plafond 800 | 522 | Monde / fonds |
 | `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars (expose aussi leurs positions à `obstacles.js`) | 220 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
@@ -431,3 +432,33 @@ Demande du joueur : `idées.md` §14.9. Un tour de manivelle ramenait toujours l
   `moulinetRepos`, `remousRond`.
 - **`script.js`** : aucune modification de logique (versions de cache 181).
 - Tests : `scenario-dandine.mjs` (75).
+
+
+## 14. Types de fond (v183) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §14.3. Le fond était uniforme (une couleur unie) ; il est maintenant découpé en cinq substrats.
+
+- **`substrats.js`** (nouveau, ≈ 520 lignes, plafond 800) : une grille de 1 × 1 unité sur le carré de l'étang
+  (`DEMI_COTE_FOND`). Règle (priorité) : roche (anneau 0,55 à 1,2 rayon autour d'une fosse) → herbier (proximité d'un
+  nénuphar ou d'un roseau, profondeur < 3,6) → vase (profondeur ≥ 4,2 ; anses abritées ≥ 3,2) → gravier
+  (hauts-fonds exposés au vent dominant : plus de 85 unités d'eau en amont) → sable (le reste). Un bruit sinusoïdal fixe
+  rend les limites organiques, un filtre « majorité 3 × 3 » retire les cellules isolées. **Aucun `rand()`** : la grille ne
+  dépend que de la géométrie et des plantes du décor (elles-mêmes tirées avec la graine fixe du jeu).
+  Répartition mesurée : sable 25 %, gravier 14 %, vase 31 %, roche 14 %, herbier 16 % (70 zones connexes, ids `vase-1`…).
+- **Une seule source** : la texture du fond (canvas 384 px généré en code, aucune image), les rectangles de la carte du
+  carnet, le widget de profondeur, le verdict de fond et l'habitat des poissons lisent la même grille.
+- **`environnement.js`** : `DEMI_COTE_FOND` et des UV planaires sur `makeFondGeometry` (la texture couvre le carré).
+- **`especes.js`** : `COMPORTEMENTS[espèce].substrats` (fonds préférés) et `fosse: true` (silure, anguille, sandre : le
+  substrat les installe dans les fosses, jamais au bord).
+- **`poissons.js`** : `installerHabitat(poissons)` = `obstacles.attirer` PUIS `substrats.attirer`. Un poisson déjà attiré par
+  un obstacle (`obstacleId`) n'est jamais déplacé : un seul « chez-soi » (`homeX/homeZ`), pas de second déplacement. 80 % des
+  autres (bancs entiers) s'installent sur un de leurs substrats ; le premier de chaque espèce l'est toujours.
+- **`comportement.js`** : `jugerFond` lit `verdict.accroche` (vase, herbier, roche) et appelle `accrochageDe(substrat)` ;
+  sur sable ou gravier l'hameçon trop long **repose** (`HOOK_DEPTH` = fond + 0,1, hors quiver) sans s'accrocher.
+- **`accrochage.js`** : bruit du fond (`sound.jouerSample`) : « pas-gravier » pour la roche, « plouf » (bulle) pour la vase.
+  Aucun son ajouté. Sable, gravier et herbier restent silencieux.
+- **`ligne.js`** / **`carnetUI.js`** : widget « Fond : vase » (couleur du substrat, « hameçon posé » sur le sable) et carte du
+  carnet avec les fonds sous l'eau + légende (espèces de chaque fond).
+- **`script.js`** : +9 lignes de câblage (ratchet 2971 → 2980), `window.__game.substrats`.
+- Tests : `scenario-substrats.mjs` (76). Les tests de la vase (57, 52…) visent désormais un point de vase du bassin
+  (0, −25) : l'ancien point (30, −10) est de l'herbier.

@@ -164,13 +164,23 @@ export function creerLigne(deps) {
         // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
         // Accroché dans la vase, la décision du jeu (accrochage) fait foi : le bouchon
         // tremble de quelques centièmes, ce qui ne doit pas faire clignoter l'alerte.
-        const dansLaVase = verdict.dansLaVase
+        const accroche = etat.floatState === 'snag' && etat.hameconDansLaVase;
+        const dansLaVase = verdict.dansLaVase || accroche
             || (etat.floatState === 'snag' && !!etat.snag && etat.snag.dansLaVase);
         coupe.hamecon.classList.toggle('danger', dansLaVase);
         coupe.indice.classList.toggle('alerte', dansLaVase);
         coupe.indice.textContent = dansLaVase
-            ? '⚠ Fond à ' + nombreMetres(profLocale) + ' : hameçon dans la vase !'
+            ? '⚠ Fond à ' + nombreMetres(profLocale) + ' : hameçon ' + (verdict.dansLaVase ? verdict.dans : (etat.fondPris || 'dans la vase')) + ' !'
             : zone + ' · fond à ' + nombreMetres(profLocale);
+        // §14.3 : le TYPE de fond sous le bouchon (sous le point visé avant l'arrivée), pour
+        // choisir où lancer. Sa couleur teinte aussi le fond du schéma.
+        coupe.fond.style.backgroundColor = verdict.couleur ? verdict.couleur + 'dd' : '';
+        if (coupe.substrat) {
+            coupe.substrat.textContent = 'Fond : ' + verdict.nom
+                + (verdict.surLeFond && !verdict.dansLaVase ? ' · hameçon posé' : '');
+            coupe.substrat.setAttribute('data-substrat', verdict.substrat);
+            coupe.substrat.style.borderLeftColor = verdict.couleur;
+        }
     }
 
     return {

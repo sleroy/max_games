@@ -972,6 +972,18 @@ button, .crank {
     opacity: 1;
 }
 
+/* Type de fond sous l'hameçon (§14.3) : une barre de la couleur du substrat à gauche. */
+.depth-fond {
+    margin-top: 3px;
+    padding-left: 5px;
+    border-left: 4px solid #c9a06a;
+    font-size: 0.68rem;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Plage de profondeur du bouchon équipé (« Anglaise : 0,3 à 2 m »). */
 .depth-range {
     margin-top: 2px;

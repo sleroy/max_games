@@ -53,24 +53,27 @@ export const SPECIES = [
 //   humeur    : 'errant' (nage en continu), 'embuscade' (immobile puis bond),
 //               'fouille' (lent, s'arrête souvent pour fouiller le fond).
 //   nocturne  : voit et chasse mieux la nuit (vue × 1,4 la nuit au lieu de × 0,45).
+//   substrats : fonds où l'espèce vit (§14.3) : 'sable' | 'gravier' | 'vase' | 'roche' | 'herbier'.
+//               Sa zone de vie (homeX/homeZ) est installée sur l'un d'eux (substrats.js).
+//   fosse     : vrai = refuge des grandes fosses (elle ne quitte pas les fosses).
 // ---------------------------------------------------------------------------
 export const COMPORTEMENTS = {
-    gardon:   { couche: 'mi-eau',  banc: [4, 6], cohesion: 0.9, croisiere: 1.3, pointe: 3.6, virage: 1.6, domaine: 14, vue: 6.0, humeur: 'errant' },
-    rotengle: { couche: 'surface', banc: [3, 5], cohesion: 0.8, croisiere: 1.2, pointe: 3.4, virage: 1.5, domaine: 12, vue: 6.0, humeur: 'errant' },
-    ablette:  { couche: 'surface', banc: [5, 8], cohesion: 1.0, croisiere: 2.2, pointe: 4.8, virage: 2.4, domaine: 18, vue: 5.5, humeur: 'errant' },
-    goujon:   { couche: 'fond',    banc: [3, 5], cohesion: 0.8, croisiere: 0.8, pointe: 3.0, virage: 1.8, domaine: 8,  vue: 4.0, humeur: 'fouille' },
-    breme:    { couche: 'fond',    banc: [3, 5], cohesion: 0.7, croisiere: 1.0, pointe: 3.0, virage: 1.0, domaine: 20, vue: 4.5, humeur: 'fouille' },
-    tanche:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 2.6, virage: 0.9, domaine: 9,  vue: 3.5, humeur: 'fouille', nocturne: true },
-    carpe:    { couche: 'fond',    banc: [1, 3], cohesion: 0.5, croisiere: 0.9, pointe: 4.0, virage: 0.9, domaine: 16, vue: 4.5, humeur: 'fouille' },
-    carassin: { couche: 'fond',    banc: [2, 4], cohesion: 0.6, croisiere: 0.8, pointe: 3.0, virage: 1.1, domaine: 10, vue: 4.0, humeur: 'fouille' },
-    perche:   { couche: 'mi-eau',  banc: [3, 5], cohesion: 0.9, croisiere: 1.5, pointe: 5.0, virage: 1.7, domaine: 12, vue: 7.0, humeur: 'errant' },
-    chevesne: { couche: 'mi-eau',  banc: [2, 4], cohesion: 0.6, croisiere: 1.6, pointe: 5.0, virage: 1.4, domaine: 18, vue: 6.5, humeur: 'errant' },
-    brochet:  { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 0.4, pointe: 8.5, virage: 0.8, domaine: 7,  vue: 8.0, humeur: 'embuscade' },
-    sandre:   { couche: 'fond',    banc: [1, 2], cohesion: 0.4, croisiere: 0.9, pointe: 6.5, virage: 1.0, domaine: 14, vue: 7.5, humeur: 'errant', nocturne: true },
-    'black-bass': { couche: 'mi-eau', banc: [1, 1], cohesion: 0, croisiere: 0.7, pointe: 6.0, virage: 1.3, domaine: 8, vue: 7.0, humeur: 'embuscade' },
-    truite:   { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 1.4, pointe: 6.5, virage: 1.8, domaine: 11, vue: 7.0, humeur: 'errant' },
-    anguille: { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 3.2, virage: 1.4, domaine: 8,  vue: 2.5, humeur: 'fouille', nocturne: true },
-    silure:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.6, pointe: 4.5, virage: 0.6, domaine: 10, vue: 3.5, humeur: 'embuscade', nocturne: true }
+    gardon:   { couche: 'mi-eau',  banc: [4, 6], cohesion: 0.9, croisiere: 1.3, pointe: 3.6, virage: 1.6, domaine: 14, vue: 6.0, humeur: 'errant', substrats: ['sable', 'herbier'] },
+    rotengle: { couche: 'surface', banc: [3, 5], cohesion: 0.8, croisiere: 1.2, pointe: 3.4, virage: 1.5, domaine: 12, vue: 6.0, humeur: 'errant', substrats: ['herbier'] },
+    ablette:  { couche: 'surface', banc: [5, 8], cohesion: 1.0, croisiere: 2.2, pointe: 4.8, virage: 2.4, domaine: 18, vue: 5.5, humeur: 'errant', substrats: ['sable'] },
+    goujon:   { couche: 'fond',    banc: [3, 5], cohesion: 0.8, croisiere: 0.8, pointe: 3.0, virage: 1.8, domaine: 8,  vue: 4.0, humeur: 'fouille', substrats: ['sable'] },
+    breme:    { couche: 'fond',    banc: [3, 5], cohesion: 0.7, croisiere: 1.0, pointe: 3.0, virage: 1.0, domaine: 20, vue: 4.5, humeur: 'fouille', substrats: ['vase'] },
+    tanche:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 2.6, virage: 0.9, domaine: 9,  vue: 3.5, humeur: 'fouille', nocturne: true, substrats: ['vase'] },
+    carpe:    { couche: 'fond',    banc: [1, 3], cohesion: 0.5, croisiere: 0.9, pointe: 4.0, virage: 0.9, domaine: 16, vue: 4.5, humeur: 'fouille', substrats: ['vase'] },
+    carassin: { couche: 'fond',    banc: [2, 4], cohesion: 0.6, croisiere: 0.8, pointe: 3.0, virage: 1.1, domaine: 10, vue: 4.0, humeur: 'fouille', substrats: ['vase'] },
+    perche:   { couche: 'mi-eau',  banc: [3, 5], cohesion: 0.9, croisiere: 1.5, pointe: 5.0, virage: 1.7, domaine: 12, vue: 7.0, humeur: 'errant', substrats: ['gravier', 'roche'] },
+    chevesne: { couche: 'mi-eau',  banc: [2, 4], cohesion: 0.6, croisiere: 1.6, pointe: 5.0, virage: 1.4, domaine: 18, vue: 6.5, humeur: 'errant', substrats: ['gravier'] },
+    brochet:  { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 0.4, pointe: 8.5, virage: 0.8, domaine: 7,  vue: 8.0, humeur: 'embuscade', substrats: ['herbier'] },
+    sandre:   { couche: 'fond',    banc: [1, 2], cohesion: 0.4, croisiere: 0.9, pointe: 6.5, virage: 1.0, domaine: 14, vue: 7.5, humeur: 'errant', nocturne: true, substrats: ['roche'], fosse: true },
+    'black-bass': { couche: 'mi-eau', banc: [1, 1], cohesion: 0, croisiere: 0.7, pointe: 6.0, virage: 1.3, domaine: 8, vue: 7.0, humeur: 'embuscade', substrats: ['herbier'] },
+    truite:   { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 1.4, pointe: 6.5, virage: 1.8, domaine: 11, vue: 7.0, humeur: 'errant', substrats: ['gravier'] },
+    anguille: { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 3.2, virage: 1.4, domaine: 8,  vue: 2.5, humeur: 'fouille', nocturne: true, substrats: ['vase'], fosse: true },
+    silure:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.6, pointe: 4.5, virage: 0.6, domaine: 10, vue: 3.5, humeur: 'embuscade', nocturne: true, substrats: ['vase'], fosse: true }
 };
 
 export const STYLES_COMBAT = {

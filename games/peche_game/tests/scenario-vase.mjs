@@ -15,9 +15,9 @@ function declencherVase() {
     resetToIdle();
     clearLilyPads();
     G().setFloatType('coulisse');
-    const profBerge = G().profondeurLocale(30, -10);
+    const profBerge = G().profondeurLocale(POINT_VASE.x, POINT_VASE.z);
     G().setProfondeur(profBerge + 1.2);
-    castTo(30, -10);
+    castTo(POINT_VASE.x, POINT_VASE.z);
 }
 
 /** Provoque un accrochage dans les NÉNUPHARS (facile). */
@@ -29,6 +29,11 @@ function declencherNenuphar() {
     G().lilyPads.push({ x: 0, z: -25, radius: 6 });
     castTo(0, -25);
 }
+
+// §14.3 : le fond n'est plus uniforme. Le point (30, -10) est désormais de l'HERBIER (herbier
+// autour des nénuphars et roseaux) : les tests de la VASE visent un point de vase, au centre du bassin
+// (profondeur ≈ 2 m), toujours à portée de lancer.
+const POINT_VASE = { x: 0, z: -25 };
 
 export function run() {
     group('57) La vase est tenace : rythme obligatoire, clics rapides inutiles');

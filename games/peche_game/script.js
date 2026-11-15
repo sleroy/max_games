@@ -3,35 +3,36 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=182';
+import { SoundEngine } from './sound.js?v=183';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=173';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=183';
 import { creerClassement } from './classement.js';
 import { dessinerPortrait } from './portraits.js?v=140';
-import { creerPoissons } from './poissons.js?v=178';
+import { creerPoissons } from './poissons.js?v=183';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
-    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=180';
+    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=183';
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
+import { creerSubstrats } from './substrats.js?v=183';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
 import { creerCombat } from './combat.js?v=145';
-import { creerComportement } from './comportement.js?v=181';
+import { creerComportement } from './comportement.js?v=183';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
-import { creerCarnetUI } from './carnetUI.js?v=173';
+import { creerCarnetUI } from './carnetUI.js?v=183';
 import { creerBoutique } from './boutique.js?v=150';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
 import { creerAmorcage } from './amorcage.js?v=179';
 import { creerFrein } from './frein.js?v=182';
-import { creerLigne } from './ligne.js?v=180';
+import { creerLigne } from './ligne.js?v=183';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
 import { creerMeteo } from './meteo.js?v=173';
@@ -41,7 +42,7 @@ import { creerStocks } from './stocks.js?v=179';
 import { creerJournal } from './journal.js?v=162';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=178';
-import { creerAccrochage } from './accrochage.js?v=178';
+import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
 import { creerCheat } from './cheat.js?v=168';
@@ -1381,6 +1382,12 @@ const decor = creerDecor({
 });
 const { lilyPads } = decor;
 
+// Types de fond (§14.3) : grille déterministe (sans rand()) lue par la texture du fond, la carte, les poissons et les accrochages.
+const substrats = creerSubstrats({ POND_CENTER, rayonEtang, profondeurLocale, FOSSES, RAYON_ETANG_MAX, DEMI_COTE_FOND, MARGE_VASE,
+    verdictBase: verdictFondBase, lilyPads, roseaux: decor.roseaux });
+substrats.habillerFond(pondBottom);
+const verdictFond = substrats.verdictFond;   // SOURCE UNIQUE du fond sous l'hameçon (§14.8), substrat compris
+
 // ---------------------------------------------------------------------------
 // Vent + girouette
 // ---------------------------------------------------------------------------
@@ -1540,7 +1547,7 @@ const {
     coupe: {
         cadre: document.getElementById('depthCross'), fond: document.getElementById('depthBottomLine'),
         fil: document.getElementById('depthHookLine'), hamecon: document.getElementById('depthHook'),
-        zone: document.getElementById('depthZoneLabel'), indice: document.getElementById('depthHint')
+        zone: document.getElementById('depthZoneLabel'), indice: document.getElementById('depthHint'), substrat: document.getElementById('depthFond')
     }
 });
 
@@ -1774,7 +1781,7 @@ const {
 } = creerCarnetUI({
     tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
     FOND_CENTRE, FOSSES, PROFONDEUR_MAX, RAYON_CADRE_CARTE, lilyPads, BOURRICHE_POS, angler, floatGroup,
-    SPECIES, profondeurLocale
+    SPECIES, profondeurLocale, substrats
 });
 
 const {
@@ -1890,7 +1897,8 @@ const { fishes, styleEspece, makeFish, spawnFish, randomFishPosition,
     fondY: fondY,
     FOSSES: FOSSES,
     SURFACE_HA: SURFACE_HA,
-    obstacles: obstacles
+    obstacles: obstacles,
+    substrats: substrats
 });
 
 // ---------------------------------------------------------------------------
@@ -2065,7 +2073,7 @@ const {
     animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL, ripples,
     spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
     risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond, verdictFond,
-    majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt, nibbleRand, MAX_WAIT,
+    accrochageDe: substrats.accrochageDe, majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt, nibbleRand, MAX_WAIT,
     consumeCrankTurns, startReel, findBitingFish, showBiteView, floatIdle,
     tenterAttaquePredateur, REEL_IDLE_HELP, REEL_AUTO, REEL_PER_TURN, angler, startHoldingFish,
     endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS, linePositions, lineGeometry
@@ -2253,6 +2261,7 @@ window.__game = {
     makeFish: makeFish,
     lilyPads: lilyPads,
     obstacles: obstacles,
+    substrats: substrats,
     startCast: startCast,
     hookFish: hookFish,
     getState: function () { return floatState; },
