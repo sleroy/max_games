@@ -1,11 +1,12 @@
 // ---------------------------------------------------------------------------
-// Scénario 70 : cheat « poisson ». Taper le mot secret n'importe où offre
-// +50 XP ; un mot incomplet, faux ou une touche spéciale n'offrent rien.
+// Scénario 70 : cheats. « poisson » offre +50 XP ; « aquarium » rend l'eau
+// transparente (on voit les poissons) et retape le mot pour revenir à la
+// normale. Un mot incomplet, faux ou une touche spéciale n'offrent rien.
 // ---------------------------------------------------------------------------
 import { group, checkEqual, G, resetToIdle } from './harness.mjs';
 
 export function run() {
-    group('70) Cheat « poisson » : +50 XP');
+    group('70) Cheats : « poisson » (+50 XP) et « aquarium » (eau transparente)');
     resetToIdle();
     G().setExperience(0);
     const partieAvant = G().getExperiencePartie();
@@ -61,6 +62,40 @@ export function run() {
         globalThis.fireWindowEvent('keydown', { key: lettre, target: champFactice });
     });
     checkEqual('aucun cheat depuis un champ de saisie', G().getExperience(), 0);
+
+    // --- Cheat « aquarium » : eau transparente, puis retour à la normale -----
+    checkEqual('l\'eau est normale au départ', G().getEauTransparente(), false);
+    'aquariu'.split('').forEach(function (lettre) {
+        G().cheatTouche(lettre);
+    });
+    checkEqual('un mot incomplet ne change pas l\'eau', G().getEauTransparente(), false);
+    checkEqual('la dernière lettre déclenche le cheat « aquarium »',
+        G().cheatTouche('m'), true);
+    checkEqual('l\'eau devient transparente (on voit les poissons)',
+        G().getEauTransparente(), true);
+
+    G().setExperience(0);
+    'aquarium'.split('').forEach(function (lettre) {
+        G().cheatTouche(lettre);
+    });
+    checkEqual('retaper « aquarium » remet l\'eau normale', G().getEauTransparente(), false);
+    checkEqual('le cheat « aquarium » ne donne pas d\'XP', G().getExperience(), 0);
+
+    // --- Les deux mots cohabitent : le vrai clavier marche aussi -------------
+    'aquarium'.split('').forEach(function (lettre) {
+        globalThis.fireWindowEvent('keydown', { key: lettre });
+    });
+    checkEqual('le vrai clavier active l\'eau transparente', G().getEauTransparente(), true);
+    'poisson'.split('').forEach(function (lettre) {
+        globalThis.fireWindowEvent('keydown', { key: lettre });
+    });
+    checkEqual('« poisson » marche encore après « aquarium »',
+        G().getExperience(), 50);
+    'aquarium'.split('').forEach(function (lettre) {
+        G().cheatTouche(lettre);
+    });
+    checkEqual('l\'eau est redevenue normale en sortie de scénario',
+        G().getEauTransparente(), false);
 
     // Ménage : on ne laisse pas d'XP de cheat aux scénarios suivants.
     G().setExperience(0);

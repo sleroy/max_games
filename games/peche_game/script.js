@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=186';
+import { SoundEngine } from './sound.js?v=188';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=183';
@@ -47,7 +47,7 @@ import { creerCycleLigne } from './cycleLigne.js?v=184';
 import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
-import { creerCheat } from './cheat.js?v=168';
+import { creerCheat } from './cheat.js?v=169';
 import { creerBoucle } from './boucle.js?v=169';
 import { creerPartie } from './partie.js?v=170';
 import { creerPecheur } from './pecheur.js?v=171';
@@ -1109,6 +1109,8 @@ const waterUniforms = {
     uSky: { value: new THREE.Color(0x9fc7d6) },
     uNormals: { value: chargerTexture('eau-normales.jpg', 1, 1, false) || makeWaterNormalTexture() },
     uNormalsOn: { value: 0 },
+    // 0 = eau normale ; 1 = eau presque transparente (cheat « aquarium »).
+    uClear: { value: 0 },
     uReflection: { value: null },
     uReflectOn: { value: 0 },
     uReflectionProjection: { value: new THREE.Matrix4() }
@@ -1238,6 +1240,7 @@ const waterMaterial = new THREE.ShaderMaterial({
         uniform vec3 uSky;
         uniform sampler2D uNormals;
         uniform float uNormalsOn;
+        uniform float uClear;
         uniform sampler2D uReflection;
         uniform float uReflectOn;
         uniform mat4 uReflectionProjection;
@@ -1289,6 +1292,9 @@ const waterMaterial = new THREE.ShaderMaterial({
             // Eau plus transparente : on voit la moitié inférieure du bouchon et
             // le bas de ligne sous la surface.
             float alpha = clamp(0.45 + prof * 0.40 + fres * 0.10, 0.0, 0.96);
+            // Cheat « aquarium » : l'eau s'efface presque entièrement pour
+            // laisser voir les poissons sous la surface.
+            alpha = mix(alpha, 0.10, uClear);
             gl_FragColor = vec4(col, alpha);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
@@ -2620,6 +2626,8 @@ window.__game = {
     getExpositionPoste: function (index) { return expositionPoste(index); },
     couleurEau: couleurEau,
     getFondDoubleFace: function () { return pondBottom.material.side === THREE.DoubleSide; },
+    // Cheat « aquarium » : l'eau est-elle transparente ? — pour les tests.
+    getEauTransparente: function () { return waterUniforms.uClear.value > 0.5; },
     getEauCouleurs: function () {
         return {
             shallow: waterUniforms.uShallow.value.getHex(),

@@ -1,5 +1,8 @@
 // ---------------------------------------------------------------------------
-// cheat.js — CHEAT : mot secret « poisson » (+50 XP). Extrait de script.js (v168).
+// cheat.js — CHEATS : mots secrets tapés au clavier (extrait de script.js, v168).
+//
+//   « poisson »  → +50 XP
+//   « aquarium » → bascule l'eau transparente (on voit les poissons)
 //
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
@@ -14,34 +17,71 @@ export function creerCheat(deps) {
     } = deps;
 
     // ---------------------------------------------------------------------------
-    // Cheat : mot secret « poisson »
+    // Cheats : mots secrets
     // ---------------------------------------------------------------------------
-    // Taper le mot secret (n'importe où, hors champ de saisie) offre +50 XP.
-    // Les lettres s'accumulent dans un petit tampon : pas besoin d'un seul coup,
-    // mais une fausse lettre remet le compteur à zéro.
+    // Taper un mot secret (n'importe où, hors champ de saisie) déclenche son
+    // effet. Les lettres s'accumulent dans un petit tampon : pas besoin d'un
+    // seul coup, mais une fausse lettre remet le compteur à zéro.
 
-    const CHEAT_MOT = 'poisson';
     const CHEAT_GAIN = 50;
-    let cheatTampon = '';
 
-    function cheatTouche(touche) {
-        if (typeof touche !== 'string' || touche.length !== 1) { return false; }
-        cheatTampon = (cheatTampon + touche.toLowerCase()).slice(-CHEAT_MOT.length);
-        if (cheatTampon !== CHEAT_MOT) { return false; }
-        cheatTampon = '';
-        etat.journal.experience += CHEAT_GAIN;
-        etat.experiencePartie += CHEAT_GAIN;
-        saveJournal();
-        renderJournal();
-        statusDisplay.textContent = '🪄 Cheat activé : +' + CHEAT_GAIN + ' XP !';
-        catchMessage.textContent = '🪄 CHEAT — +' + CHEAT_GAIN + ' XP !';
+    // Message éclair (2,5 s) dans le bandeau de prise : retour visible d'un cheat.
+    function annoncerCheat(texteBarre, textePrise) {
+        statusDisplay.textContent = texteBarre;
+        catchMessage.textContent = textePrise;
         catchMessage.classList.remove('record', 'rare');
         catchMessage.classList.add('show');
         if (etat.catchMessageTimer) { clearTimeout(etat.catchMessageTimer); }
         etat.catchMessageTimer = setTimeout(function () {
             catchMessage.classList.remove('show');
         }, 2500);
-        return true;
+    }
+
+    // Cheat « poisson » : +50 XP, crédités au carnet et à la partie.
+    function cheatExperience() {
+        etat.journal.experience += CHEAT_GAIN;
+        etat.experiencePartie += CHEAT_GAIN;
+        saveJournal();
+        renderJournal();
+        annoncerCheat('🪄 Cheat activé : +' + CHEAT_GAIN + ' XP !',
+            '🪄 CHEAT — +' + CHEAT_GAIN + ' XP !');
+    }
+
+    // Cheat « aquarium » : l'eau devient presque transparente (uniforme uClear
+    // du shader, voir script.js) ; retaper le mot remet l'eau normale.
+    let eauTransparente = false;
+    function cheatAquarium() {
+        eauTransparente = !eauTransparente;
+        const uniforms = water && water.material ? water.material.uniforms : null;
+        if (uniforms && uniforms.uClear) { uniforms.uClear.value = eauTransparente ? 1 : 0; }
+        if (eauTransparente) {
+            annoncerCheat('🪄 Cheat « aquarium » : eau transparente !',
+                '🪄 CHEAT — eau transparente !');
+        } else {
+            annoncerCheat('💧 Cheat « aquarium » désactivé : eau normale.',
+                '💧 Eau normale.');
+        }
+    }
+
+    const CHEATS = [
+        { mot: 'poisson', action: cheatExperience },
+        { mot: 'aquarium', action: cheatAquarium }
+    ];
+    const CHEAT_LONGUEUR = CHEATS.reduce(function (max, cheat) {
+        return Math.max(max, cheat.mot.length);
+    }, 1);
+    let cheatTampon = '';
+
+    function cheatTouche(touche) {
+        if (typeof touche !== 'string' || touche.length !== 1) { return false; }
+        cheatTampon = (cheatTampon + touche.toLowerCase()).slice(-CHEAT_LONGUEUR);
+        for (let i = 0; i < CHEATS.length; i += 1) {
+            if (!cheatTampon.endsWith(CHEATS[i].mot)) { continue; }
+            cheatTampon = '';
+            CHEATS[i].action();
+            return true;
+        }
+        return false;
     }
 
     window.addEventListener('keydown', event => {
