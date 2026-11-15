@@ -38,6 +38,7 @@ import scenarioQuiver from './scenario-quiver.mjs';
 import { run as scenarioRemontee } from './scenario-remontee.mjs';
 import { run as scenarioVitesse } from './scenario-vitesse.mjs';
 import scenarioBateau from './scenario-bateau.mjs';
+import scenarioCheat from './scenario-cheat.mjs';
 
 console.log('Tests de non-régression — L\'étang du Bois Neuf (games/peche_game)');
 
@@ -76,6 +77,7 @@ try {
     scenarioRemontee();         // la manivelle seule ramène la ligne (plus de clic)
     scenarioVitesse();          // remontée trop rapide : poids du poisson + fil
     scenarioBateau();           // mode bateau : barque achetable, ramer, pêche à bord
+    scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
 } catch (error) {
     crashed = error;
 } finally {

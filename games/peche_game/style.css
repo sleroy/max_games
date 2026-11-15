@@ -2308,3 +2308,29 @@ body.mode-quiver .row-bouchon { display: none; }
         height: 120px;
     }
 }
+
+/* ---------------------------------------------------------------------------
+   Bouton MODE BATEAU : bas-gauche de l'écran, toujours accessible.
+   Position absolue dans le HUD (comme .hud-bottom) ; sous le menu, jamais
+   par-dessus les fenêtres (le fond modal reste au-dessus).
+   --------------------------------------------------------------------------- */
+.boat-button {
+    position: absolute;
+    left: calc(14px + env(safe-area-inset-left, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 6;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    background: rgba(10, 26, 38, 0.85);
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.95em;
+    cursor: pointer;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+    transition: transform 0.15s;
+}
+
+.boat-button:active {
+    transform: scale(0.96);
+}

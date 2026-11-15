@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=136';
+import { SoundEngine } from './sound.js?v=137';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -2735,11 +2735,11 @@ const boisMateriau = new THREE.MeshStandardMaterial({ color: 0x8a5a33, roughness
 // Coque : profil vu de dessus (la proue = +z local, comme le regard du
 // pêcheur), extrudée vers le bas. Le dessus de l'extrusion est le plancher.
 const coqueForme = new THREE.Shape();
-coqueForme.moveTo(-0.8, -1.9);
-coqueForme.lineTo(0.8, -1.9);
-coqueForme.lineTo(0.8, 0.4);
-coqueForme.quadraticCurveTo(0.75, 1.5, 0, 2.3);
-coqueForme.quadraticCurveTo(-0.75, 1.5, -0.8, 0.4);
+coqueForme.moveTo(-1.0, -2.2);
+coqueForme.lineTo(1.0, -2.2);
+coqueForme.lineTo(1.0, 0.6);
+coqueForme.quadraticCurveTo(0.95, 1.8, 0, 2.9);
+coqueForme.quadraticCurveTo(-0.95, 1.8, -1.0, 0.6);
 coqueForme.closePath();
 const coqueGeometrie = new THREE.ExtrudeGeometry(coqueForme, { depth: 0.8, bevelEnabled: false });
 coqueGeometrie.rotateX(Math.PI / 2);   // l'extrusion (+z) part vers le bas
@@ -2998,7 +2998,11 @@ function placerALAngle(angle, marge, presetIndex, libre) {
     bateauGroupe.visible = modeBateau;
     vaneGroup.visible = !modeBateau;
     if (modeBateau) {
-        bateauGroupe.position.set(angler.position.x, 0.3, angler.position.z);
+        // La barque recule de 0,7 : le pêcheur est près de la poupe et la
+        // proue (et la canne) dépassent devant lui, comme dans une vraie barque.
+        bateauGroupe.position.set(
+            angler.position.x - Math.sin(anglerYawBase) * 0.7, 0.3,
+            angler.position.z - Math.cos(anglerYawBase) * 0.7);
         bateauGroupe.rotation.y = anglerYawBase;
     }
 
@@ -7795,11 +7799,47 @@ fishButton.addEventListener('click', () => {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Cheat : mot secret « poisson »
+// ---------------------------------------------------------------------------
+// Taper le mot secret (n'importe où, hors champ de saisie) offre +50 XP.
+// Les lettres s'accumulent dans un petit tampon : pas besoin d'un seul coup,
+// mais une fausse lettre remet le compteur à zéro.
+
+const CHEAT_MOT = 'poisson';
+const CHEAT_GAIN = 50;
+let cheatTampon = '';
+
+function cheatTouche(touche) {
+    if (typeof touche !== 'string' || touche.length !== 1) { return false; }
+    cheatTampon = (cheatTampon + touche.toLowerCase()).slice(-CHEAT_MOT.length);
+    if (cheatTampon !== CHEAT_MOT) { return false; }
+    cheatTampon = '';
+    journal.experience += CHEAT_GAIN;
+    experiencePartie += CHEAT_GAIN;
+    saveJournal();
+    renderJournal();
+    statusDisplay.textContent = '🪄 Cheat activé : +' + CHEAT_GAIN + ' XP !';
+    catchMessage.textContent = '🪄 CHEAT — +' + CHEAT_GAIN + ' XP !';
+    catchMessage.classList.remove('record', 'rare');
+    catchMessage.classList.add('show');
+    if (catchMessageTimer) { clearTimeout(catchMessageTimer); }
+    catchMessageTimer = setTimeout(function () {
+        catchMessage.classList.remove('show');
+    }, 2500);
+    return true;
+}
+
 window.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
         if (cameraViewActive) { setCameraView(false); toolToggle.focus?.(); }
         else if (!paused) { fermerOutils(); }
         return;
+    }
+    // Cheat : taper « poisson » n'importe où (sauf dans un champ de saisie)
+    // offre +50 XP. Testé AVANT les early-return, pour marcher même en pause.
+    if (event.key.length === 1 && !event.target?.closest?.('input, textarea')) {
+        cheatTouche(event.key);
     }
     if (cameraViewActive || paused || toolDock.classList.contains('ouvert')
             || event.target?.closest?.('button, input, select, textarea')) { return; }
@@ -8943,6 +8983,8 @@ window.__game = {
     perdreLeBouchon: perdreLeBouchon,
     xpPourPrise: xpPourPrise,
     gagnerExperience: gagnerExperience,
+    // Cheat « poisson » — exposé pour les tests.
+    cheatTouche: cheatTouche,
     getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
