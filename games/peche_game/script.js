@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=146';
+import { SoundEngine } from './sound.js?v=147';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -21,7 +21,116 @@ import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
 import { creerCombat } from './combat.js?v=145';
 import { creerComportement } from './comportement.js?v=146';
+import { creerBateau } from './bateau.js?v=147';
 import { etat } from './etat.js?v=145';
+
+// ---------------------------------------------------------------------------
+// ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
+// fichier. Une ligne par variable ; aucune valeur n'est dupliquée : les
+// modules extraits lisent et écrivent la vraie variable de ce fichier.
+// Placé avant la création des modules : ils écrivent dans `etat` dès leur création.
+// ---------------------------------------------------------------------------
+function lienEtat(nom, lire, ecrire) {
+    Object.defineProperty(etat, nom, { get: lire, set: ecrire, enumerable: true });
+}
+lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function (v) { BATEAU_PAS_ANGLE = v; });
+lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
+lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
+lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
+lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
+lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
+lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
+lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
+lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
+lienEtat('bateauGroupe', function () { return bateauGroupe; }, function (v) { bateauGroupe = v; });
+lienEtat('bateauRame', function () { return bateauRame; }, function (v) { bateauRame = v; });
+lienEtat('biteCooldown', function () { return biteCooldown; }, function (v) { biteCooldown = v; });
+lienEtat('biteFauxTouche', function () { return biteFauxTouche; }, function (v) { biteFauxTouche = v; });
+lienEtat('biteFenetre', function () { return biteFenetre; }, function (v) { biteFenetre = v; });
+lienEtat('biteFish', function () { return biteFish; }, function (v) { biteFish = v; });
+lienEtat('bitePhase', function () { return bitePhase; }, function (v) { bitePhase = v; });
+lienEtat('biteRetourRot', function () { return biteRetourRot; }, function (v) { biteRetourRot = v; });
+lienEtat('biteRetourY', function () { return biteRetourY; }, function (v) { biteRetourY = v; });
+lienEtat('biteSignalDuree', function () { return biteSignalDuree; }, function (v) { biteSignalDuree = v; });
+lienEtat('biteSignalTimer', function () { return biteSignalTimer; }, function (v) { biteSignalTimer = v; });
+lienEtat('biteSignauxRestants', function () { return biteSignauxRestants; }, function (v) { biteSignauxRestants = v; });
+lienEtat('biteSinkAt', function () { return biteSinkAt; }, function (v) { biteSinkAt = v; });
+lienEtat('biteStyle', function () { return biteStyle; }, function (v) { biteStyle = v; });
+lienEtat('biteTouche', function () { return biteTouche; }, function (v) { biteTouche = v; });
+lienEtat('biteViewActive', function () { return biteViewActive; }, function (v) { biteViewActive = v; });
+lienEtat('biteViewHideTimer', function () { return biteViewHideTimer; }, function (v) { biteViewHideTimer = v; });
+lienEtat('biteViewTimer', function () { return biteViewTimer; }, function (v) { biteViewTimer = v; });
+lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
+lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
+lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
+lienEtat('castAim', function () { return castAim; }, function (v) { castAim = v; });
+lienEtat('castSwing', function () { return castSwing; }, function (v) { castSwing = v; });
+lienEtat('castT', function () { return castT; }, function (v) { castT = v; });
+lienEtat('castTarget', function () { return castTarget; }, function (v) { castTarget = v; });
+lienEtat('castYawAngler', function () { return castYawAngler; }, function (v) { castYawAngler = v; });
+lienEtat('castYawRod', function () { return castYawRod; }, function (v) { castYawRod = v; });
+lienEtat('catchMessageTimer', function () { return catchMessageTimer; }, function (v) { catchMessageTimer = v; });
+lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { caughtWeight = v; });
+lienEtat('chum', function () { return chum; }, function (v) { chum = v; });
+lienEtat('dayPhase', function () { return dayPhase; }, function (v) { dayPhase = v; });
+lienEtat('depuisLancement', function () { return depuisLancement; }, function (v) { depuisLancement = v; });
+lienEtat('dragLoosened', function () { return dragLoosened; }, function (v) { dragLoosened = v; });
+lienEtat('elapsed', function () { return elapsed; }, function (v) { elapsed = v; });
+lienEtat('emplacementAngle', function () { return emplacementAngle; }, function (v) { emplacementAngle = v; });
+lienEtat('emplacementLibre', function () { return emplacementLibre; }, function (v) { emplacementLibre = v; });
+lienEtat('emplacementMarge', function () { return emplacementMarge; }, function (v) { emplacementMarge = v; });
+lienEtat('escaped', function () { return escaped; }, function (v) { escaped = v; });
+lienEtat('especeIndex', function () { return especeIndex; }, function (v) { especeIndex = v; });
+lienEtat('experiencePartie', function () { return experiencePartie; }, function (v) { experiencePartie = v; });
+lienEtat('fightAdvantage', function () { return fightAdvantage; }, function (v) { fightAdvantage = v; });
+lienEtat('fishCaught', function () { return fishCaught; }, function (v) { fishCaught = v; });
+lienEtat('fishThrowPhase', function () { return fishThrowPhase; }, function (v) { fishThrowPhase = v; });
+lienEtat('fishThrowPower', function () { return fishThrowPower; }, function (v) { fishThrowPower = v; });
+lienEtat('fishThrowState', function () { return fishThrowState; }, function (v) { fishThrowState = v; });
+lienEtat('fishThrowT', function () { return fishThrowT; }, function (v) { fishThrowT = v; });
+lienEtat('fishThrowTarget', function () { return fishThrowTarget; }, function (v) { fishThrowTarget = v; });
+lienEtat('floatState', function () { return floatState; }, function (v) { floatState = v; });
+lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { flotteurChoix = v; });
+lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
+lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
+lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
+lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
+lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
+lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
+lienEtat('modeBateau', function () { return modeBateau; }, function (v) { modeBateau = v; });
+lienEtat('nibbleAmplitude', function () { return nibbleAmplitude; }, function (v) { nibbleAmplitude = v; });
+lienEtat('nibbleDebut', function () { return nibbleDebut; }, function (v) { nibbleDebut = v; });
+lienEtat('nibbleDuree', function () { return nibbleDuree; }, function (v) { nibbleDuree = v; });
+lienEtat('nibbleInteretAvant', function () { return nibbleInteretAvant; }, function (v) { nibbleInteretAvant = v; });
+lienEtat('nibblePhase', function () { return nibblePhase; }, function (v) { nibblePhase = v; });
+lienEtat('nibbleRngState', function () { return nibbleRngState; }, function (v) { nibbleRngState = v; });
+lienEtat('nibbleSuivant', function () { return nibbleSuivant; }, function (v) { nibbleSuivant = v; });
+lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
+lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
+lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
+lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
+lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
+lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
+lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v; });
+lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
+lienEtat('score', function () { return score; }, function (v) { score = v; });
+lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
+lienEtat('signalerToucheRatee', function () { return signalerToucheRatee; }, function (v) { signalerToucheRatee = v; });
+lienEtat('snag', function () { return snag; }, function (v) { snag = v; });
+lienEtat('spawnFloatingText', function () { return spawnFloatingText; }, function (v) { spawnFloatingText = v; });
+lienEtat('spawnRipple', function () { return spawnRipple; }, function (v) { spawnRipple = v; });
+lienEtat('spawnSplash', function () { return spawnSplash; }, function (v) { spawnSplash = v; });
+lienEtat('strikeQuality', function () { return strikeQuality; }, function (v) { strikeQuality = v; });
+lienEtat('struggle', function () { return struggle; }, function (v) { struggle = v; });
+lienEtat('struggleAnchor', function () { return struggleAnchor; }, function (v) { struggleAnchor = v; });
+lienEtat('strugglePos', function () { return strugglePos; }, function (v) { strugglePos = v; });
+lienEtat('struggleTimeLeft', function () { return struggleTimeLeft; }, function (v) { struggleTimeLeft = v; });
+lienEtat('tangleChance', function () { return tangleChance; }, function (v) { tangleChance = v; });
+lienEtat('techniqueCourante', function () { return techniqueCourante; }, function (v) { techniqueCourante = v; });
+lienEtat('tension', function () { return tension; }, function (v) { tension = v; });
+lienEtat('timeoutEscape', function () { return timeoutEscape; }, function (v) { timeoutEscape = v; });
+lienEtat('waitTimer', function () { return waitTimer; }, function (v) { waitTimer = v; });
+lienEtat('weatherPluie', function () { return weatherPluie; }, function (v) { weatherPluie = v; });
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2432,497 +2541,24 @@ const ANGLE_BASE = Math.atan2(
 let emplacementAngle = ANGLE_BASE;
 let emplacementMarge = POSTE_MARGE;
 
-// ---------------------------------------------------------------------------
-// MODE BATEAU (acheté en boutique avec l'XP)
-// Embarquer DÉPLACE le poste au milieu de l'eau : même matériel, même caméra,
-// même lancer — seul l'endroit change. Les flèches (ou ZQSD) font ramer.
-// La marge (distance au bord LOCAL) devient NÉGATIVE : on est dans l'eau.
-// ---------------------------------------------------------------------------
-const BATEAU_PAS_ANGLE = 0.055;   // pas de rotation (flèches gauche / droite)
-const BATEAU_PAS_MARGE = 1.6;     // pas d'avancée / recul (flèches haut / bas)
-const BATEAU_MARGE_BORD = 4;      // au plus près : 4 unités DANS l'eau du bord
-const BATEAU_MIN_CENTRE = 10;     // jamais à moins de 10 unités du centre (la
-                                  // visée a besoin d'une direction vers le milieu)
-
-const bateauGroupe = new THREE.Group();
-bateauGroupe.visible = false;
-scene.add(bateauGroupe);
-
-// --- Textures 100 % code (aucune image à télécharger, aucune licence) ---
-// Une tuile de 128 px = 1 unité du monde (~50 cm) : deux planches, la
-// peinture écaillée laisse voir le bois nu. Dessinée au fillRect uniquement
-// (le faux canvas 2D des tests ne connaît que ça) et avec un générateur
-// pseudo-aléatoire LOCAL à graine fixe : la texture est identique à chaque
-// lancement et ne consomme RIEN du rand() du jeu (monde reproductible).
-function creerTextureBarque(peintures, boisNu) {
-    let graine = 20260501;
-    const hasard = function () {
-        graine = (graine * 1103515245 + 12345) % 2147483648;
-        return graine / 2147483648;
-    };
-    const toile = document.createElement('canvas');
-    toile.width = 128;
-    toile.height = 128;
-    const pinceau = toile.getContext('2d');
-    // Deux planches par tuile, teinte alternée.
-    pinceau.fillStyle = peintures[0];
-    pinceau.fillRect(0, 0, 64, 128);
-    pinceau.fillStyle = peintures[1];
-    pinceau.fillRect(64, 0, 64, 128);
-    // Veines du bois : de longues stries le long des planches.
-    for (let i = 0; i < 30; i++) {
-        const x = hasard() * 128;
-        const largeur = 1 + hasard() * 2;
-        pinceau.fillStyle = hasard() > 0.5
-            ? 'rgba(255,255,255,0.08)' : 'rgba(20,15,8,0.10)';
-        pinceau.fillRect(x, 0, largeur, 128);
-    }
-    // Peinture écaillée : des éclats de bois nu (coque seulement).
-    if (boisNu) {
-        for (let i = 0; i < 14; i++) {
-            pinceau.fillStyle = boisNu;
-            pinceau.fillRect(hasard() * 118, hasard() * 120,
-                3 + hasard() * 8, 2 + hasard() * 5);
-        }
-    }
-    // Joints entre les planches (le bord droit de chaque planche).
-    pinceau.fillStyle = 'rgba(30, 22, 12, 0.8)';
-    pinceau.fillRect(62, 0, 3, 128);
-    pinceau.fillRect(126, 0, 2, 128);
-    const texture = new THREE.CanvasTexture(toile);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    // Les UV de l'extrusion sont en unités du plan de la forme : la tuile
-    // se répète toutes les unités, comme de vraies planches.
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    return texture;
-}
-
-const coqueMateriau = new THREE.MeshStandardMaterial({
-    map: creerTextureBarque(['#3f74a8', '#356896'], '#8a6a42'),
-    roughness: 0.65
-});
-const boisMateriau = new THREE.MeshStandardMaterial({
-    map: creerTextureBarque(['#9c7a4a', '#8a6a3c'], null),
-    roughness: 0.85
-});
-// Coque : profil vu de dessus (la proue = +z local, comme le regard du
-// pêcheur), extrudée vers le bas. Le dessus de l'extrusion est le plancher.
-const coqueForme = new THREE.Shape();
-coqueForme.moveTo(-1.0, -2.2);
-coqueForme.lineTo(1.0, -2.2);
-coqueForme.lineTo(1.0, 0.6);
-coqueForme.quadraticCurveTo(0.95, 1.8, 0, 2.9);
-coqueForme.quadraticCurveTo(-0.95, 1.8, -1.0, 0.6);
-coqueForme.closePath();
-const coqueGeometrie = new THREE.ExtrudeGeometry(coqueForme, { depth: 0.8, bevelEnabled: false });
-coqueGeometrie.rotateX(Math.PI / 2);   // l'extrusion (+z) part vers le bas
-const coque = new THREE.Mesh(coqueGeometrie, coqueMateriau);
-coque.castShadow = true;
-bateauGroupe.add(coque);
-const banc = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.09, 0.5), boisMateriau);
-banc.position.set(0, 0.34, 0.35);
-bateauGroupe.add(banc);
-// Deux avirons posés en travers : ils suffisent à « lire » la barque de loin.
-const avironMateriau = new THREE.MeshStandardMaterial({
-    map: creerTextureBarque(['#b08b52', '#a07a44'], null),
-    roughness: 0.8
-});
-for (const cote of [-1, 1]) {
-    const avironGeometrie = new THREE.CylinderGeometry(0.05, 0.07, 2.6, 8);
-    avironGeometrie.rotateZ(Math.PI / 2);
-    const aviron = new THREE.Mesh(avironGeometrie, avironMateriau);
-    aviron.rotation.y = cote * 0.35;
-    aviron.position.set(cote * 0.95, 0.42, 0.1);
-    bateauGroupe.add(aviron);
-}
-
-// État du mode bateau ; `riveDerniere` garde l'emplacement de berge pour
-// revenir exactement au même endroit en débarquant.
+let BATEAU_PAS_ANGLE = 0.055;
+let BATEAU_PAS_MARGE = 1.6;
+let bateauGroupe = new THREE.Group();
 let modeBateau = false;
-const riveDerniere = { angle: null, marge: POSTE_MARGE, preset: 0, libre: false };
-
-// Embarquer : à peu près à mi-étang, dans l'axe du poste actuel.
-function margeBateauMilieu(angle) {
-    const distance = Math.max(BATEAU_MIN_CENTRE, rayonEtang(angle) * 0.5);
-    return distance - rayonEtang(angle);
-}
-
-function embarquerBateau() {
-    if (modeBateau || !journal.bateau || floatState !== 'idle') { return false; }
-    riveDerniere.angle = emplacementAngle;
-    riveDerniere.marge = emplacementMarge;
-    riveDerniere.preset = posteActuel;
-    riveDerniere.libre = emplacementLibre;
-    modeBateau = true;
-    return placerALAngle(emplacementAngle, margeBateauMilieu(emplacementAngle), -1, true);
-}
-
-function quitterBateau() {
-    // Refusé tant que la ligne n'est pas au repos : on reste à bord sinon.
-    if (!modeBateau || floatState !== 'idle') { return false; }
-    modeBateau = false;
-    return placerALAngle(riveDerniere.angle ?? emplacementAngle, riveDerniere.marge,
-        riveDerniere.preset, riveDerniere.libre);
-}
-
-// Un placement « de berge » (raccourci de poste ou carte d'accueil) débarque
-// la barque. On ne le fait que si le placement peut réussir (ligne au repos),
-// sinon l'état resterait cohérent : toujours à bord, ligne dehors.
-function atterirBateau() {
-    if (modeBateau && floatState === 'idle') { modeBateau = false; }
-}
-
-// Fait tourner / avancer / reculer la barque. Refusé tant que la ligne n'est
-// pas au repos : le bouchon ne peut pas être remorqué.
-function deplacerBateau(deltaAngle, deltaMarge) {
-    if (!modeBateau || floatState !== 'idle') { return false; }
-    const rayon = rayonEtang(emplacementAngle);
-    let marge = emplacementMarge + deltaMarge;
-    marge = Math.max(BATEAU_MIN_CENTRE - rayon, Math.min(-BATEAU_MARGE_BORD, marge));
-    const ok = placerALAngle(emplacementAngle + deltaAngle, marge, -1, true);
-    if (ok) {
-        spawnRipple({ x: angler.position.x, y: 0, z: angler.position.z });
-    }
-    return ok;
-}
-
-// --- Commandes TACTILES de la barque ---------------------------------------
-// Tap = un pas. Maintenir = ramer en continu (même vocabulaire que « maintien
-// puis relâche » du lancer et de l'amorce : un seul doigt, aucune précision).
-const BATEAU_RAME_CADENCE = 0.28;   // s entre deux pas quand on maintient
-const bateauRame = { gauche: false, droite: false, avant: false };
-let bateauRameTimer = 0;
-
-function pasDeRame() {
-    if (!modeBateau || floatState !== 'idle') {
-        return false;
-    }
-    let fait = false;
-    if (bateauRame.avant) {
-        fait = deplacerBateau(0, -BATEAU_PAS_MARGE) || fait;
-    }
-    if (bateauRame.gauche) {
-        fait = deplacerBateau(BATEAU_PAS_ANGLE, 0) || fait;
-    }
-    if (bateauRame.droite) {
-        fait = deplacerBateau(-BATEAU_PAS_ANGLE, 0) || fait;
-    }
-    return fait;
-}
-
-function lierBoutonRame(bouton, cle) {
-    if (!bouton) {
-        return;
-    }
-    const presser = function (event) {
-        if (event && event.preventDefault) { event.preventDefault(); }
-        if (!modeBateau) { return; }
-        bateauRame[cle] = true;
-        bateauRameTimer = BATEAU_RAME_CADENCE;
-        pasDeRame();          // réponse immédiate au premier tap
-    };
-    const relacher = function () {
-        bateauRame[cle] = false;
-    };
-    bouton.addEventListener('pointerdown', presser);
-    bouton.addEventListener('pointerup', relacher);
-    bouton.addEventListener('pointercancel', relacher);
-    bouton.addEventListener('pointerleave', relacher);
-}
-
-lierBoutonRame(boatLeft, 'gauche');
-lierBoutonRame(boatRow, 'avant');
-lierBoutonRame(boatRight, 'droite');
-
-// Avance la rame tenue : appelée par la boucle d'animation.
-function updateRameBateau(dt) {
-    if (!modeBateau) {
-        bateauRame.gauche = false;
-        bateauRame.droite = false;
-        bateauRame.avant = false;
-        bateauRameTimer = 0;
-        return;
-    }
-    const actif = bateauRame.gauche || bateauRame.droite || bateauRame.avant;
-    if (!actif) {
-        bateauRameTimer = 0;
-        return;
-    }
-    bateauRameTimer -= dt;
-    if (bateauRameTimer > 0) {
-        return;
-    }
-    bateauRameTimer = BATEAU_RAME_CADENCE;
-    pasDeRame();
-}
-
-// Le pad n'apparaît qu'à bord ET ligne au repos : on ne rame pas en pêchant,
-// et le HUD reste propre sur téléphone.
-function majPadBateau() {
-    if (!boatPad) {
-        return;
-    }
-    boatPad.hidden = !(modeBateau && floatState === 'idle' && !paused);
-}
-
-if (boatButton) {
-    boatButton.addEventListener('click', function () {
-        if (!journal.bateau || paused) { return; }
-        ensureSound();
-        let ok;
-        if (modeBateau) {
-            ok = quitterBateau();
-            if (ok) {
-                statusDisplay.textContent = '🐟 De retour sur la rive.';
-                sound.playPiece();
-            }
-        } else {
-            ok = embarquerBateau();
-            if (ok) {
-                statusDisplay.textContent = '🚤 À bord ! Flèches (ou ZQSD) pour ramer, clic sur l’eau pour pêcher.';
-                sound.playPiece();
-            } else if (floatState !== 'idle') {
-                statusDisplay.textContent = 'Range ta ligne (bouchon au repos) avant de monter à bord.';
-            }
-        }
-        if (ok) {
-            boatButton.textContent = modeBateau ? '🐟 Rive' : '🚤 Bateau';
-            boatButton.setAttribute('aria-pressed', String(modeBateau));
-            // Le focus reste sur le bouton après le clic : les flèches seraient
-            // alors ignorées par le garde-fou clavier. On le rend au jeu.
-            boatButton.blur();
-        }
-    });
-}
-
-// La barque flotte : elle suit la houle et prend une légère inclinaison
-// avant-arrière (la proue et la poupe ne portent pas la même hauteur d'eau).
-function updateBateau(time) {
-    if (!bateauGroupe.visible) { return; }
-    const x = bateauGroupe.position.x;
-    const z = bateauGroupe.position.z;
-    bateauGroupe.position.y = 0.3 + waterWaveHeightAt(x, z, time) * 0.5;
-    const avant = Math.sin(bateauGroupe.rotation.y);
-    const cote = Math.cos(bateauGroupe.rotation.y);
-    const houleProue = waterWaveHeightAt(x + avant * 2.2, z + cote * 2.2, time);
-    const houlePoupe = waterWaveHeightAt(x - avant * 2.2, z - cote * 2.2, time);
-    bateauGroupe.rotation.x = THREE.MathUtils.clamp(
-        (houlePoupe - houleProue) * 0.12, -0.09, 0.09);
-}
-
-// Exposition lumineuse du poste demandé (par défaut : le plus proche).
-function expositionPoste(index) {
-    const poste = POSTES[(typeof index === 'number') ? index : posteActuel];
-    return poste ? poste.exposition : 1;
-}
-
-// Fait tourner `base` autour du centre de l'étang et écrit le résultat dans
-// `cible` (on réutilise les Vector3 existants : aucun objet recréé).
-function tournerAutourEtang(base, delta, cible) {
-    const dx = base.x - POND_CENTER.x;
-    const dz = base.z - POND_CENTER.z;
-    const cos = Math.cos(delta);
-    const sin = Math.sin(delta);
-    cible.copy(base);
-    cible.x = POND_CENTER.x + dx * cos + dz * sin;
-    cible.z = POND_CENTER.z - dx * sin + dz * cos;
-    return cible;
-}
-
-// Écart angulaire le plus court entre deux angles (radians).
-function ecartAngulaire(a, b) {
-    const deuxPi = Math.PI * 2;
-    let d = Math.abs(a - b) % deuxPi;
-    return Math.min(d, deuxPi - d);
-}
-
-// Preset (sud / est / nord / ouest) le plus proche d'un angle libre.
-function plusProchePresetIndex(angle) {
-    let meilleur = 0;
-    let meilleurEcart = Infinity;
-    POSTES.forEach(function (poste, index) {
-        const cible = ANGLE_BASE - poste.delta;
-        const ecart = ecartAngulaire(angle, cible);
-        if (ecart < meilleurEcart) {
-            meilleurEcart = ecart;
-            meilleur = index;
-        }
-    });
-    return meilleur;
-}
-
-// Nom de la direction (8 secteurs) pour un angle de position autour de l'étang.
-// Convention boussole : 0° = nord, 90° = est, 180° = sud, 270° = ouest.
-function azimutPosteTexte(angle) {
-    const degres = (((angle * 180) / Math.PI) + 90 + 360) % 360;
-    const secteurs = ['nord', 'nord-est', 'est', 'sud-est',
-        'sud', 'sud-ouest', 'ouest', 'nord-ouest'];
-    return secteurs[Math.round(degres / 45) % 8];
-}
-
-function nomEmplacementCourant() {
-    if (modeBateau) { return 'bateau'; }
-    return emplacementLibre
-        ? azimutPosteTexte(emplacementAngle)
-        : POSTES[posteActuel].nom.toLowerCase();
-}
-
-// Où est le NORD à l'écran ? Comme le poste fait le tour de l'étang, la caméra
-// tourne aussi : « Nord en haut » n'est vrai qu'au poste sud. On affiche une
-// flèche calculée à partir de la direction réelle de la caméra.
-function flecheNordEcran() {
-    const fx = cameraTarget.x - camera.position.x;
-    const fz = cameraTarget.z - camera.position.z;
-    const norme = Math.hypot(fx, fz) || 1;
-    const avant = { x: fx / norme, z: fz / norme };
-    // « Droite » à l'écran, dans le plan du sol (x = est, z = sud).
-    const droite = { x: -avant.z, z: avant.x };
-    const nord = { x: 0, z: -1 };
-    const versAvant = nord.x * avant.x + nord.z * avant.z;
-    const versDroite = nord.x * droite.x + nord.z * droite.z;
-    if (Math.abs(versAvant) >= Math.abs(versDroite)) {
-        return versAvant >= 0 ? '↑' : '↓';
-    }
-    return versDroite >= 0 ? '→' : '←';
-}
-
-function majEtiquettePoste() {
-    if (!compassDisplay) {
-        return;
-    }
-    compassDisplay.textContent = '🧭 Nord ' + flecheNordEcran()
-        + ' · ☀️ soleil au ' + azimutTexte(SUN_AZIMUT)
-        + ' · 📍 poste ' + nomEmplacementCourant();
-}
-
-// Place tout le matériel du pêcheur à un ANGLE et une MARGE (distance au bord
-// local) donnés. Refusé si une ligne est en l'air ou à l'eau.
-//   presetIndex : index du raccourci (0-3) ou -1 pour un choix libre.
-function placerALAngle(angle, marge, presetIndex, libre) {
-    if (floatState !== 'idle' || !Number.isFinite(angle)) {
-        return false;
-    }
-    // Sur la rive : marge positive bornée. En bateau : marge NÉGATIVE (dans
-    // l'eau), bornée par le filet de sécurité ; le vrai bornage est fait dans
-    // deplacerBateau (le rayon dépend de l'angle).
-    const margeBrute = Number.isFinite(marge) ? marge : POSTE_MARGE;
-    const margeVoulue = modeBateau
-        ? Math.max(BATEAU_MIN_CENTRE - RAYON_ETANG_MAX,
-            Math.min(-BATEAU_MARGE_BORD, margeBrute))
-        : Math.max(PLACEMENT_MARGE_MIN,
-            Math.min(PLACEMENT_MARGE_MAX, margeBrute));
-    emplacementAngle = angle;
-    emplacementMarge = margeVoulue;
-    emplacementLibre = !!libre;
-    posteActuel = (typeof presetIndex === 'number' && presetIndex >= 0)
-        ? presetIndex : plusProchePresetIndex(angle);
-    boutonPosteActif = emplacementLibre ? -1 : posteActuel;
-
-    // Rotation qui amène le poste sud historique sur l'angle demandé.
-    const delta = ANGLE_BASE - angle;
-
-    // 1) Rotation RIGIDE du matériel autour du centre : le poste fait le tour.
-    tournerAutourEtang(POSTE_ANGLER, delta, angler.position);
-    anglerYawBase = Math.PI + delta;
-    rodYawBase = delta;
-    angler.rotation.y = anglerYawBase;
-    tournerAutourEtang(POSTE_ROD_BASE, delta, rodBase);
-    tournerAutourEtang(POSTE_ROD_TIP, delta, rodTip);
-    tournerAutourEtang(POSTE_BOURRICHE, delta, BOURRICHE_POS);
-    tournerAutourEtang(POSTE_GIROUETTE, delta, vaneGroup.position);
-    tournerAutourEtang(POSTE_CAM_POS, delta, NORMAL_CAM_POS);
-    tournerAutourEtang(POSTE_CAM_TARGET, delta, NORMAL_CAM_TARGET);
-
-    // 2) L'ÉTANG N'EST PAS UN CERCLE : on recale TOUT le matériel dans l'axe
-    //    radial pour que le pêcheur soit à `marge` du bord LOCAL. Le décalage
-    //    est le même pour la canne, la bourriche, la girouette et la caméra :
-    //    le matériel reste rigide et le cadrage identique.
-    const dxAngler = angler.position.x - POND_CENTER.x;
-    const dzAngler = angler.position.z - POND_CENTER.z;
-    const distanceAngler = Math.hypot(dxAngler, dzAngler) || 1;
-    const anglePoste = Math.atan2(dzAngler, dxAngler);
-    const distanceVoulue = rayonEtang(anglePoste) + emplacementMarge;
-    const decalage = distanceVoulue - distanceAngler;
-    const decalX = (dxAngler / distanceAngler) * decalage;
-    const decalZ = (dzAngler / distanceAngler) * decalage;
-    [angler.position, rodBase, rodTip, BOURRICHE_POS, vaneGroup.position,
-        NORMAL_CAM_POS, NORMAL_CAM_TARGET].forEach(function (repere) {
-        repere.x += decalX;
-        repere.z += decalZ;
-    });
-
-    // 3) BATEAU : la coque se glisse sous le pêcheur, tournée comme lui (proue
-    //    vers l'étang). La girouette, matériel de berge, reste rangée à quai.
-    bateauGroupe.visible = modeBateau;
-    vaneGroup.visible = !modeBateau;
-    if (modeBateau) {
-        // La barque recule de 0,7 : le pêcheur est près de la poupe et la
-        // proue (et la canne) dépassent devant lui, comme dans une vraie barque.
-        bateauGroupe.position.set(
-            angler.position.x - Math.sin(anglerYawBase) * 0.7, 0.3,
-            angler.position.z - Math.cos(anglerYawBase) * 0.7);
-        bateauGroupe.rotation.y = anglerYawBase;
-    }
-
-    // Canne : pivot à la nouvelle base, orienté vers l'étang.
-    rodPivot.position.copy(rodBase);
-    rodPivot.rotation.y = rodYawBase;
-    rodBend = 0;
-    castSwing = 0;
-    castYawAngler = 0;
-    castYawRod = 0;
-    rodGroup.rotation.x = 0;
-    rodTipVisual.copy(rodTip);
-
-    // Bouchon au repos, au bout de la canne.
-    floatIdle.set(rodTip.x, rodTip.y - 0.6, rodTip.z);
-    floatGroup.position.copy(floatIdle);
-
-    // Bourriche et caméra suivent le décalage radial.
-    bourriche.position.copy(BOURRICHE_POS);
-    resetCameraView();
-    camera.position.copy(NORMAL_CAM_POS);
-    cameraTarget.copy(NORMAL_CAM_TARGET);
-    camera.lookAt(cameraTarget);
-
-    // Repères du combat : l'ancre est au bout de la canne.
-    struggleAnchor.set(rodTip.x, 0, rodTip.z);
-    strugglePos.set(rodTip.x, 0.1, rodTip.z);
-
-    // Visées par défaut : vers le centre de l'étang, à bonne distance.
-    const dx = POND_CENTER.x - angler.position.x;
-    const dz = POND_CENTER.z - angler.position.z;
-    const d = Math.hypot(dx, dz) || 1;
-    castAim.set(angler.position.x + (dx / d) * 30, 0.1, angler.position.z + (dz / d) * 30);
-    feedAim.set(angler.position.x + (dx / d) * 22, 0.1, angler.position.z + (dz / d) * 22);
-    castTarget.set(castAim.x, 0.1, castAim.z);
-
-    majCoupeProfondeur();
-    majEtiquettePoste();
-    renderCartePlacement();
-    return true;
-}
-
-// Raccourci : les 4 boutons de l'accueil (sud / est / nord / ouest).
-function placerAuPoste(index) {
-    const poste = POSTES[index];
-    if (!poste) {
-        return false;
-    }
-    atterirBateau();
-    return placerALAngle(ANGLE_BASE - poste.delta, POSTE_MARGE, index, false);
-}
-
-// Choix libre depuis la carte vue de dessus : un angle + une distance à la
-// berge. Si le clic est très proche d'un raccourci, on le rattache à ce poste.
-function choisirEmplacement(angle, marge) {
-    atterirBateau();
-    const preset = plusProchePresetIndex(angle);
-    const cible = ANGLE_BASE - POSTES[preset].delta;
-    const libre = ecartAngulaire(angle, cible) > (2 * Math.PI / 180);
-    return placerALAngle(angle, marge, libre ? -1 : preset, libre);
-}
+let bateauRame = { gauche: false, droite: false, avant: false };
+const {
+    embarquerBateau, quitterBateau, deplacerBateau, updateRameBateau, majPadBateau, updateBateau,
+    expositionPoste, azimutPosteTexte, majEtiquettePoste, placerAuPoste, choisirEmplacement
+} = creerBateau({
+    scene, POSTE_MARGE, rayonEtang, angler, boatLeft, boatRow, boatRight, boatPad, boatButton,
+    ensureSound, statusDisplay, sound, waterWaveHeightAt, POSTES, POND_CENTER, ANGLE_BASE,
+    cameraTarget, camera, compassDisplay, azimutTexte, SUN_AZIMUT, RAYON_ETANG_MAX,
+    PLACEMENT_MARGE_MIN, PLACEMENT_MARGE_MAX, POSTE_ANGLER, POSTE_ROD_BASE, rodBase,
+    POSTE_ROD_TIP, rodTip, POSTE_BOURRICHE, BOURRICHE_POS, POSTE_GIROUETTE, vaneGroup,
+    POSTE_CAM_POS, NORMAL_CAM_POS, POSTE_CAM_TARGET, NORMAL_CAM_TARGET, rodPivot, rodGroup,
+    rodTipVisual, floatIdle, floatGroup, bourriche, resetCameraView, feedAim, majCoupeProfondeur,
+    renderCartePlacement
+});
 
 // ---------------------------------------------------------------------------
 // CARTE DE PLACEMENT VUE DE DESSUS (écran d'accueil)
@@ -7348,106 +6984,8 @@ window.__game = {
 
 
 // ---------------------------------------------------------------------------
-// ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
-// fichier. Une ligne par variable ; aucune valeur n'est dupliquée : les
-// modules extraits lisent et écrivent la vraie variable de ce fichier.
-// ---------------------------------------------------------------------------
-function lienEtat(nom, lire, ecrire) {
-    Object.defineProperty(etat, nom, { get: lire, set: ecrire, enumerable: true });
-}
-lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
-lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
-lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
-lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
-lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
-lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
-lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
-lienEtat('biteCooldown', function () { return biteCooldown; }, function (v) { biteCooldown = v; });
-lienEtat('biteFauxTouche', function () { return biteFauxTouche; }, function (v) { biteFauxTouche = v; });
-lienEtat('biteFenetre', function () { return biteFenetre; }, function (v) { biteFenetre = v; });
-lienEtat('biteFish', function () { return biteFish; }, function (v) { biteFish = v; });
-lienEtat('bitePhase', function () { return bitePhase; }, function (v) { bitePhase = v; });
-lienEtat('biteRetourRot', function () { return biteRetourRot; }, function (v) { biteRetourRot = v; });
-lienEtat('biteRetourY', function () { return biteRetourY; }, function (v) { biteRetourY = v; });
-lienEtat('biteSignalDuree', function () { return biteSignalDuree; }, function (v) { biteSignalDuree = v; });
-lienEtat('biteSignalTimer', function () { return biteSignalTimer; }, function (v) { biteSignalTimer = v; });
-lienEtat('biteSignauxRestants', function () { return biteSignauxRestants; }, function (v) { biteSignauxRestants = v; });
-lienEtat('biteSinkAt', function () { return biteSinkAt; }, function (v) { biteSinkAt = v; });
-lienEtat('biteStyle', function () { return biteStyle; }, function (v) { biteStyle = v; });
-lienEtat('biteTouche', function () { return biteTouche; }, function (v) { biteTouche = v; });
-lienEtat('biteViewActive', function () { return biteViewActive; }, function (v) { biteViewActive = v; });
-lienEtat('biteViewHideTimer', function () { return biteViewHideTimer; }, function (v) { biteViewHideTimer = v; });
-lienEtat('biteViewTimer', function () { return biteViewTimer; }, function (v) { biteViewTimer = v; });
-lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
-lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
-lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
-lienEtat('castAim', function () { return castAim; }, function (v) { castAim = v; });
-lienEtat('castSwing', function () { return castSwing; }, function (v) { castSwing = v; });
-lienEtat('castT', function () { return castT; }, function (v) { castT = v; });
-lienEtat('castTarget', function () { return castTarget; }, function (v) { castTarget = v; });
-lienEtat('castYawAngler', function () { return castYawAngler; }, function (v) { castYawAngler = v; });
-lienEtat('castYawRod', function () { return castYawRod; }, function (v) { castYawRod = v; });
-lienEtat('catchMessageTimer', function () { return catchMessageTimer; }, function (v) { catchMessageTimer = v; });
-lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { caughtWeight = v; });
-lienEtat('chum', function () { return chum; }, function (v) { chum = v; });
-lienEtat('dayPhase', function () { return dayPhase; }, function (v) { dayPhase = v; });
-lienEtat('depuisLancement', function () { return depuisLancement; }, function (v) { depuisLancement = v; });
-lienEtat('dragLoosened', function () { return dragLoosened; }, function (v) { dragLoosened = v; });
-lienEtat('elapsed', function () { return elapsed; }, function (v) { elapsed = v; });
-lienEtat('emplacementAngle', function () { return emplacementAngle; }, function (v) { emplacementAngle = v; });
-lienEtat('emplacementLibre', function () { return emplacementLibre; }, function (v) { emplacementLibre = v; });
-lienEtat('emplacementMarge', function () { return emplacementMarge; }, function (v) { emplacementMarge = v; });
-lienEtat('escaped', function () { return escaped; }, function (v) { escaped = v; });
-lienEtat('especeIndex', function () { return especeIndex; }, function (v) { especeIndex = v; });
-lienEtat('experiencePartie', function () { return experiencePartie; }, function (v) { experiencePartie = v; });
-lienEtat('fightAdvantage', function () { return fightAdvantage; }, function (v) { fightAdvantage = v; });
-lienEtat('fishCaught', function () { return fishCaught; }, function (v) { fishCaught = v; });
-lienEtat('fishThrowPhase', function () { return fishThrowPhase; }, function (v) { fishThrowPhase = v; });
-lienEtat('fishThrowPower', function () { return fishThrowPower; }, function (v) { fishThrowPower = v; });
-lienEtat('fishThrowState', function () { return fishThrowState; }, function (v) { fishThrowState = v; });
-lienEtat('fishThrowT', function () { return fishThrowT; }, function (v) { fishThrowT = v; });
-lienEtat('fishThrowTarget', function () { return fishThrowTarget; }, function (v) { fishThrowTarget = v; });
-lienEtat('floatState', function () { return floatState; }, function (v) { floatState = v; });
-lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { flotteurChoix = v; });
-lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
-lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
-lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
-lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
-lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
-lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
-lienEtat('nibbleAmplitude', function () { return nibbleAmplitude; }, function (v) { nibbleAmplitude = v; });
-lienEtat('nibbleDebut', function () { return nibbleDebut; }, function (v) { nibbleDebut = v; });
-lienEtat('nibbleDuree', function () { return nibbleDuree; }, function (v) { nibbleDuree = v; });
-lienEtat('nibbleInteretAvant', function () { return nibbleInteretAvant; }, function (v) { nibbleInteretAvant = v; });
-lienEtat('nibblePhase', function () { return nibblePhase; }, function (v) { nibblePhase = v; });
-lienEtat('nibbleRngState', function () { return nibbleRngState; }, function (v) { nibbleRngState = v; });
-lienEtat('nibbleSuivant', function () { return nibbleSuivant; }, function (v) { nibbleSuivant = v; });
-lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
-lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
-lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
-lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
-lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
-lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
-lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v; });
-lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
-lienEtat('score', function () { return score; }, function (v) { score = v; });
-lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
-lienEtat('signalerToucheRatee', function () { return signalerToucheRatee; }, function (v) { signalerToucheRatee = v; });
-lienEtat('snag', function () { return snag; }, function (v) { snag = v; });
-lienEtat('spawnFloatingText', function () { return spawnFloatingText; }, function (v) { spawnFloatingText = v; });
-lienEtat('spawnRipple', function () { return spawnRipple; }, function (v) { spawnRipple = v; });
-lienEtat('spawnSplash', function () { return spawnSplash; }, function (v) { spawnSplash = v; });
-lienEtat('strikeQuality', function () { return strikeQuality; }, function (v) { strikeQuality = v; });
-lienEtat('struggle', function () { return struggle; }, function (v) { struggle = v; });
-lienEtat('struggleAnchor', function () { return struggleAnchor; }, function (v) { struggleAnchor = v; });
-lienEtat('strugglePos', function () { return strugglePos; }, function (v) { strugglePos = v; });
-lienEtat('struggleTimeLeft', function () { return struggleTimeLeft; }, function (v) { struggleTimeLeft = v; });
-lienEtat('tangleChance', function () { return tangleChance; }, function (v) { tangleChance = v; });
-lienEtat('techniqueCourante', function () { return techniqueCourante; }, function (v) { techniqueCourante = v; });
-lienEtat('tension', function () { return tension; }, function (v) { tension = v; });
-lienEtat('timeoutEscape', function () { return timeoutEscape; }, function (v) { timeoutEscape = v; });
-lienEtat('waitTimer', function () { return waitTimer; }, function (v) { waitTimer = v; });
-lienEtat('weatherPluie', function () { return weatherPluie; }, function (v) { weatherPluie = v; });
+
+
 
 renderFicheTouches();
 // Et on ouvre le carnet sur l'onglet « Prises ».
