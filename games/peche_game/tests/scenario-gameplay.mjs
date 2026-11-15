@@ -760,6 +760,12 @@ export function run() {
 
     // Pendant l'épreuve de force : apparitions intermittentes, puis plongées.
     const cachePoisson = startFight(0, -20);
+    const corps = cachePoisson.userData.bodyMesh.geometry.getAttribute('position');
+    const repos = corps.array.slice();
+    const indexArriere = repos.findIndex((x, i) => i % 3 === 0 && x < -0.45);
+    const indexTete = repos.findIndex((x, i) => i % 3 === 0 && x > 0.45);
+    let deformationArriere = 0;
+    let deformationTete = 0;
     let imagesVisibles = 0;
     let imagesCachees = 0;
     for (let i = 0; i < 200; i++) {
@@ -769,6 +775,10 @@ export function run() {
         }
         if (cachePoisson.visible) {
             imagesVisibles += 1;
+            deformationArriere = Math.max(deformationArriere,
+                Math.abs(corps.array[indexArriere + 2] - repos[indexArriere + 2]));
+            deformationTete = Math.max(deformationTete,
+                Math.abs(corps.array[indexTete + 2] - repos[indexTete + 2]));
         } else {
             imagesCachees += 1;
         }
@@ -776,6 +786,9 @@ export function run() {
     check('le poisson apparaît par intermittence pendant le combat',
         imagesVisibles > 0 && imagesCachees > 0,
         imagesVisibles + ' images visible / ' + imagesCachees + ' caché');
+
+    check('le corps ondule près de la queue pendant le combat', deformationArriere > 0.01);
+    checkClose('la tête conserve sa forme pendant cette ondulation', deformationTete, 0, 1e-5);
 
     // Combat gagné : le poisson reste visible (on refait un combat propre : le
     // poisson tire désormais assez fort pour casser la ligne si on ne fait rien).

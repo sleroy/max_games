@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=111';
+import { SoundEngine } from './sound.js?v=112';
 import { creerJeuDemelage } from './demelage.js';
 import { creerModeQuiver } from './quiver.js';
 import { SPECIES, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js';
@@ -1265,16 +1265,55 @@ function makeShoreGeometry(outer, segments) {
     return geo;
 }
 
-const grassTexture = chargerTexture('sol-herbe.jpg', 180, 180);
 const shore = new THREE.Mesh(
     makeShoreGeometry(220, 96),
     new THREE.MeshStandardMaterial({
-        color: 0xe5e0c9, roughness: 0.94, map: grassTexture, vertexColors: true,
-        normalMap: isMobileDevice ? null : chargerTexture('herbe-normales.jpg', 180, 180, false),
-        normalScale: new THREE.Vector2(0.55, 0.55),
-        roughnessMap: isMobileDevice ? null : chargerTexture('herbe-rugosite.jpg', 180, 180, false)
+        color: 0xe5e0c9, roughness: 0.94, vertexColors: true,
+        normalScale: new THREE.Vector2(0.55, 0.55)
     })
 );
+
+async function loadShoreTextures(material) {
+    const maps = [['map', 'sol-herbe', true]];
+    if (!isMobileDevice) {
+        maps.push(['normalMap', 'herbe-normales', false],
+            ['roughnessMap', 'herbe-rugosite', false]);
+    }
+    let loader;
+    try {
+        const tryCompressed = renderer.extensions && typeof Worker !== 'undefined'
+            && new URLSearchParams(window.location.search).get('textures') === 'ktx2';
+        if (tryCompressed) {
+            const { KTX2Loader } = await import('./assets/ktx2/loaders/KTX2Loader.js');
+            const candidate = new KTX2Loader().detectSupport(renderer);
+            if (Object.values(candidate.workerConfig).some(Boolean)) {
+                loader = candidate.setWorkerLimit(1).setTranscoderPath('./assets/ktx2/libs/basis/');
+            }
+        }
+        await Promise.all(maps.map(async ([property, name, srgb]) => {
+            let texture;
+            if (loader) {
+                try {
+                    texture = await loader.loadAsync('./assets/' + name + '.ktx2');
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                    texture.repeat.set(180, 180);
+                } catch {
+                    // Un navigateur peut bloquer les workers ou WebAssembly.
+                }
+            }
+            material[property] = texture || chargerTexture(name + '.jpg', 180, 180, srgb);
+            material.needsUpdate = true;
+        }));
+    } catch {
+        for (const [property, name, srgb] of maps) {
+            material[property] = chargerTexture(name + '.jpg', 180, 180, srgb);
+        }
+        material.needsUpdate = true;
+    } finally {
+        if (loader) { loader.dispose(); }
+    }
+}
+loadShoreTextures(shore.material);
 shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
 shore.receiveShadow = true;
 scene.add(shore);
@@ -1556,13 +1595,13 @@ const guideSide = new THREE.Vector3(0, -1, 0).addScaledVector(rodAxis, rodAxis.y
 const cylinderAxis = new THREE.Vector3(0, 1, 0);
 const guideAxis = new THREE.Vector3(0, 0, 1);
 
-function addRodCylinder(from, to, baseRadius, tipRadius, material) {
+function addRodCylinder(from, to, baseRadius, tipRadius, material, parent = rodGroup) {
     const direction = to.clone().sub(from);
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(
         tipRadius, baseRadius, direction.length(), 12), material);
     mesh.position.copy(from).lerp(to, 0.5);
     mesh.quaternion.setFromUnitVectors(cylinderAxis, direction.normalize());
-    rodGroup.add(mesh);
+    parent.add(mesh);
     return mesh;
 }
 
@@ -1584,22 +1623,48 @@ addRodCylinder(rodLocalTip.clone().multiplyScalar(0.15),
 addRodCylinder(rodLocalTip.clone().multiplyScalar(0.22),
     rodLocalTip.clone().multiplyScalar(0.27), 0.039, 0.031, corkMaterial);
 
+const spoolMaterial = new THREE.MeshStandardMaterial({ color: 0xb28643, metalness: 0.72, roughness: 0.31 });
+const lineCoilMaterial = new THREE.MeshStandardMaterial({ color: 0x798477, roughness: 0.68 });
 const reelSeat = rodLocalTip.clone().multiplyScalar(0.18);
-const reelCenter = reelSeat.clone().addScaledVector(guideSide, 0.18);
-const spoolFront = reelCenter.clone().addScaledVector(rodAxis, 0.14);
-const spoolBack = reelCenter.clone().addScaledVector(rodAxis, 0.06);
-addRodCylinder(reelSeat, reelCenter, 0.026, 0.036, blankMaterial);
-addRodCylinder(reelCenter, spoolBack, 0.082, 0.069, blankMaterial);
-addRodCylinder(spoolBack, spoolFront, 0.063, 0.063, wrapMaterial);
-addRodCylinder(spoolFront, spoolFront.clone().addScaledVector(rodAxis, 0.012), 0.075, 0.075, guideMaterial);
-const bail = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.004, 6, 18, Math.PI), guideMaterial);
-bail.position.copy(spoolBack);
-bail.quaternion.setFromUnitVectors(guideAxis, rodAxis);
-rodGroup.add(bail);
+const reelCenter = reelSeat.clone().addScaledVector(guideSide, 0.19);
+const spoolBack = reelCenter.clone().addScaledVector(rodAxis, 0.09);
+const spoolFront = reelCenter.clone().addScaledVector(rodAxis, 0.17);
+const bodyBack = reelCenter.clone().addScaledVector(rodAxis, -0.11);
 const crankSide = new THREE.Vector3().crossVectors(rodAxis, guideSide).normalize();
-const crankEnd = reelCenter.clone().addScaledVector(crankSide, 0.13);
-addRodCylinder(reelCenter, crankEnd, 0.012, 0.012, guideMaterial);
-addRodCylinder(crankEnd, crankEnd.clone().addScaledVector(guideSide, 0.09), 0.017, 0.019, blankMaterial);
+
+addRodCylinder(reelSeat.clone().addScaledVector(rodAxis, -0.12),
+    reelSeat.clone().addScaledVector(rodAxis, 0.10), 0.041, 0.036, guideMaterial);
+addRodCylinder(reelSeat, reelCenter, 0.016, 0.029, blankMaterial);
+addRodCylinder(bodyBack, reelCenter, 0.028, 0.075, blankMaterial);
+addRodCylinder(reelCenter, spoolBack, 0.072, 0.064, blankMaterial);
+addRodCylinder(spoolBack, spoolFront, 0.055, 0.057, lineCoilMaterial);
+addRodCylinder(spoolFront, spoolFront.clone().addScaledVector(rodAxis, 0.018),
+    0.073, 0.066, spoolMaterial);
+addRodCylinder(spoolFront.clone().addScaledVector(rodAxis, 0.018),
+    spoolFront.clone().addScaledVector(rodAxis, 0.041), 0.027, 0.018, blankMaterial);
+
+const reelRotor = new THREE.Group();
+reelRotor.position.copy(spoolBack);
+rodGroup.add(reelRotor);
+const bail = new THREE.Mesh(new THREE.TorusGeometry(0.091, 0.004, 6, 24, Math.PI * 1.15), guideMaterial);
+bail.position.addScaledVector(rodAxis, 0.054);
+bail.quaternion.setFromUnitVectors(guideAxis, rodAxis);
+reelRotor.add(bail);
+for (const side of [-1, 1]) {
+    const hinge = crankSide.clone().multiplyScalar(0.081 * side);
+    addRodCylinder(hinge, hinge.clone().addScaledVector(rodAxis, 0.053),
+        0.017, 0.022, blankMaterial, reelRotor);
+}
+
+const reelCrank = new THREE.Group();
+reelCrank.position.copy(reelCenter);
+rodGroup.add(reelCrank);
+const crankElbow = crankSide.clone().multiplyScalar(0.127);
+const crankHandle = crankElbow.clone().addScaledVector(guideSide, 0.096);
+addRodCylinder(new THREE.Vector3(), crankElbow, 0.018, 0.012, guideMaterial, reelCrank);
+addRodCylinder(crankElbow, crankHandle, 0.012, 0.009, guideMaterial, reelCrank);
+addRodCylinder(crankHandle, crankHandle.clone().addScaledVector(crankSide, 0.057),
+    0.019, 0.023, blankMaterial, reelCrank);
 
 for (const fraction of [0.35, 0.48, 0.60, 0.71, 0.81, 0.90, 0.96]) {
     const radius = THREE.MathUtils.lerp(0.05, 0.014, fraction);
@@ -1607,11 +1672,14 @@ for (const fraction of [0.35, 0.48, 0.60, 0.71, 0.81, 0.90, 0.96]) {
     const ringCenter = mount.clone().addScaledVector(guideSide, radius * 1.6);
     const foot = addRodCylinder(mount, ringCenter.clone().addScaledVector(guideSide, -radius),
         0.006, 0.004, guideMaterial);
+    const wrapRadius = THREE.MathUtils.lerp(0.023, 0.005, fraction);
+    const wrap = addRodCylinder(mount.clone().addScaledVector(rodAxis, -0.025),
+        mount.clone().addScaledVector(rodAxis, 0.025), wrapRadius, wrapRadius, wrapMaterial);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.003, 6, 12), guideMaterial);
     ring.position.copy(ringCenter);
     ring.quaternion.setFromUnitVectors(guideAxis, rodAxis);
     rodGroup.add(ring);
-    guideMounts.push({ fraction, rodParts: [foot, ring].map(mesh => ({ mesh, rest: mesh.position.clone() })) });
+    guideMounts.push({ fraction, rodParts: [foot, ring, wrap].map(mesh => ({ mesh, rest: mesh.position.clone() })) });
 }
 const tipGuide = new THREE.Mesh(new THREE.TorusGeometry(0.011, 0.003, 6, 12), guideMaterial);
 tipGuide.position.copy(rodLocalTip);
@@ -1690,6 +1758,8 @@ function updateRod(dt) {
     const pliage = -rodBend + castSwing + poseQuiver;
     rodGroup.rotation.x = pliage;
     updateRodFlex(rodBend + castSwing * 0.4);
+    reelCrank.quaternion.setFromAxisAngle(crankSide, crankAngle);
+    reelRotor.quaternion.setFromAxisAngle(rodAxis, crankAngle * 5);
     // Pliage autour de l'axe LOCAL de la canne, puis orientation du poste :
     // c'est exactement la transformation de rodPivot -> rodGroup.
     rodTipVisual.copy(rodLocalTip).applyAxisAngle(ROD_BEND_AXIS, pliage);
@@ -3586,6 +3656,7 @@ function startHoldingFish(fish) {
     fish.userData.hooked = false;
     fish.userData.biting = false;
     fish.visible = true;
+    fish.userData.details.visible = true;
     fish.scale.setScalar(fish.userData.size * 0.75);
     // Bien visible depuis la berge : levé au-dessus de l'épaule, côté caméra.
     fish.rotation.set(0, Math.PI * 0.75, 0);
@@ -4396,6 +4467,45 @@ function makeFishTexture(motif) {
     return _texturesMotif[motif];
 }
 
+// Une membrane suit le contour de la nageoire ; sa courbure et son dégradé
+// restent visibles de profil et quand le poisson est ramené vers la caméra.
+function makeFin(outline, width, height, curve, material) {
+    const shape = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(x, y)));
+    const geometry = new THREE.ShapeGeometry(shape);
+    const positions = geometry.getAttribute('position');
+    const colors = [];
+    for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const y = positions.getY(i);
+        positions.setXYZ(i, x * width, y * height, Math.abs(y) * curve);
+        const tint = 0.82 - 0.26 * Math.abs(y);
+        colors.push(tint, tint, tint);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    return new THREE.Mesh(geometry, material);
+}
+
+const TAIL_OUTLINE = {
+    fine: [[0.14, 0], [0, 0.24], [-0.28, 0.22], [-0.74, 0.11], [-1, 0],
+        [-0.74, -0.11], [-0.28, -0.22], [0, -0.24]],
+    arrondie: [[0.13, 0], [0, 0.20], [-0.45, 0.48], [-0.78, 0.48], [-0.96, 0.29],
+        [-1, 0], [-0.96, -0.29], [-0.78, -0.48], [-0.45, -0.48], [0, -0.20]],
+    fourche: [[0.14, 0], [0, 0.17], [-0.32, 0.27], [-0.64, 0.48], [-1, 0.60],
+        [-0.86, 0.36], [-0.56, 0.08], [-0.53, 0], [-0.61, -0.15],
+        [-0.88, -0.40], [-0.97, -0.55], [-0.63, -0.43], [-0.31, -0.25], [0, -0.17]]
+};
+const FIN_DORSAL = {
+    longue: [[0.52, 0], [0.30, 0.86], [0.12, 1], [-0.03, 0.68], [-0.2, 0.47],
+        [-0.43, 0.33], [-0.7, 0.25], [-1, 0]],
+    epineuse: [[0.52, 0], [0.40, 0.36], [0.29, 0.63], [0.18, 0.58], [0.13, 0.86],
+        [0.02, 0.75], [-0.06, 1], [-0.16, 0.82], [-0.26, 0.92], [-0.36, 0.64],
+        [-0.46, 0.72], [-0.61, 0.47], [-0.74, 0.45], [-1, 0]],
+    souple: [[0.52, 0], [0.22, 0.75], [-0.10, 1], [-0.43, 0.88], [-0.63, 0.56], [-1, 0]]
+};
+const FIN_PECTORALE = [[0.15, 0], [0.05, 0.28], [-0.34, 0.17], [-0.70, -0.10],
+    [-1, -0.34], [-0.80, -0.44], [-0.40, -0.34], [0, -0.11]];
+
 function makeFish(size, power, aggression, form, espece) {
     const group = new THREE.Group();
 
@@ -4410,13 +4520,15 @@ function makeFish(size, power, aggression, form, espece) {
     const bodyMat = new THREE.MeshStandardMaterial({
         color: baseColor.clone().lerp(new THREE.Color(0xd23a12), t * 0.7),
         map: makeFishTexture(espece ? espece.motif : 'aucun'),
-        roughness: 0.35,
-        metalness: 0.25
+        roughness: 0.37,
+        metalness: 0.04,
+        vertexColors: true
     });
     const finMat = new THREE.MeshStandardMaterial({
         color: (espece && espece.nageoires) ? espece.nageoires : couleur,
-        roughness: 0.5,
-        metalness: 0.15
+        roughness: 0.52,
+        side: THREE.DoubleSide,
+        vertexColors: true
     });
 
     const tailScale = 0.8 + (aggression - 0.6) * 0.5;
@@ -4428,66 +4540,49 @@ function makeFish(size, power, aggression, form, espece) {
     const bodyGeometry = new THREE.SphereGeometry(0.6, 24, 16);
     const bodyVertices = bodyGeometry.getAttribute('position');
     const carp = espece && espece.id === 'carpe';
+    const pike = espece && espece.id === 'brochet';
+    const bodyColors = [];
     for (let i = 0; i < bodyVertices.count; i++) {
         const x = bodyVertices.getX(i);
         const longitudinal = x / 0.6;
         const shoulder = 1 + 0.16 * longitudinal;
         const back = bodyVertices.getY(i);
-        const snout = forme.queue === 'fine' ? 0.08 : 0.035;
+        const snout = pike ? 0.10 : forme.queue === 'fine' ? 0.08 : 0.035;
+        const head = Math.max(0, longitudinal) ** 3;
+        const peduncle = Math.min(1, Math.max(0, (-longitudinal - 0.68) * 4));
         bodyVertices.setXYZ(i, x,
-            back * shoulder - snout * Math.pow(Math.max(0, longitudinal), 3)
-                + (carp ? 0.04 * Math.max(0, back / 0.6) * (1 - longitudinal ** 2) : 0),
-            bodyVertices.getZ(i) * shoulder);
+            back * (shoulder - peduncle * 0.14 - (pike ? head * 0.28 : 0))
+                - snout * head
+                + (carp ? 0.07 * Math.max(0, back / 0.6) * (1 - longitudinal ** 2) : 0),
+            bodyVertices.getZ(i) * (shoulder - peduncle * 0.18));
+        const light = THREE.MathUtils.clamp(0.78 - back * 0.35, 0.55, 1);
+        bodyColors.push(light, light, light);
     }
+    bodyGeometry.setAttribute('color', new THREE.Float32BufferAttribute(bodyColors, 3));
     bodyGeometry.computeVertexNormals();
     const fishBody = new THREE.Mesh(bodyGeometry, bodyMat);
     fishBody.scale.set(bodyX, bodyY, bodyZ);
     fishBody.castShadow = true;
     group.add(fishBody);
 
-    // Queue : fourchue, arrondie ou fine selon la silhouette.
     const tailPivot = new THREE.Group();
-    tailPivot.position.x = -0.6 * bodyX;
-    if (forme.queue === 'fine') {
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.22 * tailScale, 1.1 * tailScale, 6), finMat);
-        tail.rotation.z = Math.PI / 2;
-        tail.scale.z = 0.5;
-        tail.position.x = -0.4 * tailScale;
-        tailPivot.add(tail);
-    } else if (forme.queue === 'arrondie') {
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.55 * tailScale, 0.9 * tailScale, 8), finMat);
-        tail.rotation.z = Math.PI / 2;
-        tail.scale.z = 0.35;
-        tail.position.x = -0.4 * tailScale;
-        tailPivot.add(tail);
-    } else {
-        const tail1 = new THREE.Mesh(new THREE.ConeGeometry(0.42 * tailScale, 1.0 * tailScale, 6), finMat);
-        tail1.rotation.z = Math.PI / 2;
-        tail1.rotation.y = 0.35;
-        tail1.position.set(-0.4 * tailScale, 0.18, 0);
-        tailPivot.add(tail1);
-        const tail2 = tail1.clone();
-        tail2.rotation.y = -0.35;
-        tail2.position.y = -0.18;
-        tailPivot.add(tail2);
-    }
+    tailPivot.position.x = -0.59 * bodyX;
+    const tailOutline = TAIL_OUTLINE[pike ? 'fourche' : forme.queue];
+    const tail = makeFin(tailOutline, tailScale * (pike ? 1.16 : 1), tailScale, 0.04, finMat);
+    tailPivot.add(tail);
     group.add(tailPivot);
 
-    // Nageoire dorsale (épineuse chez la perche, reculée chez le brochet).
     const finHeight = Math.max(0.15, forme.dorsale * 1.5) * finScale;
     if (forme.dorsale > 0) {
-        const fin = new THREE.Mesh(new THREE.ConeGeometry(0.3 * finScale, finHeight, 4), finMat);
-        fin.position.set(forme.dorsaleReculee ? -0.35 * bodyX : -0.05, 0.6 * bodyY + finHeight / 2 - 0.05, 0);
-        fin.rotation.z = forme.epines ? -0.08 : -0.25;
-        fin.scale.z = 0.4;
-        group.add(fin);
-        if (forme.epines) {
-            for (let i = 0; i < 4; i++) {
-                const epine = new THREE.Mesh(new THREE.ConeGeometry(0.05 * finScale, 0.28 * finScale, 4), finMat);
-                epine.position.set(0.25 - i * 0.16, 0.6 * bodyY + finHeight * 0.7, 0);
-                group.add(epine);
-            }
-        }
+        const outline = carp ? FIN_DORSAL.longue : forme.epines ? FIN_DORSAL.epineuse : FIN_DORSAL.souple;
+        const dorsal = makeFin(outline, bodyX * (carp ? 0.51 : 0.38), finHeight * 0.76, 0.025, finMat);
+        dorsal.position.set(forme.dorsaleReculee ? -0.33 * bodyX : 0.04 * bodyX,
+            (forme.dorsaleReculee ? 0.38 : 0.48) * bodyY, 0);
+        group.add(dorsal);
+
+        const anal = makeFin(FIN_DORSAL.souple, bodyX * 0.24, -finHeight * 0.42, -0.02, finMat);
+        anal.position.set(-0.30 * bodyX, -0.38 * bodyY, 0);
+        group.add(anal);
     }
 
     // Petits détails (nageoires pectorales, moustaches, yeux) : regroupés
@@ -4495,17 +4590,12 @@ function makeFish(size, power, aggression, form, espece) {
     const details = new THREE.Group();
     group.add(details);
 
-    // Nageoires pectorales (2) : présentes chez tous les poissons.
-    const pectorale = new THREE.Mesh(new THREE.ConeGeometry(0.18 * finScale, 0.5 * finScale, 5), finMat);
-    pectorale.rotation.z = Math.PI / 2.4;
-    pectorale.rotation.y = 0.5;
-    pectorale.scale.z = 0.35;
-    pectorale.position.set(0.25 * bodyX, -0.15 * bodyY, 0.42 * bodyZ);
-    details.add(pectorale);
-    const pectorale2 = pectorale.clone();
-    pectorale2.position.z = -0.42 * bodyZ;
-    pectorale2.rotation.y = -0.5;
-    details.add(pectorale2);
+    for (const side of [-1, 1]) {
+        const pectoral = makeFin(FIN_PECTORALE, 0.62 * finScale, 0.55 * finScale, side * 0.10, finMat);
+        pectoral.position.set(0.22 * bodyX, -0.20 * bodyY, side * 0.46 * bodyZ);
+        pectoral.rotation.y = side * 0.35;
+        details.add(pectoral);
+    }
 
     // Moustaches (silure, poisson-chat).
     if (forme.moustaches || carp) {
@@ -4549,6 +4639,7 @@ function makeFish(size, power, aggression, form, espece) {
 
     group.userData.tailPivot = tailPivot;
     group.userData.bodyMat = bodyMat;
+    group.userData.swimRest = bodyVertices.array.slice();
     group.userData.bodyMesh = fishBody;
     group.userData.couleurBase = baseColor;
     group.userData.especeData = espece || null;
@@ -6145,24 +6236,43 @@ function updateClouds(dt) {
     });
 }
 
+// Le mouvement augmente vers la queue et se propage avec un déphasage le
+// long du corps. La caudale suit la même translation que son point d'attache.
+function animateFishMesh(data, phase, amplitude) {
+    const positions = data.bodyMesh.geometry.getAttribute('position');
+    const rest = data.swimRest;
+    for (let i = 0; i < positions.count; i++) {
+        const x = rest[i * 3];
+        const rear = Math.max(0, -x / 0.6);
+        positions.setZ(i, rest[i * 3 + 2] + Math.sin(phase - rear) * amplitude * rear ** 2);
+    }
+    positions.needsUpdate = true;
+    data.bodyMesh.geometry.computeVertexNormals();
+    data.tailPivot.position.z = Math.sin(phase - 0.98) * amplitude * data.bodyMesh.scale.z;
+    data.tailPivot.rotation.y = Math.sin(phase - 1.45) * amplitude * 3.2;
+}
+
 function updateFish(dt, time) {
     baitInterest = false;
     fishes.forEach(fish => {
         const data = fish.userData;
         if (fish === heldFish) {
+            animateFishMesh(data, time * 15 + data.phase, 0.08);
             return; // le poisson en main est posé par le joueur
         }
+        data.details.visible = fish.position.distanceToSquared(camera.position) < 1089;
         if (data.biting) {
             fish.position.x = floatGroup.position.x + Math.sin(time * 20) * 0.12;
             fish.position.z = floatGroup.position.z + Math.cos(time * 18) * 0.12;
             fish.position.y = HOOK_DEPTH - data.topOffset + Math.sin(time * 20) * 0.05;
             fish.rotation.y = Math.sin(time * 18) * 0.4;
-            data.tailPivot.rotation.y = Math.sin(time * 22) * 0.7;
+            if (fish.visible) { animateFishMesh(data, time * 22, 0.18); }
             return;
         }
         if (data.hooked) {
             if (floatState === 'reeling') {
                 fish.visible = true;   // combat gagné : le poisson est bien visible
+                animateFishMesh(data, time * 12 + data.phase, 0.11);
                 return; // position gérée par la remontée
             }
             // Épreuve de force : le poisson remonte par intermittence puis
@@ -6175,7 +6285,7 @@ function updateFish(dt, time) {
             fish.position.z = strugglePos.z + Math.cos(time * 25) * 0.15;
             fish.position.y = profondeur - data.topOffset;
             fish.rotation.y = Math.sin(time * 15) * 0.5;
-            data.tailPivot.rotation.y = Math.sin(time * 25) * 0.8;
+            if (fish.visible) { animateFishMesh(data, time * 25, 0.23); }
             if (!fish.visible) {
                 data.diveBubbleTimer = (data.diveBubbleTimer || 0) - dt;
                 if (data.diveBubbleTimer <= 0) {
@@ -6284,16 +6394,12 @@ function updateFish(dt, time) {
         fish.rotation.y = yaw;
         fish.rotation.z = Math.max(-0.45, Math.min(0.45, yawDelta * 5))
             + Math.sin(time * 2 + data.phase) * 0.05;
-        if (data.bodyMesh) {
-            data.bodyMesh.rotation.y = Math.sin(time * 9 + data.phase) * 0.10;
-        }
         // position.y = profondeur du dos − hauteur du poisson : il reste sous l'eau,
         // seuls les gros poissons montrent leur dorsale près de la surface.
         // Le poisson reste toujours au-dessus du relief (le fond est un bassin).
         const yBas = fondY(fish.position.x, fish.position.z) + 0.3;
         fish.position.y = Math.max(yBas,
             data.depth - data.topOffset + Math.sin(time * 2 + data.phase) * 0.12);
-        data.tailPivot.rotation.y = Math.sin(time * 9 + data.phase) * 0.5;
         // Poisson caché sous l'eau : seules ses bulles et son sillage le trahissent.
         fish.visible = false;
         if (data.bubbleTimer === undefined) {
@@ -6314,10 +6420,6 @@ function updateFish(dt, time) {
             if (data.depth > -1.8 && ripples.length < 10) {
                 spawnRipple(fish.position);
             }
-        }
-        // LOD : les petits détails (yeux, nageoires) disparaissent au loin.
-        if (data.details) {
-            data.details.visible = fish.position.distanceToSquared(camera.position) < 1089;
         }
     });
 }

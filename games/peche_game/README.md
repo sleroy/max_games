@@ -285,7 +285,11 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   consultable à nouveau depuis le carnet.
 - **Reflets sur l'eau** (option du carnet sur ordinateur) : reflet planaire en
   320 × 180 une image sur deux. Sur mobile, l’eau conserve son reflet du ciel.
-- **LOD** : les petits détails des poissons (yeux, nageoires) disparaissent au loin.
+- **LOD** : les petits détails des poissons disparaissent au loin. Les poissons
+  visibles se courbent pendant la nage et la remontée.
+- **Textures GPU (essai)** : ajoutez `?textures=ktx2` à l’URL pour essayer les
+  cartes de berge compressées. Les JPEG servent de repli si le GPU, le worker
+  ou le transcodage ne sont pas disponibles.
 - **Effets sonores** : échantillons **réels locaux** (`assets/sons/eau-splash.wav`
   et `etang-ambiance.mp3`) avec **fallback procédural** (Web Audio API) si les
   fichiers ou le décodage ne sont pas disponibles.

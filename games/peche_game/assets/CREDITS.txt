@@ -26,3 +26,9 @@ domaine public. Source : https://commons.wikimedia.org/wiki/File:Bathtub_water_s
 2026-05-17 » par SchlurcherBot, CC BY-SA 4.0 (conversion MP3).
 Source : https://commons.wikimedia.org/wiki/File:Ambient_sound_small_pond_with_ducks_in_Berlin_2026-05-17.oga
 Licence : https://creativecommons.org/licenses/by-sa/4.0/
+
+--- Textures GPU ---
+Les fichiers sol-herbe.ktx2, herbe-normales.ktx2 et herbe-rugosite.ktx2 sont
+des versions Basis Universal (ETC1S, mipmaps) des JPEG Grass004 (CC0 1.0).
+Le chargeur KTX2 et ses dépendances proviennent de three.js r160. Les licences
+de three.js, Basis Universal, ktx-parse et zstddec sont dans assets/ktx2/.
