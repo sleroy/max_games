@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=171';
+import { SoundEngine } from './sound.js?v=172';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -46,6 +46,7 @@ import { creerCheat } from './cheat.js?v=168';
 import { creerBoucle } from './boucle.js?v=169';
 import { creerPartie } from './partie.js?v=170';
 import { creerPecheur } from './pecheur.js?v=171';
+import { creerRendu } from './rendu.js?v=172';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,7 @@ lienEtat('BATEAU_PAS_ANGLE', function () { return BATEAU_PAS_ANGLE; }, function 
 lienEtat('BATEAU_PAS_MARGE', function () { return BATEAU_PAS_MARGE; }, function (v) { BATEAU_PAS_MARGE = v; });
 lienEtat('BATEAU_PRIX', function () { return BATEAU_PRIX; }, function (v) { BATEAU_PRIX = v; });
 lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE_WINDOW = v; });
+lienEtat('BLOOM_TARGET_OPTIONS', function () { return BLOOM_TARGET_OPTIONS; }, function (v) { BLOOM_TARGET_OPTIONS = v; });
 lienEtat('BOUCHONS_DE_DEPART', function () { return BOUCHONS_DE_DEPART; }, function (v) { BOUCHONS_DE_DEPART = v; });
 lienEtat('CARTE_3D_BANDE_SEGMENTS', function () { return CARTE_3D_BANDE_SEGMENTS; }, function (v) { CARTE_3D_BANDE_SEGMENTS = v; });
 lienEtat('CARTE_3D_EAU_Y', function () { return CARTE_3D_EAU_Y; }, function (v) { CARTE_3D_EAU_Y = v; });
@@ -83,6 +85,7 @@ lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_D
 lienEtat('LINE_SEGMENTS', function () { return LINE_SEGMENTS; }, function (v) { LINE_SEGMENTS = v; });
 lienEtat('MAX_LIGNES', function () { return MAX_LIGNES; }, function (v) { MAX_LIGNES = v; });
 lienEtat('RECHARGES', function () { return RECHARGES; }, function (v) { RECHARGES = v; });
+lienEtat('SCENE_TARGET_OPTIONS', function () { return SCENE_TARGET_OPTIONS; }, function (v) { SCENE_TARGET_OPTIONS = v; });
 lienEtat('SONAR_PRICE', function () { return SONAR_PRICE; }, function (v) { SONAR_PRICE = v; });
 lienEtat('TAILLE_LOT', function () { return TAILLE_LOT; }, function (v) { TAILLE_LOT = v; });
 lienEtat('TUTORIAL_STEPS', function () { return TUTORIAL_STEPS; }, function (v) { TUTORIAL_STEPS = v; });
@@ -122,6 +125,7 @@ lienEtat('bouchonPossede', function () { return bouchonPossede; }, function (v) 
 lienEtat('bourricheCount', function () { return bourricheCount; }, function (v) { bourricheCount = v; });
 lienEtat('boutonPosteActif', function () { return boutonPosteActif; }, function (v) { boutonPosteActif = v; });
 lienEtat('bubbles', function () { return bubbles; }, function (v) { bubbles = v; });
+lienEtat('camera', function () { return camera; }, function (v) { camera = v; });
 lienEtat('cameraMode', function () { return cameraMode; }, function (v) { cameraMode = v; });
 lienEtat('cameraViewActive', function () { return cameraViewActive; }, function (v) { cameraViewActive = v; });
 lienEtat('cancelCast', function () { return cancelCast; }, function (v) { cancelCast = v; });
@@ -188,6 +192,7 @@ lienEtat('hameconDansZone', function () { return hameconDansZone; }, function (v
 lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
 lienEtat('hideBiteView', function () { return hideBiteView; }, function (v) { hideBiteView = v; });
 lienEtat('hookedFish', function () { return hookedFish; }, function (v) { hookedFish = v; });
+lienEtat('isMobileDevice', function () { return isMobileDevice; }, function (v) { isMobileDevice = v; });
 lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuDemelage = v; });
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
 lienEtat('journalStore', function () { return journalStore; }, function (v) { journalStore = v; });
@@ -212,6 +217,8 @@ lienEtat('paused', function () { return paused; }, function (v) { paused = v; })
 lienEtat('poidsRealisteKilos', function () { return poidsRealisteKilos; }, function (v) { poidsRealisteKilos = v; });
 lienEtat('pointerNdc', function () { return pointerNdc; }, function (v) { pointerNdc = v; });
 lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
+lienEtat('post', function () { return post; }, function (v) { post = v; });
+lienEtat('postSupported', function () { return postSupported; }, function (v) { postSupported = v; });
 lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
 lienEtat('ragondin', function () { return ragondin; }, function (v) { ragondin = v; });
@@ -224,6 +231,7 @@ lienEtat('raycaster', function () { return raycaster; }, function (v) { raycaste
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
 lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
 lienEtat('renderBoutique', function () { return renderBoutique; }, function (v) { renderBoutique = v; });
+lienEtat('renderer', function () { return renderer; }, function (v) { renderer = v; });
 lienEtat('rodBase', function () { return rodBase; }, function (v) { rodBase = v; });
 lienEtat('rodBend', function () { return rodBend; }, function (v) { rodBend = v; });
 lienEtat('rodGroup', function () { return rodGroup; }, function (v) { rodGroup = v; });
@@ -233,6 +241,8 @@ lienEtat('rodTip', function () { return rodTip; }, function (v) { rodTip = v; })
 lienEtat('rodTipVisual', function () { return rodTipVisual; }, function (v) { rodTipVisual = v; });
 lienEtat('rodYawBase', function () { return rodYawBase; }, function (v) { rodYawBase = v; });
 lienEtat('sauteur', function () { return sauteur; }, function (v) { sauteur = v; });
+lienEtat('scene', function () { return scene; }, function (v) { scene = v; });
+lienEtat('sceneTarget', function () { return sceneTarget; }, function (v) { sceneTarget = v; });
 lienEtat('scionChoix', function () { return scionChoix; }, function (v) { scionChoix = v; });
 lienEtat('score', function () { return score; }, function (v) { score = v; });
 lienEtat('shake', function () { return shake; }, function (v) { shake = v; });
@@ -611,179 +621,18 @@ crank.addEventListener('pointercancel', () => {
     crankDragging = false;
 });
 
-// ---------------------------------------------------------------------------
-// Rendu / scène / caméra
-// ---------------------------------------------------------------------------
-// Sur téléphone : on limite la résolution et la taille des ombres (performance).
-// Même critère que la CSS : pointeur « grossier » ou écran étroit.
-const isMobileDevice = typeof window.matchMedia === 'function'
-    && (window.matchMedia('(pointer: coarse)').matches
-        || window.matchMedia('(max-width: 820px)').matches);
-
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.5 : 2));
-// Rendu plus « photo » : tone mapping ACES (comme une caméra). Les shaders
-// maison (ciel, eau) incluent les chunks de tone mapping pour rester cohérents.
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.02;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-// ---------------------------------------------------------------------------
-// Post-traitement maison (aucune dépendance) : léger « bloom » + vignette.
-// On rend la scène dans une cible, on isole les hautes lumières, on les floute
-// puis on recompose à l'écran. Désactivé par défaut sur mobile (performance).
-// ---------------------------------------------------------------------------
-const post = { enabled: !isMobileDevice, strength: 0.22, vignette: 0.18 };
-const postSupported = !!(renderer.capabilities && renderer.setRenderTarget
-    && renderer.getRenderTarget && renderer.setSize);
-
-const postScene = new THREE.Scene();
-const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
-postQuad.frustumCulled = false;
-postScene.add(postQuad);
-
-let sceneTarget = null;
-let brightTarget = null;
-let blurTargetA = null;
-let blurTargetB = null;
-
-// Options des cibles de rendu.
-// ⚠️ La cible de la SCÈNE doit GARDER un tampon de profondeur : sans lui, le tri
-// des objets est perdu et l'eau (transparente), dessinée en dernier, passe
-// PAR-DESSUS le pêcheur et la bourriche pourtant DEVANT elle. C'est exactement
-// ce qui leur donnait cet aspect « sous un voile blanc ».
-const SCENE_TARGET_OPTIONS = {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    depthBuffer: true,
-    stencilBuffer: false
-};
-// Les cibles du bloom sont de simples quads plein écran : pas besoin de profondeur.
-const BLOOM_TARGET_OPTIONS = {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    depthBuffer: false,
-    stencilBuffer: false
-};
-
-function makePostTarget(w, h, options) {
-    return new THREE.WebGLRenderTarget(Math.max(2, w), Math.max(2, h),
-        options || BLOOM_TARGET_OPTIONS);
-}
-
-function resizePost(width, height) {
-    if (!postSupported) {
-        return;
-    }
-    const ratio = (renderer.getPixelRatio && renderer.getPixelRatio()) || 1;
-    const fullW = Math.floor(width * ratio);
-    const fullH = Math.floor(height * ratio);
-    const halfW = Math.floor(fullW / 2);
-    const halfH = Math.floor(fullH / 2);
-    if (sceneTarget) sceneTarget.dispose();
-    if (brightTarget) brightTarget.dispose();
-    if (blurTargetA) blurTargetA.dispose();
-    if (blurTargetB) blurTargetB.dispose();
-    sceneTarget = makePostTarget(fullW, fullH, SCENE_TARGET_OPTIONS);
-    brightTarget = makePostTarget(halfW, halfH);
-    blurTargetA = makePostTarget(halfW, halfH);
-    blurTargetB = makePostTarget(halfW, halfH);
-}
-
-const POST_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
-
-const brightMaterial = new THREE.ShaderMaterial({
-    uniforms: { tDiffuse: { value: null }, uThreshold: { value: 0.92 } },
-    vertexShader: POST_VERTEX,
-    fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform float uThreshold;
-        varying vec2 vUv;
-        void main() {
-            vec3 c = texture2D(tDiffuse, vUv).rgb;
-            float l = dot(c, vec3(0.299, 0.587, 0.114));
-            float k = max(0.0, l - uThreshold) / max(0.0001, 1.0 - uThreshold);
-            gl_FragColor = vec4(c * k, 1.0);
-        }`
+let isMobileDevice;
+let renderer;
+let post;
+let postSupported;
+let sceneTarget;
+let SCENE_TARGET_OPTIONS;
+let BLOOM_TARGET_OPTIONS;
+const {
+    makePostTarget, resizePost, renderWithPost
+} = creerRendu({
+    canvas
 });
-brightMaterial.toneMapped = false;
-
-const blurMaterial = new THREE.ShaderMaterial({
-    uniforms: { tDiffuse: { value: null }, uDir: { value: new THREE.Vector2(1, 0) } },
-    vertexShader: POST_VERTEX,
-    fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform vec2 uDir;
-        varying vec2 vUv;
-        void main() {
-            vec3 sum = texture2D(tDiffuse, vUv).rgb * 0.24;
-            sum += texture2D(tDiffuse, vUv - uDir).rgb * 0.20;
-            sum += texture2D(tDiffuse, vUv + uDir).rgb * 0.20;
-            sum += texture2D(tDiffuse, vUv - uDir * 2.0).rgb * 0.12;
-            sum += texture2D(tDiffuse, vUv + uDir * 2.0).rgb * 0.12;
-            sum += texture2D(tDiffuse, vUv - uDir * 3.0).rgb * 0.06;
-            sum += texture2D(tDiffuse, vUv + uDir * 3.0).rgb * 0.06;
-            gl_FragColor = vec4(sum, 1.0);
-        }`
-});
-blurMaterial.toneMapped = false;
-
-const compositeMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-        tDiffuse: { value: null },
-        tBloom: { value: null },
-        uBloom: { value: post.strength },
-        uVignette: { value: post.vignette }
-    },
-    vertexShader: POST_VERTEX,
-    fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform sampler2D tBloom;
-        uniform float uBloom;
-        uniform float uVignette;
-        varying vec2 vUv;
-        void main() {
-            vec3 col = texture2D(tDiffuse, vUv).rgb;
-            col += texture2D(tBloom, vUv).rgb * uBloom;
-            // Vignette douce pour attirer l'œil au centre.
-            float v = smoothstep(0.9, 0.35, length(vUv - 0.5));
-            col *= mix(1.0 - uVignette, 1.0, v);
-            gl_FragColor = vec4(col, 1.0);
-            #include <colorspace_fragment>
-        }`
-});
-// Le tone mapping est déjà appliqué dans la cible : on ne le refait pas.
-compositeMaterial.toneMapped = false;
-
-function renderWithPost() {
-    renderer.setRenderTarget(sceneTarget);
-    renderer.render(scene, camera);
-
-    postQuad.material = brightMaterial;
-    brightMaterial.uniforms.tDiffuse.value = sceneTarget.texture;
-    renderer.setRenderTarget(brightTarget);
-    renderer.render(postScene, postCamera);
-
-    postQuad.material = blurMaterial;
-    blurMaterial.uniforms.tDiffuse.value = brightTarget.texture;
-    blurMaterial.uniforms.uDir.value.set(1 / blurTargetA.width, 0);
-    renderer.setRenderTarget(blurTargetA);
-    renderer.render(postScene, postCamera);
-
-    blurMaterial.uniforms.tDiffuse.value = blurTargetA.texture;
-    blurMaterial.uniforms.uDir.value.set(0, 1 / blurTargetB.height);
-    renderer.setRenderTarget(blurTargetB);
-    renderer.render(postScene, postCamera);
-
-    postQuad.material = compositeMaterial;
-    compositeMaterial.uniforms.tDiffuse.value = sceneTarget.texture;
-    compositeMaterial.uniforms.tBloom.value = blurTargetB.texture;
-    renderer.setRenderTarget(null);
-    renderer.render(postScene, postCamera);
-}
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fd3ea);
