@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=148';
+import { SoundEngine } from './sound.js?v=149';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -23,6 +23,7 @@ import { creerCombat } from './combat.js?v=145';
 import { creerComportement } from './comportement.js?v=146';
 import { creerBateau } from './bateau.js?v=147';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
+import { creerCarnetUI } from './carnetUI.js?v=149';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ lienEtat('BITE_WINDOW', function () { return BITE_WINDOW; }, function (v) { BITE
 lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
+lienEtat('ZONES_CARTE', function () { return ZONES_CARTE; }, function (v) { ZONES_CARTE = v; });
 lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { anglerYawBase = v; });
 lienEtat('annoncerRecord', function () { return annoncerRecord; }, function (v) { annoncerRecord = v; });
 lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
@@ -3550,147 +3552,17 @@ boutique.addEventListener('click', event => {
     renderBoutique();
 });
 
-// ---------------------------------------------------------------------------
-// Onglets du carnet : Prises / Boutique / Touches / Options
-// ---------------------------------------------------------------------------
-function montrerOnglet(nom) {
-    Object.keys(tabPages).forEach(function (cle) {
-        const page = tabPages[cle];
-        if (page) {
-            page.classList.toggle('active', cle === nom);
-            // Masquage infaillible : on force le style en ligne (indépendant du CSS).
-            page.style.display = (cle === nom) ? '' : 'none';
-            if (cle === nom) {
-                page.scrollTop = 0;   // on ouvre l'onglet en haut
-            }
-        }
-    });
-    // L'onglet cliqué est mis en avant (comme un onglet d'inventaire).
-    if (journalTabs && journalTabs.querySelectorAll) {
-        journalTabs.querySelectorAll('.tab').forEach(function (bouton) {
-            bouton.classList.toggle('active', bouton.dataset.tab === nom);
-        });
-    }
-}
-
-if (journalTabs) {
-    journalTabs.addEventListener('click', function (event) {
-        const cible = event.target;
-        if (cible && cible.dataset && cible.dataset.tab) {
-            montrerOnglet(cible.dataset.tab);
-        }
-    });
-}
-
-// ---------------------------------------------------------------------------
-// Carte de l'étang : dessinée d'après le VRAI étang (mêmes positions que la
-// scène 3D : bord, fosses, nénuphars, pêcheur, bourriche et bouchon).
-// ---------------------------------------------------------------------------
-const ZONES_CARTE = [
+let ZONES_CARTE = [
     { nom: 'Bord, près de la surface', min: -1.2, max: 0.1, couleur: '#4aa3c4' },
     { nom: 'Pleine eau', min: -2.4, max: -1.2, couleur: '#2e7f9c' },
     { nom: 'Le fond', min: -3.5, max: -2.4, couleur: '#1f5f7a' }
 ];
-
-function rendreCarteEtang() {
-    if (!pondMap) {
-        return;
-    }
-    const R = POND_RADIUS;
-    const cx = 100;
-    const cy = 60;
-    const ech = 100 / (2 * R);              // unités du monde → pixels du plan
-    const mx = function (x) { return cx + (x - POND_CENTER.x) * ech; };
-    const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
-    // Chemin SVG du contour GÉNÉRÉ (facteur 1 = bord de l'eau, < 1 = isobathe).
-    const cheminContour = function (facteur) {
-        return cheminContourEtang(cx, cy, ech, facteur, 0);
-    };
-    let svg = '<svg viewBox="0 0 200 120" role="img" aria-label="Carte de l’étang">';
-    svg += '<rect x="0" y="0" width="200" height="120" rx="10" fill="#2f6b3f"/>';
-    // L'eau : des BANDES DE PROFONDEUR calculées avec le VRAI relief (plus c'est
-    // foncé, plus c'est profond) — la carte sert vraiment à choisir où lancer.
-    const TEINTES = ['#74c6e0', '#5cb4d2', '#48a2c4', '#3790b3', '#2b7ea1', '#216b8e', '#18597a', '#124a67'];
-    // L'eau : le VRAI contour généré (aucun cercle imposé), rempli de la teinte
-    // de surface. Les bandes de profondeur et les isobathes suivent ce contour.
-    svg += '<path class="contour-etang" d="' + cheminContour(1)
-        + '" fill="' + TEINTES[0] + '" stroke="#eaf6ff" stroke-width="0.8" opacity="0.95"/>';
-    for (let i = 1; i < TEINTES.length; i++) {
-        const prof = FOND_BORD + (i / TEINTES.length) * (FOND_CENTRE - FOND_BORD);
-        const frac = (prof - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
-        if (frac <= 0.02 || frac >= 0.99) {
-            continue;
-        }
-        svg += '<path d="' + cheminContour(Math.sqrt(1 - frac))
-            + '" fill="' + TEINTES[i] + '"/>';
-    }
-    // ISOBATHES : les courbes de 1 m et 2 m (le 3 m n'existe que dans les fosses,
-    // annotées juste après), avec leur valeur écrite.
-    [2, 4].forEach(function (unites) {
-        const frac = (unites - FOND_BORD) / (FOND_CENTRE - FOND_BORD);
-        if (frac <= 0.02 || frac >= 0.99) {
-            return;
-        }
-        const rr = R * Math.sqrt(1 - frac) * ech;
-        svg += '<path d="' + cheminContour(Math.sqrt(1 - frac))
-            + '" fill="none" stroke="#eaf6ff" stroke-width="0.7" stroke-dasharray="2.5 1.5" opacity="0.9"/>';
-        svg += '<text x="' + (cx + rr * 0.7).toFixed(1) + '" y="' + (cy - rr * 0.7 + 2).toFixed(1)
-            + '" font-size="6.4" font-weight="bold" fill="#ffffff" stroke="#0d3348" stroke-width="0.5">'
-            + (unites / 2) + ' m</text>';
-    });
-    // Les deux FOSSES : les points les plus profonds de l'étang.
-    FOSSES.forEach(function (fosse) {
-        svg += '<circle cx="' + mx(fosse.x).toFixed(1) + '" cy="' + mz(fosse.z).toFixed(1)
-            + '" r="' + (fosse.rayon * ech).toFixed(1)
-            + '" fill="rgba(6, 34, 52, 0.42)" stroke="#bfe6f5" stroke-width="0.5" stroke-dasharray="1.5 1.5"/>';
-        svg += '<text x="' + mx(fosse.x).toFixed(1) + '" y="' + (mz(fosse.z) + 2).toFixed(1)
-            + '" text-anchor="middle" font-size="4.8" fill="#ffffff">fosse '
-            + ((FOND_CENTRE + fosse.plus) / 2).toFixed(1).replace('.', ',') + ' m</text>';
-    });
-    // Les nénuphars, aux VRAIES positions (aléatoires à chaque partie).
-    lilyPads.forEach(function (pad) {
-        svg += '<circle cx="' + mx(pad.x).toFixed(1) + '" cy="' + mz(pad.z).toFixed(1)
-            + '" r="' + Math.max(1.4, pad.radius * ech).toFixed(1) + '" fill="#3f7d4a"/>';
-    });
-    // La bourriche (jaune) et le pêcheur (blanc), eux aussi à leur vraie place.
-    svg += '<circle cx="' + mx(BOURRICHE_POS.x).toFixed(1) + '" cy="' + mz(BOURRICHE_POS.z).toFixed(1)
-        + '" r="2.4" fill="#c9a227"/>';
-    svg += '<circle cx="' + mx(angler.position.x).toFixed(1) + '" cy="' + mz(angler.position.z).toFixed(1)
-        + '" r="3.2" fill="#f2f2f2" stroke="#222222" stroke-width="0.8"/>';
-    // Le bouchon, s'il est à l'eau.
-    if (floatState !== 'idle') {
-        svg += '<circle cx="' + mx(floatGroup.position.x).toFixed(1) + '" cy="'
-            + mz(floatGroup.position.z).toFixed(1) + '" r="1.8" fill="#ff5a3c"/>';
-    }
-    svg += '</svg>';
-    // Légende : les espèces de chaque zone, d'après leurs profondeurs RÉELLES.
-    // Échelle de profondeur, en clair (c'est ce qui aide à choisir son poste).
-    const profMax = FOND_CENTRE + Math.max.apply(null, FOSSES.map(function (f) { return f.plus; }));
-    let legende = '<div class="map-profondeur">Profondeur : <b>'
-        + (FOND_BORD / 2).toFixed(1).replace('.', ',') + ' m</b> au bord → <b>'
-        + (FOND_CENTRE / 2).toFixed(1).replace('.', ',') + ' m</b> au centre → <b>'
-        + (profMax / 2).toFixed(1).replace('.', ',') + ' m</b> dans les fosses — plus c’est foncé, plus c’est profond.</div>';
-    legende += '<div class="map-legende">';
-    ZONES_CARTE.forEach(function (zone) {
-        const noms = SPECIES.filter(function (s) {
-            const p = s.profondeur || [-3.4, -0.9];
-            const mid = (p[0] + p[1]) / 2;
-            return mid >= zone.min && mid < zone.max;
-        }).sort(function (a, b) { return b.abondance - a.abondance; })
-            .slice(0, 4).map(function (s) { return s.nom; });
-        legende += '<div class="map-zone"><span class="map-pastille" style="background:'
-            + zone.couleur + '"></span>' + zone.nom + ' : ' + (noms.join(', ') || '—') + '</div>';
-    });
-    legende += '</div>';
-    // Profondeur à l'endroit du bouchon (et profondeur de l'hameçon).
-    if (floatState !== 'idle') {
-        const profLocale = profondeurLocale(floatGroup.position.x, floatGroup.position.z);
-        legende += '<div class="map-zone">🌊 Ici : ' + (profLocale / 2).toFixed(1).replace('.', ',')
-            + ' m d’eau · hameçon à ' + (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m'
-            + (hameconDansLaVase ? ' — <b>dans la vase !</b>' : '') + '</div>';
-    }
-    pondMap.innerHTML = svg + legende;
-}
+const {
+    montrerOnglet, rendreCarteEtang
+} = creerCarnetUI({
+    tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
+    FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES, profondeurLocale
+});
 
 // ---------------------------------------------------------------------------
 // Onglet « Espèces » : une fiche par poisson (Précédent / Suivant).

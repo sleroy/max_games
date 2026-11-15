@@ -46,6 +46,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `comportement.js` | Comportement des poissons : vue, zone de vie, banc, vitesse, humeur, morsure et nage (état via `etat`) | 608 | Poissons / contenu |
 | `bateau.js` | Mode bateau : barque (modèle, textures), rame, pad tactile, embarquement (état via `etat`) | 518 | Bateau / monde |
 | `lancerPoisson.js` | Lancer du poisson dans la bourriche : prise en main, lancer, arc de vol (état via `etat`) | 206 | Bourriche / lancer |
+| `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang (état via `etat`) | 157 | Carnet / UI |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |
