@@ -63,6 +63,22 @@ export function creerCheat(deps) {
         }
     }
 
+    // Les poissons sont CACHÉS sous l'eau par défaut (comportement.js : « seules
+    // leurs bulles les trahissent »). Pendant le cheat, on les rend tous visibles
+    // juste avant le rendu : c'est le seul moment où la mise à jour du jeu ne
+    // réécrit plus le drapeau `visible` de la même image.
+    const scene = water && water.parent ? water.parent : null;
+    if (scene) {
+        const avantRendu = scene.onBeforeRender;
+        scene.onBeforeRender = function () {
+            if (typeof avantRendu === 'function') { avantRendu.apply(this, arguments); }
+            if (!eauTransparente) { return; }
+            scene.children.forEach(function (objet) {
+                if (objet.userData && objet.userData.especeId) { objet.visible = true; }
+            });
+        };
+    }
+
     const CHEATS = [
         { mot: 'poisson', action: cheatExperience },
         { mot: 'aquarium', action: cheatAquarium }

@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v189** (saisons, température et thermocline : `physique.js`)
+> Dernière mise à jour : **2026-11-15** · jeu **v190** (cheat « aquarium » : poissons visibles)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -66,7 +66,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `accrochage.js` | Accrochage dans les nénuphars, la vase et les obstacles : détection, accroc, dégagement du fil (état via `etat`) | 226 | Combat / accroc |
 | `ambiance.js` | Ambiance : vent, faune sonore, nuages, ondulation de la queue des poissons (état via `etat`) | 95 | Ambiance / effets |
 | `entrees.js` | Entrées : pointeur, clavier et boutons de l’écran de jeu (état via `etat`) | 225 | Entrées / UI |
-| `cheat.js` | Cheats : mots secrets « poisson » (+50 XP) et « aquarium » (eau transparente : `uClear` du shader d'eau) (état via `etat`) | 163 | Cheat / tests |
+| `cheat.js` | Cheats : mots secrets « poisson » (+50 XP) et « aquarium » (eau transparente `uClear` + poissons visibles via `scene.onBeforeRender`) (état via `etat`) | 179 | Cheat / tests |
 | `boucle.js` | Boucle d’animation : une image du jeu, ragondin, pause, horloge (état via `etat`) | 212 | Boucle / rendu |
 | `partie.js` | Partie : lignes (vies), remontée trop rapide, classement, fin de partie, accueil (état via `etat`) | 465 | Partie / règles |
 | `pecheur.js` | Pêcheur, canne et geste de lancer : modèle 3D, poses, charge et fouetté (état via `etat`) | 252 | Pêcheur / canne |

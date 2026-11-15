@@ -3,7 +3,7 @@
 // transparente (on voit les poissons) et retape le mot pour revenir à la
 // normale. Un mot incomplet, faux ou une touche spéciale n'offrent rien.
 // ---------------------------------------------------------------------------
-import { group, checkEqual, G, resetToIdle } from './harness.mjs';
+import { group, check, checkEqual, G, resetToIdle } from './harness.mjs';
 
 export function run() {
     group('70) Cheats : « poisson » (+50 XP) et « aquarium » (eau transparente)');
@@ -74,12 +74,23 @@ export function run() {
     checkEqual('l\'eau devient transparente (on voit les poissons)',
         G().getEauTransparente(), true);
 
+    // Les poissons cachés sous l'eau redeviennent visibles pendant le cheat.
+    const poissons = G().fishes;
+    poissons.forEach(function (poisson) { poisson.visible = false; });
+    G().scene.onBeforeRender();
+    check('tous les poissons deviennent visibles pendant le cheat',
+        poissons.every(function (poisson) { return poisson.visible; }), true);
+
     G().setExperience(0);
     'aquarium'.split('').forEach(function (lettre) {
         G().cheatTouche(lettre);
     });
     checkEqual('retaper « aquarium » remet l\'eau normale', G().getEauTransparente(), false);
     checkEqual('le cheat « aquarium » ne donne pas d\'XP', G().getExperience(), 0);
+    poissons.forEach(function (poisson) { poisson.visible = false; });
+    G().scene.onBeforeRender();
+    checkEqual('eau normale : le cheat ne force plus la visibilité',
+        poissons.some(function (poisson) { return poisson.visible; }), false);
 
     // --- Les deux mots cohabitent : le vrai clavier marche aussi -------------
     'aquarium'.split('').forEach(function (lettre) {
