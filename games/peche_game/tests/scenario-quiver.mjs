@@ -32,6 +32,7 @@ export function run() {
     checkEqual('le scion s’affiche quand la ligne est à l’eau', G().isQuiverPanelVisible(), true);
     checkEqual('le scion visible est annoncé au lecteur d’écran', el('quiverPanel').getAttribute('aria-hidden'), 'false');
     checkEqual('aucun bouchon n’est visible en quiver', G().floatGroup.visible, false);
+    checkEqual('la consigne d’attente indique quoi observer', el('status').textContent, 'Surveille le scion.');
     const poseQuiver = G().getRodPose().x;
     check('la canne est inclinée en quiver', Math.abs(poseQuiver) > 0.1,
         poseQuiver.toFixed(2));

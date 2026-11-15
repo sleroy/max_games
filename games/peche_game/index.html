@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=122">
+    <link rel="stylesheet" href="style.css?v=123">
 </head>
 <body>
     <div class="game-wrap">
@@ -89,45 +89,45 @@
             <div class="overlay-panel active" id="accueil" role="dialog" aria-modal="true"
                 aria-labelledby="accueilTitre">
                 <h2 class="overlay-title" id="accueilTitre">🎣 L’étang du Bois Neuf</h2>
-                <p class="overlay-text">Attrape les poissons du bord de l’eau : règle ta profondeur,<br>
-                    amorce, lance et ferre au bon moment !</p>
-                <div class="panel-row technique-row">
-                    <label for="techniqueSelect">🎣 Technique</label>
-                    <select id="techniqueSelect" class="overlay-input">
-                        <option value="bouchon" selected>Bouchon (flotteur)</option>
-                        <option value="quiver">Quiver (scion de canne)</option>
-                    </select>
-                </div>
-                <div class="poste-choix">
-                    <span class="poste-choix-label">📍 Choisis ta place autour de l’étang :</span>
-                    <div class="carte-placement" id="cartePlacementBoite">
-                        <canvas id="cartePlacement" width="320" height="320"
-                            aria-label="Carte 3D en relief de l’étang"></canvas>
-                        <div class="carte-placement-reperes" aria-hidden="true">
-                            <span class="carte-3d-nord">N ▲</span>
-                            <span class="carte-3d-soleil">☀️</span>
-                            <span class="carte-3d-repere" id="cartePlacementRepere"></span>
+                <div class="accueil-config">
+                    <div class="panel-row technique-row">
+                        <label for="techniqueSelect">🎣 Technique</label>
+                        <select id="techniqueSelect" class="overlay-input">
+                            <option value="bouchon" selected>Bouchon (flotteur)</option>
+                            <option value="quiver">Quiver (scion de canne)</option>
+                        </select>
+                    </div>
+                    <div class="poste-choix">
+                        <span class="poste-choix-label">Choisis ta place</span>
+                        <div class="carte-placement" id="cartePlacementBoite">
+                            <canvas id="cartePlacement" width="320" height="320"
+                                aria-label="Carte 3D en relief de l’étang"></canvas>
+                            <div class="carte-placement-reperes" aria-hidden="true">
+                                <span class="carte-3d-nord">N ▲</span>
+                                <span class="carte-3d-soleil">☀️</span>
+                                <span class="carte-3d-repere" id="cartePlacementRepere"></span>
+                            </div>
                         </div>
+                        <div class="carte-placement-aide" id="cartePlacementAide">Chargement du relief…</div>
+                        <div class="poste-boutons">
+                            <button class="poste-btn actif" id="posteSud" data-poste="0"
+                                aria-pressed="true" aria-label="Se placer au sud">Sud</button>
+                            <button class="poste-btn" id="posteEst" data-poste="1"
+                                aria-pressed="false" aria-label="Se placer à l’est">Est</button>
+                            <button class="poste-btn" id="posteNord" data-poste="2"
+                                aria-pressed="false" aria-label="Se placer au nord">Nord</button>
+                            <button class="poste-btn" id="posteOuest" data-poste="3"
+                                aria-pressed="false" aria-label="Se placer à l’ouest">Ouest</button>
+                        </div>
+                        <span class="poste-choix-hint">Clique ou glisse sur le relief autour de l’étang
+                            (1,4 à 6 unités de la berge). Les boutons sont des raccourcis.</span>
                     </div>
-                    <div class="carte-placement-aide" id="cartePlacementAide">Chargement du relief…</div>
-                    <div class="poste-boutons">
-                        <button class="poste-btn actif" id="posteSud" data-poste="0"
-                            aria-pressed="true" aria-label="Se placer au sud">Sud</button>
-                        <button class="poste-btn" id="posteEst" data-poste="1"
-                            aria-pressed="false" aria-label="Se placer à l’est">Est</button>
-                        <button class="poste-btn" id="posteNord" data-poste="2"
-                            aria-pressed="false" aria-label="Se placer au nord">Nord</button>
-                        <button class="poste-btn" id="posteOuest" data-poste="3"
-                            aria-pressed="false" aria-label="Se placer à l’ouest">Ouest</button>
-                    </div>
-                    <span class="poste-choix-hint">Clique ou glisse sur le relief autour de l’étang
-                        (1,4 à 6 unités de la berge). Les boutons sont des raccourcis.</span>
                 </div>
-                <button class="feed-button" id="playButton">▶ Jouer</button>
-                <button class="journal-button" id="accueilTutoriel">📖 Tutoriel</button>
-                <button class="journal-button" id="accueilClassement">🏆 Classement</button>
-                <p class="overlay-text" style="font-size:0.78rem;opacity:0.75">
-                    Ton nom est demandé en fin de partie.</p>
+                <div class="accueil-actions">
+                    <button class="feed-button" id="playButton">▶ Jouer</button>
+                    <button class="journal-button" id="accueilTutoriel">📖 Tutoriel</button>
+                    <button class="journal-button" id="accueilClassement">🏆 Classement</button>
+                </div>
             </div>
             <div class="overlay-panel" id="gameOver" role="dialog" aria-modal="true"
                 aria-labelledby="gameOverTitle">
@@ -319,6 +319,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=122"></script>
+    <script type="module" src="script.js?v=123"></script>
 </body>
 </html>

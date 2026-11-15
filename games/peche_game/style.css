@@ -1903,3 +1903,101 @@ body.calm .struggle-marker {
         height: var(--crank-size);
     }
 }
+
+/* Le contenu de placement peut défiler. Les trois actions restent en vue. */
+#accueil {
+    max-height: calc(100% - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+}
+
+#accueil > .overlay-title,
+.accueil-actions {
+    flex: 0 0 auto;
+}
+
+.accueil-config {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 3px;
+}
+
+.accueil-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+.accueil-actions button {
+    min-height: 44px;
+}
+
+#playButton {
+    background: #aee6b6;
+    border-color: #72ac80;
+    color: #152b20;
+}
+
+.hud:has(#accueil.active) > :is(.hud-top, .depth-panel, .hud-bottom) {
+    visibility: hidden;
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+    #accueil {
+        width: min(94vw, 650px);
+        padding: 8px 12px;
+        gap: 6px;
+    }
+
+    #accueil > .overlay-title {
+        font-size: 1.08rem;
+    }
+
+    .accueil-config {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+        gap: 10px;
+        align-items: center;
+    }
+
+    #accueil .technique-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
+
+    #accueil .technique-row select {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+    }
+
+    #accueil .poste-choix {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 4px 8px;
+    }
+
+    #accueil .poste-choix-label {
+        grid-column: 1 / -1;
+    }
+
+    #accueil .carte-placement {
+        width: clamp(70px, 36dvh, 112px);
+        min-height: 0;
+    }
+
+    #accueil .poste-boutons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    #accueil .poste-btn,
+    .accueil-actions button {
+        min-height: 44px;
+        padding: 4px 8px;
+        font-size: 0.78rem;
+    }
+}

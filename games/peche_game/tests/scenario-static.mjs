@@ -209,6 +209,10 @@ export function run() {
         html.includes('id="toolToggle"') && css.includes('.tool-dock.ouvert'));
     check('les commandes de caméra sont masquées au départ',
         html.includes('id="cameraControls" hidden'));
+    check('les actions de l’accueil sont à l’extérieur de la zone qui défile',
+        /<div class="accueil-actions">\s*<button[^>]*id="playButton"/.test(html)
+        && /\.accueil-config\s*\{[^}]*overflow-y:\s*auto/.test(css)
+        && /\.accueil-actions\s*\{[^}]*flex:\s*0 0 auto/.test(css));
     check('un FOV horizontal minimum est prévu pour les écrans étroits',
         script.includes('function fovPourAspect') && script.includes('H_FOV_MIN'));
     check('l’avertissement de remontée trop rapide est une popup 3D',
