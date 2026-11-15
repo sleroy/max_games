@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v179**
+> Dernière mise à jour : **2026-11-15** · version du jeu : **v181**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -745,33 +745,39 @@ Ce que fait le code aujourd'hui (vérifié) :
   Test existant adapté sans suppression : scénario 43 (indice « Fond à » avec majuscule dans la vase).
   `script.js` 2 998 → **2 970** lignes (cliquet 2 971).
 
-### 14.9 Idée — un petit coup de moulinet attire les poissons tout proches
+### 14.9 Idée — un petit coup de moulinet attire les poissons tout proches — LIVRÉ v181
 
 En pêche réelle, on « dandine » : un **léger mouvement du moulinet** fait bouger
-l'esche sur place, crée un léger remous et **ravive l'intérêt des poissons qui sont
-déjà à quelques mètres** du bouchon. Aujourd'hui ce geste n'existe pas : un tour de
-manivelle **ramène la ligne** (`comportement.js:490-491`), il n'attire personne.
+l'esche sur place, crée un remous et **ravive l'intérêt des poissons déjà à quelques
+mètres**. Avant, un tour de manivelle **ramenait** seulement la ligne.
 
-- [ ] **Effet d'attraction locale** : quand le joueur donne un **petit coup de
-  moulinet** (course courte, pas un tour complet de rappel), les poissons situés à
-  **courte distance du bouchon** se rapprochent de lui pendant quelques secondes.
-- [ ] **« Vraiment à proximité »** : rayon volontairement **petit** (nettement en
-  dessous de `BITE_INTEREST_RADIUS = 7`, p. ex. ≈ 3 unités) — un poisson à l'autre
-  bout de l'étang **ne doit pas** venir. Sinon c'est un aimant à poissons.
-- [ ] **Effet temporaire et décroissant** : l'intérêt retombe en quelques secondes
-  quand on arrête de mouliner ; il ne se cumule pas (pas d'empilement en martelant
-  la manivelle).
-- [ ] **Compromis assumé** : mouliner franchement **ramène la ligne** (mécanique
-  actuelle) et fait donc **quitter le poste** — le joueur arbitre entre « raviver »
-  et « ramener ».
-- [ ] **Respect des comportements** (`COMPORTEMENTS`, `especes.js`) : les poissons de
-  fond restent près du fond, les carnassiers en embuscade réagissent au remous, les
-  espèces méfiantes moins fort ; l'attraction déplace l'intérêt, pas la couche d'eau.
-- [ ] **Sans effet** pendant le combat, l'accrochage, l'emmêlement ou le rangement.
-- [ ] **Tests** : un poisson à ≈ 2 unités se rapproche du bouchon après un petit coup
-  de moulinet ; un poisson à 20 unités **ne bouge pas** ; l'effet décroît et
-  s'annule après quelques secondes ; répéter le geste ne dépasse pas un plafond ;
-  aucun effet en combat / accrochage.
+- [x] **Effet d'attraction locale** : `dandiner(dt, tours)` dans `comportement.js`,
+  appelé à chaque image bouchon à l'eau avec les tours de manivelle. Geste **court**
+  (< 0,3 tour cumulé, une pause de 0,5 s clôt le geste) → **remous** (`etat.remous`,
+  +10 par tour, **plafonné à 1**, retombe en **3 s**), rond à la surface et léger
+  tremblement du bouchon.
+- [x] **« Vraiment à proximité »** : un poisson est « senti » à moins de
+  **3 × remous × sensibilité** unités (embuscade ×1,25, méfiants jusqu'à ×0,5, plafond
+  1,3) → rayon **< 4 unités**, contre **7** pour l'intérêt normal (`BITE_INTEREST_RADIUS`).
+  Un poisson à 20 unités **ne bouge pas** (testé).
+- [x] **Effet temporaire, décroissant, non cumulable** : le remous retombe en 3 s et
+  son plafond est 1 ; marteler la manivelle ne dépasse pas ce plafond (testé).
+- [x] **Compromis conservé** : un geste **franc** (≥ 0,3 tour) déclenche toujours
+  `startReel()` — mouliner **ramène la ligne** et fait quitter le poste (testé : 1 tour
+  = 4 unités, puis 2 tours de plus).
+- [x] **Respect des `COMPORTEMENTS`** : le poisson approche **sans changer de couche
+  d'eau** ni sortir de sa zone de vie ; les espèces de fond restent au fond, les
+  carnassiers en embuscade réagissent plus fort, les méfiantes moins.
+- [x] **Sans effet** hors `inWater` : rien en combat, accrochage, emmêlement ou touche
+  (testé).
+- [x] **Correctif lié** : les tours de manivelle donnés **avant** l'arrivée du bouchon
+  sont jetés à l'atterrissage — ils déclenchaient un rappel immédiat.
+- [x] **Tests** : `scenario-dandine.mjs` (**75 vérifications**), **+35** au total
+  (2 351 → **2 386**) : poisson à 2 unités attiré, à 20 immobile, décroissance, plafond,
+  espèces, combat / accrochage / emmêlement, rappel de ligne.
+- Mesures : `comportement.js` **701 lignes** (plafond 800) ; vérifié dans Chromium —
+  petit coup : poisson 2,5 → 2,0 unités, ligne toujours à l'eau ; un tour : rappel de
+  4 unités. Cache `?v=181`.
 
 ## Scénarios de test ajoutés (v131–v139)
 
