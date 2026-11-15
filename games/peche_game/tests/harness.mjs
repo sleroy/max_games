@@ -58,6 +58,7 @@ const FILES = {
     ligne: path.join(GAME_DIR, 'ligne.js'),
     frein: path.join(GAME_DIR, 'frein.js'),
     amorcage: path.join(GAME_DIR, 'amorcage.js'),
+    lancer: path.join(GAME_DIR, 'lancer.js'),
     lancerCanne: path.join(GAME_DIR, 'lancerCanne.js'),
     fiches: path.join(GAME_DIR, 'fiches.js'),
     boutique: path.join(GAME_DIR, 'boutique.js'),
@@ -455,6 +456,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.ligne, path.join(tmpDir, 'ligne.js'));
     fs.copyFileSync(FILES.frein, path.join(tmpDir, 'frein.js'));
     fs.copyFileSync(FILES.amorcage, path.join(tmpDir, 'amorcage.js'));
+    fs.copyFileSync(FILES.lancer, path.join(tmpDir, 'lancer.js'));
     fs.copyFileSync(FILES.lancerCanne, path.join(tmpDir, 'lancerCanne.js'));
     fs.copyFileSync(FILES.fiches, path.join(tmpDir, 'fiches.js'));
     fs.copyFileSync(FILES.boutique, path.join(tmpDir, 'boutique.js'));
@@ -593,6 +595,20 @@ export function castTo(x, z) {
     G().startCast({ x, y: 0, z });
     stepUntil(() => state() !== 'flying', 3);
     return state();
+}
+
+/**
+ * Lance le sonar comme une amorce : clic sur 📡 (mode visée), appui sur l'eau en `visee`,
+ * maintien de `maintien` secondes pour doser la jauge, relâchement, puis vol jusqu'au plouf.
+ * Renvoie la position de la bouée posée (ou null si elle n'a pas atterri dans l'eau).
+ */
+export function lancerSonar(visee = { x: 0, z: -25 }, maintien = 0.4) {
+    fire('sonarButton', 'click');
+    G().startFeedCharge({ x: visee.x, y: 0, z: visee.z });
+    stepFor(maintien);
+    G().releaseFeed();
+    stepUntil(() => G().getFeedState() === 'idle', 3);
+    return G().sonarBuoy.visible ? G().sonarBuoy.position.clone() : null;
 }
 
 /**

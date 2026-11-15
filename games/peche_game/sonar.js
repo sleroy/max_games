@@ -10,7 +10,8 @@ import { etat } from './etat.js?v=145';
 export function creerSonar(deps) {
     const {
         scene, sonarRadar, saveJournal, renderJournal, sonarPanel, sonarButton,
-        waterWaveHeightAt, sound, sonarCount, POND_CENTER, angler, rayonEtang, fermerOutils
+        waterWaveHeightAt, sound, sonarCount, POND_CENTER, rayonEtang, fermerOutils, setFeedMode,
+        obstacles
     } = deps;
 
     etat.SONAR_PRICE = 150;
@@ -160,34 +161,68 @@ export function creerSonar(deps) {
         }
     }
 
+    // Pose la bouée là où elle est tombée : le radar de 12 m se centre sur l'impact réel.
+    // Le scan démarre ici, jamais avant le plouf.
+    function poserBouee(point) {
+        etat.sonarBuoy.position.set(point.x, 0.13, point.z);
+        etat.sonarBuoy.visible = true;
+        sonarPanel.hidden = false;
+        sonarButton.textContent = '📡 Ranger le sonar';
+        sonarButton.setAttribute('aria-pressed', 'true');
+        etat.sonarScanTimer = 0;
+        updateSonar(0, etat.elapsed);
+    }
+
+    // La bouée, vue par le geste de lancer (lancer.js) : mêmes visée, jauge et arc que l'amorce.
+    etat.declarerProjectile('sonar', {
+        verbe: 'lancer le sonar',
+        couleur: 0xffb62e,
+        ventFacteur: 2.5,           // comme le lancer de la ligne
+        resterDansEtang: false,     // la bouée tombe où elle tombe, même sur la berge
+        messageArme: 'Sonar : clique et maintiens sur l’eau pour viser, puis relâche pour lancer la bouée.',
+        messageVol: 'La bouée du sonar part…',
+        // Même règle que le lancer de la ligne : pas sur un ponton, une écluse ou des roches.
+        verifier(point) {
+            const bloque = obstacles.lancerBloque(point);
+            if (!bloque) { return null; }
+            etat.spawnFloatingText('Lancer bloqué !', point, '#ffb347');
+            return 'La bouée retombe sur ' + bloque.nom + ' ! Vise l’eau libre.';
+        },
+        dansEau(point) {
+            const angle = Math.atan2(point.z - POND_CENTER.z, point.x - POND_CENTER.x);
+            return Math.hypot(point.x - POND_CENTER.x, point.z - POND_CENTER.z) <= rayonEtang(angle) - 1.5;
+        },
+        atterrir(point, dansEau) {
+            if (etat.partieTerminee) { return ''; }
+            if (!dansEau) {
+                etat.spawnFloatingText('Sur la berge !', point, '#ffb347');
+                return 'La bouée est tombée sur la berge. Vise plus court, vers l’eau.';
+            }
+            sound.splash();
+            etat.spawnSplash(point);
+            etat.spawnRipple(point);
+            poserBouee(point);
+            return 'Sonar posé : le radar balaie 12 m autour de la bouée.';
+        },
+        majMode(arme) {
+            if (etat.sonarBuoy.visible) { return; }
+            sonarButton.textContent = arme ? '📡 Annuler la visée' : '📡 Poser le sonar';
+            sonarButton.setAttribute('aria-pressed', String(arme));
+        }
+    });
+
+    // 📡 : lancer (visée → maintien → relâchement) ; sur une bouée posée, ranger tout de suite.
     sonarButton.addEventListener('click', () => {
         if (!etat.journal.sonar) { return; }
         if (etat.sonarBuoy.visible) {
             rangerSonar();
+        } else if (etat.feedMode && etat.feedType === 'sonar') {
+            if (etat.feedState === 'idle') { setFeedMode(false); }   // annule la visée
         } else {
-            if (etat.paused || (etat.floatState !== 'idle' && etat.floatState !== 'inWater')) { return; }
-            if (etat.floatState === 'inWater') {
-                etat.sonarBuoy.position.copy(etat.floatGroup.position);
-            } else if (etat.modeBateau) {
-                // Depuis la barque : le sonar part DEVANT, vers le centre de l'étang.
-                const dx = POND_CENTER.x - angler.position.x;
-                const dz = POND_CENTER.z - angler.position.z;
-                const d = Math.hypot(dx, dz) || 1;
-                etat.sonarBuoy.position.set(angler.position.x + (dx / d) * 8, 0.13,
-                    angler.position.z + (dz / d) * 8);
-            } else {
-                const angle = Math.atan2(angler.position.z - POND_CENTER.z, angler.position.x - POND_CENTER.x);
-                const distance = rayonEtang(angle) - 4;
-                etat.sonarBuoy.position.set(POND_CENTER.x + Math.cos(angle) * distance, 0.13,
-                    POND_CENTER.z + Math.sin(angle) * distance);
-            }
-            etat.sonarBuoy.visible = true;
-            sonarPanel.hidden = false;
-            sonarButton.textContent = '📡 Ranger le sonar';
-            sonarButton.setAttribute('aria-pressed', 'true');
-            etat.sonarScanTimer = 0;
-            etat.sonarDernierPing = -Infinity; // un placement peut pinger tout de suite
-            updateSonar(0, etat.elapsed);
+            // Mêmes règles d'accès que l'amorce : ligne au repos ou à l'eau, hors combat, accrochage, emmêlement.
+            if (etat.paused || etat.cameraMode !== 'normal' || etat.castState !== 'idle' || etat.feedState !== 'idle') { return; }
+            if (etat.floatState !== 'idle' && etat.floatState !== 'inWater') { return; }
+            setFeedMode(true, 'sonar');
         }
         fermerOutils();
     });

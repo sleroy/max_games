@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=178';
+import { SoundEngine } from './sound.js?v=179';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=173';
@@ -28,21 +28,22 @@ import { creerCarnetUI } from './carnetUI.js?v=173';
 import { creerBoutique } from './boutique.js?v=150';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
-import { creerAmorcage } from './amorcage.js?v=153';
+import { creerLancer } from './lancer.js?v=179';
+import { creerAmorcage } from './amorcage.js?v=179';
 import { creerFrein } from './frein.js?v=154';
 import { creerLigne } from './ligne.js?v=155';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
 import { creerMeteo } from './meteo.js?v=173';
 import { creerVie } from './vie.js?v=173';
-import { creerSonar } from './sonar.js?v=160';
-import { creerStocks } from './stocks.js?v=161';
+import { creerSonar } from './sonar.js?v=179';
+import { creerStocks } from './stocks.js?v=179';
 import { creerJournal } from './journal.js?v=162';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=178';
 import { creerAccrochage } from './accrochage.js?v=178';
 import { creerAmbiance } from './ambiance.js?v=173';
-import { creerEntrees } from './entrees.js?v=167';
+import { creerEntrees } from './entrees.js?v=179';
 import { creerCheat } from './cheat.js?v=168';
 import { creerBoucle } from './boucle.js?v=169';
 import { creerPartie } from './partie.js?v=170';
@@ -1629,15 +1630,12 @@ let feedBall = new THREE.Mesh(
     new THREE.SphereGeometry(0.32, 12, 12),
     new THREE.MeshStandardMaterial({ color: 0xcdb56f, roughness: 0.95 })
 );
-const {
-    setFeedMode, startFeedCharge, moveFeedAim, releaseFeed, cancelFeed, updateChum, updateFeed,
-    updateArm, fermerOutils, updateToolDock
-} = creerAmorcage({
-    scene, angler, feedGaugeFill, feedGaugeTarget, stockAmorce: (...args) => stockAmorce(...args), statusDisplay, feedButton,
-    majAmorce: (...args) => majAmorce(...args), feedGauge, ensureSound, POND_CENTER, wind, rayonEtang, saveJournal: (...args) => saveJournal(...args), sound, arm,
-    toolDock, toolToggle, setCameraView, cameraButton, depthPanel, quickFeedButton, lineSelect,
-    updateDepthButtons, bornesProfondeur, sonarButton
-});
+const { setFeedMode, startFeedCharge, moveFeedAim, releaseFeed, cancelFeed, updateFeed } = creerLancer({
+    scene, angler, feedGaugeFill, feedGaugeTarget, feedGauge, statusDisplay, ensureSound, POND_CENTER, wind, rayonEtang, sound });
+const { updateChum, updateArm, fermerOutils, updateToolDock } = creerAmorcage({
+    scene, stockAmorce: (...args) => stockAmorce(...args), feedButton, majAmorce: (...args) => majAmorce(...args),
+    ensureSound, POND_CENTER, wind, rayonEtang, saveJournal: (...args) => saveJournal(...args), sound, arm, toolDock, toolToggle,
+    setCameraView, cameraButton, depthPanel, quickFeedButton, lineSelect, updateDepthButtons, bornesProfondeur, sonarButton, cancelFeed });
 
 const {
     BOURRICHE_POS, BOURRICHE_RADIUS, FISH_THROW_MIN, FISH_THROW_MAX, FISH_THROW_WIND,
@@ -1755,7 +1753,7 @@ const {
     acheterSonar, acheterBateau, rangerSonar, updateSonar
 } = creerSonar({
     scene, sonarRadar, saveJournal: (...args) => saveJournal(...args), renderJournal: (...args) => renderJournal(...args), sonarPanel, sonarButton, waterWaveHeightAt,
-    sound, sonarCount, POND_CENTER, angler, rayonEtang, fermerOutils
+    sound, sonarCount, POND_CENTER, rayonEtang, fermerOutils, setFeedMode, obstacles
 });
 
 let MAX_LIGNES;

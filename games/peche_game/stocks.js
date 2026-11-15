@@ -36,12 +36,13 @@ export function creerStocks(deps) {
 
     function majAmorce() {
         const stock = stockAmorce();
-        feedButton.textContent = (etat.feedMode ? '🥣 Amorce prête' : '🥣 Amorce') + ' (' + stock + ')';
+        const amorceArmee = etat.feedMode && etat.feedType !== 'sonar';   // le sonar arme le même geste de lancer
+        feedButton.textContent = (amorceArmee ? '🥣 Amorce prête' : '🥣 Amorce') + ' (' + stock + ')';
         quickFeedCount.textContent = String(stock);
-        const action = etat.feedMode ? 'Annuler l’amorçage' : 'Amorcer';
+        const action = amorceArmee ? 'Annuler l’amorçage' : 'Amorcer';
         quickFeedButton.setAttribute('aria-label',
             action + ', ' + stock + (stock === 1 ? ' boule restante' : ' boules restantes'));
-        quickFeedButton.setAttribute('aria-pressed', String(etat.feedMode));
+        quickFeedButton.setAttribute('aria-pressed', String(amorceArmee));
     }
 
     function stockFil(id) {

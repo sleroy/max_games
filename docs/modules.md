@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v178** (obstacles aquatiques : ponton, écluse, roches, souches…)
+> Dernière mise à jour : **2026-11-15** · jeu **v179** (le sonar se lance comme une amorce : `lancer.js`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -50,14 +50,15 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `boutique.js` | Expérience (XP) et boutique de bouchons : gains, achats, rendu (état via `etat`) | 264 | Boutique / progression |
 | `fiches.js` | Onglet Espèces : fiche par poisson (silhouette, zone de vie, comportement) (état via `etat`) | 124 | Carnet / UI |
 | `lancerCanne.js` | Lancer de la canne au dosage (jauge) et animation du geste de lancer (état via `etat`) | 182 | Lancer |
-| `amorcage.js` | Amorçage : boule de nourriture, jauge, vol, attraction et barre d’outils (état via `etat`) | 364 | Amorçage / outils |
+| `lancer.js` | **Geste de lancer commun** (amorce et sonar) : visée, jauge de puissance, point d’impact, arc de vol, arrivée. Les objets lançables s’enregistrent dans `etat.projectiles` (`etat.declarerProjectile`) | 243 | Lancer / outils |
+| `amorcage.js` | Amorçage : boule d’amorce (stock, plouf, nuage de miettes qui attire les poissons), bras du pêcheur et barre d’outils (état via `etat`) | 205 | Amorçage / outils |
 | `frein.js` | Frein du moulinet (on lâche du fil quand le poisson charge) et didacticiel (état via `etat`) | 132 | Frein / tutoriel |
 | `ligne.js` | Ligne + flotteur : tampon de la ligne, groupe du bouchon, textures, opacité, bornes de profondeur (état via `etat`) | 140 | Ligne / bouchon |
 | `bouchons.js` | Types de bouchons (flotteurs), scions du quiver, capacités spéciales (état via `etat`) | 188 | Bouchons / boutique |
 | `placement.js` | Carte de placement vue de dessus (écran d’accueil, terrain de 260 unités) et hauteur du terrain (état via `etat`) | 403 | Monde / placement |
 | `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
 | `vie.js` | Vie ambiante (oiseaux, libellules, poisson qui saute) et bulles sous l’eau (état via `etat`) | 171 | Ambiance / faune |
-| `sonar.js` | Sonar : bouée, radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 199 | Sonar / boutique |
+| `sonar.js` | Sonar : bouée **lancée comme une amorce** (via `lancer.js`), radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 233 | Sonar / boutique |
 | `stocks.js` | Stocks : lignes de rechange, fils, amorce de départ, achat de recharges (état via `etat`) | 104 | Boutique / stocks |
 | `journal.js` | Carnet de pêche : chargement/sauvegarde, rendu, ajout d’une prise (état via `etat`) | 112 | Carnet / persistance |
 | `touches.js` | Catalogue des touches : durées, mouvements du bouchon, tirage vrai/faux (état via `etat`) | 165 | Touches / contenu |
@@ -361,3 +362,32 @@ Demande du joueur : `idées.md` §14.2 (ponton, écluse, douve, roches, arbres i
 - **`placement.js`** : un repère coloré par obstacle sur la carte d'accueil (le ponton est cliquable).
 - **`script.js`** : +6 lignes de câblage, ratchet 2995 → 3001 ; `window.__game.obstacles` pour les tests.
 - Tests : `tests/scenario-obstacles.mjs` (placement, accrochage, attraction, collision, ponton).
+
+
+## 11. Le sonar se lance comme une amorce (v179) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §14.7. Avant, un clic sur 📡 **téléportait** la bouée à une position calculée
+et faisait pinger tout de suite.
+
+- **`lancer.js`** (nouveau, 243 lignes) : le **geste de lancer commun** (clic = visée, maintien = jauge de
+  puissance, relâchement = arc de vol, arrivée). Il porte `setFeedMode(on, type)`, `startFeedCharge`,
+  `moveFeedAim`, `releaseFeed`, `cancelFeed`, `updateFeed` ; l'état du geste reste `etat.feed*`.
+  Chaque objet lançable s'enregistre avec `etat.declarerProjectile(nom, définition)` ; le projectile armé est
+  `etat.feedType` (`'amorce'` | `'sonar'`, propriété de module, non reliée à `script.js`).
+  Définition : `refus()`, `verifier(point)` (impact refusé), `consommer()`, `dansEau(point)`,
+  `atterrir(point, dansEau)` (effets + message), `majMode(arme)` (boutons), `couleur`, `ventFacteur`,
+  `resterDansEtang`, `verbe`, `messageArme`, `messageVol`.
+- **`amorcage.js`** (364 → 205 lignes) : ne garde que la boule d'amorce (enregistrée comme projectile `'amorce'`),
+  le nuage de miettes, le bras du pêcheur et la barre d'outils.
+- **`sonar.js`** : enregistre le projectile `'sonar'` (jaune, vent ×2,5 comme la ligne, **ne reste pas dans
+  l'étang**). `verifier` refuse un impact sur un ouvrage qui bloque le lancer (même règle que
+  `cycleLigne.startCast`) ; `atterrir` pose la bouée **au point d'impact réel** (plouf, éclaboussure, ondulation,
+  radar, premier scan) ou, hors de l'eau (rayon du contour − 1,5), annonce « tombée sur la berge » sans ping.
+  Le clic sur 📡 arme la visée (mêmes règles d'accès que l'amorce, plus `cameraMode === 'normal'`), annule la
+  visée si elle est déjà armée, ou range la bouée posée (immédiat). Plus de `sonarDernierPing = -Infinity` au clic.
+- **`stocks.js`**, **`entrees.js`** : le bouton Amorce ne se croit plus « prêt » pendant la visée du sonar ;
+  il bascule sur l'amorce si on le presse pendant la visée du sonar.
+- **`script.js`** : +1 import, `creerLancer` appelé avant `creerAmorcage`, `setFeedMode` et `obstacles` passés à
+  `creerSonar`. 3000 → 2998 lignes, ratchet 3001 → 2999.
+- Tests : `scenario-sonar.mjs` (71 et 71b : puissance, direction, ping après le plouf, centre du radar, refus en
+  combat / accrochage / emmêlement / vol, barque, ouvrages, berge, Ranger), `lancerSonar()` dans `harness.mjs`.

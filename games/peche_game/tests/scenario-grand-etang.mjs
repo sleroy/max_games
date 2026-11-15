@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual, checkClose,
-    G, el, fire, resetToIdle, clearLilyPads, castTo, stepUntil, state
+    G, el, fire, resetToIdle, clearLilyPads, castTo, stepUntil, state, lancerSonar
 } from './harness.mjs';
 
 // Somme des amplitudes du bruit du contour (voir BRUIT_ETANG dans environnement.js).
@@ -216,26 +216,32 @@ export function run() {
     if (G().reinitialiserSonar) { G().reinitialiserSonar(); }
     G().setExperience(300);
     fire('boutique', 'click', { target: { dataset: { action: 'acheter', id: 'sonar' } } });
+    // Depuis v179 le sonar se LANCE (visée, maintien, plouf) : on vise le centre de l'étang.
     [0, 1, 2, 3].forEach(function (poste) {
         G().placerAuPoste(poste);
         resetToIdle();
-        fire('sonarButton', 'click');
-        const b = G().sonarBuoy.position;
-        const { angle, distance } = polaire(b, centre);
-        check('poste ' + poste + ' : la bouée du sonar est à l’eau (≥ 3 unités de la rive)',
-            distance <= G().getRayonEtang(angle) - 3, (G().getRayonEtang(angle) - distance).toFixed(1));
-        fire('sonarButton', 'click');   // ranger
+        const b = lancerSonar({ x: centre.x, z: centre.z }, 0.5);
+        check('poste ' + poste + ' : la bouée du sonar lancée tombe à l’eau', !!b);
+        if (b) {
+            const { angle, distance } = polaire(b, centre);
+            check('poste ' + poste + ' : la bouée du sonar est à l’eau (≥ 3 unités de la rive)',
+                distance <= G().getRayonEtang(angle) - 3, (G().getRayonEtang(angle) - distance).toFixed(1));
+            fire('sonarButton', 'click');   // ranger
+        }
     });
     G().placerAuPoste(0);
     resetToIdle();
     G().embarquerBateau();
-    fire('sonarButton', 'click');
     {
-        const { angle, distance } = polaire(G().sonarBuoy.position, centre);
-        check('en barque, la bouée du sonar est à l’eau',
-            distance <= G().getRayonEtang(angle) - 3, distance.toFixed(1));
+        const b = lancerSonar({ x: centre.x, z: centre.z }, 0.5);
+        check('en barque, la bouée du sonar lancée tombe à l’eau', !!b);
+        if (b) {
+            const { angle, distance } = polaire(b, centre);
+            check('en barque, la bouée du sonar est à l’eau',
+                distance <= G().getRayonEtang(angle) - 3, distance.toFixed(1));
+            fire('sonarButton', 'click');
+        }
     }
-    fire('sonarButton', 'click');
     G().quitterBateau();
     G().placerAuPoste(0);
 

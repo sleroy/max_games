@@ -183,7 +183,7 @@ export function creerEntrees(deps) {
 
     function toggleAmorcage() {
         ensureSound();
-        setFeedMode(!etat.feedMode);
+        setFeedMode(!(etat.feedMode && etat.feedType !== 'sonar'));   // pendant la visée du sonar : bascule sur l'amorce
         fermerOutils();
     }
 

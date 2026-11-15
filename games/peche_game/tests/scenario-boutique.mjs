@@ -4,7 +4,7 @@
 import {
     group, check, checkEqual, checkClose,
     G, el, fire, state, step, stepUntil,
-    resetToIdle, clearLilyPads, castTo, forceBite, startFight, crankTurns
+    resetToIdle, clearLilyPads, castTo, forceBite, startFight, crankTurns, lancerSonar, stepFor
 } from './harness.mjs';
 import { chargerCarnet, sauverCarnet } from '../carnet.js';
 
@@ -242,20 +242,21 @@ export function run() {
 
     resetToIdle();
     clearLilyPads();
-    checkEqual('on lance pour placer le sonar au bouchon', castTo(0, -25), 'inWater');
-    const floatPosition = G().floatGroup.position;
+    // Le sonar se LANCE comme une amorce (§14.7) : visée, maintien, relâchement, plouf.
+    const bouee = lancerSonar({ x: 0, z: -25 }, 0.4);
+    check('on lance le sonar : la bouée tombe à l’eau', !!bouee);
     const oldPositions = G().fishes.map(fish => fish.position.clone());
     G().fishes.forEach((fish, index) => {
-        fish.position.set(floatPosition.x + (index === 0 ? 23 : 25), -2, floatPosition.z);
+        fish.position.set(bouee.x + (index === 0 ? 23 : 25), -2, bouee.z);
     });
-    fire('sonarButton', 'click');
+    stepFor(0.3);
     checkEqual('poser le sonar affiche le radar', el('sonarPanel').hidden, false);
     checkEqual('seul le poisson dans le rayon de 12 m est détecté',
         el('sonarCount').textContent, '1 poisson · 12 m');
     G().fishes.forEach((fish, index) => fish.position.copy(oldPositions[index]));
     fire('sonarButton', 'click');
     checkEqual('ranger le sonar cache le radar', el('sonarPanel').hidden, true);
-    fire('sonarButton', 'click');
+    lancerSonar({ x: 0, z: -25 }, 0.4);
     G().recommencerPartie();
     checkEqual('une nouvelle partie range le sonar', el('sonarPanel').hidden, true);
     checkEqual('le sonar reste acquis dans la nouvelle partie', el('sonarButton').hidden, false);
