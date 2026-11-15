@@ -93,7 +93,8 @@ export class SoundEngine {
             ['tonnerre', 'tonnerre'], ['pas', 'pas-gravier'], ['piece', 'pieces'],
             ['cloche', 'cloche'], ['carillon', 'carillon'], ['clic', 'clic'],
             ['fouet', 'fouet-canne'], ['epuisette', 'epuisette'],
-            ['poissonSol', 'poisson-sol'], ['filTendu', 'fil-tendu']
+            ['poissonSol', 'poisson-sol'], ['filTendu', 'fil-tendu'],
+            ['sautPoisson', 'poisson-saut'], ['retombePoisson', 'poisson-retombe']
         ].forEach(function (paire) {
             charger(paire[0], 'assets/sons/' + paire[1] + '.mp3');
         });
@@ -216,9 +217,11 @@ export class SoundEngine {
         }
     }
 
-    // « Plop » d'un poisson qui saute hors de l'eau.
+    // Poisson qui saute hors de l'eau : vraie éclaboussure si l'échantillon
+    // est présent, sinon le « plop » procédural.
     jump() {
         if (!this.ctx) return;
+        if (this.jouerSample('sautPoisson', 0.55)) { return; }
         const t = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         osc.type = 'sine';
@@ -231,6 +234,14 @@ export class SoundEngine {
         gain.connect(this.master);
         osc.start(t);
         osc.stop(t + 0.22);
+    }
+
+    // Le poisson retombe dans l'eau : grosse éclaboussure (échantillon réel),
+    // repli sur le saut habituel si l'asset manque.
+    retombe() {
+        if (!this.ctx) return;
+        if (this.jouerSample('retombePoisson', 0.6)) { return; }
+        this.jump();
     }
 
     splash() {

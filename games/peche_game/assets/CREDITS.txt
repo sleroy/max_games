@@ -77,6 +77,14 @@ attribution requise (auteur + lien ci-dessous), partage à l'identique pour CC B
   https://commons.wikimedia.org/wiki/File:Anas_platyrhynchos_-_Mallard_-_XC62258.ogg
 - plouf.mp3 : « Bubble 01 nevit », Nevit Dilmen, CC BY-SA 3.0.
   https://commons.wikimedia.org/wiki/File:Bubble_01_nevit.ogg
+- poisson-saut.mp3 : « Fish Jumping Splash 1 » (ID 40948) et
+  poisson-retombe.mp3 : « Fish Jumping Splash 2 » (ID 96871), compte
+  « freesound_community » sur Pixabay.
+  Licence contenu Pixabay (utilisation libre, attribution non requise).
+  https://pixabay.com/sound-effects/search/fish-jumping/
+  Retouche : recadrage sur la partie active (0,40-2,45 s et 0,85-3,60 s),
+  fondu de sortie, normalisation -16 LUFS / crête -3 dB, mono 22 050 Hz,
+  MP3 64 kb/s.
 - pieces.mp3 : « Coins dropped in wooden moneybox », ezwa (PDSounds), domaine public.
   https://commons.wikimedia.org/wiki/File:Coins_dropped_in_wooden_moneybox.ogg
 - cloche.mp3 : « Gong or bell vibrant (short) », PDSounds, CC0 1.0.
