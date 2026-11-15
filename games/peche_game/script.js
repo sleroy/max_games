@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=150';
+import { SoundEngine } from './sound.js?v=151';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -25,6 +25,7 @@ import { creerBateau } from './bateau.js?v=147';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=149';
 import { creerBoutique } from './boutique.js?v=150';
+import { creerFiches } from './fiches.js?v=151';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -112,6 +113,7 @@ lienEtat('nibblePhase', function () { return nibblePhase; }, function (v) { nibb
 lienEtat('nibbleRngState', function () { return nibbleRngState; }, function (v) { nibbleRngState = v; });
 lienEtat('nibbleSuivant', function () { return nibbleSuivant; }, function (v) { nibbleSuivant = v; });
 lienEtat('paused', function () { return paused; }, function (v) { paused = v; });
+lienEtat('poidsRealisteKilos', function () { return poidsRealisteKilos; }, function (v) { poidsRealisteKilos = v; });
 lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
 lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
@@ -134,6 +136,7 @@ lienEtat('struggle', function () { return struggle; }, function (v) { struggle =
 lienEtat('struggleAnchor', function () { return struggleAnchor; }, function (v) { struggleAnchor = v; });
 lienEtat('strugglePos', function () { return strugglePos; }, function (v) { strugglePos = v; });
 lienEtat('struggleTimeLeft', function () { return struggleTimeLeft; }, function (v) { struggleTimeLeft = v; });
+lienEtat('styleEspece', function () { return styleEspece; }, function (v) { styleEspece = v; });
 lienEtat('tangleChance', function () { return tangleChance; }, function (v) { tangleChance = v; });
 lienEtat('techniqueCourante', function () { return techniqueCourante; }, function (v) { techniqueCourante = v; });
 lienEtat('tension', function () { return tension; }, function (v) { tension = v; });
@@ -3338,110 +3341,12 @@ const {
     FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES, profondeurLocale
 });
 
-// ---------------------------------------------------------------------------
-// Onglet « Espèces » : une fiche par poisson (Précédent / Suivant).
-// ---------------------------------------------------------------------------
-function zoneDeProfondeur(mid) {
-    if (mid >= ZONES_CARTE[0].min) {
-        return ZONES_CARTE[0].nom;
-    }
-    if (mid >= ZONES_CARTE[1].min) {
-        return ZONES_CARTE[1].nom;
-    }
-    return ZONES_CARTE[2].nom;
-}
-
-function abondanceLabel(a) {
-    if (a >= 9) return 'très commune';
-    if (a >= 6) return 'commune';
-    if (a >= 3) return 'peu commune';
-    return 'rare';
-}
-
-function comportementLabel(agressivite) {
-    const a = (agressivite[0] + agressivite[1]) / 2;
-    if (a >= 1.1) return 'vif et combatif';
-    if (a >= 0.85) return 'combatif';
-    return 'calme';
-}
-
-// Silhouette simple de l'espèce, d'après sa forme 3D et sa couleur.
-function silhouetteEspece(e) {
-    const forme = FORMES[e.form] || FORMES.fusiforme;
-    const couleur = '#' + ('000000' + (e.couleur || 0x99a0a5).toString(16)).slice(-6);
-    const bx = Math.min(44, 20 + forme.bodyX * 11);
-    const by = Math.min(28, 7 + forme.bodyY * 17);
-    const gauche = 64 - bx;
-    return '<svg class="espece-silhouette" viewBox="0 0 120 56" role="img" aria-label="' + e.nom + '">'
-        + '<polygon points="18,28 ' + (gauche + 8).toFixed(1) + ',12 '
-        + (gauche + 8).toFixed(1) + ',44" fill="' + couleur + '"/>'
-        + '<ellipse cx="64" cy="28" rx="' + bx.toFixed(1) + '" ry="' + by.toFixed(1)
-        + '" fill="' + couleur + '"/>'
-        + '<circle cx="' + (64 + bx * 0.62).toFixed(1) + '" cy="24" r="2.4" fill="#111"/>'
-        + '</svg>';
-}
-
-function ligneEspece(label, valeur) {
-    return '<div class="espece-ligne"><b>' + label + '</b><span>' + valeur + '</span></div>';
-}
-
-function renderEspece() {
-    if (!especeFiche) {
-        return;
-    }
-    const liste = SPECIES;
-    if (!liste.length) {
-        return;
-    }
-    especeIndex = ((especeIndex % liste.length) + liste.length) % liste.length;
-    const e = liste[especeIndex];
-    const fiche = journal.especes[e.nom] || { n: 0, record: 0 };
-    const p = e.profondeur || [-3.4, -0.9];
-    // Style propre à l'espèce : ses touches et sa façon de se battre.
-    const style = styleEspece(e.id);
-    const nomsTouches = style.touchesVraies.map(function (id) {
-        const t = TOUCHES_PAR_ID[id];
-        return t ? t.nom : id;
-    }).join(' · ');
-    const infos = ligneEspece('Taille réelle', e.cm[0] + ' à ' + e.cm[1] + ' cm')
-        + ligneEspece('Poids', fmtPoids(poidsRealisteKilos(e, e.cm[0])) + ' à '
-            + fmtPoids(poidsRealisteKilos(e, e.cm[1])))
-        + ligneEspece('Où ?', zoneDeProfondeur((p[0] + p[1]) / 2))
-        + ligneEspece('Comportement', comportementLabel(e.agressivite))
-        + ligneEspece('Touches', nomsTouches || '—')
-        + ligneEspece('Combat', style.nom + ' : ' + style.resume)
-        + ligneEspece('Abondance', abondanceLabel(e.abondance))
-        + ligneEspece('Silhouette', e.form);
-    especeFiche.innerHTML = silhouetteEspece(e)
-        + '<h3 class="espece-nom">' + e.nom + '</h3>'
-        + '<div class="espece-infos">' + infos + '</div>'
-        + '<div class="espece-record">' + (fiche.n > 0
-            ? '🧺 ' + fiche.n + (fiche.n > 1 ? ' prises' : ' prise') + ' · record '
-                + fmtPoids(fiche.record || 0)
-            : 'Pas encore attrapé — à toi de jouer !')
-        + '</div>';
-    especePage.textContent = (especeIndex + 1) + ' / ' + liste.length;
-    // Le nom de l'onglet rappelle combien d'espèces ont été découvertes.
-    if (tabBtnEspeces) {
-        const decouvertes = liste.filter(function (s) {
-            return journal.especes[s.nom] && journal.especes[s.nom].n > 0;
-        }).length;
-        tabBtnEspeces.textContent = '🐟 Espèces (' + decouvertes + '/' + liste.length + ')';
-    }
-}
-
-if (especePrev) {
-    especePrev.addEventListener('click', function () {
-        especeIndex -= 1;
-        renderEspece();
-    });
-}
-if (especeNext) {
-    especeNext.addEventListener('click', function () {
-        especeIndex += 1;
-        renderEspece();
-    });
-}
+const {
+    renderEspece
+} = creerFiches({
+    FORMES, especeFiche, SPECIES, journal, TOUCHES_PAR_ID, fmtPoids, especePage, tabBtnEspeces,
+    especePrev, especeNext
+});
 
 function showJournal() {
     fermerOutils();
