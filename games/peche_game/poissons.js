@@ -28,6 +28,9 @@ export function creerPoissons(deps) {
     // Fosses (refuge des poissons de fond) et surface (en hectares) de l'étang.
     const FOSSES = deps.FOSSES;
     const SURFACE_HA = deps.SURFACE_HA;
+    // Obstacles aquatiques (obstacles.js) : ils attirent certaines espèces (zone de vie déplacée).
+    const obstacles = deps.obstacles;
+    let peuplement = true;   // vrai pendant le peuplement initial (les bancs sont attirés d'un bloc, après)
 
     // ---------------------------------------------------------------------------
     // Poissons
@@ -563,6 +566,8 @@ export function creerPoissons(deps) {
         fish.visible = false;
         scene.add(fish);
         fishes.push(fish);
+        // Un poisson ajouté plus tard (remplacement) est lui aussi attiré par les obstacles.
+        if (obstacles && !peuplement && !groupe) { obstacles.attirer([fish]); }
         return fish;
     }
 
@@ -699,11 +704,16 @@ export function creerPoissons(deps) {
     }
 
     peuplerEtang();
+    peuplement = false;
+    if (obstacles) { obstacles.attirer(fishes); }
 
     // Vide l'étang puis le repeuple (tests, nouvelle partie).
     function repeuplerEtang() {
+        peuplement = true;
         viderEtang();
         peuplerEtang();
+        peuplement = false;
+        if (obstacles) { obstacles.attirer(fishes); }
     }
 
     function respawnFish(fish) {

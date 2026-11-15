@@ -21,7 +21,7 @@ export const RAYON_BARQUE = 1.5;     // rayon de la coque pour les collisions
 export const MARGE_ACCROCHE = 0.8;   // l'hameçon se coince à moins de 0,8 d'un obstacle
 export const ATTIRE_RAYON = 10;      // rayon de la zone de vie autour d'un obstacle
 const DEG = Math.PI / 180;
-const PROBA_ATTIRANCE = 0.85;        // part des poissons (ou bancs) attirés par un obstacle
+const PROBA_ATTIRANCE = 0.5;         // part des poissons (ou bancs) attirés par un obstacle
 const COULOIR_POSTE = 14 * DEG;      // aucun obstacle à ±14° d'un des 4 postes de berge
 
 // Difficultés d'accrochage : mêmes réglages que accrochage.js (nénuphars : 0,12 / 0,10 / 1,1 /
@@ -612,21 +612,25 @@ export function creerObstacles(deps) {
     const tours = {};
     const stats = { poissons: 0, parObstacle: {} };
 
-    function choisirObstacle(especeId) {
+    function choisirObstacle(especeId, garanti) {
         const cibles = parEspece[especeId];
-        if (!cibles || hasardAttire() >= PROBA_ATTIRANCE) { return null; }
+        if (!cibles || (!garanti && hasardAttire() >= PROBA_ATTIRANCE)) { return null; }
         tours[especeId] = ((tours[especeId] === undefined ? -1 : tours[especeId]) + 1) % cibles.length;
         return cibles[tours[especeId]];
     }
 
+    // Au peuplement (plusieurs poissons), le premier banc ou poisson de chaque espèce est TOUJOURS
+    // attiré : toute espèce qui a un obstacle en a au moins un. Les suivants le sont une fois sur deux.
     function attirer(poissons) {
         const groupes = {};
+        const vues = {};
         poissons.forEach(function (fish) {
             const d = fish.userData;
             if (!parEspece[d.especeId] || d.hooked) { return; }
             let choix = d.groupeId !== undefined ? groupes[d.groupeId] : undefined;
             if (choix === undefined) {
-                const obstacle = choisirObstacle(d.especeId);
+                const obstacle = choisirObstacle(d.especeId, poissons.length > 1 && !vues[d.especeId]);
+                vues[d.especeId] = true;
                 const a = hasardAttire() * Math.PI * 2;
                 const r = hasardAttire() * 2.5;
                 choix = obstacle ? { obstacle: obstacle, x: obstacle.attire.centre.x + Math.cos(a) * r,

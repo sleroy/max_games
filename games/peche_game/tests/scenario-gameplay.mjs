@@ -414,7 +414,7 @@ export function run() {
         G().fishes.every(f => f.position.y + f.userData.topOffset <= -0.5),
         Math.max.apply(null, G().fishes.map(f => f.position.y + f.userData.topOffset)).toFixed(2));
     check('les profondeurs sont variées',
-        Math.max.apply(null, depths) - Math.min.apply(null, depths) > 1.4,
+        Math.max.apply(null, depths) - Math.min.apply(null, depths) > 1.2,   // v176 : 1,4 → 1,2 (les poissons de fond attirés par les obstacles vivent près de la berge, donc moins profond)
         Math.min.apply(null, depths).toFixed(2) + ' -> ' + Math.max.apply(null, depths).toFixed(2));
     check('tous restent sous la surface en nageant',
         G().fishes.every(f => f.position.y < -0.5),

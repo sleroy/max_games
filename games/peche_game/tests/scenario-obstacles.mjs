@@ -9,9 +9,11 @@
 // ---------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
+import { SPECIES } from '../especes.js';
+import { COMPORTEMENTS } from '../especes.js';
 import {
     GAME_DIR, group, check, checkEqual,
-    G, el, fire, resetToIdle, castTo, step, state
+    G, el, fire, resetToIdle, castTo, step, stepFor, state
 } from './harness.mjs';
 
 const TYPES_ATTENDUS = ['ponton', 'ecluse', 'douve', 'roches', 'souche', 'pieux', 'epave', 'joncs'];
@@ -226,6 +228,98 @@ export function run() {
     check('sans cliquer, la ligne casse', state() === 'broken' || state() === 'idle', state());
     resetToIdle();
     G().recommencerPartie();
+
+    attraction(O);
+}
+
+/** Densité (poissons / unité²) de l'espèce près de ses obstacles, moyennée sur 4 instants de simulation. */
+function mesurerDensites(O, especeId, obstaclesCibles) {
+    const surface = G().getEtangInfo().surfaceHa * 4 * 10000;   // unités² (2 unités = 1 m)
+    let proches = 0;
+    let total = 0;
+    for (let instant = 0; instant < 4; instant++) {
+        stepFor(5, 0.05);
+        G().fishes.forEach(function (f) {
+            if (f.userData.especeId !== especeId) { return; }
+            total++;
+            if (obstaclesCibles.some(o => Math.hypot(f.position.x - o.attire.centre.x,
+                f.position.z - o.attire.centre.z) < o.attire.rayon)) { proches++; }
+        });
+    }
+    const aire = obstaclesCibles.length * Math.PI * obstaclesCibles[0].attire.rayon ** 2;
+    return { autour: proches / 4 / aire, etang: total / 4 / surface, proches: proches / 4, total: total / 4 };
+}
+
+function attraction(O) {
+    group('73c) Obstacles : attraction d’un type d’espèce autour de chaque obstacle');
+    const pardon = {};
+    O.liste.forEach(o => { (pardon[o.type] = pardon[o.type] || []).push(o); });
+
+    // --- Les espèces attirées existent dans COMPORTEMENTS (reliées à especes.js) ---
+    Object.keys(O.TYPES).forEach(function (type) {
+        check(type + ' : espèces attirées connues (' + O.TYPES[type].especes.join(', ') + ')',
+            O.TYPES[type].especes.every(id => !!COMPORTEMENTS[id] && SPECIES.some(e => e.id === id)));
+    });
+    check('arbres immergés → brochet et black-bass (embuscade)',
+        O.TYPES.souche.especes.includes('brochet') && O.TYPES.souche.especes.includes('black-bass')
+        && COMPORTEMENTS.brochet.humeur === 'embuscade');
+    check('roches → perche', O.TYPES.roches.especes.join() === 'perche');
+    check('ponton → gardons', O.TYPES.ponton.especes.join() === 'gardon');
+    check('joncs → brochet + gardon', O.TYPES.joncs.especes.join() === 'brochet,gardon');
+
+    // --- 1) Population naturelle : une espèce qui a un obstacle en a au moins un ---
+    G().repeuplerEtang();
+    const presentes = new Set(G().fishes.map(f => f.userData.especeId));
+    let testes = 0;
+    O.liste.forEach(function (o) {
+        o.attire.especes.forEach(function (id) {
+            if (!presentes.has(id)) { return; }
+            const aCetObstacle = G().fishes.some(f => f.userData.obstacleId === o.id && f.userData.especeId === id);
+            const aUnObstacle = G().fishes.some(f => f.userData.especeId === id && !!f.userData.obstacleId);
+            if (!aUnObstacle) {
+                check('espèce « ' + id + ' » présente : attirée par au moins un de ses obstacles', false);
+            } else if (aCetObstacle) { testes++; }
+        });
+    });
+    check('l’étang naturel attire au moins 4 (espèce, obstacle)', testes >= 4, testes + ' couples');
+    const attirees = G().fishes.filter(f => f.userData.obstacleId);
+    check('une partie seulement des poissons est attirée (le reste vit librement)',
+        attirees.length > 0 && attirees.length < G().fishes.length,
+        attirees.length + ' sur ' + G().fishes.length);
+    check('un poisson attiré vit près de son obstacle (zone de vie déplacée)',
+        attirees.every(function (f) {
+            const o = O.liste.find(x => x.id === f.userData.obstacleId);
+            return Math.hypot(f.userData.homeX - o.attire.centre.x, f.userData.homeZ - o.attire.centre.z) < 6;
+        }));
+
+    // --- 2) Simulation : pour CHAQUE espèce reliée, plus dense autour de ses obstacles ---
+    const parEspece = {};
+    O.liste.forEach(o => o.attire.especes.forEach(id => { (parEspece[id] = parEspece[id] || []).push(o); }));
+    Object.keys(parEspece).forEach(function (id) {
+        G().repeuplerEtang();
+        const espece = SPECIES.find(e => e.id === id);
+        // Trois poissons de l'espèce, puis attraction forcée (un lot de plusieurs est toujours attiré).
+        const lot = [G().spawnFish(espece), G().spawnFish(espece), G().spawnFish(espece)];
+        O.attirer(lot);
+        const cibles = parEspece[id];
+        const m = mesurerDensites(O, id, cibles);
+        check(id + ' : plus dense autour de ses obstacles (' + cibles.map(o => o.type).join(', ') + ') que dans l’étang',
+            m.autour > 2 * m.etang && m.proches >= 1,
+            (m.autour * 1000).toFixed(2) + ' ‰ contre ' + (m.etang * 1000).toFixed(2) + ' ‰ ('
+            + m.proches.toFixed(1) + ' sur ' + m.total.toFixed(1) + ')');
+    });
+
+    // --- 3) Un poisson de la population naturelle reste près de son obstacle ---
+    G().repeuplerEtang();
+    const tenant = G().fishes.find(f => f.userData.obstacleId);
+    if (tenant) {
+        const o = O.liste.find(x => x.id === tenant.userData.obstacleId);
+        stepFor(30, 0.05);
+        check('après 30 s de simulation, le poisson attiré est toujours dans sa zone',
+            Math.hypot(tenant.position.x - o.attire.centre.x, tenant.position.z - o.attire.centre.z) < o.attire.rayon + 6,
+            Math.hypot(tenant.position.x - o.attire.centre.x, tenant.position.z - o.attire.centre.z).toFixed(1) + ' unités');
+    }
+    G().repeuplerEtang();
 }
 
 export default run;
