@@ -3,12 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=130';
+import { SoundEngine } from './sound.js?v=131';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=130';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=131';
 import { creerClassement } from './classement.js';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=130';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=131';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -7231,7 +7231,8 @@ function updateFloat(dt, time) {
         }
         waitTimer += dt;
         // Un tour de manivelle pendant l'attente : on ramène la ligne (pour
-        // relancer ailleurs). La manivelle ne sert donc pas qu'au combat.
+        // relancer ailleurs). La manivelle est le SEUL moyen de ramener la
+        // ligne : ni le clic ni le clavier ne le font (voir pointerdown).
         if (consumeCrankTurns() > 0) {
             startReel();
             return;
@@ -7428,9 +7429,9 @@ canvas.addEventListener('pointerdown', event => {
         if (p) {
             startCastCharge(p);   // on vise et on dose la puissance du lancer
         }
-    } else if (floatState === 'inWater') {
-        startReel();
     }
+    // Ligne à l'eau : un clic ne ramène PLUS la ligne (sinon un clic mal placé
+    // remontait le bouchon sans prévenir). Seule la manivelle ramène la ligne.
 });
 
 canvas.addEventListener('pointermove', event => {
@@ -7579,9 +7580,9 @@ window.addEventListener('keydown', event => {
             if (hits.length) {
                 startCastCharge(hits[0].point.clone());
             }
-        } else if (floatState === 'inWater') {
-            startReel();
         }
+        // Espace/Entrée à l'eau : idem clic, la ligne ne se remonte plus au
+        // clavier. La manivelle reste le seul moyen de ramener la ligne.
     }
 });
 
