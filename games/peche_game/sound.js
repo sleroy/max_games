@@ -77,6 +77,8 @@ export class SoundEngine {
                 .catch(function () { /* fallback procédural */ });
         };
         charger('splash', 'assets/sons/eau-splash.wav', 0.65, false);
+        // Grosse boule d'amorce qui tombe dans l'eau (son réel, CC0).
+        charger('amorce', 'assets/sons/amorce-plouf.mp3');
         charger('ambiance', 'assets/sons/etang-ambiance.mp3', 0.08, true);
         charger('cast', 'assets/sons/canne-lancer.mp3');
         charger('reel', 'assets/sons/moulinet.mp3');
@@ -250,6 +252,14 @@ export class SoundEngine {
         gain.connect(this.master);
         noise.start(t);
         noise.stop(t + 0.4);
+    }
+
+    // La boule d'amorce qui tombe dans l'eau : un « PLouf » lourd et mouillé
+    // (échantillon réel). Repli sur le splash habituel si l'asset manque.
+    amorceSplash() {
+        if (!this.ctx) return;
+        if (this.jouerSample('amorce', 0.75)) { return; }
+        this.splash();
     }
 
     cast() {

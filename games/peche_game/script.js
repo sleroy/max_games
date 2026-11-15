@@ -3,12 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=133';
+import { SoundEngine } from './sound.js?v=134';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=133';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=134';
 import { creerClassement } from './classement.js';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=133';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=134';
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2494,7 +2494,9 @@ function spawnChum(position) {
 function landFeed() {
     feedState = 'idle';
     feedBall.visible = false;
-    sound.splash();
+    // Plouf de la BOULE D'AMORCE : son réel dédié (une grosse boule qui tombe),
+    // différent du « ploc » du bouchon et du splash du combat.
+    sound.amorceSplash();
     spawnSplash(feedLanding);
     spawnChum(feedLanding);
     setFeedMode(false);

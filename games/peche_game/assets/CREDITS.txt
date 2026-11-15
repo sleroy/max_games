@@ -22,6 +22,11 @@ Textures ajoutees (toutes libres, embarquees en local, redimensionnees en 512):
 --- Sons réels locaux (assets/sons) ---
 - eau-splash.wav : extrait de « Bathtub water splashes » par gradha, PDSounds #775,
 domaine public. Source : https://commons.wikimedia.org/wiki/File:Bathtub_water_splashes.ogg
+- amorce-plouf.mp3 : « WATRSplsh_Plouf gros 1 (ID 1519) » — LaSonotheque.fr.
+  Licence indiquée dans les métadonnées du fichier d'origine : CC0 / WTFPL / domaine public.
+  Source : LaSonotheque.fr (métadonnées : copyright = "CC0 / WTFPL / Public domain").
+  Retouche : extrait 0,10 → 1,30 s (l'attaque et le début du remous, la fin était
+  inaudible), fondu de sortie 0,2 s, mono 22 050 Hz, MP3 64 kb/s (3,27 s / 471 Ko → 1,20 s / 10 Ko).
 - etang-ambiance.mp3 : extrait de « Ambient sound small pond with ducks in Berlin
 2026-05-17 » par SchlurcherBot, CC BY-SA 4.0 (conversion MP3).
 Source : https://commons.wikimedia.org/wiki/File:Ambient_sound_small_pond_with_ducks_in_Berlin_2026-05-17.oga

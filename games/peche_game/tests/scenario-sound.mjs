@@ -83,6 +83,22 @@ export function run() {
     check('la pluie enregistrée tourne en boucle',
         engine.rainSource.loop && engine.rainSource.buffer === engine.samples.rain);
 
+    group('7b) Moteur audio : plouf de l’amorce');
+    // Le son réel « amorce-plouf.mp3 » est dédié à la boule d'amorce : quand il
+    // est chargé, c'est LUI qui joue (et pas le splash générique).
+    const amorce = engine.samples.amorce = ctx.createBuffer(1, 4410, 44100);
+    const avantAmorce = ctx.started.length;
+    engine.amorceSplash();
+    check('« amorceSplash() » utilise l’enregistrement dédié',
+        ctx.started.at(-1).buffer === amorce);
+    checkEqual('et il ne joue qu’un son, pas deux', ctx.started.length, avantAmorce + 1);
+    // Sans l'asset (téléphone hors ligne, décodage raté), repli sur le splash.
+    delete engine.samples.amorce;
+    const avantRepli = ctx.started.length;
+    engine.amorceSplash();
+    check('sans l’asset, repli sur le splash habituel',
+        ctx.started.length > avantRepli, (ctx.started.length - avantRepli) + ' nœud(s)');
+
     group('8) Moteur audio : réglages');
     engine.setEnabled(false);
     checkEqual('setEnabled(false) coupe le son', engine.master.gain.targets.at(-1), 0);

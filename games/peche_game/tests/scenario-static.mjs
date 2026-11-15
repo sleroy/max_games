@@ -18,6 +18,7 @@ export function run() {
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',
         'assets/sons/moulinet-frein.mp3', 'assets/sons/fil-casse.mp3',
         'assets/sons/merle.mp3', 'assets/sons/pluie.mp3',
+        'assets/sons/amorce-plouf.mp3',
         'assets/sol-herbe.jpg', 'assets/ecorce.jpg', 'assets/vase.jpg', 'assets/eau-normales.jpg'].forEach(name => {
         check(name + ' présent', fs.existsSync(path.join(GAME_DIR, name)));
     });
