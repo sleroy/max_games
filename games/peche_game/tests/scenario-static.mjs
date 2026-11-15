@@ -22,7 +22,7 @@ function readModules() {
 
 export function run() {
     group('1) Fichiers du jeu');
-    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'bourriche.js', 'README.md',
+    ['index.html', 'style.css', 'script.js', 'demelage.js', 'quiver.js', 'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'decor.js', 'environnement.js', 'portraits.js', 'poissons.js', 'ondulations.js', 'bourriche.js', 'README.md',
         'assets/three.module.js', 'assets/CREDITS.txt',
         'assets/sons/eau-splash.wav', 'assets/sons/etang-ambiance.mp3',
         'assets/sons/canne-lancer.mp3', 'assets/sons/moulinet.mp3',

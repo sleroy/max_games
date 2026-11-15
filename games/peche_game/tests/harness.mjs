@@ -32,6 +32,7 @@ const FILES = {
     decor: path.join(GAME_DIR, 'decor.js'),
     environnement: path.join(GAME_DIR, 'environnement.js'),
     poissons: path.join(GAME_DIR, 'poissons.js'),
+    ondulations: path.join(GAME_DIR, 'ondulations.js'),
     bourriche: path.join(GAME_DIR, 'bourriche.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
@@ -396,6 +397,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.decor, path.join(tmpDir, 'decor.js'));
     fs.copyFileSync(FILES.environnement, path.join(tmpDir, 'environnement.js'));
     fs.copyFileSync(FILES.poissons, path.join(tmpDir, 'poissons.js'));
+    fs.copyFileSync(FILES.ondulations, path.join(tmpDir, 'ondulations.js'));
     fs.copyFileSync(FILES.bourriche, path.join(tmpDir, 'bourriche.js'));
     fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
