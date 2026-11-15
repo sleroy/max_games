@@ -55,6 +55,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `ligne.js` | Ligne + flotteur : tampon de la ligne, groupe du bouchon, textures, opacité, bornes de profondeur (état via `etat`) | 140 | Ligne / bouchon |
 | `bouchons.js` | Types de bouchons (flotteurs), scions du quiver, capacités spéciales (état via `etat`) | 188 | Bouchons / boutique |
 | `placement.js` | Carte de placement vue de dessus (écran d’accueil) et hauteur du terrain (état via `etat`) | 399 | Monde / placement |
+| `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |

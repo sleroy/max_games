@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=157';
+import { SoundEngine } from './sound.js?v=158';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -32,6 +32,7 @@ import { creerFrein } from './frein.js?v=154';
 import { creerLigne } from './ligne.js?v=155';
 import { creerBouchons } from './bouchons.js?v=156';
 import { creerPlacement } from './placement.js?v=157';
+import { creerMeteo } from './meteo.js?v=158';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -171,6 +172,7 @@ lienEtat('poidsRealisteKilos', function () { return poidsRealisteKilos; }, funct
 lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
 lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
+lienEtat('rainPoints', function () { return rainPoints; }, function (v) { rainPoints = v; });
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
 lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
 lienEtat('renderBoutique', function () { return renderBoutique; }, function (v) { renderBoutique = v; });
@@ -201,6 +203,7 @@ lienEtat('timeoutEscape', function () { return timeoutEscape; }, function (v) { 
 lienEtat('tutorialStepIndex', function () { return tutorialStepIndex; }, function (v) { tutorialStepIndex = v; });
 lienEtat('waitTimer', function () { return waitTimer; }, function (v) { waitTimer = v; });
 lienEtat('weatherPluie', function () { return weatherPluie; }, function (v) { weatherPluie = v; });
+lienEtat('weatherRafales', function () { return weatherRafales; }, function (v) { weatherRafales = v; });
 
 const canvas = document.getElementById('gameCanvas');
 const scoreDisplay = document.getElementById('score');
@@ -2546,96 +2549,14 @@ const {
     renderJournal
 });
 
-// ---------------------------------------------------------------------------
-// Météo : beau temps → rafales → pluie. Le cycle est piloté par le TEMPS DE JEU
-// (aucun tirage aléatoire) : le monde des tests reste donc reproductible.
-// ---------------------------------------------------------------------------
-const WEATHER_CYCLE = [
-    { nom: 'beau', duree: 70, pluie: 0, rafales: 0 },
-    { nom: 'rafales', duree: 45, pluie: 0, rafales: 1 },
-    { nom: 'pluie', duree: 60, pluie: 1, rafales: 0.6 }
-];
-let weatherIndex = 0;
-let weatherTimer = WEATHER_CYCLE[0].duree;
-let weatherPluie = 0;
-let weatherRafales = 0;
-let rainRippleTimer = 0;
-const GRIS_PLUIE = new THREE.Color(0x6b7a86);
-
-function weatherName() {
-    return WEATHER_CYCLE[weatherIndex].nom;
-}
-
-function setWeather(nom) {
-    for (let i = 0; i < WEATHER_CYCLE.length; i++) {
-        if (WEATHER_CYCLE[i].nom === nom) {
-            weatherIndex = i;
-            weatherTimer = WEATHER_CYCLE[i].duree;
-            return;
-        }
-    }
-}
-
-// Gouttes de pluie : quelques centaines de points autour de l'étang.
-const RAIN_COUNT = 700;
-const rainPositions = new Float32Array(RAIN_COUNT * 3);
-for (let i = 0; i < RAIN_COUNT; i++) {
-    rainPositions[i * 3] = POND_CENTER.x - 60 + ((i * 37) % 120);
-    rainPositions[i * 3 + 1] = -0.2 + ((i * 53) % 32);
-    rainPositions[i * 3 + 2] = POND_CENTER.z - 60 + ((i * 71) % 120);
-}
-const rainGeometry = new THREE.BufferGeometry();
-rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
-const rainMaterial = new THREE.PointsMaterial({
-    color: 0xcfe6f5, size: 0.24, transparent: true, opacity: 0, depthWrite: false
+let weatherPluie;
+let weatherRafales;
+let rainPoints;
+const {
+    weatherName, setWeather, updateWeather
+} = creerMeteo({
+    POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound
 });
-const rainPoints = new THREE.Points(rainGeometry, rainMaterial);
-rainPoints.frustumCulled = false;
-scene.add(rainPoints);
-
-function updateWeather(dt) {
-    weatherTimer -= dt;
-    if (weatherTimer <= 0) {
-        weatherIndex = (weatherIndex + 1) % WEATHER_CYCLE.length;
-        weatherTimer = WEATHER_CYCLE[weatherIndex].duree;
-    }
-    const cible = WEATHER_CYCLE[weatherIndex];
-    const k = Math.min(1, dt * 0.5);
-    weatherPluie += (cible.pluie - weatherPluie) * k;
-    weatherRafales += (cible.rafales - weatherRafales) * k;
-
-    // La pluie assombrit le ciel et la lumière (appelé APRÈS le cycle jour/nuit).
-    if (weatherPluie > 0.01) {
-        sunLight.intensity *= (1 - 0.5 * weatherPluie);
-        ambientLight.intensity = Math.max(0.22, ambientLight.intensity - 0.15 * weatherPluie);
-        skyLight.intensity += 0.12 * weatherPluie;
-        skyMat.uniforms.topColor.value.lerp(GRIS_PLUIE, 0.5 * weatherPluie);
-        skyMat.uniforms.bottomColor.value.lerp(GRIS_PLUIE, 0.35 * weatherPluie);
-        scene.background.copy(skyMat.uniforms.bottomColor.value);
-    }
-
-    // Gouttes + ondulations sur l'eau.
-    rainMaterial.opacity = weatherPluie * 0.75;
-    if (weatherPluie > 0.02) {
-        const pas = dt * 26;
-        for (let i = 0; i < RAIN_COUNT; i++) {
-            let y = rainPositions[i * 3 + 1] - pas;
-            if (y < -0.2) {
-                y = 30 + ((i * 13) % 12);
-            }
-            rainPositions[i * 3 + 1] = y;
-        }
-        rainGeometry.attributes.position.needsUpdate = true;
-        rainRippleTimer -= dt;
-        if (rainRippleTimer <= 0) {
-            rainRippleTimer = 0.35;
-            const a = rainRippleTimer * 37 + weatherPluie * 11;
-            spawnRipple(new THREE.Vector3(
-                POND_CENTER.x + Math.cos(a) * 18, 0.06, POND_CENTER.z + Math.sin(a) * 18));
-        }
-    }
-    sound.setRain(weatherPluie);
-}
 
 // ---------------------------------------------------------------------------
 // Vie ambiante : oiseaux, libellules et poisson qui saute.
