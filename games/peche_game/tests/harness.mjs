@@ -411,7 +411,11 @@ export async function loadGame() {
         source.replace("from 'three'", "from './three-stub.mjs'"));
     // Les modules qui importent eux aussi three (decor.js, futurs modules 3D)
     // reçoivent le même stub : le jeu n'est jamais modifié.
-    for (const fichier of ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js']) {
+    // Tout module copié qui importe `three` reçoit le stub (le jeu n'est
+    // jamais modifié) : la liste est découverte, pas figée, sinon chaque
+    // nouveau module casse les tests.
+    for (const fichier of fs.readdirSync(tmpDir)) {
+        if (!fichier.endsWith('.js')) { continue; }
         const chemin = path.join(tmpDir, fichier);
         const code = fs.readFileSync(chemin, 'utf8');
         if (code.includes("from 'three'")) {
