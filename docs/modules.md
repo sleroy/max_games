@@ -63,6 +63,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `touches.js` | Catalogue des touches : durées, mouvements du bouchon, tirage vrai/faux (état via `etat`) | 165 | Touches / contenu |
 | `cycleLigne.js` | Cycle de la ligne : visée sur l’eau, lancer, remontée, touche détectée, fin du lancer (état via `etat`) | 197 | Lancer / ligne |
 | `accrochage.js` | Accrochage dans les nénuphars : détection, accroc, dégagement du fil (état via `etat`) | 188 | Combat / accroc |
+| `ambiance.js` | Ambiance : vent, faune sonore, nuages, ondulation de la queue des poissons (état via `etat`) | 95 | Ambiance / effets |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |

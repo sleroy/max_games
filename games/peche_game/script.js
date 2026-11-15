@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=165';
+import { SoundEngine } from './sound.js?v=166';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -40,6 +40,7 @@ import { creerJournal } from './journal.js?v=162';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=164';
 import { creerAccrochage } from './accrochage.js?v=165';
+import { creerAmbiance } from './ambiance.js?v=166';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -2459,82 +2460,11 @@ const {
     scene: scene,
 });
 
-// ---------------------------------------------------------------------------
-// Mise à jour
-// ---------------------------------------------------------------------------
-function updateWind(dt) {
-    wind.timer -= dt;
-    if (wind.timer <= 0) {
-        wind.targetDir = rand() * Math.PI * 2;
-        wind.targetStrength = rand() * 0.8;
-        wind.timer = 6 + rand() * 6;
-    }
-    const lerpFactor = 1 - Math.pow(0.1, dt);
-    let diff = wind.targetDir - wind.dir;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    wind.dir += diff * lerpFactor;
-    wind.strength += (wind.targetStrength - wind.strength) * lerpFactor;
-
-    // Rafales : la météo peut renforcer le vent par moments (toujours < 1).
-    wind.clock = (wind.clock || 0) + dt;
-    if (weatherRafales > 0.01) {
-        const rafale = weatherRafales * (0.30 + 0.30 * Math.sin(wind.clock * 2.3));
-        wind.strength = Math.min(0.95, wind.strength + rafale * dt * 0.9);
-    }
-
-    vaneArrow.rotation.y = -wind.dir;
-    windFill.style.width = (wind.strength * 100).toFixed(0) + '%';
-    windArrow.style.transform = 'rotate(' + (wind.dir * 180 / Math.PI).toFixed(0) + 'deg)';
-    sound.setWind(wind.strength);
-    updateFauneSonore(dt);
-}
-
-// Ambiance vivante : la nuit les grenouilles et les grillons chantent en continu ;
-// le jour un héron, un martin-pêcheur, une corneille ou un canard se font entendre
-// de loin en loin (intervalles aléatoires, sans toucher au hasard du monde).
-let delaiFaune = 12;
-function updateFauneSonore(dt) {
-    const jour = Math.max(0, Math.sin(dayPhase * Math.PI * 2));
-    sound.setNuit(1 - Math.min(1, jour * 1.6));
-    delaiFaune -= dt;
-    if (delaiFaune > 0) { return; }
-    delaiFaune = 9 + Math.random() * 18;
-    if (jour < 0.15) { return; }
-    const r = Math.random();
-    if (r < 0.3) { sound.playHeron(); }
-    else if (r < 0.55) { sound.playMartinPecheur(); }
-    else if (r < 0.8) { sound.playCorneille(); }
-    else { sound.playCanard(); }
-}
-
-function updateClouds(dt) {
-    const speed = 2 + wind.strength * 4;
-    clouds.forEach(cloud => {
-        cloud.position.x += Math.cos(wind.dir) * speed * dt;
-        cloud.position.z += Math.sin(wind.dir) * speed * dt;
-        if (cloud.position.x > 130) cloud.position.x = -130;
-        if (cloud.position.x < -130) cloud.position.x = 130;
-        if (cloud.position.z > -50) cloud.position.z = -190;
-        if (cloud.position.z < -190) cloud.position.z = -50;
-    });
-}
-
-// Le mouvement augmente vers la queue et se propage avec un déphasage le
-// long du corps. La caudale suit la même translation que son point d'attache.
-function animateFishMesh(data, phase, amplitude) {
-    const positions = data.bodyMesh.geometry.getAttribute('position');
-    const rest = data.swimRest;
-    for (let i = 0; i < positions.count; i++) {
-        const x = rest[i * 3];
-        const rear = Math.max(0, -x / 0.6);
-        positions.setZ(i, rest[i * 3 + 2] + Math.sin(phase - rear) * amplitude * rear ** 2);
-    }
-    positions.needsUpdate = true;
-    data.bodyMesh.geometry.computeVertexNormals();
-    data.tailPivot.position.z = Math.sin(phase - 0.98) * amplitude * data.bodyMesh.scale.z;
-    data.tailPivot.rotation.y = Math.sin(phase - 1.45) * amplitude * 3.2;
-}
+const {
+    updateWind, updateClouds, animateFishMesh
+} = creerAmbiance({
+    wind, rand, vaneArrow, windFill, windArrow, sound, clouds
+});
 
 const {
     hameconDansZone, updateFish, updateFloat, updateLine
