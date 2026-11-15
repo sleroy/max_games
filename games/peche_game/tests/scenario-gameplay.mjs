@@ -495,7 +495,10 @@ export function run() {
     checkEqual('ferrage parfait', G().getStrikeQuality(), 'parfait');
     check('avantage au joueur (facteur < 1)', G().getFightAdvantage() < 1,
         G().getFightAdvantage().toFixed(2));
-    check('le panneau l’annonce', el('struggleInfo').textContent.indexOf('avantage') >= 0,
+    // Le panneau est volontairement court : plus de phrase « avantage »,
+    // seulement le nom et le poids (le portrait montre déjà le poisson).
+    check('le panneau reste court (nom · poids, sans « avantage »)',
+        el('struggleInfo').textContent.indexOf('avantage') < 0,
         el('struggleInfo').textContent);
     resetToIdle();
 

@@ -74,8 +74,13 @@ export function run() {
     // 4) Le combat est celui du brochet, avec un avantage au poisson.
     checkEqual('le combat est celui du brochet', G().getStruggleStyle(),
         G().styleEspece('brochet').nom);
-    check('le carnassier a l’avantage',
-        el('struggleInfo').textContent.indexOf('avantage au poisson') >= 0,
+    // Le panneau n'affiche plus le détail « avantage » (texte court) : la
+    // même information se lit sur l'avantage du FERRAGE (le combat le fait
+    // ensuite évoluer, c'est la mécanique qui décide).
+    check('le carnassier a l’avantage (avantage du ferrage)',
+        G().getAvantageFerrage() > 1, G().getAvantageFerrage());
+    check('le panneau du combat reste court',
+        el('struggleInfo').textContent.split('·').length <= 2,
         el('struggleInfo').textContent);
     check('le joueur est prévenu de l’attaque',
         el('status').textContent.indexOf('attaqué') >= 0, el('status').textContent);

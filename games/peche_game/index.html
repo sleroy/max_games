@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=137">
+    <link rel="stylesheet" href="style.css?v=138">
 </head>
 <body>
     <div class="game-wrap">
@@ -274,14 +274,17 @@
                 🐀 RAGONDIN près de la bourriche ! Clique sur lui 3 fois !
             </div>
             <div class="struggle" id="struggle">
-                <div class="struggle-info" id="struggleInfo">Poisson</div>
-                <div class="struggle-track">
-                    <div class="struggle-marker" id="struggleMarker"></div>
+                <canvas id="strugglePortrait" width="150" height="90" hidden
+                    aria-label="Portrait du poisson accroché"></canvas>
+                <div class="struggle-corps">
+                    <div class="struggle-info" id="struggleInfo">Poisson</div>
+                    <div class="struggle-track">
+                        <div class="struggle-marker" id="struggleMarker"></div>
+                    </div>
+                    <div class="struggle-timer" id="struggleTimer"></div>
+                    <div class="struggle-hint" id="struggleHint" hidden></div>
+                    <button class="drag-button" id="dragButton">🔓 Lâcher du fil</button>
                 </div>
-                <div class="struggle-timer" id="struggleTimer"></div>
-                <div class="struggle-hint" id="struggleHint">Tourne la manivelle pour ramener le poisson !</div>
-                <div class="struggle-legend">🟩 zone sûre · 🟨 attention (hachures) · ✖ la ligne casse</div>
-                <button class="drag-button" id="dragButton">🔓 Lâcher du fil</button>
             </div>
             <div class="quiver-panel" id="quiverPanel" aria-hidden="true">
                 <canvas id="quiverCanvas" width="240" height="80"
@@ -322,6 +325,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=137"></script>
+    <script type="module" src="script.js?v=138"></script>
 </body>
 </html>

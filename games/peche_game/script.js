@@ -3,11 +3,12 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=137';
+import { SoundEngine } from './sound.js?v=138';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
 import { creerClassement } from './classement.js';
+import { dessinerPortrait } from './portraits.js?v=138';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
 
 const canvas = document.getElementById('gameCanvas');
@@ -19,6 +20,22 @@ const struggleMarker = document.getElementById('struggleMarker');
 const struggleInfo = document.getElementById('struggleInfo');
 const struggleHint = document.getElementById('struggleHint');
 const struggleTimer = document.getElementById('struggleTimer');
+const strugglePortrait = document.getElementById('strugglePortrait');
+// Dernier portrait dessiné (id d'espèce) — exposé pour les tests.
+let portraitEspeceCourante = null;
+// Caché par défaut : il n'apparaît que pendant un combat (ou jamais, si
+// l'élément manque, par exemple avec un index.html encore en cache).
+if (strugglePortrait) { strugglePortrait.hidden = true; }
+// Avantage (facteur) AU MOMENT du ferrage : le combat le fait évoluer ensuite,
+// mais le test « carnassier » vérifie l'avantage initial du brochet.
+let avantageFerrage = 1;
+// Ferme le panneau de combat et remasque le portrait : il ne reste visible
+// QUE pendant un vrai combat de poisson (jamais après, jamais en accrochage).
+function fermerPanneauCombat() {
+    strugglePanel.classList.remove('active');
+    if (strugglePortrait) { strugglePortrait.hidden = true; }
+    portraitEspeceCourante = null;
+}
 const catchMessage = document.getElementById('catchMessage');
 const windFill = document.getElementById('windFill');
 const windArrow = document.getElementById('windArrow');
@@ -3518,6 +3535,39 @@ scene.add(sonarBuoy);
 const sonarContext = sonarRadar.getContext('2d');
 let sonarScanTimer = 0;
 
+// « Pings » de sonar : quand un poisson est repéré, le sonar émet un ping
+// de sous-marin ET une onde jaune qui s'étend à la surface de l'eau.
+// Pas plus d'un ping toutes les SONAR_PING_DELAI secondes (« de temps en temps »).
+const SONAR_PING_DELAI = 1.8;   // s — tempo minimale entre deux pings.
+const SONAR_ONDE_DUREE = 1.4;   // s — vie d'une onde jaune.
+const sonarOndeGeo = new THREE.RingGeometry(0.92, 1, 40);
+const sonarOndes = [];          // ondes jaunes vivantes (Mesh).
+let sonarHorloge = 0;           // secondes avancées par updateSonar (horloge du sonar).
+let sonarDernierPing = -Infinity;
+let sonarPings = 0;             // compteur de pings (pour les tests).
+
+// Émet une onde jaune à la surface, centrée sur la bouée du sonar.
+function emettreOndeSonar() {
+    const onde = new THREE.Mesh(sonarOndeGeo, new THREE.MeshBasicMaterial({
+        color: 0xffc454, transparent: true, opacity: 0.85,
+        side: THREE.DoubleSide, depthWrite: false
+    }));
+    onde.rotation.x = -Math.PI / 2; // à plat sur l'eau
+    onde.position.set(sonarBuoy.position.x, 0.1, sonarBuoy.position.z);
+    onde.userData.vie = 0;
+    scene.add(onde);
+    sonarOndes.push(onde);
+}
+
+// Fait disparaître immédiatement toutes les ondes (rangement du sonar).
+function effacerOndesSonar() {
+    while (sonarOndes.length > 0) {
+        const onde = sonarOndes.pop();
+        scene.remove(onde);
+        onde.material.dispose();
+    }
+}
+
 function acheterSonar() {
     if (journal.sonar || journal.experience < SONAR_PRICE) { return false; }
     journal.experience -= SONAR_PRICE;
@@ -3539,6 +3589,7 @@ function acheterBateau() {
 
 function rangerSonar() {
     sonarBuoy.visible = false;
+    effacerOndesSonar();
     sonarPanel.hidden = true;
     sonarButton.textContent = '📡 Poser le sonar';
     sonarButton.setAttribute('aria-pressed', 'false');
@@ -3546,8 +3597,30 @@ function rangerSonar() {
 
 function updateSonar(dt, time) {
     if (!sonarBuoy.visible) { return; }
+    // Le sonar a SA propre horloge (dt cumulé) : la tempo des pings ne dépend
+    // ni de elapsed (jeu) ni de testTime (harnais de test).
+    sonarHorloge += dt;
     const origin = sonarBuoy.position;
     origin.y = 0.13 + waterWaveHeightAt(origin.x, origin.z, time);
+
+    // Les ondes jaunes vivent leur vie entre deux balayages : elles grandissent
+    // en s'estompant, en suivant doucement la houle.
+    for (let i = sonarOndes.length - 1; i >= 0; i--) {
+        const onde = sonarOndes[i];
+        onde.userData.vie += dt;
+        const progression = onde.userData.vie / SONAR_ONDE_DUREE;
+        if (progression >= 1) {
+            scene.remove(onde);
+            onde.material.dispose();
+            sonarOndes.splice(i, 1);
+            continue;
+        }
+        onde.position.y = 0.1
+            + waterWaveHeightAt(onde.position.x, onde.position.z, time) * 0.5;
+        onde.scale.setScalar(1 + progression * 6);
+        onde.material.opacity = 0.85 * (1 - progression);
+    }
+
     sonarScanTimer -= dt;
     if (sonarScanTimer > 0) { return; }
     sonarScanTimer = 0.2;
@@ -3580,6 +3653,17 @@ function updateSonar(dt, time) {
                 center + dz / SONAR_RADIUS * radius, 2.6, 0, Math.PI * 2);
             sonarContext.fill();
         }
+    }
+    // Poisson repéré : « ping » de sous-marin + onde jaune à la surface
+    // (pas plus d'un ping toutes les SONAR_PING_DELAI secondes).
+    if (detected > 0 && sonarHorloge - sonarDernierPing >= SONAR_PING_DELAI) {
+        // MÊME horloge des deux côtés : le « time » passé par l'animateur est
+        // l'horloge du JEU (grande après plusieurs parties), pas celle du
+        // sonar — les mélanger casse la tempo dès que le jeu a tourné.
+        sonarDernierPing = sonarHorloge;
+        sonarPings += 1;
+        sound.sonarPing();
+        emettreOndeSonar();
     }
     const label = detected + (detected === 1 ? ' poisson' : ' poissons') + ' · 12 m';
     if (sonarCount.textContent !== label) {
@@ -3614,6 +3698,7 @@ sonarButton.addEventListener('click', () => {
         sonarButton.textContent = '📡 Ranger le sonar';
         sonarButton.setAttribute('aria-pressed', 'true');
         sonarScanTimer = 0;
+        sonarDernierPing = -Infinity; // un placement peut pinger tout de suite
         updateSonar(0, elapsed);
     }
     fermerOutils();
@@ -5910,7 +5995,7 @@ function demarrerEmmElement() {
     if (struggle) {
         struggle = null;
         struggleTimeLeft = 0;
-        strugglePanel.classList.remove('active');
+        fermerPanneauCombat();
         setDragLoosened(false);
     }
     if (snag) { snag = null; }
@@ -6128,6 +6213,8 @@ function startStruggle(fish, facteurAvantage) {
     const cap = capaciteBouchon();
     // L'avantage laissé au poisson peut être réduit par le bouchon équipé.
     const avantage = ((typeof facteurAvantage === 'number') ? facteurAvantage : 1) * cap.avantage;
+    // Instantané du ferrage : le combat fait ensuite évoluer cet avantage.
+    avantageFerrage = avantage;
     const size = fish.userData.size;
     const power = fish.userData.power;
     const aggression = fish.userData.aggression;
@@ -6189,9 +6276,26 @@ function startStruggle(fish, facteurAvantage) {
     setDragLoosened(false);
     strugglePanel.classList.add('active');
     strugglePanel.classList.remove('snagging');
-    struggleInfo.textContent = (fish.userData.espece || 'Poisson') + ' · ' + fmtPoids(fish.userData.weight) + ' kg'
-        + (avantage < 0.99 ? ' · avantage pour toi' : (avantage > 1.01 ? ' · avantage au poisson' : ''));
-    struggleHint.textContent = 'Tourne la manivelle pour ramener le poisson !';
+    // Panneau volontairement COURT : le portrait (fond transparent) montre
+    // déjà quel poisson se bat — nom et poids suffisent (fmtPoids ajoute
+    // déjà l'unité « kg », ne pas la doubler).
+    struggleInfo.textContent = (fish.userData.espece || 'Poisson') + ' · '
+        + fmtPoids(fish.userData.weight);
+    struggleHint.hidden = true;
+    let portraitEspece = null;
+    if (strugglePortrait) {
+        for (let i = 0; i < SPECIES.length; i++) {
+            if (SPECIES[i].id === fish.userData.especeId) {
+                portraitEspece = SPECIES[i];
+            }
+        }
+        strugglePortrait.hidden = !portraitEspece;
+        if (portraitEspece) {
+            dessinerPortrait(strugglePortrait.getContext('2d'), portraitEspece,
+                strugglePortrait.width, strugglePortrait.height);
+        }
+    }
+    portraitEspeceCourante = portraitEspece ? portraitEspece.id : null;
     updateStruggleBar();
     fishButton.disabled = true;
     fishButton.hidden = true;
@@ -6553,7 +6657,7 @@ function reelClick() {
 }
 
 function endStruggle(success, timedOut) {
-    strugglePanel.classList.remove('active');
+    fermerPanneauCombat();
     setDragLoosened(false);
     fishButton.disabled = false;
     fishButton.hidden = true;
@@ -6717,11 +6821,14 @@ function startSnag(mode) {
     strugglePanel.classList.add('snagging');
     sound.snag();
     struggleInfo.textContent = dansLaVase ? 'Hameçon accroché dans la vase' : 'Ligne accrochée aux nénuphars';
+    if (strugglePortrait) { strugglePortrait.hidden = true; }
+    portraitEspeceCourante = null;
     struggleTimer.textContent = '';
     struggleTimer.classList.remove('urgent');
     struggleHint.textContent = dansLaVase
         ? 'La vase aspire : clique en rythme (environ 3 fois par seconde) !'
         : 'Clique vite pour dégager la ligne !';
+    struggleHint.hidden = false;
     majIndiceSnag();
     updateStruggleBar();
     fishButton.disabled = false;
@@ -6755,7 +6862,7 @@ function majIndiceSnag() {
 }
 
 function endSnag(freed) {
-    strugglePanel.classList.remove('active');
+    fermerPanneauCombat();
     fishButton.hidden = true;
     if (fishButton.classList) {
         fishButton.classList.remove('cooldown');
@@ -8521,7 +8628,7 @@ function reinitialiserPartie() {
     hideBiteView();
     struggle = null;
     snag = null;
-    strugglePanel.classList.remove('active');
+    fermerPanneauCombat();
     setDragLoosened(false);
     tension = 0;
     hameconDansLaVase = false;
@@ -8750,6 +8857,10 @@ window.__game = {
     },
     avertirVitesse: avertirVitesse,
     getElapsed: function () { return elapsed; },
+    // Ondes sonar vivantes + compteur de pings (pour les tests).
+    sonarBuoy: sonarBuoy,
+    getOndesSonar: function () { return sonarOndes; },
+    getSonarPings: function () { return sonarPings; },
     ouvrirClassement: ouvrirClassement,
     isPartieTerminee: function () { return partieTerminee; },
     recommencerPartie: recommencerPartie,
@@ -8885,11 +8996,29 @@ window.__game = {
     },
     // Mode bateau (barque achetée en boutique) — exposés pour les tests.
     isBateau: function () { return modeBateau; },
+    // Remet le sonar « jamais acheté » : les scénarios qui l'ACHÈTENT ont
+    // besoin d'un carnet neuf (un scénario antérieur peut l'avoir acheté
+    // et posé, ce qui polluerait pings et ondes).
+    reinitialiserSonar: function () {
+        journal.sonar = false;
+        rangerSonar();
+        sonarOndes.forEach(function (onde) { scene.remove(onde); });
+        sonarOndes.length = 0;
+        sonarPings = 0;
+        sonarHorloge = 0;
+        sonarDernierPing = -Infinity;
+        sonarScanTimer = 0;
+    },
     acheterBateau: acheterBateau,
     embarquerBateau: embarquerBateau,
     quitterBateau: quitterBateau,
     deplacerBateau: deplacerBateau,
     getBateauPrix: function () { return BATEAU_PRIX; },
+    getPortrait: function () {
+        return { cache: strugglePortrait ? strugglePortrait.hidden : true,
+            espece: portraitEspeceCourante };
+    },
+    getAvantageFerrage: function () { return avantageFerrage; },
     getBateau: function () {
         return {
             visible: bateauGroupe.visible,

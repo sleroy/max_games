@@ -98,8 +98,8 @@ button:disabled {
     left: 50%;
     bottom: 110px;
     transform: translateX(-50%);
-    width: min(70vw, 700px);
-    padding: 10px 14px;
+    width: min(54vw, 540px);
+    padding: 8px 12px;
     background: rgba(0, 0, 0, 0.6);
     border-radius: 12px;
     color: #fff;
@@ -109,8 +109,25 @@ button:disabled {
     pointer-events: none;
 }
 
+/* Portrait à gauche (fond transparent), le reste à droite : un panneau
+   court, sans blabla — l'image dit déjà l'essentiel. */
 .struggle.active {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.struggle-portrait,
+#strugglePortrait {
+    flex: 0 0 auto;
+    width: 120px;
+    height: auto;
+}
+
+.struggle-corps {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
 }
 
 .struggle-info {
@@ -138,12 +155,6 @@ button:disabled {
     background: repeating-linear-gradient(135deg,
         rgba(255, 255, 255, 0.45) 0 5px, rgba(0, 0, 0, 0.12) 5px 10px);
     pointer-events: none;
-}
-
-.struggle-legend {
-    margin-top: 4px;
-    font-size: 0.78em;
-    opacity: 0.9;
 }
 
 .drag-button {
@@ -1930,6 +1941,10 @@ body.calm .struggle-marker {
         padding: 6px 8px;
         font-size: 0.82rem;
         background: #102a36ee;
+    }
+
+    #strugglePortrait {
+        width: 78px;
     }
 
     .struggle-info {

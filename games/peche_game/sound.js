@@ -621,6 +621,34 @@ export class SoundEngine {
         etat.oscs.forEach(function (o) { try { o.stop(t + 1.3); } catch (e) { /* déjà arrêté */ } });
     }
 
+    // -----------------------------------------------------------------------
+    // SONAR : « ping » de sous-marin, entièrement synthétisé (aucun fichier).
+    // -----------------------------------------------------------------------
+    // Un ping franc (sine ~1150 Hz, attaque éclair, longue décroissance)
+    // suivi d'un écho plus faible 0,42 s plus tard : le « ping… ping »
+    // du sonar de sous-marin.
+    sonarPing(volume) {
+        if (!this.ctx) return;
+        const t0 = this.ctx.currentTime;
+        const base = volume === undefined ? 0.14 : volume;
+        // Le ping principal, puis son écho atténué.
+        [[0, base], [0.42, base * 0.35]].forEach(coup => {
+            const start = t0 + coup[0];
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1150, start);
+            osc.frequency.exponentialRampToValueAtTime(1050, start + 0.9);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(coup[1], start + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.85);
+            osc.connect(gain);
+            gain.connect(this.master);
+            osc.start(start);
+            osc.stop(start + 0.9);
+        });
+    }
+
     playHeron() {
         if (!this.ctx) return;
         if (this.jouerSample('heron', 0.35)) { return; }

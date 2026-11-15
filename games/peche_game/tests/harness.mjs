@@ -28,6 +28,7 @@ const FILES = {
     especes: path.join(GAME_DIR, 'especes.js'),
     classement: path.join(GAME_DIR, 'classement.js'),
     carnet: path.join(GAME_DIR, 'carnet.js'),
+    portraits: path.join(GAME_DIR, 'portraits.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
 };
@@ -147,6 +148,7 @@ function makeContext2d() {
         font: '',
         textAlign: '',
         textBaseline: '',
+        globalAlpha: 1,
         fillRect() {},
         strokeRect() {},
         fillText() {},
@@ -158,13 +160,17 @@ function makeContext2d() {
         lineTo() {},
         arc() {},
         quadraticCurveTo() {},
+        bezierCurveTo() {},
+        ellipse() {},
+        clip() {},
         fill() {},
         stroke() {},
         save() {},
         restore() {},
         setLineDash() {},
         measureText() { return { width: 0 }; },
-        createRadialGradient() { return { addColorStop() {} }; }
+        createRadialGradient() { return { addColorStop() {} }; },
+        createLinearGradient() { return { addColorStop() {} }; }
     };
 }
 
@@ -382,6 +388,8 @@ export async function loadGame() {
     fs.copyFileSync(FILES.especes, path.join(tmpDir, 'especes.js'));
     fs.copyFileSync(FILES.classement, path.join(tmpDir, 'classement.js'));
     fs.copyFileSync(FILES.carnet, path.join(tmpDir, 'carnet.js'));
+    fs.copyFileSync(FILES.portraits, path.join(tmpDir, 'portraits.js'));
+    fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
     const stub = fs.readFileSync(FILES.stub, 'utf8')
         .replace('THREE_URL_PLACEHOLDER', pathToFileURL(FILES.three).href);
     fs.writeFileSync(path.join(tmpDir, 'three-stub.mjs'), stub);
