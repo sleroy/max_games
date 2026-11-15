@@ -813,6 +813,33 @@ la **partie** repart bien de zéro (accueil, score 0, 5/5 lignes), mais le **mon
   → deux peuplements), `scenario-static` 3e (plus de graine littérale, tirage
   `crypto`/`Date.now`, support `?graine=`).
 
+### 14.11 Bug — la ligne revient encore TOUTE SEULE (filet de sécurité de remontée)
+
+Demande du joueur, jamais livrée (elle traîne depuis la section 11) : **le joueur
+ramène lui-même la ligne au moulinet**, aucune remontée automatique.
+
+Ce qui reste dans le code (vérifié) :
+
+- `comportement.js:689` : `const auto = (etat.reelIdle > REEL_IDLE_HELP && !etat.hookedFish) ? REEL_AUTO * dt : 0;`
+  avec `REEL_IDLE_HELP = 3` s et `REEL_AUTO = 6` unités/s (`script.js:2024-2025`) :
+  après **3 s sans toucher la manivelle**, la ligne revient **toute seule**.
+- Le commentaire justifie ce filet : « on ne reste JAMAIS bloqué en mode remontée ».
+- Le correctif précédent n'a traité que la phase d'**attente** (la ligne reste à l'eau
+  indéfiniment, `scenario-gameplay.mjs:866` affirme même « plus de remontée auto ») :
+  la phase de **remontée** a gardé le sien, d'où l'impression que c'était réglé.
+
+- [ ] **Supprimer `REEL_AUTO`** : la manivelle est le **seul** moyen de ramener la
+  ligne (et le poisson ferré). Aucune avance sans tour de manivelle.
+- [ ] **Pas de blocage** : vérifier qu'on peut toujours sortir de l'état `reeling`
+  (ramer la manivelle jusqu'au bord) et **relancer** ensuite ; aucun état mort.
+- [ ] Nettoyer les constantes et les commentaires devenus faux (`REEL_IDLE_HELP`,
+  « filet de sécurité »), et corriger le texte du test qui affirme « plus de remontée
+  auto » s'il ne couvre que la phase d'attente.
+- [ ] **Tests** : après **60 s** sans toucher la manivelle, le bouchon **ne s'est pas
+  rapproché** du bord (position quasi inchangée) ; un tour de manivelle le rapproche
+  bien ; la sortie de `reeling` se fait uniquement par la manivelle ; on peut relancer
+  après être revenu au bord.
+
 ## Scénarios de test ajoutés (v131–v139)
 
 - **57** : mode bateau (achat XP, embarquement au milieu, bornes de déplacement,
