@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=153';
+import { SoundEngine } from './sound.js?v=154';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -28,6 +28,7 @@ import { creerBoutique } from './boutique.js?v=150';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerAmorcage } from './amorcage.js?v=153';
+import { creerFrein } from './frein.js?v=154';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -48,6 +49,7 @@ lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFIC
 lienEtat('FEED_MAX_RANGE', function () { return FEED_MAX_RANGE; }, function (v) { FEED_MAX_RANGE = v; });
 lienEtat('FEED_MIN_RANGE', function () { return FEED_MIN_RANGE; }, function (v) { FEED_MIN_RANGE = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
+lienEtat('TUTORIAL_STEPS', function () { return TUTORIAL_STEPS; }, function (v) { TUTORIAL_STEPS = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
 lienEtat('ZONES_CARTE', function () { return ZONES_CARTE; }, function (v) { ZONES_CARTE = v; });
 lienEtat('amorceDepartRestante', function () { return amorceDepartRestante; }, function (v) { amorceDepartRestante = v; });
@@ -168,6 +170,7 @@ lienEtat('tangleChanceOverride', function () { return tangleChanceOverride; }, f
 lienEtat('techniqueCourante', function () { return techniqueCourante; }, function (v) { techniqueCourante = v; });
 lienEtat('tension', function () { return tension; }, function (v) { tension = v; });
 lienEtat('timeoutEscape', function () { return timeoutEscape; }, function (v) { timeoutEscape = v; });
+lienEtat('tutorialStepIndex', function () { return tutorialStepIndex; }, function (v) { tutorialStepIndex = v; });
 lienEtat('waitTimer', function () { return waitTimer; }, function (v) { waitTimer = v; });
 lienEtat('weatherPluie', function () { return weatherPluie; }, function (v) { weatherPluie = v; });
 
@@ -3102,121 +3105,25 @@ const {
     CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE
 });
 
-// ---------------------------------------------------------------------------
-// Frein du moulinet : on lâche du fil quand le poisson charge (la ligne ne
-// casse pas, mais le poisson reprend de la distance).
-// ---------------------------------------------------------------------------
 let dragLoosened = false;
-
-function setDragLoosened(value) {
-    dragLoosened = !!value;
-    dragButton.classList.toggle('active', dragLoosened);
-    strugglePanel.classList.toggle('slipping', dragLoosened);
-}
-
-dragButton.addEventListener('pointerdown', event => {
-    ensureSound();
-    if (dragButton.setPointerCapture && event && event.pointerId !== undefined) {
-        dragButton.setPointerCapture(event.pointerId);
-    }
-    if (!dragLoosened) { sound.drag(); }
-    setDragLoosened(true);
-});
-dragButton.addEventListener('pointerup', () => setDragLoosened(false));
-dragButton.addEventListener('pointercancel', () => setDragLoosened(false));
-dragButton.addEventListener('pointerleave', () => setDragLoosened(false));
-
-// --- Tutoriel d'accueil (accessible depuis l’écran d’accueil) ----------------------
-const TUTORIAL_STEPS = [
+let TUTORIAL_STEPS = [
     { main: '👆', texte: 'Maintiens sur l’eau pour doser le lancer. Relâche, puis appuie sur « Tendre le fil » pendant qu’il vole : cela évite qu’il s’emmêle. En mode Facile, tu peux simplement laisser le fil se poser.' },
     { main: '✊', texte: 'Quand le bouchon mordille puis s’enfonce, clique vite pour ferrer le poisson : un seul essai !' },
     { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens « Lâcher du fil ».' },
     { main: '🐟', texte: 'Garde le poisson en main et lance-le dans la bourriche 🧺 (comme l’amorce) pour le ranger dans ton carnet.' }
 ];
 let tutorialStepIndex = 0;
-function renderTutorial() {
-    const etape = TUTORIAL_STEPS[tutorialStepIndex];
-    tutorialText.textContent = etape.texte;
-    tutorialHand.textContent = etape.main;
-    tutorialStepDisplay.textContent = (tutorialStepIndex + 1) + ' / ' + TUTORIAL_STEPS.length;
-    tutorialNext.textContent = (tutorialStepIndex === TUTORIAL_STEPS.length - 1) ? 'Jouer !' : 'Suivant';
-}
-
-function openTutorial() {
-    tutorialStepIndex = 0;
-    renderTutorial();
-    tutorial.classList.add('open');
-}
-
-function closeTutorial() {
-    tutorial.classList.remove('open');
-}
-
-function nextTutorialStep() {
-    if (tutorialStepIndex >= TUTORIAL_STEPS.length - 1) {
-        closeTutorial();
-        if (accueil && accueil.classList.contains('active')) { demarrerJeu(); }
-        return;
-    }
-    tutorialStepIndex += 1;
-    renderTutorial();
-}
-
-tutorialNext.addEventListener('click', nextTutorialStep);
-tutorialClose.addEventListener('click', closeTutorial);
-tutorialOpen.addEventListener('click', () => {
-    hideJournal();
-    openTutorial();
+const {
+    setDragLoosened, openTutorial, closeTutorial, nextTutorialStep
+} = creerFrein({
+    dragButton, strugglePanel, ensureSound, sound, tutorialText, tutorialHand,
+    tutorialStepDisplay, tutorialNext, tutorial, accueil, demarrerJeu, tutorialClose,
+    tutorialOpen, hideJournal, journalButton, journalPanel, showJournal, journalClose,
+    difficultySelect, setDifficulty, scionSelect, setScion, renderBoutique, floatSelect,
+    setFloatType, effectsToggle, post, reflectionsToggle, reflections, waterReflectionTarget,
+    setReflections, bigTextToggle, calmToggle, loadJournal, journal, appliquerTechniqueVisuelle,
+    renderJournal
 });
-
-const accueilTutoriel = document.getElementById('accueilTutoriel');
-if (accueilTutoriel) { accueilTutoriel.addEventListener('click', openTutorial); }
-
-// --- Carnet : ouverture, difficulté, accessibilité -------------------------
-journalButton.addEventListener('click', () => {
-    ensureSound();
-    if (journalPanel.classList.contains('open')) {
-        hideJournal();
-    } else {
-        showJournal();
-    }
-});
-journalClose.addEventListener('click', hideJournal);
-difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
-if (scionSelect) {
-    scionSelect.addEventListener('change', () => { setScion(scionSelect.value); renderBoutique(); });
-}
-floatSelect.addEventListener('change', () => {
-    setFloatType(floatSelect.value);
-    renderBoutique();
-});
-effectsToggle.checked = post.enabled;
-effectsToggle.addEventListener('change', () => {
-    post.enabled = effectsToggle.checked !== false;
-});
-reflectionsToggle.checked = reflections.enabled;
-reflectionsToggle.disabled = !waterReflectionTarget;
-reflectionsToggle.addEventListener('change', () => {
-    setReflections(reflectionsToggle.checked !== false);
-    reflectionsToggle.checked = reflections.enabled;
-});
-bigTextToggle.addEventListener('change', () => {
-    if (document.body) {
-        document.body.classList.toggle('big-text', !!bigTextToggle.checked);
-    }
-});
-calmToggle.addEventListener('change', () => {
-    if (document.body) {
-        document.body.classList.toggle('calm', !!calmToggle.checked);
-    }
-});
-
-loadJournal();
-techniqueCourante = journal.technique;
-appliquerTechniqueVisuelle();
-setFloatType(flotteurChoix);
-renderJournal();
-renderBoutique();
 
 // ---------------------------------------------------------------------------
 // Météo : beau temps → rafales → pluie. Le cycle est piloté par le TEMPS DE JEU
