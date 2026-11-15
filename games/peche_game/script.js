@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=166';
+import { SoundEngine } from './sound.js?v=167';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -41,6 +41,7 @@ import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=164';
 import { creerAccrochage } from './accrochage.js?v=165';
 import { creerAmbiance } from './ambiance.js?v=166';
+import { creerEntrees } from './entrees.js?v=167';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -133,6 +134,7 @@ lienEtat('castYawRod', function () { return castYawRod; }, function (v) { castYa
 lienEtat('catchMessageTimer', function () { return catchMessageTimer; }, function (v) { catchMessageTimer = v; });
 lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { caughtWeight = v; });
 lienEtat('chum', function () { return chum; }, function (v) { chum = v; });
+lienEtat('coupePrete', function () { return coupePrete; }, function (v) { coupePrete = v; });
 lienEtat('dayPhase', function () { return dayPhase; }, function (v) { dayPhase = v; });
 lienEtat('depthRange', function () { return depthRange; }, function (v) { depthRange = v; });
 lienEtat('depuisLancement', function () { return depuisLancement; }, function (v) { depuisLancement = v; });
@@ -198,6 +200,7 @@ lienEtat('pointerNdc', function () { return pointerNdc; }, function (v) { pointe
 lienEtat('portraitEspeceCourante', function () { return portraitEspeceCourante; }, function (v) { portraitEspeceCourante = v; });
 lienEtat('posteActuel', function () { return posteActuel; }, function (v) { posteActuel = v; });
 lienEtat('profondeurLigne', function () { return profondeurLigne; }, function (v) { profondeurLigne = v; });
+lienEtat('ragondin', function () { return ragondin; }, function (v) { ragondin = v; });
 lienEtat('rainPoints', function () { return rainPoints; }, function (v) { rainPoints = v; });
 lienEtat('raycaster', function () { return raycaster; }, function (v) { raycaster = v; });
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
@@ -2479,206 +2482,13 @@ const {
     endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS, linePositions, lineGeometry
 });
 
-// ---------------------------------------------------------------------------
-// Entrées
-// ---------------------------------------------------------------------------
-canvas.addEventListener('pointermove', event => {
-    const rect = canvas.getBoundingClientRect();
-    pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    // Pendant la visée (amorce ou lancer), on peut ajuster le point de chute.
-    if (castState === 'charging') {
-        const p = waterPointFromEvent(event);
-        if (p) {
-            moveCastAim(p);
-        }
-    }
-    if (feedState === 'charging') {
-        const p = waterPointFromEvent(event);
-        if (p) {
-            moveFeedAim(p);
-        }
-    }
-});
-
-canvas.addEventListener('pointerdown', event => {
-    if (cameraViewActive) {
-        if (event.pointerType === 'touch' && cameraTouches.size < 2) {
-            cameraTouches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-            canvas.setPointerCapture?.(event.pointerId);
-            updateCameraGesture();
-        }
-        return;
-    }
-    if (toolDock.classList.contains('ouvert') || paused) {
-        if (!paused) { fermerOutils(); }
-        return;
-    }
-    if (event.button !== 0) {
-        return;
-    }
-    ensureSound();
-    // Lancer en vol : un clic tend la ligne AVANT que le bouchon touche l'eau.
-    if (floatState === 'flying') {
-        tendreLigneAuLancer();
-        return;
-    }
-    // RAGONDIN : le chasser ne doit JAMAIS gêner la pêche. Il ne capte donc le
-    // clic que lorsque la ligne ne fait rien (au repos) ou qu'elle est
-    // simplement posée à l'eau. Pendant un ferrage, un combat, une remontée ou
-    // un accrochage, le clic garde son rôle habituel.
-    if (ragondin && (floatState === 'idle' || floatState === 'inWater')) {
-        if (clicSurRagondin(event)) {
-            hitRagondin();
-            return;
-        }
-        // Clic à côté pendant qu'il rôde : on ne LANCE pas la ligne par
-        // accident. C'était le vrai problème : viser le ragondin et rater
-        // faisait partir le bouchon.
-        if (floatState === 'idle') {
-            statusDisplay.textContent = '🐀 Le ragondin est là : vise-le (3 clics) avant de relancer.';
-            return;
-        }
-    }
-    // Poisson en main : on dose la puissance du lancer vers la bourriche.
-    if (floatState === 'holding') {
-        startFishThrow();
-        return;
-    }
-    // Mode amorçage : un appui sur l'eau commence à charger la puissance.
-    if (feedMode && (floatState === 'idle' || floatState === 'inWater') && castState === 'idle') {
-        if (feedState === 'idle') {
-            const p = waterPointFromEvent(event);
-            if (p) {
-                // On capture le pointeur : le relâchement est bien reçu même si
-                // le doigt sort du canvas (important sur téléphone).
-                if (canvas.setPointerCapture && event.pointerId !== undefined) {
-                    canvas.setPointerCapture(event.pointerId);
-                }
-                startFeedCharge(p);
-            }
-        }
-        return;
-    }
-    if (floatState === 'bite') {
-        hookFish();
-        return;
-    }
-    if (floatState === 'struggle' || floatState === 'snag') {
-        reelClick();
-        return;
-    }
-    if (floatState === 'idle') {
-        const p = waterPointFromEvent(event);
-        if (p) {
-            startCastCharge(p);   // on vise et on dose la puissance du lancer
-        }
-    }
-    // Ligne à l'eau : un clic ne ramène PLUS la ligne (sinon un clic mal placé
-    // remontait le bouchon sans prévenir). Seule la manivelle ramène la ligne.
-});
-
-canvas.addEventListener('pointermove', event => {
-    if (cameraTouches.has(event.pointerId)) {
-        cameraTouches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-        updateCameraGesture();
-    }
-});
-
-function endCameraTouch(event) {
-    if (cameraTouches.delete(event.pointerId)) { updateCameraGesture(); }
-}
-canvas.addEventListener('lostpointercapture', endCameraTouch);
-
-// Relâcher = on dose la puissance et la boule part.
-canvas.addEventListener('pointerup', event => {
-    if (cameraViewActive) {
-        endCameraTouch(event);
-        return;
-    }
-    if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
-        canvas.releasePointerCapture(event.pointerId);
-    }
-    if (castState === 'charging') {
-        releaseCast();
-        return;
-    }
-    if (fishThrowState === 'charging') {
-        releaseFishThrow();
-        return;
-    }
-    if (feedState === 'charging') {
-        releaseFeed();
-    }
-});
-
-canvas.addEventListener('pointercancel', event => {
-    if (cameraViewActive) {
-        endCameraTouch(event);
-        return;
-    }
-    if (canvas.releasePointerCapture && event && event.pointerId !== undefined) {
-        canvas.releasePointerCapture(event.pointerId);
-    }
-    cancelCast();
-    if (fishThrowState === 'charging') {
-        releaseFishThrow();
-    }
-    cancelFeed();
-});
-
-// Filet de sécurité (téléphone) : si le relâchement n'arrive pas au canvas,
-// on le rattrape au niveau de la fenêtre.
-window.addEventListener('pointerup', () => {
-    if (castState === 'charging') {
-        releaseCast();
-    }
-    if (fishThrowState === 'charging') {
-        releaseFishThrow();
-    }
-    if (feedState === 'charging') {
-        releaseFeed();
-    }
-});
-
-// Au doigt, l'appui long ne doit pas ouvrir le menu contextuel du navigateur.
-canvas.addEventListener('contextmenu', event => event.preventDefault());
-
-function toggleAmorcage() {
-    ensureSound();
-    setFeedMode(!feedMode);
-    fermerOutils();
-}
-
-feedButton.addEventListener('click', toggleAmorcage);
-quickFeedButton.addEventListener('click', () => {
-    if (floatState === 'inWater' && !paused && !cameraViewActive && feedState === 'idle') {
-        toggleAmorcage();
-    }
-});
-
-// La profondeur se règle avant le lancer.
-function clickDepth(delta) {
-    if (paused || cameraViewActive || castState !== 'idle' || floatState !== 'idle') { return; }
-    ensureSound();
-    setProfondeur(profondeurLigne + delta);
-}
-depthMinus.addEventListener('click', () => clickDepth(-0.5));
-depthPlus.addEventListener('click', () => clickDepth(0.5));
-majEtiquetteProfondeur();
-// Le jeu est initialisé : la coupe de l'eau (schéma) peut se dessiner.
-coupePrete = true;
-majCoupeProfondeur();
-waterUniforms.uNormalsOn.value = waterUniforms.uNormals.value ? 1 : 0;
-
-fishButton.addEventListener('click', () => {
-    if (paused || cameraViewActive || toolDock.classList.contains('ouvert')) { return; }
-    ensureSound();
-    if (floatState === 'flying') {
-        tendreLigneAuLancer();
-    } else if (floatState === 'snag') {
-        reelClick();
-    }
+creerEntrees({
+    canvas, waterPointFromEvent, moveCastAim, moveFeedAim, cameraTouches, updateCameraGesture,
+    toolDock, fermerOutils, ensureSound, tendreLigneAuLancer, clicSurRagondin, hitRagondin,
+    statusDisplay, startFishThrow, startFeedCharge, hookFish, reelClick, startCastCharge,
+    releaseCast, releaseFishThrow, releaseFeed, cancelCast, cancelFeed, setFeedMode, feedButton,
+    quickFeedButton, setProfondeur, depthMinus, depthPlus, majEtiquetteProfondeur,
+    majCoupeProfondeur, waterUniforms, fishButton
 });
 
 // ---------------------------------------------------------------------------
