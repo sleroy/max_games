@@ -388,6 +388,14 @@ export function installEnvironment() {
     globalThis.requestAnimationFrame = () => 0;         // la boucle de rendu ne tourne pas
     globalThis.cancelAnimationFrame = () => {};
     globalThis.setTimeout = fakeSetTimeout;             // timers pilotés par step()
+    // Horloge SIMULÉE : le jeu lit performance.now() (vitesse de manivelle, rythme de partie).
+    // Avec l'horloge réelle, le patinage dépendait de la vitesse de la machine : la suite
+    // échouait ~40 % du temps (mesuré avant ce correctif, 3 échecs sur 8 exécutions).
+    // Décalage de 100 s : comme une vraie page, l'horloge ne démarre pas à zéro.
+    Object.defineProperty(globalThis, 'performance', {
+        value: { now: () => 100000 + simTime },
+        configurable: true, writable: true
+    });
     globalThis.clearTimeout = fakeClearTimeout;
     globalThis.AudioContext = FakeAudioContext;
     globalThis.document = {
@@ -640,21 +648,26 @@ export function adapterAuBouchon(fish) {
 /** Amène un poisson au bouchon jusqu'à déclencher une touche. */
 export function forceBite() {
     parkFish();
-    const fish = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
-    if (!fish) {
+    // Un gros poisson (dos haut) posé au fond d'une eau peu profonde peut rester hors de portée de
+    // l'hameçon (distance 3D > BITE_RADIUS) : on essaie alors le poisson suivant, au lieu d'échouer.
+    const candidats = G().fishes.filter(f => !f.userData.hooked && !f.userData.biting);
+    if (candidats.length === 0) {
         throw new Error('aucun poisson disponible pour la touche');
     }
-    fish.position.set(G().floatGroup.position.x, -2, G().floatGroup.position.z);
-    // Le poisson du test est placé dans la tranche d'eau de l'hameçon (sinon la
-    // règle « morsure par zone » l'empêcherait de mordre).
-    fish.userData.profondeurZone = [G().getHookDepth() - 0.2, G().getHookDepth() + 0.2];
-    adapterAuBouchon(fish);
-    fish.userData.vx = 0;
-    fish.userData.vz = 0;
-    if (!stepUntil(() => state() === 'bite', 5)) {
-        throw new Error('aucune touche déclenchée');
+    for (const fish of candidats.slice(0, 8)) {
+        parkFish();
+        fish.position.set(G().floatGroup.position.x, -2, G().floatGroup.position.z);
+        // Le poisson du test est placé dans la tranche d'eau de l'hameçon (sinon la
+        // règle « morsure par zone » l'empêcherait de mordre).
+        fish.userData.profondeurZone = [G().getHookDepth() - 0.2, G().getHookDepth() + 0.2];
+        adapterAuBouchon(fish);
+        fish.userData.vx = 0;
+        fish.userData.vz = 0;
+        if (stepUntil(() => state() === 'bite', 5)) {
+            return fish;
+        }
     }
-    return fish;
+    throw new Error('aucune touche déclenchée');
 }
 
 /** Ferre au bon moment (pendant la vraie touche). */
