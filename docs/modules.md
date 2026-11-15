@@ -52,6 +52,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `lancerCanne.js` | Lancer de la canne au dosage (jauge) et animation du geste de lancer (état via `etat`) | 182 | Lancer |
 | `amorcage.js` | Amorçage : boule de nourriture, jauge, vol, attraction et barre d’outils (état via `etat`) | 364 | Amorçage / outils |
 | `frein.js` | Frein du moulinet (on lâche du fil quand le poisson charge) et didacticiel (état via `etat`) | 132 | Frein / tutoriel |
+| `ligne.js` | Ligne + flotteur : tampon de la ligne, groupe du bouchon, textures, opacité, bornes de profondeur (état via `etat`) | 140 | Ligne / bouchon |
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |

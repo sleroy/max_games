@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=154';
+import { SoundEngine } from './sound.js?v=155';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=135';
@@ -29,6 +29,7 @@ import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerAmorcage } from './amorcage.js?v=153';
 import { creerFrein } from './frein.js?v=154';
+import { creerLigne } from './ligne.js?v=155';
 import { etat } from './etat.js?v=145';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +49,9 @@ lienEtat('CHUM_ATTRACT_ACCEL', function () { return CHUM_ATTRACT_ACCEL; }, funct
 lienEtat('DIFFICULTY', function () { return DIFFICULTY; }, function (v) { DIFFICULTY = v; });
 lienEtat('FEED_MAX_RANGE', function () { return FEED_MAX_RANGE; }, function (v) { FEED_MAX_RANGE = v; });
 lienEtat('FEED_MIN_RANGE', function () { return FEED_MIN_RANGE; }, function (v) { FEED_MIN_RANGE = v; });
+lienEtat('FLOTTEUR_ECHELLE', function () { return FLOTTEUR_ECHELLE; }, function (v) { FLOTTEUR_ECHELLE = v; });
 lienEtat('HOOK_DEPTH', function () { return HOOK_DEPTH; }, function (v) { HOOK_DEPTH = v; });
+lienEtat('LINE_SEGMENTS', function () { return LINE_SEGMENTS; }, function (v) { LINE_SEGMENTS = v; });
 lienEtat('TUTORIAL_STEPS', function () { return TUTORIAL_STEPS; }, function (v) { TUTORIAL_STEPS = v; });
 lienEtat('VITESSE_MANIVELLE_MAX', function () { return VITESSE_MANIVELLE_MAX; }, function (v) { VITESSE_MANIVELLE_MAX = v; });
 lienEtat('ZONES_CARTE', function () { return ZONES_CARTE; }, function (v) { ZONES_CARTE = v; });
@@ -95,6 +98,7 @@ lienEtat('catchMessageTimer', function () { return catchMessageTimer; }, functio
 lienEtat('caughtWeight', function () { return caughtWeight; }, function (v) { caughtWeight = v; });
 lienEtat('chum', function () { return chum; }, function (v) { chum = v; });
 lienEtat('dayPhase', function () { return dayPhase; }, function (v) { dayPhase = v; });
+lienEtat('depthRange', function () { return depthRange; }, function (v) { depthRange = v; });
 lienEtat('depuisLancement', function () { return depuisLancement; }, function (v) { depuisLancement = v; });
 lienEtat('dragLoosened', function () { return dragLoosened; }, function (v) { dragLoosened = v; });
 lienEtat('elapsed', function () { return elapsed; }, function (v) { elapsed = v; });
@@ -120,7 +124,10 @@ lienEtat('fishThrowState', function () { return fishThrowState; }, function (v) 
 lienEtat('fishThrowT', function () { return fishThrowT; }, function (v) { fishThrowT = v; });
 lienEtat('fishThrowTarget', function () { return fishThrowTarget; }, function (v) { fishThrowTarget = v; });
 lienEtat('fishes', function () { return fishes; }, function (v) { fishes = v; });
+lienEtat('floatBody', function () { return floatBody; }, function (v) { floatBody = v; });
+lienEtat('floatGroup', function () { return floatGroup; }, function (v) { floatGroup = v; });
 lienEtat('floatState', function () { return floatState; }, function (v) { floatState = v; });
+lienEtat('floatStick', function () { return floatStick; }, function (v) { floatStick = v; });
 lienEtat('flotteurChoix', function () { return flotteurChoix; }, function (v) { flotteurChoix = v; });
 lienEtat('hameconDansLaVase', function () { return hameconDansLaVase; }, function (v) { hameconDansLaVase = v; });
 lienEtat('heldFish', function () { return heldFish; }, function (v) { heldFish = v; });
@@ -129,7 +136,10 @@ lienEtat('jeuDemelage', function () { return jeuDemelage; }, function (v) { jeuD
 lienEtat('journal', function () { return journal; }, function (v) { journal = v; });
 lienEtat('ligneTendue', function () { return ligneTendue; }, function (v) { ligneTendue = v; });
 lienEtat('lineBrokenTimer', function () { return lineBrokenTimer; }, function (v) { lineBrokenTimer = v; });
+lienEtat('lineGeometry', function () { return lineGeometry; }, function (v) { lineGeometry = v; });
+lienEtat('linePositions', function () { return linePositions; }, function (v) { linePositions = v; });
 lienEtat('modeBateau', function () { return modeBateau; }, function (v) { modeBateau = v; });
+lienEtat('modeQuiver', function () { return modeQuiver; }, function (v) { modeQuiver = v; });
 lienEtat('nibbleAmplitude', function () { return nibbleAmplitude; }, function (v) { nibbleAmplitude = v; });
 lienEtat('nibbleDebut', function () { return nibbleDebut; }, function (v) { nibbleDebut = v; });
 lienEtat('nibbleDuree', function () { return nibbleDuree; }, function (v) { nibbleDuree = v; });
@@ -1836,124 +1846,21 @@ function setTechnique(value) {
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// Ligne + flotteur
-// ---------------------------------------------------------------------------
-// Ligne préallouée (aucune allocation par image) : on écrit dans le tampon.
-const LINE_SEGMENTS = 12;
-const linePositions = new Float32Array((LINE_SEGMENTS + 1) * 3);
-const lineGeometry = new THREE.BufferGeometry();
-lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({
-    color: 0x232c2b, transparent: true, opacity: 0.58, depthWrite: false
-}));
-line.frustumCulled = false;
-scene.add(line);
-
-function makeBobberTexture() {
-    const c = document.createElement('canvas');
-    c.width = 64;
-    c.height = 64;
-    const g = c.getContext('2d');
-    g.fillStyle = '#f4f4f4';
-    g.fillRect(0, 0, 64, 32);
-    g.fillStyle = '#d33';
-    g.fillRect(0, 32, 64, 32);
-    return new THREE.CanvasTexture(c);
-}
-
-const floatGroup = new THREE.Group();
-const floatBody = new THREE.Mesh(
-    new THREE.SphereGeometry(0.05, 16, 12),
-    new THREE.MeshStandardMaterial({ map: makeBobberTexture(), roughness: 0.4, transparent: true })
-);
-floatBody.castShadow = true;
-floatGroup.add(floatBody);
-const floatStick = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.018, 0.012, 0.5, 6),
-    new THREE.MeshStandardMaterial({ color: 0xc93030, transparent: true })
-);
-floatStick.position.y = 0.5;
-floatGroup.add(floatStick);
-
-// Ligne + hameçon sous le bouchon
-const hookLine = new THREE.Mesh(
-    // Long bas de ligne : environ 1,3 m sous le bouchon (2 unités ≈ 1 m).
-    new THREE.CylinderGeometry(0.0005, 0.0005, 3.0, 4),
-    new THREE.MeshStandardMaterial({ color: 0xdddddd, transparent: true })
-);
-hookLine.position.y = -1.8;    // du bas du bouchon jusqu'à l'hameçon
-floatGroup.add(hookLine);
-
-const hook = new THREE.Mesh(
-    new THREE.TorusGeometry(0.016, 0.005, 6, 12, Math.PI * 1.5),
-    new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3, transparent: true })
-);
-hook.position.y = -3.25;       // tout au fond du bas de ligne
-hook.rotation.z = Math.PI;
-floatGroup.add(hook);
-
-function setFloatOpacity(opacity) {
-    floatBody.material.opacity = opacity;
-    floatStick.material.opacity = opacity;
-    hookLine.material.opacity = opacity;
-    hook.material.opacity = opacity;
-}
-// Profondeur de la LIGNE : distance entre le bouchon et l'hameçon, en UNITÉS
-// (2 unités ≈ 1 m). Le joueur la règle avec − / + ; elle est bornée par le type
-// de bouchon (une « pose à coulisse » descend bien plus profond).
-let profondeurLigne = 2.5;              // 1,25 m par défaut
-let HOOK_DEPTH = -profondeurLigne;      // hauteur (y) de l'hameçon
-
-function bornesProfondeur(f) {
-    const b = (f || flotteurCourant()).profondeur;
-    return Array.isArray(b) && b.length === 2 ? b : [0.6, 2.6];
-}
-
-// Met à jour le dessin du bas de ligne et de l'hameçon (plus ou moins loin).
-function appliquerProfondeurVisuelle() {
-    const bas = 0.06;   // bas du bouchon (local) — le fil part du corps                                        // bas du bouchon (local)
-    const prof = profondeurLigne / FLOTTEUR_ECHELLE;        // en local
-    const longueur = Math.max(0.3, prof - bas);
-    hookLine.scale.y = longueur / 3.0;                      // géométrie de 3.0
-    hookLine.position.y = -(bas + longueur / 2);
-    hook.position.y = -prof;
-}
-
-function majEtiquetteProfondeur() {
-    if (!depthLabel) {
-        return;
-    }
-    const bornes = bornesProfondeur();
-    depthLabel.textContent = (profondeurLigne / 2).toFixed(1).replace('.', ',') + ' m';
-    updateDepthButtons(bornes);
-    // La plage du bouchon équipé : c'est ELLE qui fixe la limite de profondeur.
-    if (depthRange) {
-        const f = flotteurCourant();
-        depthRange.textContent = f.nom + ' : ' + nombreMetres(bornes[0]) + ' à '
-            + nombreMetres(bornes[1]) + (profondeurLigne >= bornes[1] - 0.01 ? ' (maxi)' : '');
-    }
-}
-
-function updateDepthButtons(bornes, adjustable = true) {
-    // Au quiver, la profondeur n'est pas réglable : l'hameçon est posé au fond.
-    const fixe = modeQuiver.estActif();
-    depthMinus.disabled = fixe || !adjustable || profondeurLigne <= bornes[0] + 0.01;
-    depthPlus.disabled = fixe || !adjustable || profondeurLigne >= bornes[1] - 0.01;
-}
-
-let floatState = 'idle'; // 'idle' | 'flying' | 'inWater' | 'bite' | 'struggle' | 'reeling'
-function setProfondeur(valeur) {
-    const bornes = bornesProfondeur();
-    // Pas fin de 0,25 unité (12,5 cm) pour pouvoir viser la couche exacte, et
-    // borné par le bouchon équipé.
-    const arrondi = Math.round(valeur * 4) / 4;
-    profondeurLigne = Math.min(bornes[1], Math.max(bornes[0], arrondi));
-    HOOK_DEPTH = -profondeurLigne;
-    appliquerProfondeurVisuelle();
-    majEtiquetteProfondeur();
-    majCoupeProfondeur();
-}
+let LINE_SEGMENTS;
+let linePositions;
+let lineGeometry;
+let floatGroup;
+let floatBody;
+let floatStick;
+let profondeurLigne;
+let HOOK_DEPTH;
+let floatState;
+const {
+    setFloatOpacity, bornesProfondeur, appliquerProfondeurVisuelle, majEtiquetteProfondeur,
+    updateDepthButtons, setProfondeur
+} = creerLigne({
+    scene, flotteurCourant, depthLabel, nombreMetres, depthMinus, depthPlus, majCoupeProfondeur
+});
 
 // ---------------------------------------------------------------------------
 // COUPE DE L'EAU : le petit schéma qui montre, en direct, le bouchon en
