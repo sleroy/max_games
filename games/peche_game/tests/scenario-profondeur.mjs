@@ -86,7 +86,7 @@ export function run() {
     clearLilyPads();
     G().setProfondeur(2.5);                       // hameçon dans SA zone
     castTo(0, -25);
-    const poissonFond2 = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
+    const poissonFond2 = G().fishes.find(f => f.userData.longueurCm < 60 && !f.userData.hooked && !f.userData.biting);
     poissonFond2.userData.profondeurZone = [-3.3, -2.0];
     poissonFond2.position.set(G().floatGroup.position.x, -2.5, G().floatGroup.position.z);
     poissonFond2.userData.depth = -2.5;
@@ -157,7 +157,7 @@ export function run() {
     stepFor(1.2);                                 // laisse retomber le délai entre touches
     G().setProfondeur(1.0);                       // faible profondeur
     castTo(0, -25);
-    const vif = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
+    const vif = G().fishes.find(f => f.userData.longueurCm < 60 && !f.userData.hooked && !f.userData.biting);
     vif.userData.profondeurZone = [-1.3, -0.7];
     vif.position.set(G().floatGroup.position.x, -1.0, G().floatGroup.position.z);
     vif.userData.depth = -1.0;

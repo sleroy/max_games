@@ -153,6 +153,14 @@
   espèces « de fond » qui suivent le relief.
 - [x] **Licence MIT**, **CircleCI** (gratuit : plan Free + crédits open source), **skills**
   Kiro/Codex, **steering**, **hooks**, **AGENTS.md** enrichi.
+- [x] **Boules d'amorce** : elles partent maintenant de la main du pêcheur (plus d'un point fixe).
+- [x] **Croix de fermeture** (✕, en haut à droite, style Windows) pour le carnet et le classement.
+- [x] **Tailles réalistes** (Wikipédia FR) : min = juvénile, max = grand sujet, pour les 16 espèces
+  (`especes.js`) ; poids déduits (carpe max ≈ 26 kg, silure max ≈ 106 kg).
+- [x] **Ragondin** : cris, rongement, éclaboussure à l'arrivée, **musique inquiétante** (bourdon,
+  triton, battements de cœur) qui démarre à son arrivée et s'arrête quand il fuit ; sons synthétisés (Web Audio).
+- [ ] **Bug** : problèmes d'affichage des bouchons (flotteurs) à investiguer : positions, taille, rendu selon la vue / la profondeur.
+- [ ] **À faire** : supprimer le mécanisme de retour automatique de la ligne (le joueur ramène lui-même au moulinet).
 - [~] **Captures d'écran dans le README** (voir `docs/screenshots/`).
 - [ ] Idée : remplacer les 5 bruitages synthétisés par de vrais enregistrements.
 - [ ] Idée : les poissons d'un banc remplacé à la capture rejoignent le banc d'origine.
