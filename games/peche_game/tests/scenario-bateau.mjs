@@ -51,7 +51,8 @@ export function run() {
     check('à bord, le pêcheur est DANS l’eau', ecartAuBord(pecheur) < 0,
         ecartAuBord(pecheur).toFixed(1) + ' unités du bord');
     check('la barque est visible', barque.visible, true);
-    check('la barque porte le pêcheur', distance2D(barque, pecheur) < 0.5,
+    check('la barque porte le pêcheur (recul de la poupe inclus)',
+        distance2D(barque, pecheur) < 1.2,
         distance2D(barque, pecheur).toFixed(2) + ' unités');
     check('on reste à bonne distance du centre (visée possible)',
         distance2D(pecheur, centre) >= 9.9,

@@ -2730,8 +2730,65 @@ const BATEAU_MIN_CENTRE = 10;     // jamais à moins de 10 unités du centre (la
 const bateauGroupe = new THREE.Group();
 bateauGroupe.visible = false;
 scene.add(bateauGroupe);
-const coqueMateriau = new THREE.MeshStandardMaterial({ color: 0x2e6da4, roughness: 0.6 });
-const boisMateriau = new THREE.MeshStandardMaterial({ color: 0x8a5a33, roughness: 0.85 });
+
+// --- Textures 100 % code (aucune image à télécharger, aucune licence) ---
+// Une tuile de 128 px = 1 unité du monde (~50 cm) : deux planches, la
+// peinture écaillée laisse voir le bois nu. Dessinée au fillRect uniquement
+// (le faux canvas 2D des tests ne connaît que ça) et avec un générateur
+// pseudo-aléatoire LOCAL à graine fixe : la texture est identique à chaque
+// lancement et ne consomme RIEN du rand() du jeu (monde reproductible).
+function creerTextureBarque(peintures, boisNu) {
+    let graine = 20260501;
+    const hasard = function () {
+        graine = (graine * 1103515245 + 12345) % 2147483648;
+        return graine / 2147483648;
+    };
+    const toile = document.createElement('canvas');
+    toile.width = 128;
+    toile.height = 128;
+    const pinceau = toile.getContext('2d');
+    // Deux planches par tuile, teinte alternée.
+    pinceau.fillStyle = peintures[0];
+    pinceau.fillRect(0, 0, 64, 128);
+    pinceau.fillStyle = peintures[1];
+    pinceau.fillRect(64, 0, 64, 128);
+    // Veines du bois : de longues stries le long des planches.
+    for (let i = 0; i < 30; i++) {
+        const x = hasard() * 128;
+        const largeur = 1 + hasard() * 2;
+        pinceau.fillStyle = hasard() > 0.5
+            ? 'rgba(255,255,255,0.08)' : 'rgba(20,15,8,0.10)';
+        pinceau.fillRect(x, 0, largeur, 128);
+    }
+    // Peinture écaillée : des éclats de bois nu (coque seulement).
+    if (boisNu) {
+        for (let i = 0; i < 14; i++) {
+            pinceau.fillStyle = boisNu;
+            pinceau.fillRect(hasard() * 118, hasard() * 120,
+                3 + hasard() * 8, 2 + hasard() * 5);
+        }
+    }
+    // Joints entre les planches (le bord droit de chaque planche).
+    pinceau.fillStyle = 'rgba(30, 22, 12, 0.8)';
+    pinceau.fillRect(62, 0, 3, 128);
+    pinceau.fillRect(126, 0, 2, 128);
+    const texture = new THREE.CanvasTexture(toile);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    // Les UV de l'extrusion sont en unités du plan de la forme : la tuile
+    // se répète toutes les unités, comme de vraies planches.
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    return texture;
+}
+
+const coqueMateriau = new THREE.MeshStandardMaterial({
+    map: creerTextureBarque(['#3f74a8', '#356896'], '#8a6a42'),
+    roughness: 0.65
+});
+const boisMateriau = new THREE.MeshStandardMaterial({
+    map: creerTextureBarque(['#9c7a4a', '#8a6a3c'], null),
+    roughness: 0.85
+});
 // Coque : profil vu de dessus (la proue = +z local, comme le regard du
 // pêcheur), extrudée vers le bas. Le dessus de l'extrusion est le plancher.
 const coqueForme = new THREE.Shape();
@@ -2750,7 +2807,10 @@ const banc = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.09, 0.5), boisMateriau)
 banc.position.set(0, 0.34, 0.35);
 bateauGroupe.add(banc);
 // Deux avirons posés en travers : ils suffisent à « lire » la barque de loin.
-const avironMateriau = new THREE.MeshStandardMaterial({ color: 0xb08b52, roughness: 0.8 });
+const avironMateriau = new THREE.MeshStandardMaterial({
+    map: creerTextureBarque(['#b08b52', '#a07a44'], null),
+    roughness: 0.8
+});
 for (const cote of [-1, 1]) {
     const avironGeometrie = new THREE.CylinderGeometry(0.05, 0.07, 2.6, 8);
     avironGeometrie.rotateZ(Math.PI / 2);
@@ -2833,6 +2893,9 @@ if (boatButton) {
         if (ok) {
             boatButton.textContent = modeBateau ? '🐟 Rive' : '🚤 Bateau';
             boatButton.setAttribute('aria-pressed', String(modeBateau));
+            // Le focus reste sur le bouton après le clic : les flèches seraient
+            // alors ignorées par le garde-fou clavier. On le rend au jeu.
+            boatButton.blur();
         }
     });
 }

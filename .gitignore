@@ -19,3 +19,6 @@ node_modules/
 
 # État local de l'agent IA (mémoire + journaux de boucle)
 /.opencode/
+
+# Sessions navigateur locales (tests manuels)
+.playwright-cli/

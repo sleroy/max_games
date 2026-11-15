@@ -59,6 +59,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   Boutique**. **Menu → Poser le sonar** le place au bouchon ou près de ta
   berge. Le radar indique les poissons dans un rayon de **12 m**. Tu peux
   ranger le sonar et le réutiliser dans une autre partie.
+- **Barque de pêche** : débloque-la pour **180 XP carrière** dans **Carnet →
+  Boutique**. Le bouton **🚤 Bateau** (en bas à gauche) t'emmène pêcher **au
+  milieu de l'étang**, là où l'eau est profonde. Rame avec les **flèches ou
+  ZQSD** (haut = vers le centre), clique sur l'eau pour lancer comme
+  d'habitude. Le même bouton (« 🐟 Rive ») te ramène exactement à ton poste
+  de berge. Impossible de ramer ou de débarquer tant que la ligne n'est pas
+  au repos.
 - **Vue** : ouvre `Menu → Vue` entre deux actions. Écarte ou rapproche deux doigts
   pour zoomer, tourne-les pour orienter la caméra, ou utilise les boutons à droite.
   **Recentrer** rétablit la vue d’origine et **Reprendre** rend la main à la pêche.
