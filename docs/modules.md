@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v144**
+> Dernière mise à jour : **2026-11-15** · jeu **v172**
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -39,7 +39,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 
 | Module | Rôle | Lignes | Propriétaire / à qui le modifier |
 |---|---|---|---|
-| `script.js` | Orchestrateur : scène 3D, boucle, entrées, câblage | ~8 550 | **Personne en parallèle** — à réduire |
+| `script.js` | Orchestrateur : scène 3D, câblage, pont `etat`, API de test | ~3 020 | **Personne en parallèle** — à réduire |
 | `environnement.js` | Étang : centre, contour, relief/fosses, profondeur, fond 3D | 151 | Monde (à faire seul) |
 | `poissons.js` | Population : fabrique 3D, bancs, spécimens hors norme, respawn | 619 | Poissons / contenu |
 | `combat.js` | Épreuve de force : tension, fatigue, ferrage, touche vue de près, clic utile, accrochage (état via `etat`) | 696 | Combat |
@@ -261,3 +261,52 @@ Les modules restants ensuite : `bateau`, `boutique`, `fiches`, `lancerPoisson`,
 **Méthode de travail validée** : extraire → lancer la suite complète (1 662
 vérifications) → si rouge, `git checkout -- .` et supprimer le module ; jamais
 laisser un module à moitié branché.
+
+
+## 8.6 Rapport de fin de passe (v145 → v172)
+
+**Modules extraits (lignes)** : `combat` 696, `comportement` 607, `bateau` 517,
+`partie` 464, `placement` 398, `amorcage` 363, `boutique` 263, `pecheur` 251,
+`entrees` 224, `boucle` 211, `lancerPoisson` 205, `sonar` 198, `cycleLigne` 196,
+`rendu` 192, `bouchons` 187, `accrochage` 187, `lancerCanne` 181, `vie` 170,
+`touches` 164, `carnetUI` 156, `ligne` 139, `frein` 131, `cheat` 122, `fiches` 123,
+`journal` 111, `meteo` 109, `stocks` 103, `ambiance` 94. Tous ≤ 800 lignes.
+`script.js` : **8 651 → ~3 020 lignes**. Suite : 1 662 → 1 829 vérifications, toujours vertes ;
+test réel dans Chromium (lancer → `inWater`, touche, ferrage, combat) sans erreur JS.
+
+**Ce qui reste dans `script.js`** (volontairement ou pas encore) :
+- scène, caméra, ciel, lumières, jour/nuit, IBL, qualité auto (≈ 400 l.), eau et reflet
+  planaire (≈ 450 l., `eau.js` à faire), vent/girouette (≈ 50 l.) ;
+- les déclarations `let X;` des variables partagées (règle 5), le pont `etat`
+  (≈ 215 lignes générées par `bridge.py`) et `window.__game` (≈ 680 l., API de test :
+  les modules n'ont pas le droit de la porter) ;
+- le bloc « EMPLACEMENTS AUTOUR DE L'ÉTANG » (données `POSTES`, `POSTE_*`).
+
+**Pièges rencontrés (à ajouter aux 5 règles)**
+6. **Dépendance `let` copiée par valeur.** La cause réelle de l'échec de `combat.js`
+   (`floatState` restait `'idle'`) : `snag` est un `let` de `script.js` que le bloc ne
+   modifie pas, donc passé par valeur au `creerCombat` et figé à `null`. Règle : toute
+   dépendance déclarée `let`/`var`, ou `const` définie après le bloc, passe par `etat`.
+7. **Pont `etat` avant les créations.** Les modules écrivent dans `etat` dès leur
+   création (`etat.bateauGroupe = …`). Le pont est donc placé juste après les imports
+   (fermetures : une variable déclarée plus bas n'est lue qu'à l'appel).
+8. **Initialisation d'une variable du bloc.** `let x = init` d'une variable lue ailleurs
+   devient `let x;` dans `script.js` et `etat.x = init` dans le module, à la même place :
+   l'init peut appeler une fonction du bloc (`makeBobberTexture`), hissée dans le module.
+9. **Fonction du bloc appelée par un module créé avant.** `ligne.js` reçoit
+   `flotteurCourant`, désormais définie dans `bouchons.js` (plus bas) : accès avant
+   initialisation. L'extracteur passe alors un appel paresseux
+   (`f: (...args) => f(...args)`) aux modules déjà créés.
+10. **Statement qui crée un autre module dans le bloc** (`const { ripples… } =
+    creerOndulations(…)`) : il reste dans `script.js` ; le bloc se termine juste avant
+    (marqueur de fin sur plusieurs lignes).
+11. **Offsets UTF-16.** acorn compte en unités UTF-16, Python en points de code : un
+    emoji (🏆) décale tous les retraits suivants. Les découpages se font sur l'UTF-16.
+12. **Tests statiques** : `script.includes(...)` ne voit plus le code déplacé. Les
+    contrôles lisent `code` (script + modules) ; les assertions négatives aussi, sinon
+    elles deviennent vides. Les modules déclarés dans `MODULES` de `scenario-static.mjs`
+    sont donc la source à tenir à jour.
+13. **Outillage** : analyse par acorn (portées réelles, pas de regex sur le code) :
+    `extract2.py`, `route.mjs`, `toplevel.mjs`, `bridge.py`, `freevars.mjs` (détecte les
+    identifiants jamais déclarés, cause des `ReferenceError`). Le scan du pont ne doit
+    lire que les modules qui importent `etat.js` (`demelage`, `quiver` ont un `etat` local).
