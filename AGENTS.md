@@ -308,6 +308,7 @@ node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
 | `decor.js` | décor fixe : arbres, roseaux, rochers, nénuphars (rend `lilyPads`) |
 | `portraits.js` | portraits 2D des espèces sur fond transparent (panneau de combat) |
 | `especes.js` | données : espèces, styles de combat, silhouettes, touches, `substrats` préférés |
+| `esches.js` | esches (maïs, ver, pain, bouillette, vif) : profils, décision de touche, widget |
 | `substrats.js` | types de fond (sable, gravier, vase, roche, herbier) : grille, texture, carte, habitat, accrochages |
 | `carnet.js` | persistance du carnet de pêche (localStorage) |
 | `classement.js` | classement local |

@@ -835,23 +835,28 @@ du poisson dans la bourriche.
   montent (amplitude de la houle et dérive accrues), pour que le joueur comprenne
   que la lecture du bouchon devient plus difficile.
 
-### 15.2 L'esche — le manque le plus visible
+### 15.2 L'esche — le manque le plus visible — LIVRÉ v184
 
-- [ ] **Choisir son appât.** Aujourd'hui l'hameçon est **nu** (aucune occurrence de
+- [x] **Choisir son appât.** Aujourd'hui l'hameçon est **nu** (aucune occurrence de
   « appât » dans le code ; seule l'amorce existe). Esches réalistes : **ver de
   terre, maïs, pain, bouillette, vif / leurre**. Chaque esche cible des espèces :
-  - [ ] maïs → **carpe, tanche, brème** ;
-  - [ ] ver → **gardon, perche, anguille, goujon** ;
-  - [ ] pain/flocons → **gardon, rotengle, chevesne** (surface) ;
-  - [ ] bouillette → **carpe, carassin** (fond) ;
-  - [ ] vif ou leurre → **brochet, sandre, black-bass**.
-- [ ] **Esches consommables et achetables en XP** (le système de `RECHARGES` existe
+  - [x] maïs → **carpe, tanche, brème** ;
+  - [x] ver → **gardon, perche, anguille, goujon** ;
+  - [x] pain/flocons → **gardon, rotengle, chevesne** (surface) ;
+  - [x] bouillette → **carpe, carassin** (fond) ;
+  - [x] vif ou leurre → **brochet, sandre, black-bass**.
+- [x] **Esches consommables et achetables en XP** (le système de `RECHARGES` existe
   déjà : lots de 3, stock affiché, sélection du fil à équiper — même modèle).
-- [ ] **Cohérence avec la profondeur et le fond** : une esche de fond sur la vase,
+- [x] **Cohérence avec la profondeur et le fond** : une esche de fond sur la vase,
   un leurre en pleine eau, un flocon en surface ; l'esche inadaptée ne touche
   presque jamais (message discret, jamais de texte d'aide explicite).
-- [ ] **Hameçon nu = presque rien** : pêcher sans esche reste possible mais très
+- [x] **Hameçon nu = presque rien** : pêcher sans esche reste possible mais très
   peu productif (et pédagogique).
+
+> Livré en v184 : `esches.js` (profils espèce × couche × substrat ; hameçon nu = 6 %), stock par lots de 3 dans le système des
+> recharges (`stocks.js`, `journal.recharges`, `journal.esche`, persisté par `carnet.js`), section « Esches » de la boutique,
+> widget de profondeur « Esche : … », une touche ferrée consomme une esche, 3 vers offerts, message discret après 3 refus
+> (« Ils tournent autour… », aucune aide). Détails : `docs/modules.md` §15, test `scenario-esches.mjs`.
 
 ### 15.3 Combat
 

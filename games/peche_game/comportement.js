@@ -344,12 +344,14 @@ export function creerComportement(deps) {
                 // sent l'appât que de très près (ligne latérale, odorat, barbillons).
                 const zoneEsp = data.profondeurZone;
                 const zoneOk = hameconDansZone(data, zoneEsp) && baitDansDomaine(data);
-                const vu = bd < rayonVueEspece(data) && zoneOk
+                // Un poisson qui a refusé l'esche pendant ce lancer s'en désintéresse (esches.js).
+                const refus = etat.refuseLEsche(data);
+                const vu = !refus && bd < rayonVueEspece(data) && zoneOk
                     && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd));
                 // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout
                 // proche (même dans son dos : ligne latérale), mais ne le sort ni de sa zone
                 // de vie ni de sa couche d'eau (seul `vu` fait changer sa profondeur).
-                const senti = !vu && zoneOk && etat.floatState === 'inWater' && bd < rayonRemous(data);
+                const senti = !vu && !refus && zoneOk && etat.floatState === 'inWater' && bd < rayonRemous(data);
                 if (vu || senti) {
                     etat.baitInterest = true;
                     data.targeting = true;

@@ -26,7 +26,9 @@ export function creerJournal(deps) {
             getFlotteur: function () { return etat.flotteurChoix; },
             scionsDepart: SCIONS_DE_DEPART,
             trouverScion: trouverScion,
-            setScion: function (id) { etat.scionChoix = id; }
+            setScion: function (id) { etat.scionChoix = id; },
+            eschesIds: etat.ESCHES.map(function (e) { return e.id; }),
+            eschesDepart: etat.ESCHE_DEPART
         });
     }
 

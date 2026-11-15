@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v183** (types de fond : `substrats.js`)
+> Dernière mise à jour : **2026-11-15** · jeu **v184** (esches : `esches.js`)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -59,7 +59,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
 | `vie.js` | Vie ambiante (oiseaux, libellules, poisson qui saute) et bulles sous l’eau (état via `etat`) | 171 | Ambiance / faune |
 | `sonar.js` | Sonar : bouée **lancée comme une amorce** (via `lancer.js`), radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 233 | Sonar / boutique |
-| `stocks.js` | Stocks : lignes de rechange, fils, amorce de départ, achat de recharges (état via `etat`) | 104 | Boutique / stocks |
+| `stocks.js` | Stocks : lignes de rechange, fils, esches (stock, esche équipée, consommation), amorce de départ, achat de recharges (état via `etat`) | ~150 | Boutique / stocks |
 | `journal.js` | Carnet de pêche : chargement/sauvegarde, rendu, ajout d’une prise (état via `etat`) | 112 | Carnet / persistance |
 | `touches.js` | Catalogue des touches : durées, mouvements du bouchon, tirage vrai/faux (état via `etat`) | 165 | Touches / contenu |
 | `cycleLigne.js` | Cycle de la ligne : visée sur l’eau, lancer, remontée, touche détectée, fin du lancer (état via `etat`) | 197 | Lancer / ligne |
@@ -80,6 +80,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
 | `especes.js` | **Données** espèces, comportements, styles, touches | 228 | Contenu (ajout d'espèces) |
 | `obstacles.js` | Obstacles aquatiques (§14.2) : ponton (aussi poste de pêche), écluse, douve, roches, souches, pieux, épave, îlots de joncs. Placement déterministe (sans `rand()`), rendu 3D généré en code, accrochage (`ACCROCHAGES`), attraction d'espèces (`attirer`), collision barque (`heurtBarque`) et lancer (`lancerBloque`). Plafond 800 | 671 | Monde / obstacles |
+| `esches.js` | Esches (§15.2) : maïs, ver, pain / flocons, bouillette, vif / leurre. Modèle pur (`ESCHES`, `coucheHamecon`, `efficaciteEsche` : espèce × couche × substrat) et système (`creerEsches` : décision d'un poisson arrivé sur l'hameçon, une fois par poisson et par lancer, message discret après plusieurs refus, étiquette du widget). Générateur local, jamais `rand()` | 150 | Esches / pêche |
 | `substrats.js` | Types de fond (§14.3) : sable, gravier, vase, roche, herbier. Grille déterministe (sans `rand()`) dérivée du relief, des fosses, de l'exposition au vent et des nénuphars/roseaux du décor. Source unique de la texture du fond (`pixelsFond`, `habillerFond`), de la carte du carnet (`rectsCarte`), du verdict de fond sous l'hameçon (`verdictFond`, accrochages vase / herbier / roche) et de l'habitat des poissons (`attirer`, `COMPORTEMENTS[...].substrats`). Plafond 800 | 522 | Monde / fonds |
 | `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars (expose aussi leurs positions à `obstacles.js`) | 220 | Monde / décor |
 | `classement.js` | Classement local | 111 | UI / persistance |
@@ -462,3 +463,24 @@ Demande du joueur : `idées.md` §14.3. Le fond était uniforme (une couleur uni
 - **`script.js`** : +9 lignes de câblage (ratchet 2971 → 2980), `window.__game.substrats`.
 - Tests : `scenario-substrats.mjs` (76). Les tests de la vase (57, 52…) visent désormais un point de vase du bassin
   (0, −25) : l'ancien point (30, −10) est de l'herbier.
+
+
+## 15. Esches (v184) — ce qui change pour les modules
+
+Demande du joueur : `idées.md` §15.2. L'hameçon était nu : tout poisson arrivé dessus mordait.
+
+- **`esches.js`** (nouveau, ≈ 150 lignes, plafond 800) : cinq esches (`ESCHES`) avec `cibles` (espèce → poids, 1 = esche reine,
+  absent = 0,06), `couches` (surface / mi-eau / fond) et `substrats` (§14.3). `efficaciteEsche(id, espèce, couche, substrat)` =
+  produit des trois, borné à 1 ; hameçon nu = 0,06. `coucheHamecon` : « fond » à moins de 1,2 unité du fond, « surface » sous 1,6
+  unité de ligne (le widget de profondeur affiche la même couche). `creerEsches` : `accepterTouche(poisson)` (une décision par
+  poisson et par lancer, générateur local) ; un poisson qui refuse s'en désintéresse (`refuseLEsche`) ; tous les 3 refus,
+  un message discret (« Ils tournent autour… », jamais d'aide explicite).
+- **`stocks.js`** : les esches réutilisent le système des recharges : lots de `TAILLE_LOT` (3), achat en XP (`acheterRecharge`
+  cherche dans RECHARGES et ESCHES), stock dans `journal.recharges`, esche équipée dans `journal.esche` (null = hameçon nu).
+  `consommerEsche` (une touche ferrée = une esche, appelée par `combat.hookFish`), stock à 0 = hameçon nu. 3 vers offerts au départ.
+- **`carnet.js`** : persiste `esche` (id connu ou null) ; un ancien carnet sans `esche` reçoit les vers de départ.
+- **`cycleLigne.js`** : `findBitingFish` trie les poissons arrivés sur l'hameçon et demande à `etat.accepterTouche` ;
+  `startCast` incrémente `etat.numeroLancer`. **`comportement.js`** : un poisson qui a refusé ne s'approche plus.
+- **`boutique.js`** : section « Esches » (Acheter ×3, Équiper, Hameçon nu) ; **`ligne.js`** : couche du widget via `coucheHamecon`.
+- **Tests** : `etat.eschesActives = false` dans le harnais (tout poisson mord, comme avant) ; `scenario-esches.mjs` (77) l'active.
+- **`script.js`** : +4 lignes (ratchet 2980 → 2984).

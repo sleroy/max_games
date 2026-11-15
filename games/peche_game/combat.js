@@ -383,6 +383,7 @@ export function creerCombat(deps) {
             etat.strikeQuality = 'parfait';
             etat.fightAdvantage = 0.85;
             etat.biteFish = null;
+            etat.consommerEsche();   // une touche ferrée consomme une esche (§15.2)
             if (fish) {
                 fish.visible = true;
                 sound.reel();
@@ -399,6 +400,7 @@ export function creerCombat(deps) {
             etat.strikeQuality = (etat.bitePhase === 'fausse') ? 'tot' : 'tard';
             etat.fightAdvantage = (etat.bitePhase === 'fausse') ? 1.15 : 1.3;
             etat.biteFish = null;
+            etat.consommerEsche();
             if (fish) {
                 fish.visible = true;
                 sound.reel();

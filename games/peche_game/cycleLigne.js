@@ -54,6 +54,7 @@ export function creerCycleLigne(deps) {
             return;
         }
         etat.castT = 0;
+        etat.numeroLancer++;   // une nouvelle présentation de l'esche : chaque poisson décide à nouveau (esches.js)
         etat.fishCaught = false;
         etat.ligneTendue = false;
         // Un nouveau lancer = une nouvelle chance : le poisson peut prendre
@@ -150,8 +151,8 @@ export function creerCycleLigne(deps) {
         if (etat.fishCaught) {
             return null;
         }
-        let best = null;
-        let bestDist = BITE_RADIUS * BITE_RADIUS;
+        // Les poissons arrivés sur l'hameçon, du plus proche au plus éloigné.
+        const candidats = [];
         for (let i = 0; i < fishes.length; i++) {
             const fish = fishes[i];
             const data = fish.userData;
@@ -167,12 +168,16 @@ export function creerCycleLigne(deps) {
             const dy = (fish.position.y + data.topOffset) - etat.HOOK_DEPTH;
             const dz = fish.position.z - etat.floatGroup.position.z;
             const d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 < bestDist) {
-                bestDist = d2;
-                best = fish;
+            if (d2 < BITE_RADIUS * BITE_RADIUS) {
+                candidats.push({ fish: fish, d2: d2 });
             }
         }
-        return best;
+        candidats.sort(function (a, b) { return a.d2 - b.d2; });
+        // L'esche décide (esches.js) : un poisson qui la refuse laisse la place au suivant.
+        for (let i = 0; i < candidats.length; i++) {
+            if (etat.accepterTouche(candidats[i].fish)) { return candidats[i].fish; }
+        }
+        return null;
     }
 
     function endCast() {

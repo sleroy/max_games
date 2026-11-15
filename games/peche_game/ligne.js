@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
 import { etat } from './etat.js?v=145';
+import { coucheHamecon } from './esches.js?v=184';
 
 export function creerLigne(deps) {
     const {
@@ -158,8 +159,9 @@ export function creerLigne(deps) {
         const hameconPct = Math.min(100, (etat.profondeurLigne / COUPE_REF) * 100);
         coupe.hamecon.style.top = hameconPct.toFixed(1) + '%';
         coupe.fil.style.height = hameconPct.toFixed(1) + '%';
+        // La même couche que celle des esches (esches.js) : ce que montre le schéma est ce qui compte.
         const zone = etat.modeQuiver.estActif() ? 'au fond (quiver)'
-            : (etat.profondeurLigne < 1.6 ? 'surface' : (etat.profondeurLigne < 3.2 ? 'mi-eau' : 'fond'));
+            : coucheHamecon(etat.profondeurLigne, profLocale, false);
         coupe.zone.textContent = zone;
         // Alerte : l'hameçon touche (ou dépasse) le fond → vase, aucune touche.
         // Accroché dans la vase, la décision du jeu (accrochage) fait foi : le bouchon

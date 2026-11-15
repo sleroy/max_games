@@ -500,6 +500,7 @@ export async function loadGame() {
     game.setHorsNormeChance(0);    // monde de test sans spécimen hors norme
     game.setTechnique('bouchon');  // les tests historiques pêchent au bouchon
     game.setRagondinAuto(false);  // le ragondin ne surgit pas dans les tests
+    game.etat.eschesActives = false;   // §15.2 : sans esche, tout poisson mord (les tests historiques) ; scenario-esches l'active
     return game;
 }
 

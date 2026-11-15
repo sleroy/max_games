@@ -47,6 +47,17 @@ export function chargerCarnet(options) {
             data.ligne = Object.hasOwn(data.recharges, saved.ligne) && saved.ligne !== 'amorce'
                 ? saved.ligne : 'nylon';
         }
+        // Esches (§15.2) : stock = recharges[id] (ci-dessus), esche équipée = `esche` (null = hameçon nu).
+        // Un carnet d'avant les esches reçoit les vers de départ (opts.eschesDepart).
+        const eschesIds = Array.isArray(opts.eschesIds) ? opts.eschesIds : [];
+        if (eschesIds.length) {
+            if (!('esche' in saved) && opts.eschesDepart && data.recharges) {
+                data.recharges[opts.eschesDepart.id] = opts.eschesDepart.quantite;
+                data.esche = opts.eschesDepart.id;
+            } else {
+                data.esche = eschesIds.indexOf(saved.esche) >= 0 ? saved.esche : null;
+            }
+        }
         data.technique = saved.technique === 'quiver' ? 'quiver' : 'bouchon';
         data.bouchons = bouchonsDepart.slice();
         const achetes = Array.isArray(saved.bouchons) ? saved.bouchons : [];

@@ -984,6 +984,15 @@ button, .crank {
     text-overflow: ellipsis;
 }
 
+/* Esche équipée (§15.2) : sous le type de fond. */
+.depth-esche {
+    margin-top: 2px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Plage de profondeur du bouchon équipé (« Anglaise : 0,3 à 2 m »). */
 .depth-range {
     margin-top: 2px;

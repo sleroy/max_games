@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=183';
+import { SoundEngine } from './sound.js?v=184';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=183';
@@ -16,32 +16,33 @@ import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
 import { creerSubstrats } from './substrats.js?v=183';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=135';
+import { creerEsches } from './esches.js?v=184';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=184';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=145';
-import { creerComportement } from './comportement.js?v=183';
+import { creerCombat } from './combat.js?v=184';
+import { creerComportement } from './comportement.js?v=184';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
-import { creerCarnetUI } from './carnetUI.js?v=183';
-import { creerBoutique } from './boutique.js?v=150';
+import { creerCarnetUI } from './carnetUI.js?v=184';
+import { creerBoutique } from './boutique.js?v=184';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
 import { creerAmorcage } from './amorcage.js?v=179';
 import { creerFrein } from './frein.js?v=182';
-import { creerLigne } from './ligne.js?v=183';
+import { creerLigne } from './ligne.js?v=184';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
 import { creerMeteo } from './meteo.js?v=173';
 import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=179';
-import { creerStocks } from './stocks.js?v=179';
-import { creerJournal } from './journal.js?v=162';
+import { creerStocks } from './stocks.js?v=184';
+import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
-import { creerCycleLigne } from './cycleLigne.js?v=178';
+import { creerCycleLigne } from './cycleLigne.js?v=184';
 import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
@@ -1739,7 +1740,7 @@ const {
     debiterLigne, acheterRecharge
 } = creerStocks({
     SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal: (...args) => saveJournal(...args), majLignes: (...args) => majLignes(...args),
-    renderJournal: (...args) => renderJournal(...args), lineSelect
+    renderJournal: (...args) => renderJournal(...args), lineSelect, statusDisplay
 });
 
 // Compteur de la PARTIE en cours (la bourriche), distinct du carnet persistant
@@ -2078,6 +2079,9 @@ const {
     tenterAttaquePredateur, REEL_IDLE_HELP, REEL_AUTO, REEL_PER_TURN, angler, startHoldingFish,
     endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS, linePositions, lineGeometry
 });
+
+// Esches (§15.2) : l'esche équipée décide si le poisson arrivé sur l'hameçon mord (stocks : stocks.js).
+creerEsches({ verdictFond, modeQuiver, statusDisplay, etiquette: document.getElementById('depthEsche') });
 
 creerEntrees({
     canvas, waterPointFromEvent, moveCastAim, moveFeedAim, cameraTouches, updateCameraGesture,

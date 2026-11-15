@@ -103,6 +103,7 @@ export function creerBoutique(deps) {
             + (stockFil(fil.id) ? '' : ' disabled') + '>' + fil.nom + ' (' + stockFil(fil.id) + ')</option>').join('');
         lineSelect.value = journal.ligne;
         majAmorce();
+        if (etat.majEsche) { etat.majEsche(); }
         if (!boutique) {
             return;
         }
@@ -116,6 +117,24 @@ export function creerBoutique(deps) {
                 + (journal.experience < article.prix ? ' disabled' : '')
                 + '>Acheter ×' + TAILLE_LOT + ' · ' + article.prix + ' XP</button></div>';
         }).join('');
+        // Esches (§15.2) : mêmes lots et même achat que les fils (acheterRecharge), plus « Équiper ».
+        html += '</div><div class="shop-section">🪱 Esches</div><div class="shop-grid">';
+        const equipee = etat.escheEquipee();
+        etat.ESCHES.forEach(esche => {
+            const stock = etat.stockEsche(esche.id);
+            const bouton = equipee && equipee.id === esche.id
+                ? '<button class="shop-btn equipped" disabled>✅ Équipée</button>'
+                : '<button class="shop-btn" data-action="equiper-esche" data-id="' + esche.id + '"'
+                    + (stock > 0 ? '' : ' disabled') + '>Équiper</button>';
+            html += '<div class="shop-item' + (stock > 0 ? ' owned' : '') + '"><div class="shop-name">' + esche.icone + ' '
+                + esche.nom + ' · ' + stock + ' en stock</div><div class="shop-desc">' + esche.desc + '</div>'
+                + '<button class="shop-btn buy" data-action="recharger" data-id="' + esche.id + '"'
+                + (journal.experience < esche.prix ? ' disabled' : '')
+                + '>Acheter ×' + TAILLE_LOT + ' · ' + esche.prix + ' XP</button>' + bouton + '</div>';
+        });
+        html += '<div class="shop-item"><div class="shop-name">🪝 Hameçon nu</div><div class="shop-desc">Sans esche, presque rien ne mord.</div>'
+            + (equipee ? '<button class="shop-btn" data-action="equiper-esche" data-id="nu">Équiper</button>'
+                : '<button class="shop-btn equipped" disabled>✅ Équipé</button>') + '</div>';
         html += '</div><div class="shop-section">🎣 Bouchons</div><div class="shop-grid">';
         FLOTTEURS.forEach(f => {
             const possede = bouchonPossede(f.id);
@@ -208,6 +227,10 @@ export function creerBoutique(deps) {
             return;
         }
         const id = cible.dataset.id;
+        if (cible.dataset.action === 'equiper-esche') {
+            if (etat.equiperEsche(id === 'nu' ? null : id)) { ensureSound(); sound.reel(); renderBoutique(); }
+            return;
+        }
         if (cible.dataset.action === 'recharger') {
             if (acheterRecharge(id)) { sound.playPiece(); }
             return;
