@@ -769,6 +769,7 @@ export function creerComportement(deps) {
                     etat.floatState = 'idle';
                     fishButton.disabled = false;
                     endCast();
+                    if (etat.revelerEscheVolee) { etat.revelerEscheVolee(); }   // mode Dur : esche volée découverte au bord
                 }
             }
         }

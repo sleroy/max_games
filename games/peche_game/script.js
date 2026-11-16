@@ -1875,7 +1875,7 @@ function setDifficulty(mode) {
     tangleChance = preset.tangleChance;
     // MODE FACILE (enfant) : aimant à poissons, touche rapide, gros « FERRER ! ».
     // Les modules lisent `etat.modeFacile` ; le CSS reçoit aussi la classe.
-    etat.modeFacile = (mode === 'facile');
+    etat.modeFacile = (mode === 'facile'); etat.modeDifficulte = DIFFICULTY_MODES[mode] ? mode : 'normal';   // + esches.js
     if (typeof document !== 'undefined' && document.body) {
         document.body.classList.toggle('mode-facile', etat.modeFacile);
     }
@@ -2148,7 +2148,7 @@ const {
 });
 
 // Esches (§15.2) : l'esche équipée décide si le poisson arrivé sur l'hameçon mord (stocks : stocks.js).
-creerEsches({ verdictFond, modeQuiver, statusDisplay, etiquette: document.getElementById('depthEsche') });
+creerEsches({ verdictFond, modeQuiver, statusDisplay, saveJournal: (...args) => saveJournal(...args), etiquette: document.getElementById('depthEsche') });
 
 creerEntrees({
     canvas, waterPointFromEvent, moveCastAim, moveFeedAim, cameraTouches, updateCameraGesture,

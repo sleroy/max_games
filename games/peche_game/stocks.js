@@ -97,6 +97,7 @@ export function creerStocks(deps) {
         if (etat.floatState !== 'idle' && etat.floatState !== 'inWater') { return false; }
         if (id && !ESCHES.some(e => e.id === id)) { return false; }
         etat.journal.esche = id || null;
+        etat.escheVolee = false;   // une esche fraîche remplace celle qui a été volée (esches.js)
         // « Hameçon nu » est un CHOIX : on le mémorise pour ne pas le remplacer par
         // l'esche de départ au prochain chargement.
         etat.journal.escheNu = !id;

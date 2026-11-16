@@ -56,6 +56,7 @@ import { run as scenarioFond } from './scenario-fond.mjs';
 import { run as scenarioDandine } from './scenario-dandine.mjs';
 import { run as scenarioSubstrats } from './scenario-substrats.mjs';
 import { run as scenarioEsches } from './scenario-esches.mjs';
+import { run as scenarioPerteEsche } from './scenario-perte-esche.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
@@ -163,6 +164,7 @@ try {
     scenarioSubstrats();        // types de fond (v183) : répartition, habitat, risques, carte, widget
     debutScenario();
     scenarioEsches();           // esches (v184, illimitées v192) : profils, touches, persistance, boutique
+    scenarioPerteEsche();       // esche volée sur un ferrage raté (facile / normal / dur)
     debutScenario();
     scenarioMenus();            // menus de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel
     debutScenario();
