@@ -259,8 +259,17 @@ export function creerMenus(deps) {
         else if (touche === 'ArrowUp') { actif = (actif - 1 + items.length) % items.length; }
         else if (touche === 'Home') { actif = 0; }
         else if (touche === 'End') { actif = items.length - 1; }
-        else if (touche === 'Enter' || touche === ' ') { lancer(items[actif]); return; }
-        else if (touche === 'Escape' || touche === 'Tab') { fermer(touche === 'Escape'); return; }
+        else if (touche === 'Enter' || touche === ' ') {
+            // On consomme la touche : sans cela, le navigateur déclencherait le clic
+            // par défaut du bouton qui vient de reprendre le focus (menu rouvert).
+            if (evenement.preventDefault) { evenement.preventDefault(); }
+            lancer(items[actif]);
+            return;
+        } else if (touche === 'Escape' || touche === 'Tab') {
+            if (evenement.preventDefault) { evenement.preventDefault(); }
+            fermer(touche === 'Escape');
+            return;
+        }
         else { consomme = false; }
         if (consomme) {
             if (evenement.preventDefault) { evenement.preventDefault(); }

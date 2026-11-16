@@ -31,8 +31,11 @@ function clicExterieur() {
     globalThis.fireWindowEvent('click', { target: { id: 'gameCanvas' } });
 }
 
+let preventions = 0;
 function touche(menu, key) {
-    fire(menu, 'keydown', { key, preventDefault() {} });
+    preventions = 0;
+    fire(menu, 'keydown', { key, preventDefault() { preventions++; } });
+    return preventions;
 }
 
 export function run() {
@@ -114,7 +117,8 @@ export function run() {
     touche('escheTopMenu', 'Home');
     checkEqual('Origine revient sur la première', menuEsche.getAttribute('aria-activedescendant'), 'escheMenu-mais');
     touche('escheTopMenu', 'ArrowDown');
-    touche('escheTopMenu', 'Enter');
+    checkEqual('la touche Entrée est consommée (pas de clic fantôme sur le bouton)',
+        touche('escheTopMenu', 'Enter'), 1);
     checkEqual('Entrée équipe l’entrée active (ver)', G().etat.journal.esche, 'ver');
     checkEqual('…et ferme le menu', G().isMenuOuvert('esche'), false);
 

@@ -880,7 +880,7 @@ directement depuis le haut de l'écran ».
   large, en 560 px et en 400 px, mode bouchon puis quiver, achat + équipement, aucune
   erreur console (hors 404 `favicon.ico` préexistant).
 
-> Livré en **v192** : `menus.js` (nouveau module, ≈ 270 lignes), `stocks.js`
+> Livré en **v192** (même jour : passe d'équilibrage v193, cache `?v=193`) : `menus.js` (nouveau module, ≈ 270 lignes), `stocks.js`
 > (esches sans stock), `esches.js` (widget sans compteur), `boutique.js` (liste
 > d'équipement), `carnet.js` (migration sans faux stock), `index.html` (2 boutons +
 > 2 conteneurs `menu-pop`), `style.css` (`.top-menu`, `.menu-pop`, responsive 600 px),
