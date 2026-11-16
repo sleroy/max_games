@@ -5,8 +5,15 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=231';
-import { creerAvion } from './avion.js?v=231';
+<<<<<<< Updated upstream
+import { etat } from './etat.js?v=232';
+import { creerAvion } from './avion.js?v=232';
+=======
+import { etat } from './etat.js?v=228';
+import { creerAvion } from './avion.js?v=228';
+import { creerConseilLocal } from './conseilLocal.js?v=228';
+import { heureDeJeu } from './physique.js?v=228';
+>>>>>>> Stashed changes
 
 export function creerVie(deps) {
     const {
@@ -79,9 +86,18 @@ export function creerVie(deps) {
     const avion = creerAvion({ scene, camera: function () { return etat.camera; },
         hauteurEcran: function () { return etat.renderer && etat.renderer.domElement ? etat.renderer.domElement.clientHeight : 800; } });
     etat.avion = avion;
+    // Rien ne mord depuis un moment ? L'avion apporte un conseil pour CET endroit (facile : 30 s, normal : 60 s, dur : jamais).
+    const conseilLocal = creerConseilLocal({ avion, etat,
+        fishes: function () { return etat.fishes; }, floatGroup: function () { return etat.floatGroup; },
+        contexte: function () { return etat.contexteHamecon(); },
+        bornes: function () { return (etat.FLOTTEURS.find(f => f.id === etat.flotteurChoix) || etat.FLOTTEURS[0]).profondeur; },
+        temperature: function () { return etat.thermocline ? etat.thermocline.tSurface : 15; },
+        heure: function () { return heureDeJeu(etat.dayPhase); } });
+    etat.conseilLocal = conseilLocal;
 
     function updateAmbiante(dt, time) {
         avion.maj(dt);
+        conseilLocal.maj(dt);
         for (let i = 0; i < etat.birds.length; i++) {
             const bird = etat.birds[i];
             const p = bird.userData.phase;

@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=231';
+import { etat } from './etat.js?v=232';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -186,7 +186,8 @@ export function creerEsches(deps) {
         const quiver = modeQuiver.estActif();
         const verdict = verdictFond(pos.x, pos.z, etat.profondeurLigne, quiver);
         // §15.1 : en été, la thermocline fait office de fond pour les poissons (etat.profondeurUtile).
-        return { couche: coucheHamecon(etat.profondeurLigne, etat.profondeurUtile(verdict.profondeurEau), quiver), substrat: verdict.substrat };
+        return { couche: coucheHamecon(etat.profondeurLigne, etat.profondeurUtile(verdict.profondeurEau), quiver), substrat: verdict.substrat,
+            profondeurEau: verdict.profondeurEau };
     }
 
     function probabilite(especeId, longueurCm) {
@@ -295,6 +296,7 @@ export function creerEsches(deps) {
         etiquette.textContent = esche ? esche.icone + ' Esche : ' + esche.nom : '🪝 Hameçon nu';
     }
     etat.accepterTouche = accepterTouche;
+    etat.contexteHamecon = contexte;   // fond sous le bouchon (conseilLocal.js)
     etat.refuseLEsche = refuseLEsche;
     etat.escheSansEspoir = escheSansEspoir;
     etat.patienceEsche = patienceEsche;

@@ -8,12 +8,13 @@
 // L'avion passe devant la caméra (où que soit le poste), de gauche à droite, à ~60 unités, puis
 // disparaît. Premier passage après PREMIER_PASSAGE s, puis toutes les INTERVALLE s de jeu (horloge
 // du jeu : rien ne bouge en pause). ⚠ Aucun `rand()` : le monde reproductible n'est pas touché.
-// Appelé par vie.js (vie ambiante) : `maj(dt)` à chaque image.
+// Appelé par vie.js (vie ambiante) : `maj(dt)` à chaque image. `lancerMessage(lignes)` : passage prioritaire
+// avec un message donné (conseil pour l'endroit du bouchon quand rien ne mord, conseilLocal.js).
 // Modèle 3D : petit avion de tourisme low poly (assets/avion.glb, Vojtěch Balák, CC-BY 3.0, voir CREDITS.txt), chargé avec le GLTFLoader de
 // three.js. Tant qu'il n'est pas chargé (ou sans réseau / dans les tests), un petit avion simple le remplace.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { conseilsEsches } from './matriceTouche.js?v=231';
+import { conseilsEsches } from './matriceTouche.js?v=232';
 
 export const PREMIER_PASSAGE = 30;   // s de jeu avant le premier passage
 export const INTERVALLE = 90;        // s entre deux passages (fin d'un passage → début du suivant)
@@ -143,12 +144,24 @@ export function creerAvion(deps) {
     const _droite = new THREE.Vector3();
     const _p = new THREE.Vector3();
 
+    // Passage « conseil général » : l'espèce suivante, à tour de rôle.
     function lancer() {
-        const cam = camera();
-        if (!cam) { return null; }
+        if (!camera()) { return null; }
         if (!conseils) { conseils = conseilsEsches(); }
         const conseil = conseils[rang % conseils.length];
         rang++;
+        return voler(conseil);
+    }
+
+    // Passage avec un message donné (conseil pour l'endroit du bouchon, conseilLocal.js). Il passe en
+    // priorité : un passage en cours est remplacé.
+    function lancerMessage(lignes, cle) {
+        return voler({ especeId: null, cle: cle || 'message', lignes: lignes, texte: lignes.join(' — ') });
+    }
+
+    function voler(conseil) {
+        const cam = camera();
+        if (!cam) { return null; }
         cam.getWorldDirection(_avant);
         _avant.y = 0;
         if (_avant.lengthSq() < 1e-6) { _avant.set(0, 0, -1); }
@@ -209,7 +222,7 @@ export function creerAvion(deps) {
     }
 
     return {
-        maj, lancer, groupe, banderole,
+        maj, lancer, lancerMessage, groupe, banderole,
         enVol: function () { return !!vol; },
         conseilCourant: function () { return vol ? vol.conseil : null; },
         attente: function () { return attente; }
