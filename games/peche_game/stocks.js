@@ -4,8 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=232';
-import { ESCHES, ESCHE_DEPART } from './esches.js?v=232';
+import { etat } from './etat.js?v=233';
+import { ESCHES, ESCHE_DEPART } from './esches.js?v=233';
 
 export function creerStocks(deps) {
     const {
@@ -33,7 +33,7 @@ export function creerStocks(deps) {
     etat.lignesRestantes = etat.MAX_LIGNES;
     etat.amorceDepartRestante = etat.AMORCE_DEPART;
     etat.journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false, bateau: false,
-        technique: 'bouchon', bouchons: etat.BOUCHONS_DE_DEPART.slice(), scions: SCIONS_DE_DEPART.slice(), scion: SCIONS_DE_DEPART[0], ligne: 'nylon',
+        technique: 'bouchon', milieu: 'plaine', bouchons: etat.BOUCHONS_DE_DEPART.slice(), scions: SCIONS_DE_DEPART.slice(), scion: SCIONS_DE_DEPART[0], ligne: 'nylon',
         esche: ESCHE_DEPART.id,
         recharges: Object.fromEntries(etat.RECHARGES.map(article => [article.id, 0])) };
 

@@ -4,7 +4,14 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=232';
+import { etat } from './etat.js?v=233';
+
+// Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
+export function majChoixRadio(radios, valeur) {
+    Object.keys(radios || {}).forEach(function (cle) {
+        if (radios[cle]) { radios[cle].checked = (cle === valeur); }
+    });
+}
 
 export function creerPartie(deps) {
     const {
@@ -20,7 +27,7 @@ export function creerPartie(deps) {
         updateCrankVisibility, updateLine, stockAmorce, saveScore, showRanking, rankingButton,
         closeRanking, restartGame, saveAndMenu, backToMenu, endGameButton, ensureSound,
         playButton, accueilClassement, accueilTechniqueRadios, setTechnique,
-        accueilDifficulteRadios, setDifficulty
+        accueilDifficulteRadios, setDifficulty, accueilMilieuRadios, setMilieu
     } = deps;
 
     // LIGNES (VIES) : on part avec 5 lignes. Un lancer trop fort ou une remontée
@@ -466,6 +473,8 @@ export function creerPartie(deps) {
     }
     ecouterChoixRadios(accueilTechniqueRadios, setTechnique);
     ecouterChoixRadios(accueilDifficulteRadios, setDifficulty);
+    // Milieu : le choix est mémorisé dans le carnet puis l'étang est reconstruit et repeuplé (milieux.js).
+    ecouterChoixRadios(accueilMilieuRadios, setMilieu);
 
     return {
         majLignes, casserLigne, vitesseMaxTours, risqueCasseVitesse, avertirVitesse,

@@ -3046,3 +3046,20 @@ body.mode-quiver .row-bouchon { display: none; }
         height: 54px;
     }
 }
+
+/* Choix du milieu (biotope) sur l'accueil : 6 boutons radio en grille, comme la difficulté. */
+.choix-segmented.choix-milieux {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choix-milieux .choix-option span {
+    min-height: 44px;
+    font-size: 0.82rem;
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+    #accueil .choix-milieux .choix-option span small {
+        display: none;
+    }
+}

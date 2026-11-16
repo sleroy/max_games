@@ -3,6 +3,8 @@
 // Reçoit l'objet `journal` de l'orchestrateur et le migre ; le rendu et le jeu
 // restent dans script.js. Aucun accès direct au DOM ici.
 // ---------------------------------------------------------------------------
+import { milieuParId } from './milieux.js?v=233';
+
 export function chargerCarnet(options) {
     const opts = options || {};
     const store = opts.store || null;
@@ -62,6 +64,8 @@ export function chargerCarnet(options) {
             }
         }
         data.technique = saved.technique === 'quiver' ? 'quiver' : 'bouchon';
+        // Biotope choisi (milieux.js) : un carnet d'avant les biotopes, ou une valeur inconnue, donne la plaine.
+        data.milieu = milieuParId(saved.milieu).id;
         data.bouchons = bouchonsDepart.slice();
         const achetes = Array.isArray(saved.bouchons) ? saved.bouchons : [];
         achetes.forEach(function (id) {

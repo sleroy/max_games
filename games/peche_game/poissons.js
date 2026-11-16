@@ -16,8 +16,12 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=232';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=232';
+} from './especes.js?v=233';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=233';
+import {
+    MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
+    capacite, facteurTaille, tailleMaxEspece
+} from './milieux.js?v=233';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -29,6 +33,10 @@ export function creerPoissons(deps) {
     // Fosses (refuge des poissons de fond) et surface (en hectares) de l'étang.
     const FOSSES = deps.FOSSES;
     const SURFACE_HA = deps.SURFACE_HA;
+    // Biotope courant (milieux.js) : parts de population, taille maximale, surface écologique.
+    // Le monde est construit en « plaine » ; setMilieu / repeuplerEtang(milieu) le changent.
+    let milieuCourant = milieuParId(deps.milieu || MILIEU_DEFAUT);
+    let facteurTailleCourant = facteurTaille(milieuCourant);
     // Obstacles aquatiques (obstacles.js) : ils attirent certaines espèces (zone de vie déplacée).
     const obstacles = deps.obstacles;
     // Types de fond (substrats.js) : l'habitat des poissons qu'aucun obstacle n'a attirés.
@@ -62,18 +70,27 @@ export function creerPoissons(deps) {
     //  - Les solitaires (silure, brochet, sandre, black-bass, truite, anguille) restent
     //    rares : au plus 2 de chaque, 1 seul silure. Les bancs portent l'essentiel.
     // ---------------------------------------------------------------------------
-    const FISH_COUNT = 240;                      // plafond technique (v197 : 64 -> 240, densite par difficulte)
-    const DENSITE_PAR_HECTARE = 90;              // poissons / ha
+    const FISH_COUNT = PLAFOND_POPULATION;       // plafond technique (v197 : 64 -> 240, densite par difficulte)
     const BIOMASSE_MIN_KG_HA = 100;              // bornes réalistes (kg / ha)
     const BIOMASSE_MAX_KG_HA = 300;
-    const ESPECES_MIN = 10;                      // diversité minimale de l'étang
+    const ESPECES_MIN = 10;                      // diversité minimale de l'étang de plaine
     const SOLITAIRES = ['silure', 'brochet', 'sandre', 'black-bass', 'truite', 'anguille'];
     const MAX_PAR_SOLITAIRE = { silure: 1, defaut: 2 };
     // Les poissons de fosse vivent dans les trous profonds : on les atteint en barque.
     const ESPECES_DE_FOSSE = ['silure', 'anguille', 'sandre'];
     // Densité par difficulté (idées.md §17.6) : ×1,5 / ×2 / ×3 sur la base 90/ha.
     const FACTEUR_DENSITE = (typeof etat !== 'undefined' && etat.facteurDensite) || 2;
-    const POPULATION_CIBLE = Math.min(FISH_COUNT, Math.round(SURFACE_HA * DENSITE_PAR_HECTARE * FACTEUR_DENSITE));
+    // Population cible : surface écologique du biotope × 90 /ha × densité du biotope × difficulté.
+    // Elle remonte à la somme des minimums de banc si le biotope est trop petit pour eux.
+    function populationPourMilieu(milieu) {
+        return quotasEspeces(milieu, capacite(milieu, FACTEUR_DENSITE, FISH_COUNT)).total;
+    }
+    let POPULATION_CIBLE = populationPourMilieu(milieuCourant);
+    // Surface utilisée pour les kg/ha : la plaine est l'étang généré tel quel (sa surface réelle fait foi),
+    // les autres biotopes ont leur surface écologique.
+    function surfaceBiomasse() {
+        return milieuCourant.id === MILIEU_DEFAUT ? SURFACE_HA : milieuCourant.surfaceHa;
+    }
 
     // ---------------------------------------------------------------------------
     // Espèces d'eau douce : silhouette, longueur réelle (cm), poids, combativité,
@@ -166,20 +183,22 @@ export function creerPoissons(deps) {
         return poidsKilos(espece, longueurCm);
     }
 
-    // Tirage d'espèce pondéré par son abondance dans l'étang.
+    // Tirage d'espèce pondéré par sa PART de population dans le biotope courant (milieux.js).
+    // Une espèce absente du biotope (part 0) n'est jamais tirée. `abondance` (especes.js) n'est
+    // plus qu'une indication de repli : la seule vérité est la table des biotopes.
     function pickSpecies() {
-        let total = 0;
+        const parts = partsEspeces(milieuCourant);
+        let r = rand();
+        let derniere = SPECIES[0];
         for (let i = 0; i < SPECIES.length; i++) {
-            total += SPECIES[i].abondance;
-        }
-        let r = rand() * total;
-        for (let i = 0; i < SPECIES.length; i++) {
-            r -= SPECIES[i].abondance;
+            if (parts[SPECIES[i].id] <= 0) { continue; }
+            derniere = SPECIES[i];
+            r -= parts[SPECIES[i].id];
             if (r <= 0) {
                 return SPECIES[i];
             }
         }
-        return SPECIES[0];
+        return derniere;
     }
 
     // ---------------------------------------------------------------------------
@@ -204,45 +223,50 @@ export function creerPoissons(deps) {
         if (typeof window !== 'undefined') { window.__PECHE_RARE__ = horsNormeChance; }
     }
 
-    // Distribution ATTENDUE : chaque espèce reçoit une part proportionnelle à son
-    // abondance. Sert au carnet/aux tests pour vérifier que l'étang reste équilibré.
+    // Distribution ATTENDUE : le QUOTA de chaque espèce dans le biotope courant (milieux.js,
+    // allocation par plus forts restes), avec sa part du total. Sert au carnet et aux tests.
     function distributionAttendue() {
-        let total = 0;
-        for (let i = 0; i < SPECIES.length; i++) { total += SPECIES[i].abondance; }
+        const alloc = quotasEspeces(milieuCourant, POPULATION_CIBLE);
         return SPECIES.map(function (espece) {
             return {
                 id: espece.id,
                 nom: espece.nom,
-                part: total > 0 ? espece.abondance / total : 0
+                quota: alloc.quotas[espece.id],
+                part: alloc.total > 0 ? alloc.quotas[espece.id] / alloc.total : 0
             };
         });
     }
 
-    // Une espèce rare déjà au complet (voir MAX_PAR_SOLITAIRE) n'est pas retirée : un
-    // poisson pêché est remplacé, mais l'étang ne se remplit pas de silures.
+    // Un poisson pêché est remplacé par l'espèce la plus en manque par rapport à son QUOTA :
+    // la composition du biotope reste stable (pas de silures en trop, jamais d'espèce absente).
+    // Quand rien ne manque, tirage pondéré par les parts du biotope.
     function pickEspeceAutorisee() {
-        let espece = pickSpecies();
-        for (let i = 0; i < 8; i++) {
-            const max = MAX_PAR_SOLITAIRE[espece.id] || MAX_PAR_SOLITAIRE.defaut;
-            const present = fishes.filter(function (f) { return f.userData.especeId === espece.id; }).length;
-            if (SOLITAIRES.indexOf(espece.id) < 0 || present < max) { return espece; }
-            espece = pickSpecies();
-        }
-        return espece;
+        const quotas = quotasEspeces(milieuCourant, POPULATION_CIBLE).quotas;
+        const presents = {};
+        fishes.forEach(function (f) { presents[f.userData.especeId] = (presents[f.userData.especeId] || 0) + 1; });
+        let choisie = null;
+        let manque = 0;
+        SPECIES.forEach(function (e) {
+            const m = quotas[e.id] - (presents[e.id] || 0);
+            if (m > manque) { manque = m; choisie = e; }
+        });
+        return choisie || pickSpecies();
     }
 
     function spawnFish(especeImposee, groupe) {
         const espece = especeImposee || pickEspeceAutorisee();
-        // Longueur réelle tirée dans la fourchette de l'espèce (cm).
-        let longueurCm = espece.cm[0] + rand() * (espece.cm[1] - espece.cm[0]);
-        // Spécimen hors norme : la taille peut dépasser le maximum de l'espèce.
+        // Longueur réelle tirée dans la fourchette de l'espèce, bornée par la TAILLE MAXIMALE du
+        // biotope (un petit étang de forêt ne porte pas de carpe de 1 m) : cm[0] → cmMax.
+        const cmMax = tailleMaxEspece(espece, facteurTailleCourant);
+        let longueurCm = espece.cm[0] + rand() * (cmMax - espece.cm[0]);
+        // Spécimen hors norme : il dépasse la norme de l'espèce mais reste borné à cmMax.
         const rareChance = (typeof window !== 'undefined'
             && typeof window.__PECHE_RARE__ === 'number')
             ? window.__PECHE_RARE__ : horsNormeChance;
         const horsNorme = rareRand() < rareChance;
         const facteurRare = horsNorme ? (1.08 + rareRand() * 0.28) : 1;
         if (horsNorme) {
-            longueurCm *= facteurRare;
+            longueurCm = Math.min(cmMax, longueurCm * facteurRare);
         }
         // Échelle 3D donnant au poisson sa vraie taille (2 unités ≈ 1 m).
         const size = echellePourTaille(longueurCm, espece.form);
@@ -339,26 +363,6 @@ export function creerPoissons(deps) {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
 
-    // Peuplement de l'étang : les espèces de banc arrivent EN GROUPE, les solitaires
-    // (brochet, silure, anguille…) seuls. Le tirage reste pondéré par l'abondance :
-    // on divise le poids par la taille moyenne du groupe (l'abondance compte des poissons).
-    function pickEspeceGroupe(tirage) {
-        const tire = tirage || rand;
-        let total = 0;
-        const poids = SPECIES.map(function (esp) {
-            const c = COMPORTEMENTS[esp.id];
-            const moy = c ? (c.banc[0] + c.banc[1]) / 2 : 1;
-            total += esp.abondance / moy;
-            return esp.abondance / moy;
-        });
-        let r = tire() * total;
-        for (let i = 0; i < SPECIES.length; i++) {
-            r -= poids[i];
-            if (r <= 0) { return SPECIES[i]; }
-        }
-        return SPECIES[0];
-    }
-
     // Statistiques de la population courante : sert au contrôle de biomasse, à l'API de
     // test et au carnet. La biomasse se compte en kg et en kg/ha (surface réelle).
     function statsPopulation() {
@@ -381,42 +385,36 @@ export function creerPoissons(deps) {
             parEspece: parEspece,
             solitaires: solitaires,
             biomasseKg: Math.round(biomasse * 10) / 10,
-            biomasseKgHa: Math.round(biomasse / SURFACE_HA * 10) / 10,
-            surfaceHa: SURFACE_HA,
-            poissonsParHa: Math.round(fishes.length / SURFACE_HA * 10) / 10
+            biomasseKgHa: Math.round(biomasse / surfaceBiomasse() * 10) / 10,
+            surfaceHa: surfaceBiomasse(),
+            poissonsParHa: Math.round(fishes.length / surfaceBiomasse() * 10) / 10,
+            milieu: milieuCourant.id
         };
     }
 
-    // COMPOSITION de la population (quelles espèces, en groupes de combien) : planifiée
-    // AVANT de fabriquer le moindre poisson, avec le générateur local (le hasard du monde
-    // n'est pas touché). Une composition est acceptable si elle compte assez d'espèces et
-    // si les solitaires restent rares. Refaire ce tirage ne coûte presque rien ; refaire
-    // des poissons en 3D (mesh, sommets) coûterait 60 ms par essai.
-    function compositionAcceptable(compte) {
-        if (Object.keys(compte).length < ESPECES_MIN) { return false; }
-        return SOLITAIRES.every(function (id) {
-            return (compte[id] || 0) <= (MAX_PAR_SOLITAIRE[id] || MAX_PAR_SOLITAIRE.defaut);
-        });
-    }
-
+    // COMPOSITION de la population (quelles espèces, en groupes de combien) : planifiée AVANT de
+    // fabriquer le moindre poisson. Les QUOTAS par espèce viennent du biotope (milieux.js :
+    // allocation par plus forts restes, au moins 1 poisson par espèce présente, au moins `banc[0]`
+    // pour une espèce de banc). Seule la découpe en bancs utilise le générateur local : le hasard
+    // du monde n'est pas touché. Les GROUPES (bancs) sont plantés d'abord, puis les solitaires.
     function planifierComposition() {
-        let plan = [];
-        for (let essai = 0; essai < 300; essai++) {
-            plan = [];
-            const compte = {};
-            let restant = POPULATION_CIBLE;
+        const quotas = quotasEspeces(milieuCourant, POPULATION_CIBLE).quotas;
+        const groupes = [];
+        const solitaires = [];
+        SPECIES.forEach(function (esp) {
+            let restant = quotas[esp.id] || 0;
+            const c = COMPORTEMENTS[esp.id];
+            const banc = c && c.banc ? c.banc : [1, 1];
             while (restant > 0) {
-                const esp = pickEspeceGroupe(comportementRand);
-                const c = COMPORTEMENTS[esp.id];
-                let n = c ? c.banc[0] + Math.floor(comportementRand() * (c.banc[1] - c.banc[0] + 1)) : 1;
+                let n = banc[0] + Math.floor(comportementRand() * (banc[1] - banc[0] + 1));
                 n = Math.max(1, Math.min(n, restant));
-                plan.push({ espece: esp, n: n });
-                compte[esp.id] = (compte[esp.id] || 0) + n;
+                // Un reste plus petit qu'un banc minimal est rattaché à ce banc (pas de banc incomplet).
+                if (restant - n > 0 && restant - n < banc[0]) { n = restant; }
+                (n > 1 ? groupes : solitaires).push({ espece: esp, n: n });
                 restant -= n;
             }
-            if (compositionAcceptable(compte)) { return plan; }
-        }
-        return plan;
+        });
+        return groupes.concat(solitaires);
     }
 
     // La BIOMASSE ne se connaît qu'une fois les longueurs tirées (un silure fait de 20 à
@@ -446,13 +444,15 @@ export function creerPoissons(deps) {
         fishes.length = 0;
     }
 
-    // Peuple l'étang jusqu'à POPULATION_CIBLE poissons. La biomasse est vérifiée une fois
-    // les poissons faits : si elle sort de 100–300 kg/ha (un silure de 100 kg, ou une
-    // carpe de moins), on recommence (au plus 12 fois ; le générateur est toujours le même,
-    // le résultat reste reproductible). Environ une population sur dix est refaite.
+    // Peuple l'étang jusqu'à POPULATION_CIBLE poissons. Pour la plaine (l'étang d'origine), la biomasse
+    // est vérifiée une fois les poissons faits : si elle sort de 100–300 kg/ha, on recommence les
+    // tailles (au plus 12 fois ; le résultat reste reproductible). Les autres biotopes sont des
+    // données d'équilibrage voulues (une rivière à silures dépasse 300 kg/ha) : un seul tirage,
+    // sans refaire 240 poissons en 3D.
     function peuplerEtang() {
+        const essais = milieuCourant.id === MILIEU_DEFAUT ? 12 : 0;
         let plan = planifierComposition();
-        for (let essai = 0; essai < 12; essai++) {
+        for (let essai = 0; essai < essais; essai++) {
             tirerPopulation(plan);
             if (biomasseAcceptable()) { return; }
             viderEtang();
@@ -465,8 +465,16 @@ export function creerPoissons(deps) {
     peuplement = false;
     installerHabitat(fishes);
 
-    // Vide l'étang puis le repeuple (tests, nouvelle partie).
-    function repeuplerEtang() {
+    // Change de biotope : quotas, taille maximale et population cible suivent (sans repeupler).
+    function setMilieu(milieu) {
+        milieuCourant = typeof milieu === 'string' ? milieuParId(milieu) : (milieu || milieuCourant);
+        facteurTailleCourant = facteurTaille(milieuCourant);
+        POPULATION_CIBLE = populationPourMilieu(milieuCourant);
+    }
+
+    // Vide l'étang puis le repeuple (tests, nouvelle partie, changement de biotope).
+    function repeuplerEtang(milieu) {
+        if (milieu) { setMilieu(milieu); }
         peuplement = true;
         viderEtang();
         peuplerEtang();
@@ -524,7 +532,9 @@ export function creerPoissons(deps) {
         spawnFish: spawnFish,
         statsPopulation: statsPopulation,
         viderEtang: viderEtang,
-        POPULATION_CIBLE: POPULATION_CIBLE,
+        get POPULATION_CIBLE() { return POPULATION_CIBLE; },
+        setMilieu: setMilieu,
+        getMilieu: function () { return milieuCourant; },
         FISH_COUNT: FISH_COUNT,
         SOLITAIRES: SOLITAIRES,
         MAX_PAR_SOLITAIRE: MAX_PAR_SOLITAIRE,

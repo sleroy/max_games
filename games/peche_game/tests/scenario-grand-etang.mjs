@@ -316,10 +316,15 @@ export function run() {
         pop.poissonsParHa >= 160 && pop.poissonsParHa <= 200, pop.poissonsParHa + ' /ha');
     check('au moins 10 espèces différentes', pop.especes >= 10, pop.especes + ' espèces');
     const rares = pop.solitairesListe;
-    check('les solitaires (silure, brochet, sandre, black-bass, truite, anguille) restent rares : ≤ 2 chacun',
-        rares.every(id => (pop.parEspece[id] || 0) <= 2), JSON.stringify(
-            rares.map(id => id + ':' + (pop.parEspece[id] || 0))));
-    check('… et un seul silure au plus', (pop.parEspece.silure || 0) <= 1);
+    // ADAPTÉ (biotopes) : l'ancien attendu « ≤ 2 de chaque solitaire » venait d'un tirage pondéré d'avant les
+    // biotopes. L'étang de plaine suit désormais SES quotas (milieux.js : brochet 4 %, black-bass 3 %,
+    // anguille 3 % ; silure, sandre et truite absents) : chaque solitaire a exactement son quota.
+    const quotas = Object.fromEntries(G().getDistributionAttendue().map(d => [d.id, d.quota]));
+    check('les solitaires (silure, brochet, sandre, black-bass, truite, anguille) ont exactement leur quota de plaine',
+        rares.every(id => (pop.parEspece[id] || 0) === quotas[id]), JSON.stringify(
+            rares.map(id => id + ':' + (pop.parEspece[id] || 0) + '/' + quotas[id])));
+    check('… silure, sandre et truite sont absents de la plaine',
+        ['silure', 'sandre', 'truite'].every(id => !pop.parEspece[id]));
     check('… et ils font moins de 20 % de la population', pop.solitaires / pop.total <= 0.2,
         (100 * pop.solitaires / pop.total).toFixed(0) + ' %');
     const bancs = pop.total - pop.solitaires;
@@ -358,8 +363,9 @@ export function run() {
     check('12 tirages : biomasse toujours dans 100–300 kg/ha',
         pires.biomasse[0] >= 100 && pires.biomasse[1] <= 300, pires.biomasse.join(' → ') + ' kg/ha');
     check('12 tirages : toujours ≥ 10 espèces', pires.especes >= 10, String(pires.especes));
-    check('12 tirages : jamais plus de 2 poissons d’une même espèce solitaire', pires.rares <= 2,
-        String(pires.rares));
+    // ADAPTÉ (biotopes) : « jamais plus de 2 solitaires » → « jamais plus que son quota de plaine ».
+    check('12 tirages : jamais plus de poissons d’une espèce solitaire que son quota de plaine',
+        pires.rares <= Math.max(...rares.map(id => quotas[id] || 0)), String(pires.rares));
     check('silure, anguille et sandre naissent dans les fosses (refuge du poisson de fond)',
         poissonsDeFosse === 0 || dansUneFosse === poissonsDeFosse,
         dansUneFosse + ' sur ' + poissonsDeFosse + ' dans une fosse (' + tirages + ' tirages)');
@@ -367,15 +373,17 @@ export function run() {
     // Un poisson pêché est remplacé SANS dépasser le quota des solitaires.
     G().repeuplerEtang();
     const avantRemplacement = G().fishes.length;
+    const compositionAvant = JSON.stringify(Object.entries(G().getPopulation().parEspece).sort());
     for (let i = 0; i < 60; i++) {
         G().fishes.splice(0, 1);          // un poisson pêché quitte l'étang…
         G().spawnFish();                  // … et un autre le remplace
     }
     const apres = G().getPopulation();
     checkEqual('60 remplacements : le nombre de poissons ne change pas', apres.total, avantRemplacement);
-    check('60 remplacements : les quotas de solitaires tiennent (≤ 2, silure ≤ 1)',
-        rares.every(id => (apres.parEspece[id] || 0) <= 2) && (apres.parEspece.silure || 0) <= 1,
-        JSON.stringify(apres.parEspece));
+    // ADAPTÉ (biotopes) : un poisson pêché est remplacé par l'espèce la plus en manque par rapport à son quota :
+    // la composition du biotope ne bouge pas (et l'étang ne se remplit pas de silures).
+    checkEqual('60 remplacements : la composition (quotas du biotope) est inchangée',
+        JSON.stringify(Object.entries(apres.parEspece).sort()), compositionAvant);
     resetToIdle();
 
     // --- 8) Pas plus facile : même densité par surface qu'avant ---

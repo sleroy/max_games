@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=232">
+    <link rel="stylesheet" href="style.css?v=233">
 </head>
 <body>
     <div class="game-wrap">
@@ -157,6 +157,41 @@
                                     <input type="radio" id="accueilDifficulteDur"
                                         name="accueilDifficulte" value="dur">
                                     <span>Dur<small>expert</small></span>
+                                </label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="accueil-bloc">
+                            <legend>Milieu</legend>
+                            <div class="choix-segmented choix-milieux">
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilMilieuPlaine"
+                                        name="accueilMilieu" value="plaine" checked>
+                                    <span>🌾 Étang de plaine<small>eau calme, un peu de tout</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilMilieuCanal"
+                                        name="accueilMilieu" value="canal">
+                                    <span>🚤 Canal<small>roseaux, gardons et ablettes</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilMilieuCarnassiers"
+                                        name="accueilMilieu" value="carnassiers">
+                                    <span>🦈 Étang à carnassiers<small>brochets, sandres, black-bass</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilMilieuMontagne"
+                                        name="accueilMilieu" value="montagne">
+                                    <span>🏔️ Lac de montagne<small>eau claire, rochers, truites</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilMilieuForet"
+                                        name="accueilMilieu" value="foret">
+                                    <span>🌲 Petit étang de forêt<small>eau sombre, tanches, carassins</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilMilieuRiviere"
+                                        name="accueilMilieu" value="riviere">
+                                    <span>🌊 Grande rivière<small>carpes, sandres, gros silures</small></span>
                                 </label>
                             </div>
                         </fieldset>
@@ -398,6 +433,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=232"></script>
+    <script type="module" src="script.js?v=233"></script>
 </body>
 </html>

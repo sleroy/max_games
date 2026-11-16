@@ -69,6 +69,7 @@ import { run as scenarioModeles } from './scenario-modeles.mjs';
 import { run as scenarioApercu } from './scenario-apercu.mjs';
 import { run as scenarioFacile } from './scenario-facile.mjs';
 import { run as scenarioCombatMode } from './scenario-combat-mode.mjs';
+import { run as scenarioMilieux } from './scenario-milieux.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
@@ -178,6 +179,8 @@ try {
     await scenarioAvion();          // avion des conseils d'esche (avion.js, d'après la matrice)
     debutScenario();
     await scenarioConseilLocal();   // rien ne mord : conseil pour cet endroit (facile 30 s, normal 60 s, dur jamais)
+    debutScenario();
+    scenarioMilieux();          // biotopes d'étang : choix à l'accueil, quotas, taille maximale, eau, décor, fonds, matrice
     debutScenario();
     scenarioMenus();            // menus de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel
     debutScenario();
