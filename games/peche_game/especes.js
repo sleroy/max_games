@@ -25,7 +25,16 @@ export const SPECIES = [
     { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [15, 70], k: 1.7, abondance: 5,
       profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
     { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [20, 105], k: 2.3, abondance: 6,
-      profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], style: 'lourd', couleur: 0xa8853f, motif: 'ecailles' },
+      profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], style: 'lourd',
+      // Couleurs : médianes PIL sur assets/references/carpe.jpg (eau trouble orangée : cuivre
+      // délavé) recoupées avec une photo de mesure de carpe commune (olive-bronze, ventre crème,
+      // 80e centile) ; le dos plus sombre, le flanc doré, les nageoires brun-gris un peu rouges.
+      couleur: 0x96744a, dos: 0x3f351f, ventre: 0xd8cca8, tete: 0x6a5b3a, nageoires: 0x7a6a58, oeil: 0xc9a04a,
+      barbillonsCouleur: 0xb88a62, nageoiresMotif: 'doux',
+      // Robe : grandes écailles (≈ 36 le long de la ligne latérale), contraste modéré,
+      // un peu irrégulières, estompées vers le ventre et la tête (pas de limite nette à l'ouïe).
+      motif: 'ecailles', ecailles: 38, contrasteEcailles: 0.62, irregulariteEcailles: 0.25, ecaillesVentre: 0.55,
+      debutEcailles: 0.2, fonduTete: 0.65, reflet: 0.14, rondeur: 0.05, profil: 'carpe', anatomie: 'carpe' },
     { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [10, 50], k: 2.2, abondance: 5,
       profondeur: [-2.8, -1.9], combativite: [0.6, 0.9], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0xb08b3a, motif: 'ecailles' },
     { id: 'perche', nom: 'Perche', form: 'bossu', cm: [10, 45], k: 1.4, abondance: 7,
@@ -240,6 +249,23 @@ export const PROFILS = {
         { t: 0.6, h: 0.18, w: 0.052, y: -0.035, n: 1.8, nb: 1.8 }, { t: 0.7, h: 0.145, w: 0.042, y: -0.035 },
         { t: 0.8, h: 0.104, w: 0.031, y: -0.042 }, { t: 0.9, h: 0.069, w: 0.021, y: -0.032 },
         { t: 1, h: 0.043, w: 0.015, y: -0.013 }],
+    // Carpe : photo de mesure temporaire (carpe commune posée sur l'herbe, vue de profil, tête à
+    // droite ; Wikimedia Commons, non versionnée), LS = 952 px (museau 1180,574 → pédoncule
+    // 236,452). Masque : herbe écartée par saturation/teinte ; les nageoires repliées (dorsale,
+    // anale) sont retranchées du contour. Hauteur max 0,18 LS à t = 0,5 ; tête longue (ouïe t 0,215) ;
+    // pédoncule épais (0,06 LS) ; corps épais : largeur ≈ 0,54 × hauteur.
+    carpe: [
+        { t: 0, h: 0.03, w: 0.026, y: -0.004 }, { t: 0.05, h: 0.058, w: 0.042, y: 0.004 },
+        { t: 0.1, h: 0.082, w: 0.054, y: 0.017 }, { t: 0.15, h: 0.099, w: 0.064, y: 0.021 },
+        { t: 0.2, h: 0.128, w: 0.077, y: 0.025 }, { t: 0.25, h: 0.146, w: 0.086, y: 0.03 },
+        { t: 0.3, h: 0.16, w: 0.092, y: 0.026 }, { t: 0.35, h: 0.166, w: 0.095, y: 0.021 },
+        { t: 0.4, h: 0.176, w: 0.097, y: 0.021 }, { t: 0.45, h: 0.177, w: 0.097, y: 0.022 },
+        { t: 0.5, h: 0.18, w: 0.097, y: 0.023 }, { t: 0.55, h: 0.178, w: 0.095, y: 0.017 },
+        { t: 0.6, h: 0.168, w: 0.088, y: 0.008 }, { t: 0.65, h: 0.153, w: 0.08, y: 0.004 },
+        { t: 0.7, h: 0.14, w: 0.07, y: 0.001 }, { t: 0.75, h: 0.13, w: 0.06, y: -0.002 },
+        { t: 0.8, h: 0.112, w: 0.05, y: -0.005 }, { t: 0.85, h: 0.098, w: 0.043, y: -0.004 },
+        { t: 0.9, h: 0.082, w: 0.036, y: 0 }, { t: 0.95, h: 0.068, w: 0.031, y: 0.004 },
+        { t: 1, h: 0.06, w: 0.027, y: 0.004 }],
     // Brochet : brochet.jpg (poisson vu de profil, tête à droite), LS = 797 px
     // (museau 885,512 → pédoncule 100,375), contour relevé sur la photo quadrillée
     // puis superposé (gravier trop bariolé pour un seuil automatique). Corps
@@ -382,10 +408,21 @@ export const ANATOMIES = {
     silure: {
         queue: { type: 'silure', longueur: 0.1, ecart: 0.062 }
     },
-    // Espèces non calibrées : seulement les différences évidentes avec la silhouette.
+    // Carpe : œil t 0,073 (r 0,016), haut sur la tête ; bouche petite, protractile ; ouïe t 0,215 ;
+    // pectorale basse t 0,233 (0,16 LS) ; pelviennes t 0,477 ; dorsale LONGUE t 0,48 → 0,84
+    // (0,072 LS devant, bord haut concave, premier rayon épineux, couchée vers l'arrière) ;
+    // anale courte et haute t 0,78 → 0,88 ; caudale 0,2 LS, lobes arrondis. Deux paires de
+    // barbillons (une courte au museau, une plus longue au coin de la bouche).
     carpe: {
-        barbillons: [{ t: 0.012, y: -0.016, longueur: 0.035, chute: 0.9, ecart: 0.25, rayon: 0.002 },
-            { t: 0.04, y: -0.024, longueur: 0.05, chute: 1, ecart: 0.3, rayon: 0.0025 }]
+        queue: { type: 'carpe', longueur: 0.2, ecart: 0.14 },
+        dorsale: { type: 'dorsaleCarpe', t0: 0.48, t1: 0.84, hauteur: 0.072, recul: 0.8 },
+        anale: { type: 'haute', t0: 0.78, t1: 0.88, hauteur: 0.078, recul: 0.7 },
+        pectorale: { t: 0.233, y: -0.055, longueur: 0.135, pente: 0.35, forme: 'ovale', eventail: 0.75 },
+        pelvienne: { t: 0.477, longueur: 0.12, pente: 0.3, forme: 'ronde' },
+        oeil: { t: 0.073, y: 0.055, r: 0.018 }, bouche: { t: 0.038, y0: -0.012, y1: -0.036, epaisseur: 0.007 },
+        opercule: 0.215, ligneCourbe: 0.8, contrasteOpercule: 0.05,
+        barbillons: [{ t: 0.014, y: -0.022, longueur: 0.032, chute: 0.9, ecart: 0.3, rayon: 0.0032 },
+            { t: 0.036, y: -0.034, longueur: 0.058, chute: 1.1, ecart: 0.35, rayon: 0.0038 }]
     },
     tanche: {
         queue: { type: 'echancree', longueur: 0.22, ecart: 0.13 },

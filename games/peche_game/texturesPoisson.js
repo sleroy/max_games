@@ -103,6 +103,16 @@ const MOTIFS = {
         const contraste = espece && espece.contrasteEcailles !== undefined ? espece.contrasteEcailles : 1;
         const desordre = (espece && espece.irregulariteEcailles) || 0;
         const ventre = (espece && espece.ecaillesVentre) || 0;
+        // `reflet` (0) : voile doré le long du flanc (carpe), sous le dessin des écailles.
+        const reflet = espece && espece.reflet || 0;
+        if (reflet) {
+            const voile = g.createLinearGradient(0, H * 0.18, 0, H * 0.8);
+            voile.addColorStop(0, css(0xe8c878, 0));
+            voile.addColorStop(0.45, css(0xe8c878, reflet));
+            voile.addColorStop(1, css(0xe8c878, 0));
+            g.fillStyle = voile;
+            g.fillRect(debut, H * 0.18, W - debut, H * 0.62);
+        }
         g.lineWidth = Math.max(0.8, pas * 0.24);
         for (let r = 0; r <= rangs; r++) {
             const v = r / rangs;   // 0 = dos, 1 = ventre
