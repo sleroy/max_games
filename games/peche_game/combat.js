@@ -440,13 +440,6 @@ export function creerCombat(deps) {
     }
 
     function updateBiteView(dt) {
-        // MODE FACILE : gros panneau « FERRER ! » pendant LA vraie touche.
-        // C'est le seul moment où il faut cliquer : les enfants n'ont pas à
-        // reconnaître un dessin de bouchon pour réussir.
-        if (kidCue) {
-            kidCue.classList.toggle('active',
-                !!etat.modeFacile && etat.floatState === 'bite' && etat.bitePhase === 'touche');
-        }
         if (!etat.biteViewActive) {
             return;
         }
@@ -562,6 +555,14 @@ export function creerCombat(deps) {
                 etat.signalerToucheRatee(floatGroup.position);
                 etat.biteViewHideTimer = BITE_VIEW_LINGER;
             }
+        }
+        // MODE FACILE : gros panneau « FERRER ! » pendant LA vraie touche.
+        // Mis à jour APRÈS les transitions de phase : c'est ce même appel qui
+        // vient de passer en « touche ». C'est le seul moment où il faut cliquer :
+        // les enfants n'ont pas à reconnaître un dessin de bouchon pour réussir.
+        if (kidCue) {
+            kidCue.classList.toggle('active',
+                !!etat.modeFacile && etat.floatState === 'bite' && etat.bitePhase === 'touche');
         }
     }
 

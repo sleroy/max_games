@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=195';
+import { SoundEngine } from './sound.js?v=196';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -16,14 +16,14 @@ import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
 import { creerSubstrats } from './substrats.js?v=189';
-import { creerEsches } from './esches.js?v=195';
+import { creerEsches } from './esches.js?v=196';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=192';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=195';
-import { creerComportement } from './comportement.js?v=195';
+import { creerCombat } from './combat.js?v=196';
+import { creerComportement } from './comportement.js?v=196';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=189';
@@ -44,7 +44,7 @@ import { creerSonar } from './sonar.js?v=179';
 import { creerStocks } from './stocks.js?v=192';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
-import { creerCycleLigne } from './cycleLigne.js?v=195';
+import { creerCycleLigne } from './cycleLigne.js?v=196';
 import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
@@ -1844,6 +1844,10 @@ function hideJournal() {
     journalPanel.classList.remove('open');
 }
 
+// Declare AVANT setDifficulty : cette fonction est appelee a l'initialisation du
+// module et ecrit BITE_WINDOW (sinon : « Cannot access before initialization »).
+let BITE_WINDOW = 0.7;
+
 function setDifficulty(mode) {
     const preset = DIFFICULTY_MODES[mode] || DIFFICULTY_MODES.normal;
     DIFFICULTY = preset.difficulty;
@@ -1859,8 +1863,6 @@ function setDifficulty(mode) {
         difficultySelect.value = mode;
     }
 }
-
-setDifficulty(difficultySelect.value);
 
 const {
     startHoldingFish, setFishThrowPower, startFishThrow, releaseFishThrow, storeHeldFish,
@@ -1987,7 +1989,7 @@ let strikeQuality = '';             // '' | 'parfait' | 'tot' | 'tard'
 let fightAdvantage = 1;             // < 1 = avantage au joueur, > 1 = au poisson
 // Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
 // poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
-let BITE_WINDOW = 0.7;
+setDifficulty(difficultySelect.value);   // applique le mode choisi (et etat.modeFacile)
 // Le poisson mordille le bouchon avant de l'enfoncer : le joueur est prévenu.
 const BITE_NIBBLE_DURATION = 0.6;
 // Durée pendant laquelle on laisse « Trop tard ! » affiché après une touche

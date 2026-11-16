@@ -59,6 +59,7 @@ import { run as scenarioEsches } from './scenario-esches.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
+import { run as scenarioFacile } from './scenario-facile.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
@@ -135,6 +136,8 @@ try {
     scenarioComportement();     // poissons réalistes, quiver au fond, accueil épuré
     debutScenario();
     scenarioRemontee();         // la manivelle seule ramène la ligne (plus de clic)
+    debutScenario();
+    scenarioFacile();           // mode Facile (enfant) : aimant à poissons + « FERRER ! »
     debutScenario();
     scenarioVitesse();          // remontée trop rapide : poids du poisson + fil
     debutScenario();

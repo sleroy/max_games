@@ -327,6 +327,12 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   le navigateur (`localStorage`).
 - **Difficulté réglable** depuis le carnet : **Facile / Normal / Dur** (le poisson tire
   plus ou moins fort, le chrono et la fenêtre de ferrage changent).
+- **Mode Facile enfant** (pêche ludique) : les poissons repèrent l’hameçon de très loin
+  et nagent droit dessus, même depuis une autre zone de vie ou une autre couche d’eau ;
+  ils mordent vite (une seule fausse touche) avec une **grande fenêtre de ferrage**, et
+  un gros panneau **« FERRER ! »** s’affiche pendant la vraie touche. Chaque prise
+  affiche **« 🎉 BRAVO ! »** ; la manivelle est aussi un peu plus grosse pour les
+  petites mains. Aucun poisson ne refuse l’esche.
 - **Options d'accessibilité** : gros texte, animations calmes (moins de clignotements).
 - **Jouable sur téléphone et tablette** : commandes tactiles (appui/relâchement pour
   l'amorçage et le lancer du poisson, manivelle au doigt), invite à passer en paysage,

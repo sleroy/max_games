@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=195">
+    <link rel="stylesheet" href="style.css?v=196">
 </head>
 <body>
     <div class="game-wrap">
@@ -271,7 +271,9 @@
                         <option value="dur">Dur</option>
                     </select>
                 </div>
-                <p class="overlay-text">En mode Facile, la ligne ne s’emmêle pas au lancer.</p>
+                <p class="overlay-text">En mode Facile (enfant) : les poissons sont attirés par
+                    l’hameçon et mordent vite, un gros <b>« FERRER ! »</b> aide à cliquer au bon
+                    moment, et la ligne ne s’emmêle pas au lancer.</p>
                 <div class="panel-row">
                     <label><input type="checkbox" id="effectsToggle"> Effets visuels (lumière douce)</label>
                 </div>
@@ -299,6 +301,7 @@
                 </div>
             </div>
             <div class="catch-message" id="catchMessage"></div>
+            <div class="kid-cue" id="kidCue" role="alert">❗ FERRER !</div>
             <div class="ragondin-alert" id="ragondinAlert" role="alert">
                 🐀 RAGONDIN près de la bourriche ! Clique sur lui 3 fois !
             </div>
@@ -360,6 +363,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=195"></script>
+    <script type="module" src="script.js?v=196"></script>
 </body>
 </html>

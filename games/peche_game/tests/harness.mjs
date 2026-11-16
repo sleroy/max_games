@@ -402,7 +402,8 @@ export function installEnvironment() {
         title: '',
         addEventListener: () => {},
         getElementById: id => el(id),
-        createElement: tag => makeElement('<' + tag + '>')
+        createElement: tag => makeElement('<' + tag + '>'),
+        body: makeElement('<body>')
     };
 }
 
