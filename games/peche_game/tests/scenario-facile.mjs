@@ -22,11 +22,11 @@ export function run() {
     group('74) Mode Facile (enfant) : poissons aimantés et « FERRER ! »');
 
     try {
-        // --- Le niveau se choisit DÈS L'ACCUEIL (et reste synchro avec le carnet) ---
+        // --- Le niveau se choisit DÈS L'ACCUEIL (boutons, sans dropdown) ---
         G().setDifficulty('normal');
-        const accueilDifficulte = el('accueilDifficultySelect');
-        accueilDifficulte.value = 'facile';
-        fire('accueilDifficultySelect', 'change');
+        const radioFacile = el('accueilDifficulteFacile');
+        radioFacile.checked = true;
+        fire('accueilDifficulteFacile', 'change');
         checkEqual('le mode Facile se choisit sur l’accueil', G().getDifficulty().modeFacile, true);
         checkEqual('le carnet est synchronisé avec l’accueil',
             el('difficultySelect').value, 'facile');
@@ -87,8 +87,8 @@ export function run() {
         resetToIdle();
         G().setDifficulty('normal');
         checkEqual('le mode Facile est bien désactivé', G().getDifficulty().modeFacile, false);
-        checkEqual('le sélecteur d’accueil repasse en Normal',
-            el('accueilDifficultySelect').value, 'normal');
+        checkEqual('le bouton d’accueil repasse en Normal',
+            el('accueilDifficulteNormal').checked, true);
         checkEqual('la classe mode-facile est retirée',
             document.body.classList.contains('mode-facile'), false);
         checkClose('la fenêtre de ferrage redevient normale', G().getDifficulty().biteWindow, 0.7, 1e-9);

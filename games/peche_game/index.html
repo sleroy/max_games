@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=197">
+    <link rel="stylesheet" href="style.css?v=198">
 </head>
 <body>
     <div class="game-wrap">
@@ -124,20 +124,44 @@
                 aria-labelledby="accueilTitre">
                 <h2 class="overlay-title" id="accueilTitre">🎣 L’étang du Bois Neuf</h2>
                 <div class="accueil-config">
-                    <div class="panel-row technique-row">
-                        <label for="techniqueSelect">🎣 Technique</label>
-                        <select id="techniqueSelect" class="overlay-input">
-                            <option value="bouchon" selected>Bouchon (flotteur)</option>
-                            <option value="quiver">Quiver (scion de canne)</option>
-                        </select>
-                    </div>
-                    <div class="panel-row technique-row">
-                        <label for="accueilDifficultySelect">🎚️ Difficulté</label>
-                        <select id="accueilDifficultySelect" class="overlay-input">
-                            <option value="facile">Facile (enfant)</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="dur">Dur</option>
-                        </select>
+                    <div class="accueil-choix">
+                        <fieldset class="accueil-bloc">
+                            <legend>Technique</legend>
+                            <div class="choix-segmented">
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilTechniqueBouchon"
+                                        name="accueilTechnique" value="bouchon" checked>
+                                    <span>Bouchon<small>flotteur</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilTechniqueQuiver"
+                                        name="accueilTechnique" value="quiver">
+                                    <span>Quiver<small>scion de canne</small></span>
+                                </label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="accueil-bloc">
+                            <legend>Difficulté</legend>
+                            <div class="choix-segmented">
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilDifficulteFacile"
+                                        name="accueilDifficulte" value="facile">
+                                    <span>Facile<small>enfant</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilDifficulteNormal"
+                                        name="accueilDifficulte" value="normal" checked>
+                                    <span>Normal</span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilDifficulteDur"
+                                        name="accueilDifficulte" value="dur">
+                                    <span>Dur<small>expert</small></span>
+                                </label>
+                            </div>
+                        </fieldset>
+                        <p class="accueil-astuce">Astuce : en Facile, les poissons viennent
+                            droit sur l’hameçon et un gros « FERRER ! » t’aide à cliquer.</p>
                     </div>
                     <div class="poste-choix">
                         <span class="poste-choix-label">Choisis ta place</span>
@@ -371,6 +395,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=197"></script>
+    <script type="module" src="script.js?v=198"></script>
 </body>
 </html>

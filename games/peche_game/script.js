@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=197';
+import { SoundEngine } from './sound.js?v=198';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -51,7 +51,7 @@ import { creerEntrees } from './entrees.js?v=179';
 import { creerRadar } from './radar.js?v=193';
 import { creerCheat } from './cheat.js?v=193';
 import { creerBoucle } from './boucle.js?v=169';
-import { creerPartie } from './partie.js?v=197';
+import { creerPartie } from './partie.js?v=198';
 import { creerPecheur } from './pecheur.js?v=171';
 import { creerRendu } from './rendu.js?v=172';
 import { etat } from './etat.js?v=145';
@@ -363,8 +363,22 @@ const tangleProgress = document.getElementById('tangleProgress');
 const tangleMessage = document.getElementById('tangleMessage');
 const tangleGiveUp = document.getElementById('tangleGiveUp');
 const ragondinAlert = document.getElementById('ragondinAlert');
-const techniqueSelect = document.getElementById('techniqueSelect');
-const accueilDifficultySelect = document.getElementById('accueilDifficultySelect');
+const accueilTechniqueRadios = {
+    bouchon: document.getElementById('accueilTechniqueBouchon'),
+    quiver: document.getElementById('accueilTechniqueQuiver')
+};
+const accueilDifficulteRadios = {
+    facile: document.getElementById('accueilDifficulteFacile'),
+    normal: document.getElementById('accueilDifficulteNormal'),
+    dur: document.getElementById('accueilDifficulteDur')
+};
+
+// Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
+function majChoixRadio(radios, valeur) {
+    Object.keys(radios || {}).forEach(function (cle) {
+        if (radios[cle]) { radios[cle].checked = (cle === valeur); }
+    });
+}
 const quiverPanel = document.getElementById('quiverPanel');
 const quiverCanvas = document.getElementById('quiverCanvas');
 const compassDisplay = document.getElementById('compass');
@@ -1532,7 +1546,7 @@ function appliquerTechniqueVisuelle() {
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
         document.body.classList.toggle('mode-quiver', quiver);
     }
-    if (techniqueSelect) { techniqueSelect.value = techniqueCourante; }
+    majChoixRadio(accueilTechniqueRadios, techniqueCourante);
     modeQuiver.setActif(quiver);
     if (quiver) {
         floatGroup.visible = false;
@@ -1545,7 +1559,7 @@ function setTechnique(value) {
     const nouvelle = value === 'quiver' ? 'quiver' : 'bouchon';
     if (floatState !== 'idle' && nouvelle !== techniqueCourante) {
         statusDisplay.textContent = 'Termine la ligne en cours avant de changer de technique.';
-        if (techniqueSelect) { techniqueSelect.value = techniqueCourante; }
+        majChoixRadio(accueilTechniqueRadios, techniqueCourante);
         return false;
     }
     techniqueCourante = nouvelle;
@@ -1863,12 +1877,10 @@ function setDifficulty(mode) {
     if (typeof document !== 'undefined' && document.body) {
         document.body.classList.toggle('mode-facile', etat.modeFacile);
     }
-    if (difficultySelect.value !== mode) {
-        difficultySelect.value = mode;
-    }
     // Le choix de l'accueil et celui du carnet restent synchronisés.
-    if (accueilDifficultySelect && accueilDifficultySelect.value !== mode) {
-        accueilDifficultySelect.value = mode;
+    majChoixRadio(accueilDifficulteRadios, mode);
+    if (difficultySelect && difficultySelect.value !== mode) {
+        difficultySelect.value = mode;
     }
 }
 
@@ -2314,8 +2326,8 @@ const {
     effrayerRagondin, ragondinAlert, scoreDisplay, resetCameraView, pauseButton, renderJournal,
     majCoupeProfondeur, updateToolDock, updateCrankVisibility, updateLine, stockAmorce,
     saveScore, showRanking, rankingButton, closeRanking, restartGame, saveAndMenu, backToMenu,
-    endGameButton, ensureSound, playButton, accueilClassement, techniqueSelect, setTechnique,
-    accueilDifficultySelect, setDifficulty
+    endGameButton, ensureSound, playButton, accueilClassement,
+    accueilTechniqueRadios, setTechnique, accueilDifficulteRadios, setDifficulty
 });
 
 window.__game = {

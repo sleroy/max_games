@@ -18,14 +18,15 @@ export function run() {
     resetToIdle();
     G().lilyPads.length = 0;
 
-    check('le sélecteur de technique existe', !!el('techniqueSelect'));
+    check('les boutons de technique existent',
+        !!el('accueilTechniqueBouchon') && !!el('accueilTechniqueQuiver'));
     checkEqual('la technique par défaut est le bouchon', G().getTechnique(), 'bouchon');
 
     // 1) Passage en quiver : le panneau attend que la ligne soit à l’eau.
     checkEqual('on peut choisir le quiver', G().setTechnique('quiver'), true);
     checkEqual('la technique active est le quiver', G().getTechnique(), 'quiver');
     checkEqual('le panneau du scion reste masqué avant le lancer', G().isQuiverPanelVisible(), false);
-    checkEqual('le sélecteur suit le choix', el('techniqueSelect').value, 'quiver');
+    checkEqual('le bouton Quiver suit le choix', el('accueilTechniqueQuiver').checked, true);
     G().setTangleChance(0);
     checkEqual('le lancer quiver arrive à l’eau', castTo(0, -25), 'inWater');
     step(0.2);
