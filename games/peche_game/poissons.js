@@ -35,9 +35,15 @@ export function creerPoissons(deps) {
     // Un seul « chez-soi » par poisson : obstacles d'abord, puis le substrat pour les autres.
     function installerHabitat(poissons) {
         if (obstacles) { obstacles.attirer(poissons); }
-        if (substrats) { substrats.attirer(poissons); }
+        if (substrats) {
+            substrats.attirer(poissons);
+            // L'étang agrandi + les zones de vie fixes vidaient les berges : on
+            // garantit quelques poissons à portée de lancer de chaque poste.
+            substrats.garantirPecheDuBord(poissons);
+        }
     }
     let peuplement = true;   // vrai pendant le peuplement initial (les bancs sont attirés d'un bloc, après)
+
 
     // ---------------------------------------------------------------------------
     // Poissons

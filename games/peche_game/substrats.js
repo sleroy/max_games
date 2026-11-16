@@ -392,6 +392,85 @@ export function creerSubstrats(deps) {
         return stats.poissons;
     }
 
+    // -------------------------------------------------------------------------
+    // PÊCHE DU BORD : l'étang a triplé de surface (v173) et les zones de vie sont
+    // désormais fixées par les obstacles (v176) puis par les substrats. Mesure avant
+    // ce garde-fou : depuis les 4 postes de berge, un lancer à 30 unités n'avait
+    // AUCUN poisson à moins de 15 u (0, 1, 0, 0) ; or le bouchon n'intéresse un
+    // poisson qu'à ~7 u. La pêche du bord — le seul mode avant la barque (180 XP) —
+    // était morte.
+    //
+    // Pour CHAQUE poste, on rapproche donc quelques poissons de l'ancre de LEUR
+    // substrat la plus proche : l'attraction par fond reste vraie (on ne change
+    // jamais le substrat d'un poisson), on rapproche seulement sa zone de vie.
+    // Les poissons d'un BANC ne sont pas déplacés seuls (ils perdraient leur banc).
+    // -------------------------------------------------------------------------
+    const POSTES_ANGLE = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+    const PAR_POSTE = 4;       // zones de vie garanties à portée de chaque poste
+    const PORTEE_POSTE = 30;   // rayon de lancer couvert (portée réelle ≈ 52)
+
+    function garantirPecheDuBord(poissons) {
+        let deplaces = 0;
+        POSTES_ANGLE.forEach(function (angle) {
+            const ray = rayonEtang(angle) - 14;      // là où le pêcheur se tient
+            const px = POND_CENTER.x + Math.cos(angle) * ray;
+            const pz = POND_CENTER.z + Math.sin(angle) * ray;
+            const proches = poissons.filter(function (f) {
+                return !f.userData.hooked && f.userData.homeX !== undefined &&
+                    Math.hypot(f.userData.homeX - px, f.userData.homeZ - pz) <= PORTEE_POSTE;
+            }).length;
+            let manque = PAR_POSTE - proches;
+            if (manque <= 0) { return; }
+            // Candidats : solitaires vivant sur un substrat, un par substrat à chaque
+            // tour (round-robin) : sinon on dépêcherait toujours les mêmes espèces
+            // profondes et la densité par fond s'effondrerait.
+            const parSubstrat = {};
+            poissons.forEach(function (f) {
+                const d = f.userData;
+                if (d.hooked || d.substratHabitat === undefined || d.groupeId !== undefined) { return; }
+                (parSubstrat[d.substratHabitat] = parSubstrat[d.substratHabitat] || []).push(f);
+            });
+            const ids = Object.keys(parSubstrat);
+            ids.forEach(function (id) {
+                parSubstrat[id].sort(function (a, b) {
+                    const da = Math.hypot(a.userData.homeX - POND_CENTER.x, a.userData.homeZ - POND_CENTER.z);
+                    const db = Math.hypot(b.userData.homeX - POND_CENTER.x, b.userData.homeZ - POND_CENTER.z);
+                    return db - da;
+                });
+            });
+            for (let tour = 0; tour < PAR_POSTE && manque > 0; tour++) {
+                for (let j = 0; j < ids.length && manque > 0; j++) {
+                    const id = ids[(tour + j) % ids.length];
+                    const f = parSubstrat[id].shift();
+                    if (!f) { continue; }
+                    const d = f.userData;
+                    const liste = ancresDe(d.substratHabitat, !!COMPORTEMENTS[d.especeId].fosse);
+                    let meilleure = null;
+                    let meilleureDist = Infinity;
+                    for (let k = 0; k < liste.length; k++) {
+                        const dist = Math.hypot(liste[k].x - px, liste[k].z - pz);
+                        if (dist < meilleureDist) { meilleureDist = dist; meilleure = liste[k]; }
+                    }
+                    if (!meilleure || meilleureDist > PORTEE_POSTE) { continue; }
+                    // Pile sur l'ancre : un écart la ferait sortir de sa zone de fond,
+                    // et la densité par substrat (mesurée en jeu) s'effondrerait.
+                    const x = meilleure.x;
+                    const z = meilleure.z;
+                    d.homeX = x;
+                    d.homeZ = z;
+                    const fond = -profondeurLocale(x, z);
+                    d.depth = d.couche === 'fond' ? fond + 0.45 : Math.max(d.depth, fond + 0.35);
+                    f.position.x = x;
+                    f.position.z = z;
+                    f.position.y = d.depth - d.topOffset;
+                    manque--;
+                    deplaces++;
+                }
+            }
+        });
+        return deplaces;
+    }
+
     // Quelles espèces vivent sur ce substrat (d'après COMPORTEMENTS), pour la légende.
     function especesDe(id) {
         return Object.keys(COMPORTEMENTS).filter(function (e) { return (COMPORTEMENTS[e].substrats || []).indexOf(id) >= 0; });
@@ -508,6 +587,7 @@ export function creerSubstrats(deps) {
         aires: aires, parts: parts, zones: zones, stats: stats,
         substratEn: substratEn, zoneEn: zoneEn, rectsCarte: rectsCarte, verdictFond: verdictFond,
         accrochageDe: accrochageDe, attirer: attirer, ancresDe: ancresDe, especesDe: especesDe,
+        garantirPecheDuBord: garantirPecheDuBord,
         empreinte: empreinte, pixelsFond: pixelsFond, habillerFond: habillerFond,
         fetchEn: fetchEn, proximiteHerbier: function (x, z) {
             const i = Math.floor((x - X0) / CELLULE);
