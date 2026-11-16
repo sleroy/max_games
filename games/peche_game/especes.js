@@ -36,7 +36,13 @@ export const SPECIES = [
       motif: 'ecailles', ecailles: 74, contrasteEcailles: 0.7, irregulariteEcailles: 0.3, ecaillesVentre: 0.75,
       debutEcailles: 0.21, fonduTete: 0.45, profil: 'breme', anatomie: 'breme' },
     { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [15, 70], k: 1.7, abondance: 5,
-      profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
+      profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur',
+      // Couleurs : médianes PIL sur tanche.jpg (photo au flash) : dos brun-olive très sombre, flanc vert-olive doré,
+      // ventre ocre (80e centile), tête olive-jaune, nageoires gris-vert, iris orange-rouge ; peau muqueuse presque lisse.
+      couleur: 0x8a8a5c, dos: 0x2e2913, ventre: 0xcdb56a, tete: 0xa8985e, oeil: 0xd24a2a, nageoires: 0x5e6658,
+      barbillonsCouleur: 0xb48a60, motif: 'peauFine', ecailles: 130, contrasteEcailles: 0.3, irregulariteEcailles: 0.3,
+      ecaillesVentre: 0.5, debutEcailles: 0.21, fonduTete: 0.5, ombreDos: 0.95, ventreClair: 0.55, joueClaire: 0.1,
+      profil: 'tanche', anatomie: 'tanche' },
     { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [20, 105], k: 2.3, abondance: 6,
       profondeur: [-3.2, -2.2], combativite: [0.9, 1.2], agressivite: [0.7, 1.05], style: 'lourd',
       // Couleurs : médianes PIL sur assets/references/carpe.jpg (eau trouble orangée : cuivre
@@ -442,7 +448,16 @@ export const PROFILS = {
         { t: 0.7, h: 0.1015, w: 0.046, y: -0.0333 }, { t: 0.75, h: 0.0912, w: 0.041, y: -0.0325 },
         { t: 0.8, h: 0.0809, w: 0.036, y: -0.0285 }, { t: 0.85, h: 0.0707, w: 0.031, y: -0.0214 },
         { t: 0.9, h: 0.0604, w: 0.026, y: -0.0143 }, { t: 0.95, h: 0.0493, w: 0.021, y: -0.0064 },
-        { t: 1, h: 0.038, w: 0.016, y: 0 }]
+        { t: 1, h: 0.038, w: 0.016, y: 0 }],
+    // Tanche : tanche.jpg (900 × 381, tournée à gauche), LS = 700 px (museau 35,200 → base de la caudale 735,213), contour
+    // mesuré par scripts/mesure-silhouette.py tanche. Corps trapu (h max 0,16 LS à t = 0,5), museau arrondi, pédoncule épais ;
+    // largeur estimée ≈ 0,6 × hauteur (vue de profil).
+    tanche: [
+        { t: 0, h: 0.011, w: 0.009, y: -0.008 }, { t: 0.012, h: 0.025, w: 0.02, y: -0.0095 }, { t: 0.028, h: 0.04, w: 0.027, y: -0.011 },
+        { t: 0.05, h: 0.057, w: 0.034, y: -0.0126 }, { t: 0.1, h: 0.082, w: 0.048, y: -0.008 }, { t: 0.15, h: 0.102, w: 0.06, y: -0.0055 },
+        { t: 0.2, h: 0.124, w: 0.073, y: 0 }, { t: 0.3, h: 0.1405, w: 0.085, y: 0.0175 }, { t: 0.4, h: 0.153, w: 0.092, y: 0.023 },
+        { t: 0.5, h: 0.1595, w: 0.095, y: 0.0235 }, { t: 0.6, h: 0.148, w: 0.089, y: 0.018 }, { t: 0.7, h: 0.13, w: 0.077, y: 0.005 },
+        { t: 0.8, h: 0.106, w: 0.062, y: 0.001 }, { t: 0.9, h: 0.082, w: 0.047, y: 0.007 }, { t: 1, h: 0.072, w: 0.04, y: 0.008 }]
 };
 
 // ANATOMIES : position des nageoires et des détails, en fractions de LS.
@@ -677,6 +692,17 @@ export const ANATOMIES = {
         oeil: { t: 0.076, y: -0.004, r: 0.024 },
         bouche: { t: 0.045, y0: -0.002, y1: -0.027, epaisseur: 0.004 },
         opercule: 0.21, ligneCourbe: 1.3, contrasteOpercule: 0.08
+    },
+    // Tanche : même photo. Œil petit et haut, bouche terminale + minuscule barbillon, dorsale courte et arrondie (t 0,53 → 0,69),
+    // anale rabattue (0,76 → 0,865), pectorale sombre, caudale presque rectangulaire (0,19 LS).
+    tanche: {
+        queue: { type: 'tanche', longueur: 0.19, ecart: 0.104 },
+        dorsale: { type: 'dorsaleTanche', t0: 0.529, t1: 0.689, hauteur: 0.1, recul: 0.6 },
+        anale: { type: 'analeTanche', t0: 0.76, t1: 0.865, hauteur: 0.07, recul: 1.5 },
+        pectorale: { t: 0.217, y: -0.085, longueur: 0.15, pente: 0.4, forme: 'ovale', eventail: 0.5 },
+        pelvienne: { t: 0.5, longueur: 0.13, pente: 0.5, forme: 'ronde' },
+        oeil: { t: 0.079, y: 0.017, r: 0.0135 }, bouche: { t: 0.028, y0: -0.012, y1: -0.034, epaisseur: 0.004 },
+        opercule: 0.22, ligneCourbe: 0.3, contrasteOpercule: 0.08, barbillons: [{ t: 0.028, y: -0.032, longueur: 0.03, chute: 0.9, ecart: 0.25, rayon: 0.0032 }]
     }
 };
 

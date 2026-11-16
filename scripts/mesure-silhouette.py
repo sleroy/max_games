@@ -72,6 +72,29 @@ def masque(espece):
         orange[:, 690:] = False
         m &= ~orange
         germe = (400, 290)
+    elif espece == 'tanche':
+        # Poisson olive sur fond blanc pur ; nageoires grises (saturation faible). Le flanc a des
+        # reflets argentés désaturés et le dos un liseré presque noir : ni la saturation seule ni
+        # l'écart au fond ne suffisent. On combine : haut = écart au fond (liseré sombre compris)
+        # moins la dorsale (coupée sous la droite de sa base, repérée à la main : (400,76) →
+        # (507,107) → (575,125)) ; bas = dernier pixel saturé de la colonne (écarte pelviennes,
+        # pectorale, anale). La caudale (x > 735) est ignorée.
+        full = np.abs(a - 255).max(axis=2) > 30
+        sat_m = (sat > 28) & full
+        img = Image.fromarray((sat_m * 255).astype('uint8'))
+        sat_m = np.asarray(img.filter(ImageFilter.MaxFilter(15)).filter(ImageFilter.MinFilter(15))) > 127
+        hh, ww = full.shape
+        m = np.zeros_like(full)
+        for x in range(0, 736):
+            col = full[:, x].copy()
+            if 400 <= x <= 575:
+                yb = np.interp(x, [400, 507, 575], [76, 107, 125])
+                col[:int(yb)] = False
+            ys = np.where(col)[0]
+            yb_sat = np.where(sat_m[:, x])[0]
+            if len(ys) and len(yb_sat):
+                m[ys[0]:yb_sat[-1] + 1, x] = True
+        germe = (350, 250)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)

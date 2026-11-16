@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=213';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=213';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=213';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=214';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=214';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=214';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -248,7 +248,12 @@ const NAGEOIRES = {
     // bord libre presque droit qui descend vers l'arrière, pointe un peu relevée au bout) ;
     // anale basse, rayons les plus longs à l'avant, bord arrière concave, couchée vers la queue.
     dorsaleGardon: { h: [[0, 0.4], [0.1, 0.95], [0.22, 1], [0.5, 0.78], [0.8, 0.5], [0.93, 0.36], [1, 0.42]], recul: 0.9 },
-    analeGardon: { h: [[0, 0.7], [0.12, 1], [0.35, 0.72], [0.65, 0.42], [0.9, 0.24], [1, 0.3]], recul: 0.85 }
+    analeGardon: { h: [[0, 0.7], [0.12, 1], [0.35, 0.72], [0.65, 0.42], [0.9, 0.24], [1, 0.3]], recul: 0.85 },
+    // Tanche : dorsale courte à sommet arrondi, bord avant qui monte vite, bord arrière qui retombe
+    // en pente douce, rayons couchés vers la queue ; anale en éventail rabattu (premiers rayons les
+    // plus longs, presque à l'horizontale), pointe arrondie.
+    dorsaleTanche: { h: [[0, 0.5], [0.1, 0.85], [0.3, 1], [0.55, 0.9], [0.8, 0.62], [1, 0.32]], recul: 0.6 },
+    analeTanche: { h: [[0, 0.7], [0.15, 1], [0.5, 0.95], [0.8, 0.8], [1, 0.55]], recul: 1.5 }
 };
 
 // Pectorales / pelviennes : longueur relative de chaque rayon (s = 0 rayon
@@ -288,6 +293,9 @@ const CAUDALES = {
     // un peu plus long que celui du haut ; bords arrière presque droits.
     gardon: [[-0.88, 1], [-0.76, 0.78], [-0.62, 0.5], [-0.48, 0.2], [-0.41, 0.04], [-0.42, -0.06],
         [-0.55, -0.3], [-0.72, -0.5], [-0.9, -0.68], [-1, -0.8]],
+    // Tanche : caudale presque rectangulaire (bord arrière droit, très légère échancrure), coins arrondis.
+    tanche: [[-0.8, 1], [-0.93, 0.97], [-0.99, 0.88], [-0.99, 0.6], [-0.96, 0.3], [-0.94, 0],
+        [-0.96, -0.3], [-0.99, -0.6], [-1, -0.88], [-0.94, -0.98], [-0.78, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     // Silure : palette arrondie sans angle ; le bord du bas démarre à la hauteur où finit l'anale

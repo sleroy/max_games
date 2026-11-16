@@ -273,12 +273,19 @@ const MOTIFS = {
         }
     },
 
-    // Fines mouchetures (tanche).
-    mouchetures: function (g, W, H, c, aleatoire) {
-        g.fillStyle = css(melanger(c.dos, 0x000000, 0.4), 0.45);
-        for (let i = 0; i < 520; i++) {
-            g.fillRect(aleatoire() * W, aleatoire() * H * 0.85, 1.2, 1);
+    // Peau muqueuse presque lisse (tanche) : beaucoup de plages claires et sombres très transparentes (pas de
+    // disque visible), puis écailles minuscules à peine marquées (options du motif « ecailles »).
+    peauFine: function (g, W, H, c, aleatoire, espece) {
+        const clair = melanger(c.flanc, 0xf0e8b0, 0.3), sombre = melanger(c.dos, 0x000000, 0.15);
+        for (let i = 0; i < 90; i++) {
+            const v = aleatoire() * 0.75;
+            const cx = W * (0.14 + aleatoire() * 0.86);
+            const rx = W * (0.05 + aleatoire() * 0.1), ry = H * (0.04 + aleatoire() * 0.08);
+            const foncee = v < 0.3 ? aleatoire() < 0.7 : aleatoire() < 0.3;
+            g.fillStyle = css(foncee ? sombre : clair, foncee ? 0.03 + aleatoire() * 0.04 : 0.025 + aleatoire() * 0.035);
+            tache(g, cx, v * H, rx, ry, (aleatoire() - 0.5) * 0.5);
         }
+        MOTIFS.ecailles(g, W, H, c, aleatoire, espece);
     },
 
     // Rangée de taches rondes le long de la ligne latérale (goujon).
