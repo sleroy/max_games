@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=224';
+import { etat } from './etat.js?v=225';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -59,18 +59,26 @@ export const ESCHES = [
     { id: 'vif', nom: 'Vif / leurre', icone: '🐟', prix: 16,
       desc: 'Un petit poisson ou un leurre qui nage : il se montre.',
       exclusif: true, tailleMin: 15,   // seuls les carnassiers attaquent un vif / leurre
-      cibles: { brochet: 1, sandre: 1, 'black-bass': 1, silure: 1, perche: 0.5, truite: 0.5, anguille: 0.2 },
+      cibles: { brochet: 1, sandre: 1, 'black-bass': 1, silure: 1, truite: 0.75, perche: 0.5, anguille: 0.2 },
       couches: { surface: 0.7, 'mi-eau': 1, fond: 0.65 },
-      substrats: { herbier: 1, roche: 1, vase: 0.9, sable: 0.95 } }
+      substrats: { herbier: 1, roche: 1, vase: 0.9, sable: 0.95 } },
+    // La mouche : l'esche de la truite (le leurre vient en second, le ver en troisième).
+    // Un insecte posé à la surface : seuls les poissons qui gobent en surface s'y intéressent.
+    { id: 'mouche', nom: 'Mouche', icone: '🪰', prix: 12,
+      desc: 'Un petit insecte posé sur l’eau : la truite adore le gober.',
+      exclusif: true,
+      cibles: { truite: 1, chevesne: 0.6, ablette: 0.5, rotengle: 0.4, gardon: 0.25 },
+      couches: { surface: 1, 'mi-eau': 0.35, fond: 0.05 },
+      substrats: {} }
 ];
 // ESCHE VOLÉE quand le ferrage est raté (le poisson recrache) : probabilité selon l'esche.
 // Le pain se délite, le ver s'arrache ; la bouillette, montée sur un cheveu, tient bien.
 // En mode Dur, la perte est un peu plus fréquente (× PERTE_FACTEUR_DUR) et SILENCIEUSE :
 // le joueur ne le découvre qu'en ramenant sa ligne au bord. Jamais en mode facile.
-export const PERTE_ESCHE = { pain: 0.8, ver: 0.5, mais: 0.3, vif: 0.3, bouillette: 0.1 };
+export const PERTE_ESCHE = { pain: 0.8, ver: 0.5, mouche: 0.4, mais: 0.3, vif: 0.3, bouillette: 0.1 };
 export const PERTE_FACTEUR_DUR = 1.25;
 // « Le poisson a volé … »
-export const NOM_VOLE = { mais: 'ton maïs', ver: 'ton ver', pain: 'ton pain', bouillette: 'ta bouillette', vif: 'ton vif' };
+export const NOM_VOLE = { mais: 'ton maïs', ver: 'ton ver', pain: 'ton pain', bouillette: 'ta bouillette', vif: 'ton vif', mouche: 'ta mouche' };
 
 // Probabilité de perdre l'esche `escheId` sur un ferrage raté, selon le mode ('facile' | 'normal' | 'dur').
 export function probaPerteEsche(escheId, mode) {

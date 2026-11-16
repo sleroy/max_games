@@ -97,6 +97,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `decor.js` | Décor fixe : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars (expose aussi leurs positions à `obstacles.js`) | 220 | Monde / décor |
 | `vegetation.js` | Roseaux et touffes d'herbe des berges qui ondulent au vent (shader de sommets, appelé par `decor.js`, sans `rand()`) | 150 | Monde / décor |
 | `chanceTouche.js` | **Chance de touche, source UNIQUE** (fonctions pures) : `rayonVue`, `rayonRemous`, `dansCouche` (couche d'eau, fond, thermocline), `profondeurHamecon`, `ligneQuiver`, et `evaluerTouche(contexte)` qui combine attraction, couche, fond pris (`substrats.hameconSurSubstrat`), acceptation (`esches.efficaciteEsche`) et délai (`physique.facteurDelai`) avec la `raison` d'un refus. Utilisé par `comportement.js` et `script.js` ; vérifié par `tests/scenario-matrice-touche.mjs` (≈ 150 000 cas + concordance avec le jeu). Toute nouvelle règle de touche va ICI | ~130 | Pêche / équilibrage |
+| `matriceTouche.js` | Matrice des touches : grille (`parcourir`), résumé (`calculerResume`), **règles bloquantes** (`verifierRegles`) et **points à surveiller** (`aSurveiller`). Module pur partagé par `tests/scenario-matrice-touche.mjs` et la page `matrice.html` (`matrice.js`, rendu seulement) | ~170 | Pêche / équilibrage |
 | `classement.js` | Classement local | 111 | UI / persistance |
 | `quiver.js` | Indicateur de scion | 105 | Technique quiver |
 | `carnet.js` | Persistance du carnet (localStorage) | 88 | Persistance |

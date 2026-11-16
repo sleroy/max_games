@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1a24">
+    <title>Matrice des touches — L'étang du Bois Neuf</title>
+    <link rel="stylesheet" href="matrice.css?v=225">
+</head>
+<body>
+    <header class="entete">
+        <p class="retour"><a href="./index.html">← Retour au jeu</a></p>
+        <h1>Matrice des touches</h1>
+        <p class="intro">
+            Pour chaque poisson : quelle est la chance qu'il <strong>morde</strong> quand il arrive sur
+            l'hameçon ? Tout est calculé par la <strong>même règle que le jeu</strong>
+            (<code>chanceTouche.js</code>) : espèce, taille, esche, profondeur, fond, température.
+            Vert = il mord presque toujours, rouge = presque jamais, gris = impossible (la lettre dit pourquoi).
+        </p>
+    </header>
+
+    <main>
+        <section class="bloc" aria-labelledby="titreRegles">
+            <h2 id="titreRegles">Vérifications</h2>
+            <p class="aide" id="resumeRegles">Calcul en cours…</p>
+            <div class="deux">
+                <div>
+                    <h3>Règles (le test échoue si l'une est rouge)</h3>
+                    <ul class="regles" id="regles"></ul>
+                </div>
+                <div>
+                    <h3>À surveiller (choix d'équilibrage)</h3>
+                    <ul class="surveiller" id="surveiller"></ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="bloc" aria-labelledby="titreResume">
+            <h2 id="titreResume">Meilleure chance par poisson et par esche</h2>
+            <p class="aide">Meilleur réglage trouvé (profondeur, ligne, fond) à 15 °C. Survole une case pour le voir ;
+                clique-la pour l'explorer en détail.</p>
+            <div class="defile"><table class="resume" id="tableResume"></table></div>
+        </section>
+
+        <section class="bloc" aria-labelledby="titreExplorer">
+            <h2 id="titreExplorer">Explorer : profondeur d'eau × longueur de ligne</h2>
+            <div class="commandes">
+                <label>Esche <select id="choixEsche"></select></label>
+                <label>Fond <select id="choixFond"></select></label>
+                <label>Taille <select id="choixTaille">
+                    <option value="0">petit</option><option value="1" selected>moyen</option><option value="2">gros</option>
+                </select></label>
+                <label>Eau <select id="choixTemperature">
+                    <option value="5">hiver (5 °C)</option><option value="15" selected>brassée (15 °C)</option>
+                    <option value="24">été (24 °C, thermocline)</option>
+                </select></label>
+                <label>Mode <select id="choixMode">
+                    <option value="normal">normal</option><option value="facile">facile</option>
+                </select></label>
+                <label class="case"><input type="checkbox" id="choixQuiver"> quiver (hameçon posé au fond)</label>
+            </div>
+            <p class="legende">
+                <span class="echantillon" style="background:hsl(0 70% 42%)"></span>0 %
+                <span class="echantillon" style="background:hsl(60 70% 42%)"></span>50 %
+                <span class="echantillon" style="background:hsl(120 70% 38%)"></span>100 %
+                · <b>A</b> hameçon pris au fond · <b>C</b> hors de la couche d'eau du poisson
+                · <b>E</b> esche qu'il ne mange pas · <b>T</b> trop petit pour l'esche
+                · ligne plus longue que l'eau : hameçon au fond
+            </p>
+            <div class="cartes" id="cartes"></div>
+        </section>
+    </main>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "./assets/three.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="matrice.js?v=225"></script>
+</body>
+</html>
