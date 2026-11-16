@@ -11,7 +11,7 @@ export function creerCycleLigne(deps) {
     const {
         canvas, camera, water, totalLignes, castStart, rodTipVisual, castTarget, wind,
         POND_CENTER, rayonEtang, updateToolDock, risqueEmmelement, fishButton, statusDisplay,
-        sound, fermerPanneauCombat, setDragLoosened, crank, feedButton, MAX_WAIT, BITE_RADIUS,
+        sound, fermerPanneauCombat, setDragLoosened, crank, feedButton, BITE_RADIUS,
         fishes, scoreDisplay, fmtPoids, obstacles
     } = deps;
 
@@ -130,18 +130,15 @@ export function creerCycleLigne(deps) {
         crank.classList.toggle('active', CRANK_STATES.indexOf(etat.floatState) >= 0);
     }
 
-    function startReel(automatique) {
+    function startReel() {
         if (etat.floatState === 'inWater') {
             etat.floatState = 'reeling';
-            etat.reelIdle = 0;
             etat.hameconDansLaVase = false;
-            etat.avertiRemontee = false;
             const support = etat.techniqueCourante === 'quiver'
                 ? 'la ligne est toujours à l’eau'
                 : 'le bouchon est toujours à l’eau';
-            statusDisplay.textContent = automatique
-                ? 'Aucun poisson en ' + MAX_WAIT + ' s : la ligne a été remontée TOUTE SEULE. Relance (ou amorce pour attirer les poissons !).'
-                : 'On remonte la ligne… (' + support + ' : un poisson peut encore mordre !)';
+            statusDisplay.textContent = 'On remonte la ligne… (' + support
+                + ' : un poisson peut encore mordre — arrête la manivelle pour pêcher ici !)';
         }
     }
 

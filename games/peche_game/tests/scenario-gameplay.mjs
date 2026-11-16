@@ -144,18 +144,8 @@ export function run() {
     check('le bouchon reste en surface pendant la remontée',
         G().floatGroup.position.y > -0.5, G().floatGroup.position.y.toFixed(2));
 
-    // Filet de sécurité : sans toucher la manivelle, la ligne revient toute seule
-    // (on ne reste jamais bloqué en « remontée »).
-    resetToIdle();
-    clearLilyPads();
-    castTo(0, -25);
-    G().startReel();
-    parkFish();
-    const avantRetour = distanceToShore();
-    stepFor(5);
-    check('sans manivelle, la ligne revient toute seule', distanceToShore() < avantRetour - 5,
-        avantRetour.toFixed(1) + ' -> ' + distanceToShore().toFixed(1) + ' unités');
-    check('on finit par revenir au repos', stepUntil(() => state() === 'idle', 10), state());
+    // La ligne ne revient JAMAIS toute seule : si on lâche la manivelle, elle
+    // reste sur place (contrôle manuel total — voir scenario-remontee.mjs).
 
     group('13) Moulinet : un tour ramène 2 unités de fil');
     resetToIdle();

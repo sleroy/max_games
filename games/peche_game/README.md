@@ -156,14 +156,13 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   relâche quand la jauge passe sur le repère). Réussi → +1 point et la prise est notée
   dans le carnet ; raté → le poisson retombe à l'eau (aucun point).
 - **On peut pêcher TANT QUE LE BOUCHON EST À L'EAU** : un poisson peut mordre à tout
-  moment, **même pendant la remontée de la ligne** ! Et si tu ne touches plus à la
-  manivelle, la ligne **revient toute seule** après quelques secondes : tu ne restes
-  jamais bloqué en mode « remontée ».
-- **La ligne peut remonter seule pendant l'attente** : si **aucun poisson n'est venu en
-  20 s**, le jeu ramène la ligne pour ne pas te laisser planté. Il **prévient 3 s avant**
-  (« la ligne va remonter TOUTE SEULE dans 3 s ») puis explique (« aucun poisson en 20 s »).
-  Un poisson qui renifle l'esche **prolonge** l'attente, et le vent ne fait jamais dériver
-  le bouchon à plus de **2 m** du point de lancer (la ligne est tenue).
+  moment, **même pendant la remontée de la ligne** ! **Seule la manivelle déplace la
+  ligne** : si tu t'arrêtes de tourner, le bouchon **reste exactement où il est** —
+  tu peux pêcher sur place, puis reprendre la remontée quand tu veux.
+- **La ligne ne remonte JAMAIS toute seule** : ni le clic, ni le clavier, ni le temps
+  ne la ramènent. Elle reste à l'eau tant que tu ne tournes pas la manivelle. Le vent
+  ne fait jamais dériver le bouchon à plus de **2 m** du point de lancer (la ligne est
+  tenue).
 - **📖 Carnet de pêche** (bouton à côté du pêcheur), en **5 onglets** : **🐟 Prises**
   (prises, poids, record, fiche des espèces et **carte de l'étang**), **🐟 Espèces**
   (les **16 poissons un par un** : silhouette, taille et poids réels, zone de profondeur,

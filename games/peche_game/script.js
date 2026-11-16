@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=192';
+import { SoundEngine } from './sound.js?v=194';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -23,7 +23,7 @@ import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
 import { creerCombat } from './combat.js?v=189';
-import { creerComportement } from './comportement.js?v=189';
+import { creerComportement } from './comportement.js?v=194';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=189';
@@ -44,7 +44,7 @@ import { creerSonar } from './sonar.js?v=179';
 import { creerStocks } from './stocks.js?v=192';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
-import { creerCycleLigne } from './cycleLigne.js?v=184';
+import { creerCycleLigne } from './cycleLigne.js?v=194';
 import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
@@ -105,7 +105,6 @@ lienEtat('anglerYawBase', function () { return anglerYawBase; }, function (v) { 
 lienEtat('annoncerRecord', function () { return annoncerRecord; }, function (v) { annoncerRecord = v; });
 lienEtat('arm', function () { return arm; }, function (v) { arm = v; });
 lienEtat('avantageFerrage', function () { return avantageFerrage; }, function (v) { avantageFerrage = v; });
-lienEtat('avertiRemontee', function () { return avertiRemontee; }, function (v) { avertiRemontee = v; });
 lienEtat('avertissementsVitesse', function () { return avertissementsVitesse; }, function (v) { avertissementsVitesse = v; });
 lienEtat('baitInterest', function () { return baitInterest; }, function (v) { baitInterest = v; });
 lienEtat('bateauGroupe', function () { return bateauGroupe; }, function (v) { bateauGroupe = v; });
@@ -235,7 +234,6 @@ lienEtat('ragondinVolTimer', function () { return ragondinVolTimer; }, function 
 lienEtat('rainPoints', function () { return rainPoints; }, function (v) { rainPoints = v; });
 lienEtat('raycaster', function () { return raycaster; }, function (v) { raycaster = v; });
 lienEtat('recordBattu', function () { return recordBattu; }, function (v) { recordBattu = v; });
-lienEtat('reelIdle', function () { return reelIdle; }, function (v) { reelIdle = v; });
 lienEtat('renderBoutique', function () { return renderBoutique; }, function (v) { renderBoutique = v; });
 lienEtat('renderer', function () { return renderer; }, function (v) { renderer = v; });
 lienEtat('rodBase', function () { return rodBase; }, function (v) { rodBase = v; });
@@ -1950,8 +1948,6 @@ let score = 0;
 let fishCaught = false;
 let castT = 0;
 let waitTimer = 0;
-let reelIdle = 0;                // secondes sans toucher la manivelle pendant la remontée
-let avertiRemontee = false;      // a-t-on prévenu de la remontée automatique ?
 let hameconDansLaVase = false;   // hameçon posé dans la vase (profondeur trop grande)
 let depuisLancement = 99;        // temps écoulé depuis que le bouchon s'est posé
 let biteFish = null;
@@ -2029,7 +2025,7 @@ let snagFreed = false;
 const castStart = new THREE.Vector3();
 const castTarget = new THREE.Vector3();
 const CAST_DURATION = 1.2;
-const MAX_WAIT = 20;        // sans poisson, la ligne remonte toute seule (securite)
+const MAX_WAIT = 20;        // attente de référence (un poisson qui renifle l'esche la prolonge)
 
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
 // du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
@@ -2037,10 +2033,6 @@ const MAX_WAIT = 20;        // sans poisson, la ligne remonte toute seule (secur
 const BITE_INTEREST_RADIUS = 7;    // à cette distance, le poisson s'intéresse au bouchon
 const BITE_RADIUS = 0.9;           // distance 3D en dessous de laquelle il mord
 const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
-// Remontée de la ligne : si le joueur ne touche plus à la manivelle pendant
-// REEL_IDLE_HELP secondes, la ligne revient toute seule (REEL_AUTO unités/s).
-const REEL_IDLE_HELP = 3;
-const REEL_AUTO = 6;
 
 let raycaster;
 let pointerNdc;
@@ -2050,7 +2042,7 @@ const {
 } = creerCycleLigne({
     canvas, camera, water, totalLignes, castStart, rodTipVisual, castTarget, wind, POND_CENTER,
     rayonEtang, updateToolDock, risqueEmmelement, fishButton, statusDisplay, sound,
-    fermerPanneauCombat, setDragLoosened, crank, feedButton, MAX_WAIT, BITE_RADIUS, fishes,
+    fermerPanneauCombat, setDragLoosened, crank, feedButton, BITE_RADIUS, fishes,
     scoreDisplay, fmtPoids, obstacles
 });
 
@@ -2117,7 +2109,7 @@ const {
     risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond, verdictFond,
     accrochageDe: substrats.accrochageDe, majCoupeProfondeur, statusDisplay, castStart, wind, waterWaveHeightAt, nibbleRand, MAX_WAIT,
     consumeCrankTurns, startReel, findBitingFish, showBiteView, floatIdle,
-    tenterAttaquePredateur, REEL_IDLE_HELP, REEL_AUTO, REEL_PER_TURN, angler, startHoldingFish,
+    tenterAttaquePredateur, REEL_PER_TURN, angler, startHoldingFish,
     endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS, linePositions, lineGeometry
 });
 

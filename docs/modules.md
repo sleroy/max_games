@@ -183,7 +183,7 @@ Variables d'état à déplacer, par module (mesuré automatiquement) :
 | `lancerCanne.js` | `castSwing`, `castYawAngler`, `castYawRod` |
 | `frein.js` | `techniqueCourante` |
 | `combat.js` | `portraitEspeceCourante`, `avantageFerrage`, `cameraMode`, `floatState`, `fishCaught`, `waitTimer`, `biteFish`, `biteCooldown`, … (≈ 15) |
-| `comportement.js` | `floatState`, `castT`, `waitTimer`, `reelIdle`, `hameconDansLaVase`, `depuisLancement`, `biteCooldown`, `baitInterest`, … (≈ 12) |
+| `comportement.js` | `floatState`, `castT`, `waitTimer`, `hameconDansLaVase`, `depuisLancement`, `biteCooldown`, `baitInterest`, … (≈ 11) |
 | `amorcage.js` | `amorceDepartRestante` |
 | `carnetUI.js` | `especeIndex`, `partieStats`, … |
 
