@@ -1144,6 +1144,31 @@ direct aux variables globales, donc testable sans navigateur.
 > Faire le découpage **avant** l'étang agrandi (14.1) et les fonds (14.3) évite de
 > déplacer du code deux fois.
 
+### 17.5 Odorat des esches et de l'amorce (compense les espèces à faible vue)
+
+Demande du joueur : « le silure voit mal, comment compense-t-on ? certaines amorces et
+esches ont un fort pouvoir odorant ». Sans cela, le silure (vue 3,5) serait injouable
+dans le nuage.
+
+**Principe : deux sens, pas un.** La distance à laquelle un poisson détecte l'esche est
+`max(vue, odorat × odeur_de_l_esche)` ; l'odorat **ne baisse pas la nuit** (contrairement
+à la vue) et n'est pas réduit par la pluie.
+
+- [ ] **`odorat` par espèce** (nouveau champ de `COMPORTEMENTS`, `especes.js`) :
+  silure **10**, anguille **8**, tanche **6**, carpe/brème **5**, gardon/perche/chevesne
+  **2**, brochet/black-bass **2** (embuscade : c'est le mouvement qui compte).
+- [ ] **`odeur` par esche** (nouveau champ de `ESCHES`, `esches.js`) : bouillette **0,9**,
+  ver **0,7**, maïs **0,5**, pain **0,3**, vif/leurre **0,1**.
+- [ ] **Détection dans le nuage** : `portee = min(R, max(vue_réduite_nuit, odorat × odeur))`.
+  Aujourd'hui la fouille vise l'hameçon à `min(R, vue)` : on remplace par cette portée.
+- [ ] **L'amorce a aussi une odeur** : c'est elle qui attire de `3 × R` ; une amorce peu
+  odorante attirerait moins loin (une seule recette pour l'instant).
+- [ ] **Cohérence** : les espèces `nocturne` (silure, anguille, tanche, sandre) gardent
+  leur avantage la nuit — c'est voulu et réaliste.
+- [ ] **Tests** : silure + bouillette détecté plus loin que silure + vif ; la nuit, portée
+  du silure/anguille inchangée (odorat) et celle du gardon réduite (vue) ; un leurre ne
+  compense pas une faible vue ; la bouillette reste la meilleure esche à silure.
+
 ### 17.4 Amorce réaliste : nuage de fouille (spec validée 2026-11-16)
 
 Bug signalé : « l'amorce attire les poissons autour de l'amorce mais ils ignorent
