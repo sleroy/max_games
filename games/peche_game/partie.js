@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=215';
+import { etat } from './etat.js?v=216';
 
 export function creerPartie(deps) {
     const {
@@ -239,6 +239,7 @@ export function creerPartie(deps) {
     // classement sont PERSISTANTS : on ne les efface pas ici.
     function reinitialiserPartie() {
         rangerSonar();
+        etat.escheVolee = false;   // nouvelle partie : plus d'esche volée en attente (esches.js)
         // --- État de pêche / animations ---
         if (etat.jeuDemelage && etat.jeuDemelage.estActif()) { etat.jeuDemelage.fermer(); }
         etat.ligneTendue = false;

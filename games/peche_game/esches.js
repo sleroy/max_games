@@ -15,12 +15,12 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=215';
+import { etat } from './etat.js?v=216';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
 export const PROBA_INADAPTEE = 0.06;
-export const PROBA_NU = 0.06;
+export const PROBA_NU = 0.04;
 export const REFUS_MESSAGE = 3;   // un message discret tous les 3 refus
 
 // cibles   : espèce → poids (1 = esche reine ; absent = PROBA_INADAPTEE) ;
@@ -62,6 +62,22 @@ export const ESCHES = [
       couches: { surface: 0.7, 'mi-eau': 1, fond: 0.65 },
       substrats: { herbier: 1, roche: 1, vase: 0.9, sable: 0.95 } }
 ];
+// ESCHE VOLÉE quand le ferrage est raté (le poisson recrache) : probabilité selon l'esche.
+// Le pain se délite, le ver s'arrache ; la bouillette, montée sur un cheveu, tient bien.
+// En mode Dur, la perte est un peu plus fréquente (× PERTE_FACTEUR_DUR) et SILENCIEUSE :
+// le joueur ne le découvre qu'en ramenant sa ligne au bord. Jamais en mode facile.
+export const PERTE_ESCHE = { pain: 0.8, ver: 0.5, mais: 0.3, vif: 0.3, bouillette: 0.1 };
+export const PERTE_FACTEUR_DUR = 1.25;
+// « Le poisson a volé … »
+export const NOM_VOLE = { mais: 'ton maïs', ver: 'ton ver', pain: 'ton pain', bouillette: 'ta bouillette', vif: 'ton vif' };
+
+// Probabilité de perdre l'esche `escheId` sur un ferrage raté, selon le mode ('facile' | 'normal' | 'dur').
+export function probaPerteEsche(escheId, mode) {
+    if (mode === 'facile' || !escheId) { return 0; }
+    const p = PERTE_ESCHE[escheId] || 0;
+    return Math.min(1, mode === 'dur' ? p * PERTE_FACTEUR_DUR : p);
+}
+
 export const IDS_ESCHES = ESCHES.map(function (e) { return e.id; });
 // Les 3 premiers vers sont offerts (comme l'amorce de départ) : on apprend avant d'acheter.
 export const ESCHE_DEPART = { id: 'ver', quantite: 3 };
@@ -88,20 +104,32 @@ export function efficaciteEsche(escheId, especeId, couche, substrat, longueurCm)
 }
 
 export function creerEsches(deps) {
-    const { verdictFond, modeQuiver, statusDisplay, etiquette } = deps;
+    const { verdictFond, modeQuiver, statusDisplay, saveJournal, etiquette } = deps;
 
     etat.eschesActives = true;   // faux dans les tests historiques : tout poisson mord (voir harness.mjs)
     etat.numeroLancer = 0;       // incrémenté à chaque lancer (cycleLigne.js) : une décision par poisson et par lancer
     etat.escheStats = { acceptees: 0, refusees: 0, serieRefus: 0 };
 
-    // Générateur local à graine fixe : le hasard du monde (rand) n'est pas touché.
-    let graine = 0x1badf00d;
-    function hasard() {
-        graine = (graine + 0x6d2b79f5) >>> 0;
-        let t = graine;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    etat.escheVolee = false;     // mode Dur : esche perdue mais pas encore découverte (étiquette inchangée)
+
+    // Générateurs locaux à graine fixe : le hasard du monde (rand) n'est pas touché.
+    // La perte d'esche a le sien, pour ne pas décaler les décisions de touche.
+    function generateur(graine) {
+        return function () {
+            graine = (graine + 0x6d2b79f5) >>> 0;
+            let t = graine;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    const hasard = generateur(0x1badf00d);
+    const hasardPerte = generateur(0x5eedbea7);
+
+    // Esche réellement au bout de la ligne (null si volée sans que le joueur le sache).
+    function escheAuBout() {
+        if (etat.escheVolee) { return null; }
+        return etat.escheEquipee ? etat.escheEquipee() : null;
     }
 
     // Couche et substrat à la position du bouchon, à cet instant.
@@ -114,7 +142,7 @@ export function creerEsches(deps) {
     }
 
     function probabilite(especeId, longueurCm) {
-        const esche = etat.escheEquipee ? etat.escheEquipee() : null;
+        const esche = escheAuBout();
         const c = contexte();
         return efficaciteEsche(esche ? esche.id : null, especeId, c.couche, c.substrat, longueurCm);
     }
@@ -153,6 +181,41 @@ export function creerEsches(deps) {
         return etat.eschesActives && d.escheLancer === etat.numeroLancer && d.escheAccepte === false;
     }
 
+    // Ferrage RATÉ (le poisson a recraché) : il peut emporter l'esche. Renvoie vrai si elle est perdue.
+    //  - normal : hameçon nu tout de suite, message et étiquette mis à jour ;
+    //  - dur    : rien n'est dit (seul « Raté » s'affiche) ; découverte au retour de la ligne.
+    function volerEsche() {
+        if (!etat.eschesActives) { return false; }
+        const esche = escheAuBout();
+        const mode = etat.modeFacile ? 'facile' : (etat.modeDifficulte || 'normal');
+        if (!esche || hasardPerte() >= probaPerteEsche(esche.id, mode)) { return false; }
+        if (mode === 'dur') {
+            etat.escheVolee = true;
+            return true;
+        }
+        retirerEsche();
+        etat.spawnFloatingText('Le poisson a volé ' + NOM_VOLE[esche.id] + ' ! 🪝', etat.floatGroup.position, '#ffd166');
+        statusDisplay.textContent = 'Le poisson a volé ' + NOM_VOLE[esche.id] + ' ! Remets une esche (menu Esches).';
+        return true;
+    }
+
+    // L'hameçon devient nu (sans le mémoriser comme un CHOIX : au prochain chargement, l'esche de départ revient).
+    function retirerEsche() {
+        etat.escheVolee = false;
+        etat.journal.esche = null;
+        if (saveJournal) { saveJournal(); }
+        majEtiquette();
+    }
+
+    // Mode Dur : la ligne revient au bord, le joueur voit enfin son hameçon nu.
+    function revelerEscheVolee() {
+        if (!etat.escheVolee) { return false; }
+        retirerEsche();
+        etat.spawnFloatingText('Ton hameçon est nu ! 🪝', etat.floatGroup.position, '#ffd166');
+        statusDisplay.textContent = 'Ton hameçon est nu ! Remets une esche avant de relancer.';
+        return true;
+    }
+
     // Étiquette du widget de profondeur : l'esche équipée (illimitée : pas de compteur).
     function majEtiquette() {
         if (!etiquette) { return; }
@@ -162,6 +225,8 @@ export function creerEsches(deps) {
     etat.accepterTouche = accepterTouche;
     etat.refuseLEsche = refuseLEsche;
     etat.majEsche = majEtiquette;
+    etat.volerEsche = volerEsche;
+    etat.revelerEscheVolee = revelerEscheVolee;
 
-    return { accepterTouche, refuseLEsche, probabilite, contexte, majEtiquette };
+    return { accepterTouche, refuseLEsche, probabilite, contexte, majEtiquette, volerEsche, revelerEscheVolee };
 }

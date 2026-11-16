@@ -4,8 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=215';
-import { ESCHES, ESCHE_DEPART } from './esches.js?v=215';
+import { etat } from './etat.js?v=216';
+import { ESCHES, ESCHE_DEPART } from './esches.js?v=216';
 
 export function creerStocks(deps) {
     const {
@@ -97,6 +97,7 @@ export function creerStocks(deps) {
         if (etat.floatState !== 'idle' && etat.floatState !== 'inWater') { return false; }
         if (id && !ESCHES.some(e => e.id === id)) { return false; }
         etat.journal.esche = id || null;
+        etat.escheVolee = false;   // une esche fraîche remplace celle qui a été volée (esches.js)
         // « Hameçon nu » est un CHOIX : on le mémorise pour ne pas le remplacer par
         // l'esche de départ au prochain chargement.
         etat.journal.escheNu = !id;

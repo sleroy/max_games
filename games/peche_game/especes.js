@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // especes.js — DONNÉES des espèces, styles de combat, silhouettes et touches (extraites de script.js).
 // ---------------------------------------------------------------------------
-import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=215';
+import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=216';
 
 // Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [

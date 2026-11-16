@@ -6,8 +6,8 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=215';
-import { apercuPartage } from './apercuPoisson.js?v=215';
+import { etat } from './etat.js?v=216';
+import { apercuPartage } from './apercuPoisson.js?v=216';
 
 export function creerCombat(deps) {
     const {
@@ -602,6 +602,8 @@ export function creerCombat(deps) {
                 // TOUCHE RATÉE : un message flottant + des ronds rouges qui s'écartent
                 // du bouchon (bien visibles depuis la vue réaliste).
                 etat.spawnFloatingText('Raté ! Il a recraché…', floatGroup.position, '#ff6b6b');
+                // Il a pu emporter l'esche (esches.js) : message en normal, silence en mode Dur.
+                if (etat.volerEsche) { etat.volerEsche(); }
                 etat.signalerToucheRatee(floatGroup.position);
                 etat.biteViewHideTimer = BITE_VIEW_LINGER;
             }

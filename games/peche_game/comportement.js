@@ -7,8 +7,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=215';
-import { etat } from './etat.js?v=215';
+import { COMPORTEMENTS } from './especes.js?v=216';
+import { etat } from './etat.js?v=216';
 
 export function creerComportement(deps) {
     const {
@@ -769,6 +769,7 @@ export function creerComportement(deps) {
                     etat.floatState = 'idle';
                     fishButton.disabled = false;
                     endCast();
+                    if (etat.revelerEscheVolee) { etat.revelerEscheVolee(); }   // mode Dur : esche volée découverte au bord
                 }
             }
         }
