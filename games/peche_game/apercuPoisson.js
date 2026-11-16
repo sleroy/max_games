@@ -4,8 +4,9 @@
 // Un poisson est fabriqué par le même moteur que le jeu (`modelePoisson.js`),
 // rendu une fois hors écran avec un WebGLRenderer transparent, cadré sur sa
 // boîte englobante (vue de profil, très légère plongée), puis recadré au pixel
-// près. Partagé par la galerie des tailles (tailles.js) et la fiche « Espèces »
-// du carnet (fiches.js).
+// près. Utilisé par la galerie des tailles (tailles.js), la fiche « Espèces »
+// du carnet (fiches.js) et le panneau de combat (combat.js, v204). La fiche et
+// le combat partagent UNE instance (`apercuPartage`) : un seul contexte WebGL.
 //
 // - Création PARESSEUSE : rien n'est fabriqué au chargement du module, ni tant
 //   qu'on n'a pas demandé un rendu.
@@ -20,6 +21,9 @@ const LARGEUR_DEFAUT = 1200;   // résolution interne (assez pour la loupe de ta
 const HAUTEUR_DEFAUT = 800;
 const MARGE = 1.12;            // 6 % d'air de chaque côté, pour ne pas couper une nageoire
 const SEUIL_ALPHA = 8;         // pixel « visible » au-dessus de ce seuil
+const LARGEUR_PARTAGE = 720;   // rendu de l'instance partagée (fiche + combat)
+const HAUTEUR_PARTAGE = 480;
+const CACHE_PARTAGE = 64;      // images gardées par l'instance partagée (les plus récentes)
 
 function entierPositif(valeur, defaut) {
     const n = Math.round(Number(valeur));
@@ -27,13 +31,15 @@ function entierPositif(valeur, defaut) {
 }
 
 /**
- * @param {{largeur?: number, hauteur?: number}} [options] taille du rendu interne (px)
+ * @param {{largeur?: number, hauteur?: number, cacheMax?: number}} [options]
+ *   taille du rendu interne (px) ; cacheMax : nombre d'images gardées (0 = illimité)
  * @returns {{rendre: function(object, number): (string|null), disponible: function(): boolean, liberer: function(): void}}
  */
 export function creerApercuPoisson(options) {
     const reglages = options || {};
     const largeurRendu = entierPositif(reglages.largeur, LARGEUR_DEFAUT);
     const hauteurRendu = entierPositif(reglages.hauteur, HAUTEUR_DEFAUT);
+    const cacheMax = Math.max(0, Math.floor(Number(reglages.cacheMax)) || 0);
 
     const cache = new Map();   // 'id:cm' -> data URL
     let moteur = null;         // créé au premier rendu
@@ -188,6 +194,10 @@ export function creerApercuPoisson(options) {
             if (typeof source !== 'string' || source.indexOf('data:image') !== 0) {
                 return null;
             }
+            if (cacheMax > 0 && cache.size >= cacheMax) {
+                // Map garde l'ordre d'insertion : on retire la plus ancienne.
+                cache.delete(cache.keys().next().value);
+            }
             cache.set(cle, source);
             return source;
         } catch (erreur) {
@@ -216,8 +226,21 @@ export function creerApercuPoisson(options) {
             } catch (erreur) { /* déjà libéré : rien à faire */ }
             moteur = null;
         }
+        indisponible = false;   // un nouvel appel peut retenter la création
         cache.clear();
     }
 
     return { rendre: rendre, disponible: disponible, liberer: liberer };
+}
+
+// Instance PARTAGÉE (fiche « Espèces » + panneau de combat) : créée au premier
+// appel, jamais avant. Les `options` ne comptent qu'à la toute première fois.
+let partage = null;
+export function apercuPartage(options) {
+    if (!partage) {
+        partage = creerApercuPoisson(Object.assign({
+            largeur: LARGEUR_PARTAGE, hauteur: HAUTEUR_PARTAGE, cacheMax: CACHE_PARTAGE
+        }, options));
+    }
+    return partage;
 }

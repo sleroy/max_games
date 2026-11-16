@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
 import { etat } from './etat.js?v=203';
+import { apercuPartage } from './apercuPoisson.js?v=204';
 
 export function creerCombat(deps) {
     const {
@@ -45,6 +46,58 @@ export function creerCombat(deps) {
         }
     }
 
+
+    // ---------------------------------------------------------------------------
+    // Portrait du poisson ferré : rendu du VRAI modèle 3D (apercuPoisson.js),
+    // dessiné UNE fois par ferrage. Sans WebGL (ou si l'image ne se charge pas),
+    // repli sur l'ancien portrait 2D : le jeu reste jouable partout.
+    // ---------------------------------------------------------------------------
+    let jetonPortrait = 0;   // identifie le ferrage en cours (évite les retours tardifs)
+
+    function portrait2D(espece) {
+        const ctx = strugglePortrait.getContext('2d');
+        dessinerPortrait(ctx, espece, strugglePortrait.width, strugglePortrait.height);
+    }
+
+    function afficherPortrait(espece, longueurCm) {
+        const jeton = ++jetonPortrait;
+        // Taille du poisson ferré (arrondie au cm : le cache reste petit), sinon
+        // taille moyenne de l'espèce.
+        const cm = isFinite(longueurCm) && longueurCm > 0
+            ? Math.max(1, Math.round(longueurCm))
+            : Math.round((espece.cm[0] + espece.cm[1]) / 2);
+        let url = null;
+        try {
+            url = typeof Image === 'function' ? apercuPartage().rendre(espece, cm) : null;
+        } catch (erreur) {
+            url = null;
+        }
+        if (!url) {
+            portrait2D(espece);
+            return;
+        }
+        // Canvas interne = 2× la taille CSS (netteté) ; vidé tout de suite pour ne
+        // pas laisser le portrait du poisson précédent pendant le décodage.
+        const ctx = strugglePortrait.getContext('2d');
+        ctx.clearRect(0, 0, strugglePortrait.width, strugglePortrait.height);
+        const image = new Image();
+        image.onload = function () {
+            if (jeton !== jetonPortrait || strugglePortrait.hidden) { return; }
+            const largeur = strugglePortrait.width;
+            const hauteur = strugglePortrait.height;
+            const echelle = Math.min(largeur / image.width, hauteur / image.height);
+            const w = image.width * echelle;
+            const h = image.height * echelle;
+            ctx.clearRect(0, 0, largeur, hauteur);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(image, (largeur - w) / 2, (hauteur - h) / 2, w, h);
+        };
+        image.onerror = function () {
+            if (jeton === jetonPortrait && !strugglePortrait.hidden) { portrait2D(espece); }
+        };
+        image.src = url;
+    }
 
     function showCatchMessage(weight, espece, record, horsNorme) {
         catchMessage.textContent = (etat.modeFacile ? '🎉 BRAVO ! ' : '')
@@ -220,8 +273,7 @@ export function creerCombat(deps) {
             }
             strugglePortrait.hidden = !portraitEspece;
             if (portraitEspece) {
-                dessinerPortrait(strugglePortrait.getContext('2d'), portraitEspece,
-                    strugglePortrait.width, strugglePortrait.height);
+                afficherPortrait(portraitEspece, fish.userData.longueurCm);
             }
         }
         etat.portraitEspeceCourante = portraitEspece ? portraitEspece.id : null;

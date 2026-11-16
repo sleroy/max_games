@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-// Le « ?v=203 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=204 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=203';
+import { SoundEngine } from './sound.js?v=204';
 import { creerJeuDemelage } from './demelage.js?v=203';
 import { creerModeQuiver } from './quiver.js?v=203';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=203';
@@ -22,14 +22,14 @@ import { creerBourriche } from './bourriche.js?v=203';
 import { creerOndulations } from './ondulations.js?v=203';
 import { creerMessages } from './messages.js?v=203';
 import { creerSplashes } from './splashes.js?v=203';
-import { creerCombat } from './combat.js?v=203';
+import { creerCombat } from './combat.js?v=204';
 import { creerComportement } from './comportement.js?v=203';
 import { creerBateau } from './bateau.js?v=203';
 import { creerLancerPoisson } from './lancerPoisson.js?v=203';
 import { creerCarnetUI } from './carnetUI.js?v=203';
 import { creerBoutique } from './boutique.js?v=203';
 import { creerMenus } from './menus.js?v=203';
-import { creerFiches } from './fiches.js?v=203';
+import { creerFiches } from './fiches.js?v=204';
 import { creerLancerCanne } from './lancerCanne.js?v=203';
 import { creerLancer } from './lancer.js?v=203';
 import { creerAmorcage } from './amorcage.js?v=203';

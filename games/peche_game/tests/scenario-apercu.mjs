@@ -21,6 +21,9 @@ export async function run() {
     const moyenne = (espece.cm[0] + espece.cm[1]) / 2;
 
     checkEqual('API : creerApercuPoisson est une fonction', typeof A.creerApercuPoisson, 'function');
+    checkEqual('API : apercuPartage est une fonction', typeof A.apercuPartage, 'function');
+    check('apercuPartage renvoie toujours la même instance (un seul contexte WebGL)',
+        A.apercuPartage() === A.apercuPartage());
     const documentInitial = globalThis.document;
 
     try {
@@ -106,6 +109,11 @@ export async function run() {
         && !/new THREE\.WebGLRenderer/.test(lire('tailles.js')));
     const fiches = lire('fiches.js');
     check('fiches.js utilise le module partagé', /from '\.\/apercuPoisson\.js\?v=\d+'/.test(fiches));
+    check('fiches.js et combat.js partagent la même instance (apercuPartage)',
+        /apercuPartage\(/.test(fiches) && /apercuPartage\(/.test(lire('combat.js'))
+        && !/creerApercuPoisson\(/.test(fiches));
+    check('combat.js : repli sur le portrait 2D quand le rendu 3D est impossible',
+        /dessinerPortrait\(/.test(lire('combat.js')) && /apercuPartage\(\)\.rendre\(/.test(lire('combat.js')));
     check('fiches.js : aperçu 3D + photo réelle dans la fiche',
         fiches.includes('espece-apercu') && fiches.includes('espece-photo') && fiches.includes('photos.json'));
     check('style.css : classes de l’aperçu et de la photo',

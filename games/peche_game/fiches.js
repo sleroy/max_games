@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import { etat } from './etat.js?v=203';
-import { creerApercuPoisson } from './apercuPoisson.js?v=203';
+import { apercuPartage } from './apercuPoisson.js?v=204';
 
 const URL_PHOTOS = 'assets/references/photos.json';   // photos de référence (voir assets/references/SOURCES.md)
 
@@ -57,7 +57,7 @@ export function creerFiches(deps) {
     // Rendu 3D après l'ouverture de la fiche (le carnet n'attend pas le WebGL).
     function rendreApercu(e, visuel, mien) {
         if (!apercu) {
-            apercu = creerApercuPoisson({ largeur: 720, hauteur: 480 });
+            apercu = apercuPartage();
         }
         const url = apercu.rendre(e, tailleMoyenne(e));
         if (!url || mien !== jeton) { return; }   // pas de WebGL : la silhouette reste
