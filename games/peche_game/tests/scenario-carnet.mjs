@@ -106,6 +106,13 @@ export function run() {
         if (!esp || !esp.profondeur) {
             return false;
         }
+        // Les espèces de FOND (brème, tanche, carpe…) suivent le relief : au-dessus
+        // d'une fosse elles sont plus bas que la borne de l'espèce, c'est voulu
+        // (`poissons.js` : depth = fondY + 0,45). Le test ne vise que les poissons
+        // de surface / mi-eau, qui ne doivent pas plonger.
+        if (f.userData.couche === 'fond') {
+            return false;
+        }
         return f.userData.depth < esp.profondeur[0] - 1.2;
     });
     check('chaque poisson nage dans SA zone de profondeur', horsZone.length === 0,

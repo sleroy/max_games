@@ -89,8 +89,9 @@ export function run() {
     check('le nuage ne dérive que doucement', drift < 6, drift.toFixed(2) + ' unités');
 
     group('34) Le nuage de miettes finit par se dissiper');
+    // §17.4 : la durée de vie du nuage est passée de 16 à 60 s (zone de fouille).
     check('le nuage disparaît après sa durée de vie',
-        stepUntil(() => G().getChum() === null, 25), G().getChum());
+        stepUntil(() => G().getChum() === null, 65), G().getChum());
 
     group('35) On peut amorcer MÊME avec la ligne à l’eau');
     resetToIdle();

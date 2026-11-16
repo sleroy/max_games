@@ -20,9 +20,10 @@ export function creerAmorcage(deps) {
     // Le geste (viser, doser la puissance, arc de vol) est dans lancer.js, commun
     // avec le sonar : ici, on décrit seulement la boule d'amorce (stock, plouf, nuage
     // de miettes qui attire les poissons et dérive doucement au vent).
-    const CHUM_ATTRACT_RADIUS = 20;    // zone où les poissons sentent l'amorce
+    const CHUM_RADIUS = 6;             // §17.4 : rayon de la SPHÈRE de fouille (≈ 3 m)
+    const CHUM_ATTRACT_RADIUS = 18;    // zone où les poissons sentent l'amorce (3 × R)
     const CHUM_DRIFT = 0.25;           // dérive du nuage au vent
-    const CHUM_LIFETIME = 16;          // durée de vie du nuage (s)
+    const CHUM_LIFETIME = 60;          // §17.4 : durée de vie du nuage (s)
 
     let armSwing = 0;                  // bras : 0 = repos, 1 = armé (en arrière)
     let armThrow = 0;                  // bras : impulsion de lancer
@@ -71,7 +72,8 @@ export function creerAmorcage(deps) {
             position: new THREE.Vector3(position.x, 0.1, position.z),
             age: 0,
             lifetime: CHUM_LIFETIME,
-            radius: CHUM_ATTRACT_RADIUS,
+            radius: CHUM_RADIUS,
+            detect: CHUM_ATTRACT_RADIUS,
             strength: 0
         };
         etat.spawnRipple(position);
