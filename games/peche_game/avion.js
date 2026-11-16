@@ -14,7 +14,7 @@
 // three.js. Tant qu'il n'est pas chargé (ou sans réseau / dans les tests), un petit avion simple le remplace.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { conseilsEsches } from './matriceTouche.js?v=234';
+import { conseilsEsches, calculerResume } from './matriceTouche.js?v=235';
 
 export const PREMIER_PASSAGE = 30;   // s de jeu avant le premier passage
 export const INTERVALLE = 90;        // s entre deux passages (fin d'un passage → début du suivant)
@@ -136,7 +136,9 @@ export function creerAvion(deps) {
     cable.visible = false;
     scene.add(cable);
 
-    let conseils = null;          // calculés au premier passage (≈ 50 ms, une seule fois)
+    let resume = null;            // la matrice (≈ 50 ms), calculée au premier passage, une seule fois
+    let conseils = null;          // conseils des espèces du biotope (refaits si le biotope change)
+    let cleConseils = null;
     let rang = 0;
     let attente = PREMIER_PASSAGE;
     let vol = null;               // { depart, droite, t, duree, conseil }
@@ -147,7 +149,15 @@ export function creerAvion(deps) {
     // Passage « conseil général » : l'espèce suivante, à tour de rôle.
     function lancer() {
         if (!camera()) { return null; }
-        if (!conseils) { conseils = conseilsEsches(); }
+        // Seules les espèces PRÉSENTES dans le biotope (deps.especesIds, défaut : toutes) ont une banderole.
+        const ids = deps.especesIds ? deps.especesIds() : undefined;
+        const cle = ids ? ids.join(',') : '';
+        if (!conseils || cle !== cleConseils) {
+            resume = resume || calculerResume(15);
+            conseils = conseilsEsches(resume, ids);
+            cleConseils = cle;
+            rang = 0;
+        }
         const conseil = conseils[rang % conseils.length];
         rang++;
         return voler(conseil);

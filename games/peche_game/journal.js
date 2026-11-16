@@ -4,7 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=234';
+import { etat } from './etat.js?v=235';
+import { texteMilieu } from './milieux.js?v=235';
 
 export function creerJournal(deps) {
     const {
@@ -42,13 +43,15 @@ export function creerJournal(deps) {
 
     function renderJournal() {
         const nbEspeces = Object.keys(etat.journal.especes).length;
+        // Le carnet dit aussi dans quel milieu on pêche (choix de l'accueil, milieux.js).
+        const milieu = ' · ' + texteMilieu(etat.journal.milieu);
         if (etat.journal.total === 0) {
-            journalStats.textContent = 'Aucune prise pour l’instant… Lance la canne !';
+            journalStats.textContent = 'Aucune prise pour l’instant… Lance la canne !' + milieu;
         } else {
             journalStats.textContent = 'Prises : ' + etat.journal.total
                 + ' · Poids total : ' + fmtPoids(etat.journal.totalWeight)
                 + ' · Record : ' + fmtPoids(etat.journal.best)
-                + ' · Espèces : ' + nbEspeces;
+                + ' · Espèces : ' + nbEspeces + milieu;
         }
         // Pas de appendChild ici : le carnet s'affiche en texte simple.
         journalList.textContent = etat.journal.last.length
@@ -75,7 +78,8 @@ export function creerJournal(deps) {
         etat.renderBoutique();
     }
 
-    function addJournalEntry(weight, espece) {
+    // `cm` (optionnel) : la longueur du poisson, mémorisée avec son record du biotope.
+    function addJournalEntry(weight, espece, cm) {
         etat.journal.total += 1;
         etat.journal.totalWeight = Math.round((etat.journal.totalWeight + weight) * 100) / 100;
         if (weight > etat.journal.best) {
@@ -88,12 +92,19 @@ export function creerJournal(deps) {
         }
         etat.journal.especes[nom] = etat.journal.especes[nom] || { n: 0, record: 0 };
         const fiche = etat.journal.especes[nom];
-        const ancienRecord = fiche.record || 0;
         fiche.n += 1;
-        // Un record est BATTU si le poisson est plus lourd que le précédent (le
-        // tout premier poisson d'une espèce établit son record).
+        // RECORD PAR BIOTOPE : un record est BATTU si le poisson est plus lourd que le précédent PRIS DANS CE
+        // MILIEU (le tout premier poisson d'une espèce y établit son record). `fiche.record` reste le plus gros
+        // de tous les milieux (résumé du carnet).
+        const milieu = etat.journal.milieu || 'plaine';
+        etat.journal.records = etat.journal.records || {};
+        const parMilieu = etat.journal.records[milieu] = etat.journal.records[milieu] || {};
+        const ancienRecord = parMilieu[nom] ? parMilieu[nom].kg : 0;
         const nouveauRecord = weight > ancienRecord;
         if (nouveauRecord) {
+            parMilieu[nom] = { cm: Math.round(cm || 0), kg: Math.round(weight * 100) / 100, milieu: milieu };
+        }
+        if (weight > (fiche.record || 0)) {
             fiche.record = Math.round(weight * 100) / 100;
         }
         etat.partieStats.poissons += 1;

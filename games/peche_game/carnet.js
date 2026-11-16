@@ -3,7 +3,7 @@
 // Reçoit l'objet `journal` de l'orchestrateur et le migre ; le rendu et le jeu
 // restent dans script.js. Aucun accès direct au DOM ici.
 // ---------------------------------------------------------------------------
-import { milieuParId } from './milieux.js?v=234';
+import { milieuParId, IDS_MILIEUX } from './milieux.js?v=235';
 
 export function chargerCarnet(options) {
     const opts = options || {};
@@ -66,6 +66,7 @@ export function chargerCarnet(options) {
         data.technique = saved.technique === 'quiver' ? 'quiver' : 'bouchon';
         // Biotope choisi (milieux.js) : un carnet d'avant les biotopes, ou une valeur inconnue, donne la plaine.
         data.milieu = milieuParId(saved.milieu).id;
+        data.records = lireRecords(saved, data.especes);
         data.bouchons = bouchonsDepart.slice();
         const achetes = Array.isArray(saved.bouchons) ? saved.bouchons : [];
         achetes.forEach(function (id) {
@@ -89,6 +90,29 @@ export function chargerCarnet(options) {
     } catch (error) {
         return false;
     }
+}
+
+// RECORDS PAR BIOTOPE : { idMilieu: { nomEspece: { cm, kg, milieu } } }.
+// Un carnet d'avant les biotopes n'a que `especes[nom].record` (kg, un nombre) : ces records sont ceux de la
+// plaine (le seul étang qui existait). Une valeur numérique dans `records` est lue comme des kg.
+export function lireRecords(saved, especes) {
+    const records = {};
+    function poser(milieu, nom, valeur) {
+        const kg = typeof valeur === 'number' ? valeur : (valeur && Number(valeur.kg)) || 0;
+        const cm = typeof valeur === 'number' ? 0 : (valeur && Number(valeur.cm)) || 0;
+        if (!(kg > 0)) { return; }
+        (records[milieu] = records[milieu] || {})[nom] = { cm: cm, kg: kg, milieu: milieu };
+    }
+    const brut = saved && saved.records && typeof saved.records === 'object' ? saved.records : null;
+    if (brut) {
+        Object.keys(brut).forEach(function (milieu) {
+            if (IDS_MILIEUX.indexOf(milieu) < 0 || !brut[milieu] || typeof brut[milieu] !== 'object') { return; }
+            Object.keys(brut[milieu]).forEach(function (nom) { poser(milieu, nom, brut[milieu][nom]); });
+        });
+    } else {
+        Object.keys(especes || {}).forEach(function (nom) { poser('plaine', nom, especes[nom].record); });
+    }
+    return records;
 }
 
 export function sauverCarnet(options) {

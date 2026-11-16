@@ -2,11 +2,11 @@
 // matrice.js — page de visualisation de la matrice des touches (matrice.html).
 // Aucune règle ici : tout vient de chanceTouche.js (le jeu) et de matriceTouche.js (le test).
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=234';
-import { ESCHES } from './esches.js?v=234';
-import { SUBSTRATS } from './substrats.js?v=234';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=234';
-import { verifierRegles, aSurveiller, taillesDe, nomEsche, ESCHES_MATRICE } from './matriceTouche.js?v=234';
+import { SPECIES } from './especes.js?v=235';
+import { ESCHES } from './esches.js?v=235';
+import { SUBSTRATS } from './substrats.js?v=235';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=235';
+import { verifierRegles, verifierTousMilieux, aSurveiller, taillesDe, nomEsche, ESCHES_MATRICE } from './matriceTouche.js?v=235';
 
 const LETTRE = { accroche: 'A', couche: 'C', esche: 'E', taille: 'T' };
 const EAUX_FINES = [];       // profondeur d'eau, 0,5 → 4,25 m (unités : 1 → 8,5)
@@ -33,6 +33,12 @@ const surveiller = aSurveiller(verif.resume);
 $('surveiller').innerHTML = surveiller.length
     ? surveiller.map(a => '<li>' + echapper(a.texte) + '</li>').join('')
     : '<li>Rien à signaler.</li>';
+
+// --- Règles par biotope (milieux.js) : taille maximale de l'étang, espèces présentes ---------
+$('reglesMilieux').innerHTML = verifierTousMilieux().map(m => '<li class="' + (m.ok ? 'ok' : 'ko') + '">' + echapper(m.nom)
+    + ' : ' + m.regles.map(r => echapper(r.id) + (r.ok ? ' ✓' : ' ✗ (' + echapper(r.detail) + ')')).join(' · ')
+    + (m.perdues.length ? ' <span class="detail">esches inutilisables : ' + m.perdues.map(p => echapper(p.espece + '/' + p.esche)).join(', ') + '</span>' : '')
+    + '</li>').join('');
 
 // --- Tableau espèce × esche --------------------------------------------------------
 function contexteTexte(ctx) {

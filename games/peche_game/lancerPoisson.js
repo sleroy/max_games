@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=234';
+import { etat } from './etat.js?v=235';
 
 export function creerLancerPoisson(deps) {
     const {
@@ -131,7 +131,7 @@ export function creerLancerPoisson(deps) {
         scoreDisplay.textContent = etat.score;
         etat.recordBattu = null;
         // On enregistre d'abord : le carnet nous dit si c'est un NOUVEAU RECORD.
-        const entree = addJournalEntry(weight, fish.userData.espece);
+        const entree = addJournalEntry(weight, fish.userData.espece, fish.userData.longueurCm);
         etat.showCatchMessage(weight, fish.userData.espece, entree.nouveauRecord,
             fish.userData.horsNorme);
         const gainXp = gagnerExperience(weight);

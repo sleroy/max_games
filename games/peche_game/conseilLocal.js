@@ -12,9 +12,9 @@
 // `recommander` est PUR (testable sans jeu) ; `creerConseilLocal` le déclenche et le confie à l'avion (avion.js).
 // ⚠ Aucun `rand()`.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=234';
-import { ESCHES } from './esches.js?v=234';
-import { evaluerTouche, ligneQuiver } from './chanceTouche.js?v=234';
+import { SPECIES } from './especes.js?v=235';
+import { ESCHES } from './esches.js?v=235';
+import { evaluerTouche, ligneQuiver } from './chanceTouche.js?v=235';
 
 export const DELAI = { facile: 30, normal: 60 };   // secondes sans touche (pas d'entrée : jamais, mode Dur)
 export const RAYON = 10;                            // unités (5 m) autour du bouchon
@@ -45,10 +45,13 @@ function score(poissons, base, escheId, ligne) {
  * Meilleur réglage pour les poissons proches. Entrée :
  *   poissons [{ especeId, longueurCm }], profondeurEau, substrat, bornes [min, max] (bouchon équipé), quiver,
  *   escheActuelle (id | null), ligneActuelle, mode ('facile' | 'normal'), temperature, heure.
+ * Optionnel : especesIds (les espèces du biotope ; défaut : toutes).
  * Sortie : { cas: 'personne' | 'impossible' | 'bon' | 'changer', esche, ligne, bouchonPlusLong, comptes, lignes: [l1, l2] }.
  */
 export function recommander(c) {
     const facile = c.mode === 'facile';
+    // `especesIds` (optionnel, défaut : toutes) : on ne conseille que les espèces du biotope.
+    if (c.especesIds) { c = Object.assign({}, c, { poissons: c.poissons.filter(function (p) { return c.especesIds.indexOf(p.especeId) >= 0; }) }); }
     const comptes = {};
     c.poissons.forEach(p => { comptes[p.especeId] = (comptes[p.especeId] || 0) + 1; });
     const ici = Object.keys(comptes).sort((a, b) => comptes[b] - comptes[a]).slice(0, 2)
@@ -149,7 +152,8 @@ export function creerConseilLocal(deps) {
         const e = etat.escheEquipee ? etat.escheEquipee() : null;
         return recommander({ poissons: poissons, profondeurEau: ici.profondeurEau, substrat: ici.substrat, bornes: deps.bornes(),
             quiver: !!(etat.modeQuiver && etat.modeQuiver.estActif()), escheActuelle: etat.escheVolee ? null : (e ? e.id : null),
-            ligneActuelle: etat.profondeurLigne, mode: mode(), temperature: deps.temperature(), heure: deps.heure() });
+            ligneActuelle: etat.profondeurLigne, mode: mode(), temperature: deps.temperature(), heure: deps.heure(),
+            especesIds: deps.especesIds ? deps.especesIds() : undefined });
     }
 
     return { maj, calculer, attente: function () { return attente; }, dernier: function () { return dernier; },

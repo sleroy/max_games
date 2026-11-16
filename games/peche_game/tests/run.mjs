@@ -180,7 +180,7 @@ try {
     debutScenario();
     await scenarioConseilLocal();   // rien ne mord : conseil pour cet endroit (facile 30 s, normal 60 s, dur jamais)
     debutScenario();
-    scenarioMilieux();          // biotopes d'étang : choix à l'accueil, quotas, taille maximale, eau, décor, fonds, matrice
+    await scenarioMilieux();    // biotopes d'étang : choix à l'accueil, quotas, taille maximale, eau, décor, fonds, matrice
     debutScenario();
     scenarioMenus();            // menus de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel
     debutScenario();

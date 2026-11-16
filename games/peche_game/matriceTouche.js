@@ -7,9 +7,10 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=234';
-import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche, tropPetitPourEsche } from './esches.js?v=234';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=234';
+import { SPECIES } from './especes.js?v=235';
+import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche, tropPetitPourEsche } from './esches.js?v=235';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=235';
+import { MILIEUX, milieuParId, especesPresentes, tailleMaxEspece } from './milieux.js?v=235';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
@@ -22,19 +23,24 @@ export const SEUIL_PECHABLE = 0.5;                    // une espèce doit attein
 export const SEUIL_BORD = 0.3;                        // … et celle-ci depuis le bord (hors fosses)
 export const SEUIL_ESCHE_REINE = 0.7;                 // en dessous : aucune esche n'est vraiment faite pour elle
 
-export function taillesDe(espece) {
-    return [espece.cm[0], Math.round((espece.cm[0] + espece.cm[1]) / 2), espece.cm[1]];
+/** Les trois tailles testées : minimum, milieu, maximum (cm). `cmMax` : le maximum du biotope (défaut : cm[1]). */
+export function taillesDe(espece, cmMax) {
+    const haut = cmMax === undefined ? espece.cm[1] : Math.round(cmMax);
+    return [espece.cm[0], Math.round((espece.cm[0] + haut) / 2), haut];
 }
 export function nomEsche(id) {
     const e = ESCHES.find(function (x) { return x.id === id; });
     return e ? e.nom : 'Hameçon nu';
 }
 
-/** Parcourt toute la grille et appelle rappel(contexte, résultat). Quiver : une seule ligne (posée au fond). */
+/**
+ * Parcourt toute la grille et appelle rappel(contexte, résultat). Quiver : une seule ligne (posée au fond).
+ * Options : `mode`, `temperatures`, et pour un biotope `especes` (espèces présentes) et `cmMax(espece)`.
+ */
 export function parcourir(rappel, options) {
     const o = options || {};
-    SPECIES.forEach(function (e) {
-        taillesDe(e).forEach(function (cm) {
+    (o.especes || SPECIES).forEach(function (e) {
+        taillesDe(e, o.cmMax ? o.cmMax(e) : undefined).forEach(function (cm) {
             ESCHES_MATRICE.forEach(function (esche) {
                 EAUX.forEach(function (eau) {
                     SUBSTRATS_MATRICE.forEach(function (substrat) {
@@ -161,6 +167,56 @@ export function verifierRegles() {
     return { regles: regles, cas: cas, resume: res };
 }
 
+/**
+ * Règles d'UN BIOTOPE (milieux.js) : les poissons y sont plus petits (taille maximale selon l'étang), donc
+ * certaines esches (bouillette : 25 cm minimum, vif : 15 cm) peuvent devenir inutilisables. Pour chaque espèce
+ * PRÉSENTE, avec ses tailles du biotope (minimum, milieu, cmMax) :
+ *   - « pechable » : au moins une façon de la pêcher à ≥ 50 % (meilleur réglage, 15 °C, toutes esches) ;
+ *   - « esche-viable » : au moins une esche (hors hameçon nu) lui est possible à sa taille maximale.
+ * `perdues` liste (à titre indicatif) les esches inutilisables pour une espèce à sa taille maximale du biotope
+ * (trop petite pour la bouillette ou le vif).
+ * Renvoie { id, nom, ok, regles: [{ id, nom, ok, detail }], perdues: [{ espece, esche }], cas }.
+ */
+export function verifierReglesMilieu(milieuId) {
+    const m = milieuParId(milieuId);
+    const ids = especesPresentes(m);
+    const especes = SPECIES.filter(function (e) { return ids.indexOf(e.id) >= 0; });
+    const meilleur = {};
+    const viables = {};
+    const trop = {};
+    let cas = 0;
+    parcourir(function (ctx, r) {
+        cas++;
+        meilleur[ctx.especeId] = Math.max(meilleur[ctx.especeId] || 0, r.chance);
+        const e = especes.find(function (x) { return x.id === ctx.especeId; });
+        if (ctx.longueurCm === Math.round(tailleMaxEspece(e, m)) && ctx.esche) {
+            const cle = ctx.especeId + '|' + ctx.esche;
+            if (r.possible) { viables[cle] = true; }
+            if (r.raison === 'taille') { trop[cle] = true; }
+        }
+    }, { especes: especes, cmMax: function (e) { return tailleMaxEspece(e, m); }, temperatures: [15] });
+    const regles = [];
+    function regle(id, nom, fautifs) {
+        regles.push({ id: id, nom: nom, ok: fautifs.length === 0, detail: fautifs.join(', ') });
+    }
+    regle('pechable', 'chaque espèce présente se pêche à ≥ ' + SEUIL_PECHABLE * 100 + ' % au meilleur réglage (avec sa taille maximale du biotope)',
+        especes.filter(function (e) { return (meilleur[e.id] || 0) < SEUIL_PECHABLE; }).map(function (e) { return e.id; }));
+    regle('esche-viable', 'chaque espèce présente a au moins une esche utilisable à sa taille maximale',
+        especes.filter(function (e) {
+            return !ESCHES.some(function (x) { return viables[e.id + '|' + x.id]; });
+        }).map(function (e) { return e.id; }));
+    const perdues = [];
+    especes.forEach(function (e) {
+        ESCHES.forEach(function (x) { if (trop[e.id + '|' + x.id] && !viables[e.id + '|' + x.id]) { perdues.push({ espece: e.id, esche: x.id }); } });
+    });
+    return { id: m.id, nom: m.nom, ok: regles.every(function (r) { return r.ok; }), regles: regles, perdues: perdues, cas: cas };
+}
+
+/** Les règles de chaque biotope : [{ id, nom, ok, regles, perdues }]. */
+export function verifierTousMilieux() {
+    return MILIEUX.map(function (m) { return verifierReglesMilieu(m.id); });
+}
+
 /** Déséquilibres à SURVEILLER (décision humaine, jamais bloquants) : [{ espece, esche, texte }]. */
 export function aSurveiller(resume) {
     const res = resume || calculerResume(15);
@@ -215,9 +271,10 @@ export function aSurveiller(resume) {
  * et la pire, d'après la matrice (même calcul que le test et la page matrice.html).
  * Renvoie [{ especeId, meilleures: [id, id], pire: id, pireJamais: booléen, texte }].
  */
-export function conseilsEsches(resume) {
+export function conseilsEsches(resume, especesIds) {
     const res = resume || calculerResume(15);
-    return SPECIES.map(function (e) {
+    // `especesIds` (optionnel) : seulement les espèces du biotope (défaut : toutes).
+    return SPECIES.filter(function (e) { return !especesIds || especesIds.indexOf(e.id) >= 0; }).map(function (e) {
         const classees = ESCHES.map(function (x) { return { id: x.id, max: res.parEsche[e.id + '|' + x.id].max }; })
             .sort(function (a, b) { return b.max - a.max; });
         const meilleures = classees.slice(0, 2).filter(function (c) { return c.max > 0; }).map(function (c) { return c.id; });

@@ -5,10 +5,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=234';
-import { creerAvion } from './avion.js?v=234';
-import { creerConseilLocal } from './conseilLocal.js?v=234';
-import { heureDeJeu } from './physique.js?v=234';
+import { etat } from './etat.js?v=235';
+import { creerAvion } from './avion.js?v=235';
+import { creerConseilLocal } from './conseilLocal.js?v=235';
+import { heureDeJeu } from './physique.js?v=235';
+import { especesPresentes } from './milieux.js?v=235';
 
 export function creerVie(deps) {
     const {
@@ -78,11 +79,13 @@ export function creerVie(deps) {
     let oiseauTimer = 14;
 
     // Un avion traîne une banderole de conseils d'esche (avion.js, d'après la matrice des touches).
-    const avion = creerAvion({ scene, camera: function () { return etat.camera; },
+    // Seules les espèces du biotope choisi (journal.milieu) sont conseillées : pas de silure dans un étang de forêt.
+    const especesIds = function () { return especesPresentes(etat.journal && etat.journal.milieu); };
+    const avion = creerAvion({ scene, especesIds, camera: function () { return etat.camera; },
         hauteurEcran: function () { return etat.renderer && etat.renderer.domElement ? etat.renderer.domElement.clientHeight : 800; } });
     etat.avion = avion;
     // Rien ne mord depuis un moment ? L'avion apporte un conseil pour CET endroit (facile : 30 s, normal : 60 s, dur : jamais).
-    const conseilLocal = creerConseilLocal({ avion, etat,
+    const conseilLocal = creerConseilLocal({ avion, etat, especesIds,
         fishes: function () { return etat.fishes; }, floatGroup: function () { return etat.floatGroup; },
         contexte: function () { return etat.contexteHamecon(); },
         bornes: function () { return (etat.FLOTTEURS.find(f => f.id === etat.flotteurChoix) || etat.FLOTTEURS[0]).profondeur; },

@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=234';
+import { etat } from './etat.js?v=235';
 
 export function creerSonar(deps) {
     const {

@@ -325,6 +325,14 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   le chargement ou le décodage échoue. Voir `assets/CREDITS.txt`.
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
+- **Biotope au choix dès l’accueil** (six boutons radio, comme la difficulté) : **étang de plaine, canal, étang à
+  carnassiers, lac de montagne, petit étang de forêt, grande rivière à silures** (`milieux.js`). Le biotope change la
+  **faune** (parts de population : au moins un poisson par espèce présente, aucun pour les autres), le **décor** (arbres,
+  nénuphars, roseaux, rochers, herbe), les **fonds** (vase, herbier, sable, gravier, roche), la **teinte de l’eau** et la
+  **taille maximale** des poissons (un petit étang de forêt ne porte pas de carpe de 1 m). La forme de l’étang ne change
+  pas : elle vient de la graine. Le choix est mémorisé dans le carnet (`journal.milieu`) ; un changement, même en cours de
+  partie, **repeuple l’étang**. Le carnet affiche « Milieu : … », la fiche d’espèce dit « Où la trouver », les records sont
+  gardés **par biotope**, et l’avion ne conseille que les espèces du biotope.
 - **Difficulté réglable dès l’accueil** (menu déroulant à côté de la technique) **et depuis
   le carnet** : **Facile / Normal / Dur** (Facile et Normal ont le même combat ; Dur ajoute un poisson plus
   fort et un chrono plus court ; la fenêtre de ferrage change ; les deux sélecteurs restent synchronisés).

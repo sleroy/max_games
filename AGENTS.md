@@ -306,10 +306,11 @@ MATRICE_CSV=docs/matrice-touche.csv node games/peche_game/tests/run.mjs   # rég
 | Fichier | Rôle |
 |---|---|
 | `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI — **en cours de découpage** |
-| `decor.js` | décor fixe : arbres, roseaux, rochers, nénuphars (rend `lilyPads`) |
+| `milieux.js` | **biotopes d'étang** (plaine, canal, carnassiers, montagne, forêt, rivière) : parts de population, décor, fonds, eau, taille maximale ; données et fonctions pures, `creerMilieux` applique le choix de l'accueil |
+| `decor.js` | décor de l'étang : arbres, roseaux, rochers, nénuphars (rend `lilyPads`), comptes et style selon le biotope |
 | `vegetation.js` | roseaux et herbe des berges qui ondulent au vent (shader) |
 | `chanceTouche.js` | **règles de touche, source unique** (vue, couche, fond, esche, délai) : `evaluerTouche(contexte)` ; toute règle de touche s'ajoute ici |
-| `matriceTouche.js` | grille de situations, **règles** de la matrice (test bloquant) et points **à surveiller** ; partagé par le test et `matrice.html` |
+| `matriceTouche.js` | grille de situations, **règles** de la matrice (test bloquant), règles **par biotope** (`verifierReglesMilieu`) et points **à surveiller** ; partagé par le test et `matrice.html` |
 | `avion.js` | avion (modèle glTF `assets/avion.glb`) qui traîne une banderole de conseils d'esche, d'après la matrice |
 | `conseilLocal.js` | rien ne mord : l'avion apporte le meilleur réglage pour les poissons proches du bouchon (facile 30 s, normal « Papa » 60 s, dur jamais) |
 | `matrice.html` / `matrice.js` / `matrice.css` | page de visualisation de la matrice des touches ([voir en ligne](https://sleroy.github.io/max_games/games/peche_game/matrice.html)) |

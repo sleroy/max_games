@@ -4,8 +4,9 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=234';
-import { apercuPartage } from './apercuPoisson.js?v=234';
+import { etat } from './etat.js?v=235';
+import { apercuPartage } from './apercuPoisson.js?v=235';
+import { milieuParId, partsEspeces, texteOuTrouver } from './milieux.js?v=235';
 
 const URL_PHOTOS = 'assets/references/photos.json';   // photos de référence (voir assets/references/SOURCES.md)
 
@@ -138,7 +139,9 @@ export function creerFiches(deps) {
         return etat.ZONES_CARTE[2].nom;
     }
 
+    // Abondance DANS LE BIOTOPE choisi (sa part de population, milieux.js) : `abondance` d'especes.js n'est qu'un repli.
     function abondanceLabel(a) {
+        if (a <= 0) return 'absente de ce milieu';
         if (a >= 9) return 'très commune';
         if (a >= 6) return 'commune';
         if (a >= 3) return 'peu commune';
@@ -172,6 +175,12 @@ export function creerFiches(deps) {
         return '<div class="espece-ligne"><b>' + label + '</b><span>' + valeur + '</span></div>';
     }
 
+    // Record de l'espèce dans le biotope choisi (journal.records, un record par milieu).
+    function recordMilieu(e) {
+        const r = journal.records && journal.records[journal.milieu] && journal.records[journal.milieu][e.nom];
+        return r ? ' · ici ' + fmtPoids(r.kg) + (r.cm ? ' (' + r.cm + ' cm)' : '') : '';
+    }
+
     function renderEspece() {
         if (!especeFiche) {
             return;
@@ -194,10 +203,11 @@ export function creerFiches(deps) {
             + ligneEspece('Poids', fmtPoids(etat.poidsRealisteKilos(e, e.cm[0])) + ' à '
                 + fmtPoids(etat.poidsRealisteKilos(e, e.cm[1])))
             + ligneEspece('Où ?', zoneDeProfondeur((p[0] + p[1]) / 2))
+            + ligneEspece('Où la trouver', texteOuTrouver(e.id))
             + ligneEspece('Comportement', comportementLabel(e.agressivite))
             + ligneEspece('Touches', nomsTouches || '—')
             + ligneEspece('Combat', style.nom + ' : ' + style.resume)
-            + ligneEspece('Abondance', abondanceLabel(e.abondance))
+            + ligneEspece('Abondance ici', abondanceLabel(partsEspeces(journal.milieu)[e.id] * 100) + ' (' + milieuParId(journal.milieu).nom + ')')
             + ligneEspece('Silhouette', e.form);
         // Aperçu 3D déjà rendu : affiché tout de suite ; sinon silhouette en attendant.
         const urlApercu = apercusPrets.get(e.id) || null;
@@ -208,7 +218,7 @@ export function creerFiches(deps) {
             + '<div class="espece-infos">' + infos + '</div>'
             + '<div class="espece-record">' + (fiche.n > 0
                 ? '🧺 ' + fiche.n + (fiche.n > 1 ? ' prises' : ' prise') + ' · record '
-                    + fmtPoids(fiche.record || 0)
+                    + fmtPoids(fiche.record || 0) + recordMilieu(e)
                 : 'Pas encore attrapé — à toi de jouer !')
             + '</div>';
         completerVisuel(e, mien, !!urlApercu);

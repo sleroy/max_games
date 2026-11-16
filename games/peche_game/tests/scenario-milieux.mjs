@@ -5,7 +5,11 @@
 //  1) données : parts = 100, espèces connues, présences attendues ;
 //  2) quotas : somme = N, ≥ 1 par espèce présente, 0 si absente, banc minimum, reproductibilité ;
 //  3) tailles : cmMax borné, forêt < plaine, monotonie surface / profondeur ;
-//  4) interface : choix sur l'accueil → journal.milieu persistant, étang repeuplé (échantillon réel).
+//  4) interface : choix sur l'accueil → journal.milieu persistant, étang repeuplé (échantillon réel) ;
+//  5) décor, fonds, eau, herbe : comptes du biotope, parts de fonds, déterminisme, retour en plaine ;
+//  6) matrice par biotope : chaque espèce présente reste pêchable avec sa taille maximale ;
+//  7) conseils (avion, conseil local) limités aux espèces du biotope ;
+//  8) carnet : « Milieu : … », « Où la trouver », records par biotope (anciens carnets convertis).
 // ---------------------------------------------------------------------------
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,8 +19,8 @@ import {
     capacite, facteurTaille, facteurTailleDe, tailleMaxEspece, densitesDecor, partsSubstrats, eauDe,
     ouTrouver, texteOuTrouver
 } from '../milieux.js';
-import { chargerCarnet } from '../carnet.js';
-import { GAME_DIR, group, check, checkEqual, checkClose, G, el, fire } from './harness.mjs';
+import { chargerCarnet, lireRecords } from '../carnet.js';
+import { GAME_DIR, group, check, checkEqual, checkClose, G, el, fire, moduleCopie } from './harness.mjs';
 
 const IDS_ESPECES = SPECIES.map(function (e) { return e.id; });
 const cap = function (id) { return id[0].toUpperCase() + id.slice(1); };
@@ -34,7 +38,7 @@ function choisirSurAccueil(id) {
     fire('accueilMilieu' + cap(id), 'change');
 }
 
-export function run() {
+export async function run() {
     group('77) Biotopes d’étang : choix, faune en quotas, taille maximale (milieux.js)');
 
     // --- 1) Les données ---------------------------------------------------------------------
@@ -272,7 +276,96 @@ export function run() {
     // La texture du fond est refaite sans fuite de texture : une seule `map` à la fois.
     check('le fond porte une texture après un changement de biotope', !!G().getFondMesh().material && true);
 
+    // --- 6) Matrice par biotope ---------------------------------------------------------------
+    const M = await import(moduleCopie('matriceTouche.js'));
+    const parBiotope = M.verifierTousMilieux();
+    checkEqual('une vérification par biotope', parBiotope.length, 6);
+    parBiotope.forEach(function (r) {
+        r.regles.forEach(function (regle) { check(r.id + ' : ' + regle.nom, regle.ok, regle.detail); });
+        check(r.id + ' : des esches restent utilisables (perdues : '
+            + (r.perdues.map(function (p) { return p.espece + '/' + p.esche; }).join(', ') || 'aucune') + ')', r.regles.every(function (x) { return x.ok; }));
+    });
+    check('verifierReglesMilieu : deux règles, la plaine est conforme',
+        M.verifierReglesMilieu('plaine').regles.length === 2 && M.verifierReglesMilieu('plaine').ok);
+    const grillesMilieu = [];
+    M.parcourir(function (ctx) { grillesMilieu.push(ctx.longueurCm); },
+        { especes: SPECIES.filter(function (s) { return s.id === 'carpe'; }), cmMax: function (s) { return tailleMaxEspece(s, 'foret'); }, temperatures: [15] });
+    check('la grille d’un biotope utilise la taille maximale de l’étang (carpe de forêt ≤ 65 cm)',
+        Math.max.apply(null, grillesMilieu) === 65, String(Math.max.apply(null, grillesMilieu)));
+
+    // --- 7) Conseils : seulement les espèces du biotope -----------------------------------------
+    const presentesForet = especesPresentes('foret');
+    const conseilsForet = M.conseilsEsches(undefined, presentesForet);
+    checkEqual('conseils d’esche : une banderole par espèce de la forêt', conseilsForet.length, presentesForet.length);
+    check('… et jamais une espèce absente', conseilsForet.every(function (c) { return presentesForet.indexOf(c.especeId) >= 0; }));
+    checkEqual('sans filtre, toutes les espèces sont conseillées', M.conseilsEsches().length, SPECIES.length);
+    choisirSurAccueil('foret');
+    const avion = G().etat.avion;
+    const vues = {};
+    for (let i = 0; i < SPECIES.length + 2; i++) { vues[avion.lancer().especeId] = true; }
+    check('l’avion ne conseille que les espèces de la forêt',
+        Object.keys(vues).every(function (id) { return presentesForet.indexOf(id) >= 0; }) && Object.keys(vues).length === presentesForet.length,
+        Object.keys(vues).join(', '));
+    choisirSurAccueil('riviere');
+    const vuesRiviere = {};
+    for (let i = 0; i < SPECIES.length + 2; i++) { vuesRiviere[avion.lancer().especeId] = true; }
+    check('en rivière, l’avion parle du silure', !!vuesRiviere.silure && !vuesRiviere.tanche, Object.keys(vuesRiviere).join(', '));
+    const CL = await import(moduleCopie('conseilLocal.js'));
+    const poissons = [{ especeId: 'brochet', longueurCm: 60 }, { especeId: 'silure', longueurCm: 120 }, { especeId: 'brochet', longueurCm: 50 }];
+    const base = { profondeurEau: 4, substrat: 'herbier', bornes: [0.6, 3.5], quiver: false, escheActuelle: 'ver', ligneActuelle: 2,
+        mode: 'facile', temperature: 15, heure: 12 };
+    const tous = CL.recommander(Object.assign({ poissons: poissons }, base));
+    check('conseil local sans filtre : brochet et silure comptés', tous.comptes.brochet === 2 && tous.comptes.silure === 1, JSON.stringify(tous.comptes));
+    const filtre = CL.recommander(Object.assign({ poissons: poissons, especesIds: ['brochet'] }, base));
+    check('conseil local filtré : seulement les espèces du biotope', filtre.comptes.brochet === 2 && !filtre.comptes.silure, JSON.stringify(filtre.comptes));
+    check('conseil local filtré : « personne ici » si aucune espèce du biotope',
+        CL.recommander(Object.assign({ poissons: poissons, especesIds: ['tanche'] }, base)).cas === 'personne');
+
+    // --- 8) Carnet : milieu, « où la trouver », records par biotope --------------------------------
+    choisirSurAccueil('montagne');
+    G().showJournal();
+    check('le carnet affiche « Milieu : … »', el('journalStats').textContent.indexOf('Milieu : 🏔️ Lac de montagne') >= 0, el('journalStats').textContent);
+    const truiteIndex = SPECIES.findIndex(function (s) { return s.id === 'truite'; });
+    e.especeIndex = truiteIndex;
+    G().showJournal();
+    const fiche = el('especeFiche').innerHTML;
+    check('la fiche d’espèce dit où la trouver', fiche.indexOf('Où la trouver') >= 0 && fiche.indexOf('Lac de montagne') >= 0);
+    check('la fiche donne l’abondance dans le biotope choisi', fiche.indexOf('Abondance ici') >= 0 && fiche.indexOf('très commune') >= 0);
+    e.especeIndex = 0;
+    G().hideJournal();
+    // Records : un record se bat dans UN biotope ; un autre biotope repart de zéro.
+    const nomEspece = espece('perche').nom;
+    delete e.journal.especes[nomEspece];
+    e.journal.records = {};
+    choisirSurAccueil('canal');
+    const e1 = G().addJournalEntry(1.5, nomEspece, 40);
+    checkEqual('canal : premier poisson = record', e1.nouveauRecord, true);
+    checkEqual('canal : un poisson plus léger ne bat pas le record', G().addJournalEntry(1.0, nomEspece, 35).nouveauRecord, false);
+    choisirSurAccueil('montagne');
+    const e2 = G().addJournalEntry(1.0, nomEspece, 35);
+    check('montagne : la même prise est un record DANS CE MILIEU (ancien 0)', e2.nouveauRecord === true && e2.ancienRecord === 0, JSON.stringify(e2));
+    check('journal.records : { cm, kg, milieu } par biotope',
+        JSON.stringify(e.journal.records.canal[nomEspece]) === JSON.stringify({ cm: 40, kg: 1.5, milieu: 'canal' })
+        && JSON.stringify(e.journal.records.montagne[nomEspece]) === JSON.stringify({ cm: 35, kg: 1, milieu: 'montagne' }),
+        JSON.stringify(e.journal.records));
+    checkEqual('le record général de l’espèce reste le plus gros de tous les milieux', e.journal.especes[nomEspece].record, 1.5);
+    // Anciens carnets : valeurs numériques → records de la plaine ; valeurs numériques dans `records` → kg.
+    const converti = lireRecords({}, { Gardon: { n: 3, record: 2.5 }, Carpe: { n: 0, record: 0 } });
+    check('ancien carnet : le record par espèce devient celui de la plaine',
+        JSON.stringify(converti) === JSON.stringify({ plaine: { Gardon: { cm: 0, kg: 2.5, milieu: 'plaine' } } }), JSON.stringify(converti));
+    const numerique = lireRecords({ records: { canal: { Gardon: 1.2 }, lune: { Gardon: 9 }, plaine: { Brochet: { kg: 4, cm: 80 } } } }, {});
+    check('records numériques convertis ; biotope inconnu ignoré',
+        JSON.stringify(numerique) === JSON.stringify({ canal: { Gardon: { cm: 0, kg: 1.2, milieu: 'canal' } },
+            plaine: { Brochet: { cm: 80, kg: 4, milieu: 'plaine' } } }), JSON.stringify(numerique));
+    store.valeur = JSON.stringify({ especes: { Gardon: 4 } });
+    const vieux = neuf();
+    vieux.especes = {};
+    chargerCarnet({ store: store, data: vieux });
+    check('carnet très ancien (nombre par espèce) : lu sans erreur', JSON.stringify(vieux.records) === '{}', JSON.stringify(vieux.records));
+
     // --- Retour à un état propre (plaine, population d'origine) -------------------------------
+    delete e.journal.especes[nomEspece];
+    e.journal.records = {};
     e.journalStore = reel;
     G().setGraine(20240101);
     choisirSurAccueil('plaine');
