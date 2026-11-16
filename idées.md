@@ -840,6 +840,53 @@ Ce qui reste dans le code (vérifié) :
   bien ; la sortie de `reeling` se fait uniquement par la manivelle ; on peut relancer
   après être revenu au bord.
 
+### 14.13 Esches illimitées + menus 🪱 Esche et 🎈 Matériel dans la barre du haut — LIVRÉ v192
+
+Demande du joueur (2026-11-16) : « les esches ne doivent plus s'acheter ni se
+consommer » et « je veux choisir mon esche et mon matériel sans ouvrir le carnet,
+directement depuis le haut de l'écran ».
+
+- [x] **Esches ILLIMITÉES** : toutes les esches de `esches.js` sont disponibles
+  d'emblée, équipables librement, **sans achat et sans consommation**. Plus de lot de
+  3, plus de décrément à la touche ferrée, plus de bascule « hameçon nu » par manque
+  de stock. Le carnet ne garde que l'esche **équipée** (`journal.esche`, `escheNu`
+  pour le choix explicite de l'hameçon nu).
+- [x] **Widget de profondeur** : `🪱 Esche : Ver de terre` — plus de `×N`.
+- [x] **Boutique** : la section « Esches (illimitées) » est une simple liste
+  d'équipement (Équiper / ✅ Équipée), sans prix ni bouton « Acheter ×3 ». Les **fils**
+  et l'**amorce** restent des recharges consommables, inchangés.
+- [x] **Deux boutons compacts** à droite du 📖 du carnet : 🪱 Esche
+  (`#escheTopButton`) et 🎈 Matériel (`#materielTopButton`).
+- [x] **Menus déroulants SUPERPOSÉS** (pas de modale, pas de fond assombri) : panneau
+  ancré sous son bouton, `z-index` au-dessus du HUD, un seul menu ouvert à la fois,
+  fermeture au clic extérieur, sur Échap et en recliquant le bouton.
+- [x] **🪱 Esche** : toutes les esches (icône, nom, description courte), repère ✅ sur
+  celle qui est équipée, un clic équipe et referme ; entrée « Hameçon nu ».
+- [x] **🎈 Matériel** : les **bouchons** possédés d'abord (équiper), puis ceux à
+  **acheter en XP** avec leur prix ; en technique **quiver**, le même bouton liste les
+  **scions** à la place (mêmes règles).
+- [x] **Accessibilité** : `aria-haspopup="menu"`, `aria-expanded`, `role="menu"` +
+  `menuitemradio` / `aria-checked`, `aria-activedescendant` ; clavier ↑ ↓ Home Fin,
+  Entrée / Espace, Échap ; focus visible (`.actif`).
+- [x] **Responsive** : panneau large et défilant sous l'écran large ; sur ≤ 600 px il
+  occupe la largeur utile **sous** la barre du haut (les compteurs restent visibles) et
+  la barre resserre ses compteurs pour loger les deux boutons de plus.
+- [x] **Tests** : `tests/scenario-menus.mjs` (boutons, ouverture/fermeture, clic
+  extérieur, Échap, équipement, clavier, un seul menu, bouchons achetés en XP, scions
+  du quiver, pêche du bord depuis les 4 postes) et `scenario-esches.mjs` adapté
+  (10 touches ferrées sans consommation, widget sans compteur, boutique sans achat
+  d'esche). 2 910 vérifications vertes, 0 erreur de syntaxe.
+- [x] **Vérification visuelle** (Playwright, serveur local) : menus ouverts en écran
+  large, en 560 px et en 400 px, mode bouchon puis quiver, achat + équipement, aucune
+  erreur console (hors 404 `favicon.ico` préexistant).
+
+> Livré en **v192** : `menus.js` (nouveau module, ≈ 270 lignes), `stocks.js`
+> (esches sans stock), `esches.js` (widget sans compteur), `boutique.js` (liste
+> d'équipement), `carnet.js` (migration sans faux stock), `index.html` (2 boutons +
+> 2 conteneurs `menu-pop`), `style.css` (`.top-menu`, `.menu-pop`, responsive 600 px),
+> `script.js` (import + `creerMenus` + API de test `isMenuOuvert` / `getMenuHtml`).
+> Détails de contrat : `docs/modules.md` (ligne `menus.js`).
+
 ## Scénarios de test ajoutés (v131–v139)
 
 - **57** : mode bateau (achat XP, embarquement au milieu, bornes de déplacement,

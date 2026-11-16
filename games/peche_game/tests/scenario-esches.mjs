@@ -277,10 +277,15 @@ export function run() {
     checkEqual('rechargement : l’esche équipée est restaurée', recharge.esche, 'bouillette');
     checkEqual('rechargement : aucune esche n’ajoute de stock au carnet',
         Object.keys(recharge.recharges).join(), 'amorce,nylon,fluorocarbone,tresse');
-    sauverCarnet({ store, data: Object.assign(neuf(), { esche: null }) });
+    // v193 : « hameçon nu » est un CHOIX explicite, mémorisé par `escheNu`.
+    sauverCarnet({ store, data: Object.assign(neuf(), { esche: null, escheNu: true }) });
     const nuRecharge = neuf();
     chargerCarnet({ store, data: nuRecharge, eschesIds: ids, eschesDepart: ESCHE_DEPART });
-    checkEqual('rechargement : « hameçon nu » est restauré', nuRecharge.esche, null);
+    checkEqual('rechargement : « hameçon nu » (choix explicite) est restauré', nuRecharge.esche, null);
+    sauverCarnet({ store, data: Object.assign(neuf(), { esche: null }) });
+    const jamaisChoisi = neuf();
+    chargerCarnet({ store, data: jamaisChoisi, eschesIds: ids, eschesDepart: ESCHE_DEPART });
+    checkEqual('sans choix explicite, on ne démarre jamais à l’hameçon nu', jamaisChoisi.esche, 'ver');
     store.valeur = JSON.stringify({ experience: 12, recharges: { amorce: 2 }, esche: 'ver', ver: 9 });
     const ancien = neuf();
     chargerCarnet({ store, data: ancien, eschesIds: ids, eschesDepart: ESCHE_DEPART });
@@ -294,7 +299,7 @@ export function run() {
     store.valeur = JSON.stringify({ esche: 'inconnue', recharges: {} });
     const faux = neuf();
     chargerCarnet({ store, data: faux, eschesIds: ids, eschesDepart: ESCHE_DEPART });
-    checkEqual('une esche inconnue est ignorée (hameçon nu)', faux.esche, null);
+    checkEqual('une esche inconnue retombe sur l’esche de départ', faux.esche, 'ver');
     // Le jeu écrit bien l'esche ÉQUIPÉE dans le CARNET (journal), pas dans l'état de partie.
     const reel = e.journalStore;
     const boite = { valeur: '', getItem() { return this.valeur; }, setItem(cle, v) { this.valeur = v; } };

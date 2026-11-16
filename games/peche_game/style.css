@@ -1900,6 +1900,26 @@ body.calm .struggle-marker {
 /* Petit écran : le panneau occupe la largeur utile SOUS la barre du haut, pour
    rester lisible sans masquer les compteurs (score, lignes, XP, heure). */
 @media (max-width: 600px) {
+    /* La barre du haut reçoit 2 boutons de plus (🪱 🎈) : on resserre compteurs
+       et jauge de vent pour que les 4 compteurs restent lisibles sur une ligne. */
+    .hud-counters {
+        gap: 0 6px;
+        font-size: 0.72rem;
+    }
+
+    .hud-top .wind-label {
+        display: none;
+    }
+
+    .hud-top .wind-bar {
+        width: 22px;
+    }
+
+    .hud-top .carnet-top {
+        padding: 4px 7px;
+        font-size: 1rem;
+    }
+
     .menu-pop {
         position: fixed;
         left: calc(8px + env(safe-area-inset-left, 0px));

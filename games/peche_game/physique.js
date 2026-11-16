@@ -67,7 +67,7 @@ export function texteHeure(heure) {
 // Plancher d'activité 0,30 : le facteur ne dépasse jamais 2,5 (pas de division par ≈ 0).
 // ---------------------------------------------------------------------------
 export const A_REF = 0.75;
-export const ACTIVITE_MIN = 0.42;   // v193 : 0,30 -> 0,42 (nuit x1,8 au lieu de x2,5)
+export const ACTIVITE_MIN = 0.30;   // activité minimale d'une période (midi = 1,0 neutre)
 
 export function activiteHoraire(heure, nocturne) {
     const jour = lumiere(heure);
@@ -78,8 +78,13 @@ export function activiteHoraire(heure, nocturne) {
     return Math.min(1, Math.max(ACTIVITE_MIN, a));
 }
 
+// v193 : la NUIT ne doit pas fermer la pêche. Le facteur horaire est plafonné à
+// 1,8 (au lieu de 2,5 avec l'activité plancher) : midi reste neutre (× 1) et
+// l'aube / le crépuscule restent favorables (× 0,75). Mesuré : nuit × 2,5
+// donnait des premiers signaux à 16–44 s, ressentis comme « aucun poisson ».
+export const FACTEUR_HORAIRE_MAX = 1.8;
 export function facteurHoraire(heure, nocturne) {
-    return A_REF / activiteHoraire(heure, nocturne);
+    return Math.min(FACTEUR_HORAIRE_MAX, A_REF / activiteHoraire(heure, nocturne));
 }
 
 // ---------------------------------------------------------------------------
