@@ -15,8 +15,8 @@
 // pression image par image, écrit la ligne « heure · pression » du HUD et fournit les
 // crochets de test (`crochets`, repris par script.js dans window.__game).
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=221';
-import { COMPORTEMENTS } from './especes.js?v=221';
+import { etat } from './etat.js?v=223';
+import { COMPORTEMENTS } from './especes.js?v=223';
 
 // ---------------------------------------------------------------------------
 // Heure de jeu. dayPhase : 0 = aube, 0,25 = midi, 0,5 = crépuscule, 0,75 = nuit.
@@ -30,8 +30,8 @@ export function phaseDeHeure(heure) {
     return ((((heure - 6) / 24) % 1) + 1) % 1;
 }
 
-/** Lumière du jour, comme le cycle du ciel : 0 la nuit, 1 à midi. */
-function lumiere(heure) {
+/** Lumière du jour, comme le cycle du ciel : 0 la nuit, 1 à midi (source unique : vue des poissons aussi). */
+export function lumiere(heure) {
     return Math.max(0, Math.sin(((heure - 6) / 24) * Math.PI * 2));
 }
 
@@ -207,6 +207,38 @@ export function facteurTemperature(tSurface, comp, heure) {
     return lethargie * (1 + 0.8 * chaud * (1 - crep) - 0.2 * chaud * crep);
 }
 
+/** Facteur du DÉLAI de touche (source unique, chanceTouche.js) : heure × pression × température, borné. */
+export function facteurDelai(heure, pression, tendance, tSurface, comp) {
+    return limiterFacteur(facteurHoraire(heure, !!(comp && comp.nocturne))
+        * facteurPression(pression, tendance) * facteurTemperature(tSurface, comp, heure));
+}
+
+/** Thermocline d'une eau (tRef : température qui fixe la stratification, tSurface : celle de surface). */
+export function thermoclinePour(tRef, tSurface) {
+    const intensite = intensiteThermocline(tRef);
+    const actif = intensite >= SEUIL_THERMOCLINE;
+    const profondeur = actif ? profondeurThermocline(intensite) : 0;
+    const th = { actif: actif, profondeur: profondeur, intensite: intensite,
+        plafondPoisson: actif ? -profondeur + MARGE_THERMOCLINE : -Infinity, tSurface: tSurface, tFond: 0 };
+    th.tFond = temperatureEnProfondeur(tSurface, th, 99);
+    return th;
+}
+/** Un poisson de fond / une couche d'eau ne descend pas sous la thermocline (y négatif). */
+export function plancherSous(y, th) {
+    return th && th.actif ? Math.max(y, th.plafondPoisson) : y;
+}
+/** Tranche d'eau d'une espèce, remontée au-dessus de la thermocline (zone[0] = le plus profond). */
+export function zoneSous(zone, th) {
+    if (!zone || !th || !th.actif || zone[0] >= th.plafondPoisson) { return zone; }
+    return [th.plafondPoisson - 0.2, Math.max(zone[1], th.plafondPoisson + 0.2)];
+}
+/** Profondeur d'eau « utile » pour l'esche : la thermocline fait office de fond pour les poissons. */
+export function profondeurUtileSous(profondeurEau, th) {
+    return th && th.actif
+        ? Math.min(profondeurEau, th.profondeur - MARGE_THERMOCLINE + MARGE_FOND_POISSON)
+        : profondeurEau;
+}
+
 /** Vitalité de nage (vitesse × v) : l'eau froide ralentit, surtout les paisibles. 1 = normale. */
 export function vitaliteThermique(tSurface, comp) {
     const froid = limiter((8 - tSurface) / 6, 0, 1);
@@ -252,11 +284,7 @@ export function creerPhysique(deps) {
 
     /** Facteur appliqué au délai de touche d'un poisson (comp = COMPORTEMENTS[espèce]). */
     function facteurTouche(comp) {
-        const nocturne = !!(comp && comp.nocturne);
-        return limiterFacteur(
-            facteurHoraire(heure(), nocturne)
-            * facteurPression(pressionActuelle(), tendanceActuelle())
-            * facteurTemperature(temperatureEau(), comp, heure()));
+        return facteurDelai(heure(), pressionActuelle(), tendanceActuelle(), temperatureEau(), comp);
     }
     etat.facteurTouche = facteurTouche;
 
@@ -265,19 +293,11 @@ export function creerPhysique(deps) {
     // ne bouge donc pas d'un tour de cadran à l'autre.
     function majThermocline() {
         const tRef = temperatureImposee === null ? temperatureSaison(anneePhase) : temperatureImposee;
-        const intensite = intensiteThermocline(tRef);
-        thermocline.intensite = intensite;
-        thermocline.actif = intensite >= SEUIL_THERMOCLINE;
-        thermocline.profondeur = thermocline.actif ? profondeurThermocline(intensite) : 0;
-        thermocline.plafondPoisson = thermocline.actif ? -thermocline.profondeur + MARGE_THERMOCLINE : -Infinity;
-        thermocline.tSurface = temperatureEau();
-        thermocline.tFond = temperatureEnProfondeur(thermocline.tSurface, thermocline, 99);
+        Object.assign(thermocline, thermoclinePour(tRef, temperatureEau()));   // objet UNIQUE, modifié sur place
     }
 
     /** Un poisson de fond / une couche d'eau ne descend pas sous la thermocline. */
-    etat.plancherPoisson = function (y) {
-        return thermocline.actif ? Math.max(y, thermocline.plafondPoisson) : y;
-    };
+    etat.plancherPoisson = function (y) { return plancherSous(y, thermocline); };
     /** Profondeur voulue pour le dos d'un poisson dont la profondeur naturelle est yNat (négative). */
     etat.profondeurPhysique = function (yNat) {
         if (!thermocline.actif) { return yNat; }
@@ -286,16 +306,9 @@ export function creerPhysique(deps) {
         return Math.max(y, thermocline.plafondPoisson);
     };
     /** Tranche d'eau d'une espèce, remontée au-dessus de la thermocline (zone[0] = le plus profond). */
-    etat.zoneUtile = function (zone) {
-        if (!zone || !thermocline.actif || zone[0] >= thermocline.plafondPoisson) { return zone; }
-        return [thermocline.plafondPoisson - 0.2, Math.max(zone[1], thermocline.plafondPoisson + 0.2)];
-    };
+    etat.zoneUtile = function (zone) { return zoneSous(zone, thermocline); };
     /** Profondeur d'eau « utile » pour l'esche : la thermocline fait office de fond pour les poissons. */
-    etat.profondeurUtile = function (profondeurEau) {
-        return thermocline.actif
-            ? Math.min(profondeurEau, thermocline.profondeur - MARGE_THERMOCLINE + MARGE_FOND_POISSON)
-            : profondeurEau;
-    };
+    etat.profondeurUtile = function (profondeurEau) { return profondeurUtileSous(profondeurEau, thermocline); };
     etat.vitaliteEau = function (comp) { return vitaliteThermique(temperatureEau(), comp); };
 
     function texteEau() {

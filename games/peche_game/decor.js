@@ -15,7 +15,7 @@
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerVegetation } from './vegetation.js?v=221';
+import { creerVegetation } from './vegetation.js?v=223';
 
 export function creerDecor(deps) {
     const scene = deps.scene;

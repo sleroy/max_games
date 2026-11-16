@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
 // especes.js — DONNÉES des espèces, styles de combat, silhouettes et touches (extraites de script.js).
 // ---------------------------------------------------------------------------
-import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=221';
-import { PROFIL_CHEVESNE, ANATOMIE_CHEVESNE, ROBE_CHEVESNE } from './chevesne.js?v=221';
-import { PROFIL_ROTENGLE, ANATOMIE_ROTENGLE, ROBE_ROTENGLE } from './rotengle.js?v=221';
-import { PROFIL_ABLETTE, ANATOMIE_ABLETTE, ROBE_ABLETTE } from './ablette.js?v=221';
+import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=223';
+import { PROFIL_CHEVESNE, ANATOMIE_CHEVESNE, ROBE_CHEVESNE } from './chevesne.js?v=223';
+import { PROFIL_ROTENGLE, ANATOMIE_ROTENGLE, ROBE_ROTENGLE } from './rotengle.js?v=223';
+import { PROFIL_ABLETTE, ANATOMIE_ABLETTE, ROBE_ABLETTE } from './ablette.js?v=223';
 
 // Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [
