@@ -144,6 +144,20 @@ def masque(espece):
         for x in range(54, 703):
             m[int(dos[x]):int(ventre[x]) + 1, x] = True   # ventre quasi blanc (surexposé) : on remplit entre les deux lignes
         germe = (350, 290)
+    elif espece == 'ablette':
+        # Poisson argenté sur fond blanc-gris (tourné à gauche) : écart au fond. La dorsale couchée sur le
+        # dos, la pectorale, l'anale (membrane pâle sous le ventre) et la caudale (x > 696) sont retranchées
+        # par deux lignes relevées à la main sur la photo ; museau à x = 135, base de la caudale x = 695.
+        e = np.abs(a - np.array([236, 236, 238])).max(axis=2) > 14
+        xs = np.arange(e.shape[1])
+        dos = np.interp(xs, [135, 150, 170, 220, 287, 350, 420, 440, 480, 545, 600, 695],
+                        [267, 255, 247, 232, 223, 220, 219, 222, 225, 233, 244, 255])
+        ventre = np.interp(xs, [135, 140, 153, 187, 237, 287, 353, 453, 500, 540, 580, 620, 695],
+                           [276, 280, 293, 307, 320, 333, 338, 337, 327, 312, 303, 297, 293])
+        m = np.zeros_like(e)
+        for x in range(135, 697):
+            m[int(dos[x]):int(ventre[x]) + 1, x] = e[int(dos[x]):int(ventre[x]) + 1, x]
+        germe = (400, 280)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)
