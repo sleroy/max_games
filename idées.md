@@ -1144,6 +1144,37 @@ direct aux variables globales, donc testable sans navigateur.
 > Faire le découpage **avant** l'étang agrandi (14.1) et les fonds (14.3) évite de
 > déplacer du code deux fois.
 
+### 17.4 Amorce réaliste : nuage de fouille (spec validée 2026-11-16)
+
+Bug signalé : « l'amorce attire les poissons autour de l'amorce mais ils ignorent
+l'hameçon ». Aujourd'hui les poissons convergent vers **le point** du nuage et n'en
+décrochent pas : un hameçon posé à 2–4 unités n'est jamais visité.
+
+**Spec validée par le joueur** (R = 6 u ≈ 3 m, 60 s, rendement dégressif) :
+
+- [ ] **Impact** : la boule tombe au point visé + dérive du vent. Sphère de rayon
+  **R = 6 unités**, étendue verticale ≈ ±1,2 u.
+- [ ] **Éclaboussure** : les poissons à moins de R + 3 u **s'écartent** de 2–3 u
+  pendant ≈ 2 s, puis reviennent (même mécanique que le bouchon qui tombe — à livrer
+  ensemble).
+- [ ] **Attraction** : un poisson de la **même couche d'eau**, à moins de **3 × R**,
+  détecte le nuage et nage vers la zone. Le nuage gonfle en ≈ 3 s et reste actif
+  **60 s**, puis s'éteint (les poissons repartent vers leur zone de vie).
+- [ ] **Fouille DANS la sphère** : arrivé dans le volume, le poisson **tourne à
+  l'intérieur** en nage lente et irrégulière (points de passage tirés dans la sphère,
+  re-tirés toutes les 2–4 s) — il ne quitte plus la zone tant que le nuage est actif.
+- [ ] **Hameçon présent dans le nuage** : un poisson en fouille vise aussi l'hameçon,
+  avec un poids **dégressif** selon la distance de l'hameçon au centre :
+  **plein à ≤ 2 u**, **nul à 6 u** (`p = clamp((R − d) / (R − 2), 0, 1)`).
+  Concrètement : chaque point de passage est l'hameçon avec probabilité `p × 0,5`,
+  sinon un point tiré dans la sphère. L'hameçon **hors du nuage** ne reçoit rien.
+- [ ] **Conséquence attendue** : un amorçage bien posé (bouchon au cœur) produit des
+  touches dans les 60 s ; un amorçage à côté ne change rien.
+- [ ] **Tests** : (a) poisson à 15 u attire vers la sphère ; (b) une fois dedans, il
+  reste dans la sphère (≥ 90 % du temps) et ne repart pas ; (c) l'hameçon au cœur est
+  visité (distance minimale < 1,5 u à un moment) ; (d) l'hameçon à 6 u du centre n'est
+  pas visité plus que le hasard ; (e) après extinction (60 s), les poissons repartent.
+
 ## 17. File d'attente — ordre de livraison (2026-11-16)
 
 > Mis à jour après la passe v185 → v191. L'ordre ci-dessous est celui dans lequel le
