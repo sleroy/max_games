@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=237';
+import { etat } from './etat.js?v=238';
 
 export function creerBouchons(deps) {
     const {
@@ -26,7 +26,14 @@ export function creerBouchons(deps) {
     //   temps    : temps d'épreuve de force (> 1 = plus de temps)
     //   xp       : expérience gagnée (> 1 = plus d'expérience)
     //   voyant   : le bouchon reste visible la nuit
-    const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false, sonnette: false };
+    //   sonnette : une clochette tinte à la touche (scions du quiver)
+    // Capacités « TRICHE » (bouchons triches, payés cher et XP ×0,5 par prise) :
+    //   geant     : bouchon énorme, la touche se voit de loin
+    //   detecteur : bip de détecteur de carpiste quand un poisson touche
+    //   balise    : gros panneau « FERRER ! » pendant la vraie touche (comme le mode facile)
+    const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false, sonnette: false,
+        geant: false, detecteur: false, balise: false };
+    const ECHELLE_GEANT = 3;   // le bouchon géant est 3 fois plus gros (corps et tige)
 
     // Bouchons offerts au départ (les autres s'ACHÈTENT avec l'expérience).
     etat.BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
@@ -61,7 +68,20 @@ export function creerBouchons(deps) {
           couleur: 0xffd700, corps: 0x222222, atout: '🏆 Polyvalent + 50 % d’expérience',
           capacite: { fenetre: 1.2, fausses: 0.7, avantage: 0.85, temps: 1.15, xp: 1.5, voyant: true },
           sensibilite: 1.25,
-          desc: 'Le bouchon du maître pêcheur : un peu tout à la fois (ferrage plus facile, moins de fausses touches, poisson moins combatif) et 50 % d’expérience en plus !' }
+          desc: 'Le bouchon du maître pêcheur : un peu tout à la fois (ferrage plus facile, moins de fausses touches, poisson moins combatif) et 50 % d’expérience en plus !' },
+        // --- Bouchons TRICHES : ils aident beaucoup, mais chaque prise rapporte moitié moins d'expérience ---
+        { id: 'geant', nom: 'Bouchon géant (triche)', profondeur: [0.6, 9.0], prix: 60, remontee: 'demi-tige', longueur: 1.0, triche: true,
+          couleur: 0xff2a00, corps: 0xffe600, atout: '🔭 Touche visible de loin · XP ×0,5',
+          capacite: { geant: true, xp: 0.5 }, sensibilite: 0.8,
+          desc: 'Bouchon géant : énorme, tu vois la touche de très loin. Il est lourd, donc un peu moins sensible. Triche : chaque poisson rapporte moitié moins d’expérience.' },
+        { id: 'detecteur', nom: 'Bouchon détecteur (triche)', profondeur: [0.6, 9.0], prix: 90, remontee: 'couche', longueur: 0.45, triche: true,
+          couleur: 0x39d353, corps: 0x222222, atout: '🔔 Bip quand ça mord · XP ×0,5',
+          capacite: { detecteur: true, xp: 0.5 }, sensibilite: 1.0,
+          desc: 'Bouchon détecteur : comme le détecteur des carpistes, il fait « bip » quand un poisson approche et « bip-bip-bip » quand il faut ferrer. Triche : chaque poisson rapporte moitié moins d’expérience.' },
+        { id: 'balise', nom: 'Bouchon balise (triche)', profondeur: [0.6, 9.0], prix: 130, remontee: 'couche', longueur: 0.45, triche: true,
+          couleur: 0xff00aa, corps: 0xffffff, atout: '❗ « FERRER ! » à l’écran · XP ×0,5',
+          capacite: { balise: true, xp: 0.5 }, sensibilite: 1.0,
+          desc: 'Bouchon balise : un gros « FERRER ! » s’affiche au bon moment, comme en mode Facile. Triche : chaque poisson rapporte moitié moins d’expérience.' }
     ];
     etat.flotteurChoix = 'anglaise';
     // Technique de pêche : 'bouchon' (flotteur) ou 'quiver' (scion de canne, hameçon au fond).
@@ -91,9 +111,14 @@ export function creerBouchons(deps) {
     }
 
     function appliquerFlotteurVisuel(f) {
+        // Bouchon géant (triche) : corps et tige grossissent ; la tige part du haut du gros corps.
+        const echelle = capaciteBouchon(f).geant ? ECHELLE_GEANT : 1;
+        etat.floatBody.scale.setScalar(echelle);
+        etat.floatStick.scale.x = echelle;
+        etat.floatStick.scale.z = echelle;
         // La tige s'allonge selon le modèle (elle ressort plus ou moins de l'eau).
         etat.floatStick.scale.y = f.longueur / 0.5;
-        etat.floatStick.position.y = 0.04 + f.longueur / 2;
+        etat.floatStick.position.y = 0.04 * echelle + f.longueur / 2;
         etat.floatStick.material.color.set(f.couleur);
         etat.floatBody.material.color.set(f.corps);
         etat.floatStick.userData.longueur = f.longueur;
@@ -177,7 +202,10 @@ export function creerBouchons(deps) {
             temps: c.temps || CAPACITE_BASE.temps,
             xp: c.xp || CAPACITE_BASE.xp,
             voyant: !!c.voyant,
-            sonnette: !!c.sonnette   // une clochette tinte à chaque touche (scions du quiver)
+            sonnette: !!c.sonnette,   // une clochette tinte à chaque touche (scions du quiver)
+            geant: !!c.geant,
+            detecteur: !!c.detecteur,
+            balise: !!c.balise
         };
     }
 

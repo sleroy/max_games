@@ -6,7 +6,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=237';
+import { etat } from './etat.js?v=238';
 
 export function creerBateau(deps) {
     const {

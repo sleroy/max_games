@@ -6,8 +6,8 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=237';
-import { apercuPartage } from './apercuPoisson.js?v=237';
+import { etat } from './etat.js?v=238';
+import { apercuPartage } from './apercuPoisson.js?v=238';
 
 export function creerCombat(deps) {
     const {
@@ -412,6 +412,7 @@ export function creerCombat(deps) {
         etat.spawnRipple(floatGroup.position);
         sound.bite();
         if (etat.techniqueCourante === 'quiver' && capaciteBouchon().sonnette) { sound.playCarillon(); }
+        if (capaciteBouchon().detecteur) { bipDetecteur(1); }   // bouchon détecteur : 1 bip
         // Vue RÉALISTE : aucun zoom. Un petit message flottant aide simplement à
         // repérer que quelque chose se passe autour du bouchon / du scion.
         const nomMouvement = etat.techniqueCourante === 'quiver' ? 'scion' : 'bouchon';
@@ -487,6 +488,15 @@ export function creerCombat(deps) {
         etat.spawnFloatingText('Rien ne bougeait…', floatGroup.position, '#cfd8e3');
         statusDisplay.textContent = 'Trop tôt ! Rien ne bougeait encore…';
         hideBiteView();
+    }
+
+    // Bouchon DÉTECTEUR (triche) : n bips aigus rapprochés, comme le détecteur des carpistes.
+    // (Ici et pas dans sound.js, qui est à son plafond de lignes.)
+    function bipDetecteur(n) {
+        etat.bipsDetecteur = (etat.bipsDetecteur || 0) + n;   // compteur lu par les tests
+        for (let i = 0; i < n; i++) {
+            setTimeout(() => sound.tonSecours(2600, 2500, 0.08, 0.2, 'square'), i * 120);
+        }
     }
 
     function updateBiteView(dt) {
@@ -612,9 +622,14 @@ export function creerCombat(deps) {
         // Mis à jour APRÈS les transitions de phase : c'est ce même appel qui
         // vient de passer en « touche ». C'est le seul moment où il faut cliquer :
         // les enfants n'ont pas à reconnaître un dessin de bouchon pour réussir.
+        // Bouchon BALISE (triche) : le même panneau, dans tous les modes.
+        // Bouchon DÉTECTEUR (triche) : « bip-bip-bip » au début de la vraie touche.
+        const enTouche = etat.floatState === 'bite' && etat.bitePhase === 'touche';
+        const capTriche = capaciteBouchon();
+        if (enTouche && !etat.etaitEnTouche && capTriche.detecteur) { bipDetecteur(3); }
+        etat.etaitEnTouche = enTouche;
         if (kidCue) {
-            kidCue.classList.toggle('active',
-                !!etat.modeFacile && etat.floatState === 'bite' && etat.bitePhase === 'touche');
+            kidCue.classList.toggle('active', (!!etat.modeFacile || capTriche.balise) && enTouche);
         }
     }
 

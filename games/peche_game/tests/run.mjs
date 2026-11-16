@@ -62,6 +62,7 @@ import { run as scenarioVegetation } from './scenario-vegetation.mjs';
 import { run as scenarioMatriceTouche } from './scenario-matrice-touche.mjs';
 import { run as scenarioAvion } from './scenario-avion.mjs';
 import { run as scenarioConseilLocal } from './scenario-conseil-local.mjs';
+import { run as scenarioBouchonsTriche } from './scenario-bouchons-triche.mjs';
 import { run as scenarioAmorceCouche } from './scenario-amorce-couche.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
@@ -182,6 +183,7 @@ try {
     await scenarioConseilLocal();   // rien ne mord : conseil pour cet endroit (facile 30 s, normal 60 s, dur jamais)
     debutScenario();
     await scenarioMilieux();    // biotopes d'étang : choix à l'accueil, quotas, taille maximale, eau, décor, fonds, matrice
+    scenarioBouchonsTriche();       // bouchons triches payants : géant, détecteur sonore, balise « FERRER ! »
     scenarioAmorceCouche();         // amorce : un poisson d'une autre couche ne se fige plus ; clochette des scions
     debutScenario();
     scenarioMenus();            // menus de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel
