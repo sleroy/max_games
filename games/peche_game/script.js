@@ -3,19 +3,19 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=197';
+import { SoundEngine } from './sound.js?v=198';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=197';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=198';
 import { creerClassement } from './classement.js';
 import { dessinerPortrait } from './portraits.js?v=140';
-import { creerPoissons } from './poissons.js?v=197';
+import { creerPoissons } from './poissons.js?v=198';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
     ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=183';
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
-import { creerSubstrats } from './substrats.js?v=197';
+import { creerSubstrats } from './substrats.js?v=198';
 import { creerEsches } from './esches.js?v=192';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=192';
 import { creerBourriche } from './bourriche.js?v=144';
@@ -23,7 +23,7 @@ import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
 import { creerCombat } from './combat.js?v=189';
-import { creerComportement } from './comportement.js?v=197';
+import { creerComportement } from './comportement.js?v=198';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=189';
@@ -38,7 +38,7 @@ import { creerLigne } from './ligne.js?v=189';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
 import { creerMeteo } from './meteo.js?v=189';
-import { creerPhysique } from './physique.js?v=197';
+import { creerPhysique } from './physique.js?v=198';
 import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=179';
 import { creerStocks } from './stocks.js?v=192';
@@ -46,7 +46,7 @@ import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=194';
 import { creerAccrochage } from './accrochage.js?v=183';
-import { creerAmbiance } from './ambiance.js?v=197';
+import { creerAmbiance } from './ambiance.js?v=198';
 import { creerEntrees } from './entrees.js?v=179';
 import { creerCheat } from './cheat.js?v=170';
 import { creerBoucle } from './boucle.js?v=169';

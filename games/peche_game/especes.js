@@ -17,8 +17,11 @@ export const SPECIES = [
       profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], style: 'aspirateur',
       // Couleurs échantillonnées sur assets/references/breme.jpg (médianes PIL, flanc
       // et ventre au 80e centile pour compenser l'ombre de la photo).
-      couleur: 0x5f4f3b, dos: 0x38251a, ventre: 0x958268, tete: 0x4a3f3a, nageoires: 0x2a1d1c, oeil: 0xc0b292,
-      motif: 'ecailles', ecailles: 52, profil: 'breme', anatomie: 'breme' },
+      couleur: 0x64573f, dos: 0x2a2319, ventre: 0xc2b89d, tete: 0x645c42, nageoires: 0x6c6257, oeil: 0xd2bf7c,
+      nageoiresMotif: 'doux',
+      // Robe : écailles fines et irrégulières, estompées vers le ventre, fondu de la tête doux.
+      motif: 'ecailles', ecailles: 74, contrasteEcailles: 0.7, irregulariteEcailles: 0.3, ecaillesVentre: 0.75,
+      debutEcailles: 0.21, fonduTete: 0.45, profil: 'breme', anatomie: 'breme' },
     { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [15, 70], k: 1.7, abondance: 5,
       profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
     { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [20, 105], k: 2.3, abondance: 6,
@@ -269,8 +272,9 @@ export const PROFILS = {
 //                 longueur (fraction de LS au-delà du pédoncule), ecart (demi-envergure) }
 //   dorsale, dorsale2, adipeuse, anale : { type, t0, t1 (base), hauteur, recul? }
 //                 types : souple, haute, longue, epineuse, reculee, petite, continue,
-//                 analeLongue, analeBreme, adipeuse (voir NAGEOIRES dans modelePoisson.js)
-//   pectorale : { t, y, longueur, pente (rad, + = vers le bas), forme: pointue | ronde }
+//                 analeLongue, analeBreme, dorsaleBreme, adipeuse (voir NAGEOIRES dans modelePoisson.js)
+//   pectorale : { t, y, longueur, pente (rad, + = vers le bas), forme: pointue | ronde | ovale,
+//                 eventail? (ouverture des rayons en rad, défaut 0,55) }
 //   pelvienne : { t, longueur, pente }
 //   oeil      : { t, y, r } ; bouche : { t (coin), y0 (museau), y1 (coin) }
 //   opercule  : t du bord de l'ouïe ; barbillons : [{ t, y, longueur, chute, ecart }]
@@ -346,17 +350,18 @@ export const ANATOMIES = {
     },
 
     // --- Mesurés (mêmes photos que les PROFILS) ------------------------------------
-    // Brème : œil t 0,061 (r 0,016), bouche infère, ouïe t 0,23 ; dorsale haute t 0,56 → 0,74 ;
-    // anale très longue t 0,65 → 0,93 (lobe avant 0,14 LS) ; pectorale t 0,24 basse
-    // (0,19 LS) ; pelviennes t 0,46 ; caudale 0,21 LS, lobe bas plus long.
+    // Brème : œil t 0,061 (r 0,019), bouche infère petite, ouïe t 0,22 ; dorsale t 0,56 → 0,74
+    // (0,13 LS, sommet arrondi) ; anale longue t 0,65 → 0,93 (lobe avant 0,10 LS) ; pectorale
+    // t 0,24 basse (0,15 LS, ovale) ; pelviennes t 0,46 ; caudale 0,21 LS, échancrure
+    // modérée, lobes arrondis, lobe bas plus long.
     breme: {
         queue: { type: 'breme', longueur: 0.206, ecart: 0.133 },
-        dorsale: { type: 'haute', t0: 0.564, t1: 0.742, hauteur: 0.11, recul: 0.6 },
-        anale: { type: 'analeBreme', t0: 0.654, t1: 0.932, hauteur: 0.13, recul: 0.35 },
-        pectorale: { t: 0.24, y: -0.105, longueur: 0.19, pente: 0.15 },
-        pelvienne: { t: 0.457, longueur: 0.12, pente: 0.12 },
-        oeil: { t: 0.061, y: -0.007, r: 0.016 }, bouche: { t: 0.026, y0: -0.02, y1: -0.032, epaisseur: 0.004 },
-        opercule: 0.228, ligneCourbe: 1.2
+        dorsale: { type: 'dorsaleBreme', t0: 0.564, t1: 0.742, hauteur: 0.125, recul: 0.36 },
+        anale: { type: 'analeBreme', t0: 0.654, t1: 0.932, hauteur: 0.1, recul: 0.55 },
+        pectorale: { t: 0.24, y: -0.105, longueur: 0.15, pente: 0.15, forme: 'ovale', eventail: 0.95 },
+        pelvienne: { t: 0.457, longueur: 0.11, pente: 0.12, forme: 'ronde' },
+        oeil: { t: 0.061, y: -0.007, r: 0.019 }, bouche: { t: 0.03, y0: -0.02, y1: -0.034, epaisseur: 0.0045 },
+        opercule: 0.222, ligneCourbe: 1.2, contrasteOpercule: 0.1
     },
     // Brochet : œil t 0,18 (r 0,015), haut sur la tête ; gueule jusqu'à t 0,136 ;
     // ouïe t 0,354 ; pectorale basse t 0,335 ; pelviennes t 0,613 ; dorsale et anale

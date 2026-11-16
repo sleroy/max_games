@@ -96,13 +96,28 @@ const MOTIFS = {
         const sombre = melanger(c.flanc, 0x000000, 0.6);
         const clair = melanger(c.flanc, 0xffffff, 0.35);
         const debut = W * ((espece && espece.debutEcailles) || 0.22);   // la tête n'a pas d'écailles
+        // Options propres à l'espèce (défauts = filet régulier d'origine) :
+        //   contrasteEcailles (1) : force du dessin ; irregulariteEcailles (0) : décalage
+        //   aléatoire des écailles (fraction de leur taille) ; ecaillesVentre (0) : part
+        //   du dessin effacée vers le ventre (0 = aucune, 1 = totale).
+        const contraste = espece && espece.contrasteEcailles !== undefined ? espece.contrasteEcailles : 1;
+        const desordre = (espece && espece.irregulariteEcailles) || 0;
+        const ventre = (espece && espece.ecaillesVentre) || 0;
         g.lineWidth = Math.max(0.8, pas * 0.24);
         for (let r = 0; r <= rangs; r++) {
+            const v = r / rangs;   // 0 = dos, 1 = ventre
+            const attenue = 1 - ventre * Math.max(0, Math.min(1, (v - 0.5) / 0.45));
             for (let k = -1; k <= colonnes; k++) {
-                const x = (k + (r % 2) * 0.5) * pas + pas * 0.9;
-                const y = r * pasY;
+                // (le hasard n'est tiré que si l'espèce le demande : les autres robes restent identiques)
+                const dx = desordre ? (aleatoire() - 0.5) * desordre * pas : 0;
+                const dy = desordre ? (aleatoire() - 0.5) * desordre * pasY : 0;
+                const x = (k + (r % 2) * 0.5) * pas + pas * 0.9 + dx;
+                const y = r * pasY + dy;
+                const force = contraste * attenue * (desordre ? 1 - desordre * 0.5 * aleatoire() : 1);
                 if (x < debut) { continue; }
-                const fondu = Math.min(1, (x - debut) / (W * 0.05));   // pas de bord net derrière l'ouïe
+                // pas de bord net derrière l'ouïe (fondu plus long si l'espèce adoucit sa tête)
+                const largeurFondu = W * (0.05 + 0.12 * ((espece && espece.fonduTete) || 0));
+                const fondu = Math.min(1, (x - debut) / largeurFondu) * force;
                 g.fillStyle = css(clair, (0.05 + aleatoire() * 0.08) * fondu);
                 tache(g, x - pas * 0.3, y, pas * 0.36, pasY * 0.38, 0);
                 g.strokeStyle = css(sombre, 0.5 * fondu);
@@ -271,8 +286,10 @@ export function dessinerRobe(g, W, H, espece, repere) {
     const xOp = (r.opercule !== undefined ? r.opercule : 0.22) * W;
     const tete = espece && espece.tete !== undefined ? espece.tete : melanger(c.flanc, c.dos, 0.45);
     const peau = g.createLinearGradient(0, 0, xOp + W * 0.02, 0);
+    // `fonduTete` (0 par défaut) avance le début du fondu : limite de l'ouïe moins nette.
+    const finPlein = 0.8 - Math.min(0.7, (espece && espece.fonduTete) || 0);
     peau.addColorStop(0, css(tete, 0.75));
-    peau.addColorStop(0.8, css(tete, 0.6));
+    peau.addColorStop(finPlein, css(tete, 0.6));
     peau.addColorStop(1, css(tete, 0));
     g.fillStyle = peau;
     g.fillRect(0, 0, xOp + W * 0.02, H);
@@ -354,8 +371,9 @@ export function textureNageoire(variante) {
     fond.addColorStop(1, '#a8a8a8');
     g.fillStyle = fond;
     g.fillRect(0, 0, W, H);
-    g.strokeStyle = 'rgba(20,16,12,0.45)';
-    g.lineWidth = 1.6;
+    // Variante « doux » : rayons discrets (membrane fine : brème, gardon…).
+    g.strokeStyle = cle === 'doux' ? 'rgba(20,16,12,0.2)' : 'rgba(20,16,12,0.45)';
+    g.lineWidth = cle === 'doux' ? 1.2 : 1.6;
     for (let i = 0; i < 16; i++) {
         const x = (i + 0.5) * (W / 16);
         g.beginPath();

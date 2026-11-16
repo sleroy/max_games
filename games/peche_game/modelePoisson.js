@@ -21,8 +21,8 @@
 //   pelviennes, yeux (sclère + iris + pupille), bouche, barbillons.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=197';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=197';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=198';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=198';
 
 export const SECTIONS = 60;          // anneaux le long du corps
 export const SEGMENTS = 30;          // sommets par anneau (tour du corps)
@@ -186,21 +186,27 @@ const NAGEOIRES = {
     continue: { h: [[0, 0.15], [0.2, 0.75], [0.9, 1], [1, 1]], recul: 0.15 },
     analeLongue: { h: [[0, 0.05], [0.12, 0.6], [0.3, 0.9], [0.85, 1], [1, 0.85]], recul: 0.22 },
     analeBreme: { h: [[0, 0.72], [0.12, 1], [0.35, 0.55], [0.7, 0.28], [1, 0.12]], recul: 0.6 },
-    adipeuse: { h: [[0, 0.3], [0.4, 1], [1, 0.5]], recul: 0.7 }
+    adipeuse: { h: [[0, 0.3], [0.4, 1], [1, 0.5]], recul: 0.7 },
+    // Dorsale de brème : sommet arrondi près de l'avant, bord arrière concave.
+    dorsaleBreme: { h: [[0, 0.66], [0.07, 0.94], [0.17, 1], [0.34, 0.86], [0.62, 0.58], [1, 0.3]], recul: 0.4 }
 };
 
 // Pectorales / pelviennes : longueur relative de chaque rayon (s = 0 rayon
 // du haut / de l'avant → 1).
 const PAIRES = {
     pointue: [[0, 0.82], [0.22, 1], [0.6, 0.72], [1, 0.38]],
-    ronde: [[0, 0.7], [0.4, 1], [1, 0.62]]
+    ronde: [[0, 0.7], [0.4, 1], [1, 0.62]],
+    // Éventail arrondi, rayons du milieu les plus longs (pectorale de brème).
+    ovale: [[0, 0.5], [0.2, 0.84], [0.45, 1], [0.75, 0.88], [1, 0.52]]
 };
 
 // Caudales : contour du bord libre, du lobe du haut au lobe du bas, en
 // fractions de (longueur, écart) ; x < 0 = vers l'arrière.
 const CAUDALES = {
     fourche: [[-0.95, 1], [-0.62, 0.45], [-0.42, 0], [-0.62, -0.45], [-1, -1]],
-    breme: [[-0.75, 1], [-0.55, 0.55], [-0.33, 0.02], [-0.6, -0.5], [-1, -0.88]],
+    // Échancrure modérée, lobes arrondis, lobe du bas un peu plus long.
+    breme: [[-0.8, 1], [-0.9, 0.92], [-0.94, 0.78], [-0.88, 0.58], [-0.72, 0.38], [-0.54, 0.17],
+        [-0.46, 0], [-0.54, -0.17], [-0.74, -0.4], [-0.92, -0.62], [-1, -0.8], [-0.98, -0.92], [-0.86, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
@@ -325,7 +331,7 @@ function nageoiresPaires(lot, profil, LS, xNez, def, pelvienne, echelleHauteur) 
             const z = cote * zSurface(profil, t, y) * (pelvienne ? 0.6 : 0.97);
             // Éventail des rayons : sans lui, base et rayons sont parallèles et
             // la nageoire n'est qu'un trait vue de profil.
-            const angle = pente + (s - 0.5) * (pelvienne ? 0.8 : 0.55);
+            const angle = pente + (s - 0.5) * (pelvienne ? 0.8 : (def.eventail !== undefined ? def.eventail : 0.55));
             const l = L * lirePolyligne(forme, s) * r;
             // Une pelvienne pend sous le ventre (vue de profil) au lieu de
             // s'étaler à plat : elle descend autant qu'elle s'écarte.
