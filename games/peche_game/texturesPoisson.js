@@ -182,6 +182,8 @@ const MOTIFS = {
                 W * (0.012 + aleatoire() * 0.016), H * (0.04 + aleatoire() * 0.05), aleatoire() * 3);
         }
         const encre = melanger(c.dos, 0x050a05, 0.4);
+        // `forceRayures` (1) : opacité des barres (très discrètes chez le sandre).
+        const forceBarre = espece.forceRayures !== undefined ? espece.forceRayures : 1;
         liste.forEach(function (b) {
             const bas = Math.acos(1 - 2 * b.d) / Math.PI;      // y/H du bout de la barre
             const N = 14;
@@ -200,7 +202,7 @@ const MOTIFS = {
                 droite.push([centre + demi + aleatoire() * 1.1, y]);
             }
             [[1.5, 0.2], [0.9, 0.28], [0, 0.7]].forEach(function (couche) {
-                g.fillStyle = css(encre, couche[1]);
+                g.fillStyle = css(encre, couche[1] * forceBarre);
                 g.beginPath();
                 g.moveTo(gauche[0][0] - couche[0], gauche[0][1]);
                 gauche.forEach(p => g.lineTo(p[0] - couche[0], p[1]));
@@ -210,13 +212,46 @@ const MOTIFS = {
         });
     },
 
-    // Selles sombres diffuses sur le dos (sandre).
-    barres: function (g, W, H, c, aleatoire) {
-        g.fillStyle = css(melanger(c.dos, 0x000000, 0.3), 0.35);
-        for (let i = 0; i < 9; i++) {
-            const x = W * (0.28 + i * 0.08);
-            tache(g, x, H * 0.18, W * 0.022, H * 0.3, (aleatoire() - 0.5) * 0.3);
+    // Sandre : un point sombre par écaille sur le dos et le haut du flanc (effacés vers le ventre
+    // et la tête), puis de larges barres verticales très discrètes. Options de l'espèce :
+    // `pointsEcailles` (0 = aucun ; force 0-1), `ecailles` (écailles sur la longueur), `debutEcailles`,
+    // `barres` (liste { t, large, pente, d } comme `rayures`), `forceRayures` (opacité des barres).
+    // Sans `barres` : l'ancien dessin de 9 selles diffuses.
+    barres: function (g, W, H, c, aleatoire, espece) {
+        const bandes = espece && espece.barres;
+        if (!bandes) {
+            g.fillStyle = css(melanger(c.dos, 0x000000, 0.3), 0.35);
+            for (let i = 0; i < 9; i++) {
+                tache(g, W * (0.28 + i * 0.08), H * 0.18, W * 0.022, H * 0.3, (aleatoire() - 0.5) * 0.3);
+            }
+            return;
         }
+        const force = espece.pointsEcailles || 0;
+        if (force) {
+            // La texture est plus étirée en v qu'en u (≈ 1,9 px de v pour 1 px de u par unité de
+            // longueur) : une écaille ronde occupe donc pas × (pas × ETIRE) pixels.
+            const ETIRE = 1.9;
+            const colonnes = espece.ecailles || 60;
+            const pas = W / colonnes;
+            const pasY = pas * ETIRE;
+            const rangs = Math.floor(H * 0.64 / pasY);
+            const encre = melanger(c.dos, 0x050805, 0.45);
+            const debut = W * (espece.debutEcailles || 0.25);
+            for (let r = 0; r <= rangs; r++) {
+                const v = (r + 0.5) / (rangs + 1) * 0.64;           // 0 = dos
+                const attenue = Math.max(0, 1 - Math.pow(v / 0.64, 1.6));
+                for (let k = -1; k <= colonnes; k++) {
+                    const x = (k + (r % 2) * 0.5) * pas + pas * 0.8 + (aleatoire() - 0.5) * pas * 0.5;
+                    const y = v * H + (aleatoire() - 0.5) * pasY * 0.4;
+                    const alpha = force * attenue * (0.55 + aleatoire() * 0.75);
+                    if (x < debut) { continue; }
+                    const fondu = Math.min(1, (x - debut) / (W * 0.08));
+                    g.fillStyle = css(encre, Math.min(0.9, alpha * fondu));
+                    tache(g, x, y, pas * 0.3, pasY * 0.28, 0);
+                }
+            }
+        }
+        MOTIFS.rayures(g, W, H, c, aleatoire, Object.assign({}, espece, { rayures: bandes, ecailles: 0 }));
     },
 
     // Bande latérale de taches soudées (black-bass).
@@ -415,21 +450,41 @@ export function dessinerRobe(g, W, H, espece, repere) {
     g.fillStyle = joue;
     g.fillRect(0, H * 0.4, xOp, H * 0.6);
     const contraste = r.contrasteOpercule !== undefined ? r.contrasteOpercule : 0.4;
-    g.strokeStyle = css(melanger(c.dos, 0x000000, 0.5), contraste);
-    g.lineWidth = 1.6;
-    g.beginPath();
-    g.moveTo(xOp - W * 0.025, H * 0.12);
-    g.quadraticCurveTo(xOp + W * 0.012, H * 0.5, xOp - W * 0.035, H * 0.9);
-    g.stroke();
-    g.strokeStyle = css(melanger(c.flanc, 0xffffff, 0.35), contraste * 0.6);
-    g.lineWidth = 1;
-    g.beginPath();
-    g.moveTo(xOp - W * 0.03, H * 0.14);
-    g.quadraticCurveTo(xOp + W * 0.004, H * 0.5, xOp - W * 0.04, H * 0.88);
-    g.stroke();
+    if (r.operculeDoux) {
+        // Bord arrière diffus (brochet) : une ombre large et floue contre le flanc, un
+        // trait plus net au milieu, puis un liseré clair devant : visible, jamais un fil.
+        const ombre = melanger(c.dos, 0x000000, 0.5);
+        [[9, 0.2], [5.5, 0.35], [2.6, 0.6]].forEach(function (l) {
+            g.strokeStyle = css(ombre, contraste * l[1]);
+            g.lineWidth = l[0];
+            g.beginPath();
+            g.moveTo(xOp - W * 0.022, H * 0.12);
+            g.quadraticCurveTo(xOp + W * 0.012, H * 0.5, xOp - W * 0.032, H * 0.9);
+            g.stroke();
+        });
+        g.strokeStyle = css(melanger(c.flanc, 0xffffff, 0.4), contraste * 0.7);
+        g.lineWidth = 3.5;
+        g.beginPath();
+        g.moveTo(xOp - W * 0.04, H * 0.14);
+        g.quadraticCurveTo(xOp + W * 0.0, H * 0.5, xOp - W * 0.05, H * 0.88);
+        g.stroke();
+    } else {
+        g.strokeStyle = css(melanger(c.dos, 0x000000, 0.5), contraste);
+        g.lineWidth = 1.6;
+        g.beginPath();
+        g.moveTo(xOp - W * 0.025, H * 0.12);
+        g.quadraticCurveTo(xOp + W * 0.012, H * 0.5, xOp - W * 0.035, H * 0.9);
+        g.stroke();
+        g.strokeStyle = css(melanger(c.flanc, 0xffffff, 0.35), contraste * 0.6);
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(xOp - W * 0.03, H * 0.14);
+        g.quadraticCurveTo(xOp + W * 0.004, H * 0.5, xOp - W * 0.04, H * 0.88);
+        g.stroke();
+    }
 
     // Narine : petit point sombre entre l'œil et le museau.
-    if (r.oeil) {
+    if (r.oeil && !r.sansNarine) {
         g.fillStyle = css(melanger(c.dos, 0x000000, 0.6), 0.7);
         tache(g, r.oeil.t * 0.55 * W, (1 - r.oeil.v) * H - 1, 1.3, 1);
     }
@@ -497,6 +552,37 @@ export function textureNageoire(variante) {
             g.moveTo(x, H);
             g.lineTo(x, 2);
             g.stroke();
+        }
+        const t = new THREE.CanvasTexture(canvas);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = THREE.RepeatWrapping;
+        _texturesNageoire[cle] = t;
+        return t;
+    }
+    if (cle === 'sandre') {
+        // Membrane translucide, rayons fins et rangées de petits points sombres le long des
+        // rayons, plus nombreux vers la base (nageoires du sandre : gris-vert tachetées).
+        const membrane = g.createLinearGradient(0, 0, 0, H);
+        membrane.addColorStop(0, '#f0f0f0');
+        membrane.addColorStop(1, '#b4b4b4');
+        g.fillStyle = membrane;
+        g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(24,28,16,0.3)';
+        g.lineWidth = 1.2;
+        for (let i = 0; i < 16; i++) {
+            const x = (i + 0.5) * (W / 16);
+            g.beginPath();
+            g.moveTo(x, H);
+            g.lineTo(x, 2);
+            g.stroke();
+        }
+        const alea = hasard(11);
+        for (let i = 0; i < 16; i++) {
+            const x = (i + 0.5) * (W / 16);
+            for (let y = H - 5; y > 8; y -= 7 + alea() * 4) {
+                g.fillStyle = 'rgba(26,30,18,' + (0.28 + 0.5 * (y / H) * alea()).toFixed(2) + ')';
+                tache(g, x + (alea() - 0.5) * 2, y, 1.4 + alea() * 0.6, 1.2);
+            }
         }
         const t = new THREE.CanvasTexture(canvas);
         t.colorSpace = THREE.SRGBColorSpace;

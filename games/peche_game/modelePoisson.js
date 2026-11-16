@@ -19,10 +19,13 @@
 //   corps + dorsale(s) + anale + adipeuse : UN mesh, deux matériaux (animé) ;
 //   caudale : dans `tailPivot` ; détails (masqués au loin) : pectorales,
 //   pelviennes, yeux (sclère + iris + pupille), bouche, barbillons.
+// Tête à bec (brochet) : voir `teteBec.js` (fente de gueule ouverte, dents, narines ; le corps
+// reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=207';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=207';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=209';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=209';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=209';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -99,6 +102,9 @@ export function preparerProfil(points, rondeur) {
     const profil = {
         h: t => Math.max(0.0015, fh(t)) * dome(t),
         w: t => Math.max(0.0015, fw(t)) * dome(t),
+        h0: t => Math.max(0.0015, fh(t)),      // sans le dôme du museau (voir profilAvecBec)
+        w0: t => Math.max(0.0015, fw(t)),
+        dome: dome,
         y: lis('y'),
         n: n,
         nb: nb
@@ -222,7 +228,13 @@ const NAGEOIRES = {
     analeBrochet: { h: [[0, 0.3], [0.08, 0.72], [0.2, 0.95], [0.36, 1], [0.65, 0.8], [1, 0.38]], recul: 0.7 },
     // Dorsale de carpe : longue, premier rayon épineux (pointe étroite à l'avant),
     // bord supérieur concave qui s'abaisse doucement vers l'arrière.
-    dorsaleCarpe: { h: [[0, 0.58], [0.035, 1], [0.1, 0.84], [0.25, 0.7], [0.55, 0.56], [0.85, 0.46], [1, 0.34]], recul: 0.8 }
+    dorsaleCarpe: { h: [[0, 0.58], [0.035, 1], [0.1, 0.84], [0.25, 0.7], [0.55, 0.56], [0.85, 0.46], [1, 0.34]], recul: 0.8 },
+    // Sandre : 1re dorsale épineuse repliée (épines les plus longues vers l'avant, un rayon sur
+    // deux un peu plus court), 2e dorsale souple à sommet plat puis bord arrière qui tombe,
+    // rayons couchés vers la queue ; anale basse, rayons mous arrondis.
+    dorsaleSandre: { h: [[0, 0.35], [0.1, 0.8], [0.22, 1], [0.4, 0.95], [0.65, 0.72], [0.85, 0.5], [1, 0.32]], recul: 0.75, epines: true, epinesAmp: 0.82 },
+    dorsale2Sandre: { h: [[0, 0.3], [0.12, 0.75], [0.3, 0.95], [0.45, 1], [0.62, 0.92], [0.8, 0.62], [1, 0.25]], recul: 0.75 },
+    analeSandre: { h: [[0, 0.55], [0.15, 1], [0.4, 0.88], [0.75, 0.55], [1, 0.28]], recul: 0.8 }
 };
 
 // Pectorales / pelviennes : longueur relative de chaque rayon (s = 0 rayon
@@ -252,6 +264,9 @@ const CAUDALES = {
     // Brochet : échancrure modérée (≈ 45 % de la longueur), lobes arrondis.
     brochet: [[-0.8, 1], [-0.92, 0.94], [-0.99, 0.8], [-0.95, 0.6], [-0.82, 0.4], [-0.66, 0.2],
         [-0.55, 0], [-0.66, -0.2], [-0.82, -0.4], [-0.95, -0.6], [-0.99, -0.8], [-0.92, -0.94], [-0.8, -1]],
+    // Sandre : bord arrière presque droit (légère échancrure), coins arrondis.
+    sandre: [[-0.78, 1], [-0.92, 0.98], [-0.99, 0.88], [-1, 0.7], [-0.96, 0.4], [-0.92, 0.12],
+        [-0.91, -0.1], [-0.95, -0.4], [-0.99, -0.7], [-0.98, -0.88], [-0.9, -0.98], [-0.76, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
@@ -297,14 +312,25 @@ function bordCaudale(contour, s) {
 // ---------------------------------------------------------------------------
 // Corps : anneaux en superellipse, capuchons au museau et au pédoncule.
 // u = t (le long du corps), v = 0 ventre → 1 dos (miroir sur les deux flancs).
+// Avec un `bec` (brochet), la tête est fabriquée par `anneauxBec` : voir plus bas.
 // ---------------------------------------------------------------------------
-function construireCorps(lot, profil, LS, xNez) {
+function construireCorps(lot, profil, LS, xNez, bec, fente) {
     const M = SEGMENTS;
-    const pointe = sommet(lot, xNez, profil.y(0) * LS, 0, 0, 0.5, 1);
-    const anneaux = [];
+    const ts = [];
     for (let i = 1; i <= SECTIONS; i++) {
         const s = i / SECTIONS;
-        const t = 0.6 * s + 0.4 * (1 - Math.cos(Math.PI * s)) / 2;
+        ts.push(0.6 * s + 0.4 * (1 - Math.cos(Math.PI * s)) / 2);
+    }
+    const tete = bec ? preparerTete(lot, profil, LS, xNez, bec, fente, ts,
+        { sommet: sommet, spow: spow, M: M }) : null;
+    const pointe = bec ? -1 : sommet(lot, xNez, profil.y(0) * LS, 0, 0, 0.5, 1);
+    const anneaux = [];
+    if (tete) {
+        tete.sections.forEach(function (r) { anneaux.push(r.base); });
+    }
+    for (let i = 1; i <= SECTIONS; i++) {
+        const t = ts[i - 1];
+        if (tete && t <= tete.tFin) { continue; }     // déjà fait par la tête
         const h = profil.h(t) * LS;
         const w = profil.w(t) * LS;
         const yc = profil.y(t) * LS;
@@ -321,17 +347,22 @@ function construireCorps(lot, profil, LS, xNez) {
     }
     // Bout du pédoncule (caché par la caudale) : teinte du dos, pas de reflet clair.
     const fin = sommet(lot, xNez - LS * 1.004, profil.y(1) * LS, 0, 1, 0.9, 1);
-    for (let j = 0; j < M; j++) {
-        const k = (j + 1) % M;
-        lot.idx.push(pointe, anneaux[0] + k, anneaux[0] + j);
-    }
-    for (let i = 0; i < anneaux.length - 1; i++) {
+    if (!tete) {
         for (let j = 0; j < M; j++) {
             const k = (j + 1) % M;
-            const a = anneaux[i] + j;
-            const b = anneaux[i] + k;
-            const c = anneaux[i + 1] + j;
-            const d = anneaux[i + 1] + k;
+            lot.idx.push(pointe, anneaux[0] + k, anneaux[0] + j);
+        }
+    }
+    for (let i = 0; i < anneaux.length - 1; i++) {
+        const sec = tete && i < tete.sections.length ? tete.sections[i] : null;
+        const suivante = tete && i + 1 < tete.sections.length ? tete.sections[i + 1] : null;
+        for (let j = 0; j < M; j++) {
+            const k = (j + 1) % M;
+            // Sections de la tête : les deux mâchoires ne se rejoignent pas (fente).
+            const a = sec ? sec.debut[j] : anneaux[i] + j;
+            const b = sec ? sec.fin[j] : anneaux[i] + k;
+            const c = suivante ? suivante.debut[j] : anneaux[i + 1] + j;
+            const d = suivante ? suivante.fin[j] : anneaux[i + 1] + k;
             lot.idx.push(a, b, c, b, d, c);
         }
     }
@@ -347,6 +378,7 @@ function construireCorps(lot, profil, LS, xNez) {
     for (let j = 0; j < M; j++) {
         lot.idx.push(copie + j, copie + (j + 1) % M, fin);
     }
+    return tete ? { interieur: tete.interieur, dents: tete.dents, fantomes: tete.fantomes } : null;
 }
 
 // Nageoire impaire (dorsale, anale, adipeuse) : base sur le dos (sens = +1)
@@ -433,7 +465,7 @@ function caudale(lot, def, hPed, LS, echelleHauteur, couleurs) {
 
 // Œil : sphère aplatie, couleurs en anneaux autour de l'axe +z
 // (pupille noire, iris de l'espèce, cercle sombre, sclère claire).
-function geometrieOeil(rayon, couleurIris) {
+function geometrieOeil(rayon, couleurIris, pupilleVerticale) {
     const g = new THREE.SphereGeometry(rayon, 18, 12);
     g.rotateX(Math.PI / 2);
     g.scale(1, 1, 0.5);
@@ -448,7 +480,9 @@ function geometrieOeil(rayon, couleurIris) {
     for (let i = 0; i < pos.count; i++) {
         const v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i) * 2).normalize();
         const a = Math.acos(Math.max(-1, Math.min(1, v.z)));
-        const c = a < 0.42 ? pupille : a < 0.9 ? iris.clone().lerp(anneau, (a - 0.42) / 0.48)
+        // Pupille verticale (brochet) : pas de disque noir ici, une ellipse est posée
+        // par-dessus (pupilleVerticaleGeometrie).
+        const c = (!pupilleVerticale && a < 0.42) ? pupille : a < 0.9 ? iris.clone().lerp(anneau, Math.max(0, (a - 0.42) / 0.48))
             : a < 1.05 ? anneau : sclere;
         col.push(c.r, c.g, c.b);
     }
@@ -531,7 +565,9 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     const group = new THREE.Group();
     const forme = formeDe(form);
     const { anatomie, profil: points, rondeur } = anatomieDe(forme, espece);
-    const profil = preparerProfil(points, rondeur);
+    const bec = anatomie.bec && anatomie.bouche ? anatomie.bec : null;
+    const profilBase = preparerProfil(points, rondeur);
+    const profil = bec ? profilAvecBec(profilBase, bec) : profilBase;
     const queue = anatomie.queue || { type: 'fourche', longueur: 0.22, ecart: 0.13 };
     const LS = forme.longueurRef / (1 + queue.longueur);   // longueur standard
     const xNez = LS / 2;
@@ -550,6 +586,8 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     const repere = {
         opercule: anatomie.opercule,
         oeil: anatomie.oeil ? { t: anatomie.oeil.t, v: 0.62 } : null,
+        sansNarine: !!bec,                       // narines en relief (bec)
+        operculeDoux: anatomie.operculeDoux,
         ligneCourbe: anatomie.ligneCourbe,
         contrasteOpercule: anatomie.contrasteOpercule
     };
@@ -577,7 +615,7 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
 
     // --- Corps + nageoires impaires (un seul mesh animé) ---------------------
     const lot = creerLot();
-    construireCorps(lot, profil, LS, xNez);
+    const tete = construireCorps(lot, profil, LS, xNez, bec, bec ? anatomie.bouche : null);
     fermerGroupe(lot, 0);
     ['dorsale', 'dorsale2', 'adipeuse'].forEach(function (cle) {
         if (anatomie[cle]) {
@@ -591,8 +629,23 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     }
     lot.base = null;
     fermerGroupe(lot, 1);
+    // Bec : intérieur de la bouche et narines (sombres), puis dents (claires).
+    const materiauxCorps = [bodyMat, finMat];
+    if (tete) {
+        lot.idx.push.apply(lot.idx, tete.interieur);
+        fermerGroupe(lot, 2);
+        lot.idx.push.apply(lot.idx, tete.dents);
+        fermerGroupe(lot, 3);
+        lot.idx.push.apply(lot.idx, tete.fantomes);
+        fermerGroupe(lot, 4);
+        materiauxCorps.push(new THREE.MeshStandardMaterial({
+            color: 0x1c0b0b, roughness: 0.85, side: THREE.DoubleSide
+        }), new THREE.MeshStandardMaterial({
+            color: 0xe8e2cc, roughness: 0.5, side: THREE.DoubleSide
+        }), new THREE.MeshBasicMaterial({ visible: false }));
+    }
     const bodyGeometry = geometrieDe(lot, true);
-    const fishBody = new THREE.Mesh(bodyGeometry, [bodyMat, finMat]);
+    const fishBody = new THREE.Mesh(bodyGeometry, materiauxCorps);
     fishBody.castShadow = true;
     group.add(fishBody);
 
@@ -630,18 +683,27 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
         const rayon = o.r * LS;
         const iris = espece && espece.oeil !== undefined ? espece.oeil : 0xb08a40;
         const eyeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.18, metalness: 0.05 });
-        const geo = geometrieOeil(rayon, iris);
+        const geo = geometrieOeil(rayon, iris, o.pupille === 'verticale');
+        const lotPupilles = creerLot();
         const z = zSurface(profil, o.t, o.y) * LS - rayon * 0.12;
         for (const cote of [1, -1]) {
             const oeil = new THREE.Mesh(geo, eyeMat);
             oeil.position.set(xNez - o.t * LS, o.y * LS, cote * z);
             if (cote < 0) { oeil.rotation.y = Math.PI; }
             details.add(oeil);
+            if (o.pupille === 'verticale') {
+                pupilleVerticaleGeometrie(lotPupilles, sommet, rayon, xNez - o.t * LS, o.y * LS, cote * z, cote);
+            }
+        }
+        if (lotPupilles.idx.length) {
+            details.add(new THREE.Mesh(geometrieDe(lotPupilles, false), new THREE.MeshBasicMaterial({
+                color: 0x050505, side: THREE.DoubleSide
+            })));
         }
     }
 
     const lotTete = creerLot();
-    if (anatomie.bouche) {
+    if (anatomie.bouche && !bec) {
         bouche(lotTete, profil, LS, xNez, anatomie.bouche);
     }
     if (lotTete.idx.length) {

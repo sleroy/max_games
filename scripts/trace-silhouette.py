@@ -31,6 +31,26 @@ TRACES = {
                    'anale_av': (565, 418), 'anale_ar': (640, 383), 'anale_bout': (645, 445),
                    'queue_haut': (827, 230), 'queue_bas': (815, 382), 'queue_creux': (807, 332)}
     },
+    # Sandre : sandre.jpg (900 x 387), poisson tourné à gauche, posé sur du gravier (fond trop
+    # texturé pour un masque) ; LS = 692 px (museau 57,203 -> base de la caudale 748,232).
+    # Contour relevé sur la photo quadrillée (grille 10 px) ; nageoires dorsales couchées :
+    # le dos suit la ligne du corps (la 2e dorsale, dressée, est mesurée à part).
+    'sandre': {
+        'museau': (57, 203), 'pedoncule': (748, 232),
+        'dos': [(57, 201), (70, 196), (100, 187), (140, 174), (180, 160), (220, 148), (260, 138),
+                (300, 132), (340, 130), (400, 134), (440, 145), (480, 149), (500, 152), (520, 156),
+                (540, 165), (560, 172), (600, 185), (640, 195), (680, 201), (720, 205), (748, 208)],
+        'ventre': [(57, 208), (62, 216), (80, 232), (100, 243), (120, 250), (160, 258), (200, 264),
+                   (240, 269), (280, 272), (340, 273), (400, 273), (460, 273), (520, 272), (560, 269),
+                   (600, 264), (640, 259), (680, 255), (748, 255)],
+        'oeil': (121, 203, 15),
+        'points': {'opercule': (268, 200), 'bouche': (130, 240), 'pectorale_base': (277, 225),
+                   'pectorale_bout': (352, 265), 'pelvienne_base': (300, 272), 'pelvienne_bout': (372, 318),
+                   'dorsale_av': (300, 131), 'dorsale_ar': (490, 148), 'dorsale2_av': (520, 155),
+                   'dorsale2_ar': (695, 200), 'dorsale2_pointe': (595, 138), 'anale_av': (560, 270),
+                   'anale_ar': (650, 260), 'anale_bout': (640, 281), 'queue_haut': (857, 188),
+                   'queue_bas': (850, 262), 'queue_creux': (848, 225), 'queue_bout': (858, 225)}
+    },
     'brochet': {
         'museau': (885, 512), 'pedoncule': (100, 375),
         'dos': [(885, 505), (870, 490), (840, 474), (800, 457), (750, 440), (700, 420), (650, 405),

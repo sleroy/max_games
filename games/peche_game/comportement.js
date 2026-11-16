@@ -7,8 +7,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=207';
-import { etat } from './etat.js?v=207';
+import { COMPORTEMENTS } from './especes.js?v=209';
+import { etat } from './etat.js?v=209';
 
 export function creerComportement(deps) {
     const {

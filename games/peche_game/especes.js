@@ -66,7 +66,25 @@ export const SPECIES = [
       nageoiresMotif: 'brochet', oeil: 0xcfa62e, motif: 'tachesClaires', profil: 'brochet', anatomie: 'brochet',
       ombreDos: 0.55, ventreClair: 0.85, fonduTete: 0.6, tachesDebut: 0.35, tachesDensite: 1.5, tachesTaille: 0.75, joueClaire: 0.03 },
     { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [20, 110], k: 0.8, abondance: 2,
-      profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], style: 'glisseur', couleur: 0x8f9a83, motif: 'barres' },
+      profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], style: 'glisseur',
+      // Couleurs : médianes PIL sur assets/references/sandre.jpg (flanc, joue, nageoires), ventre au
+      // 80e centile ; dos olive-gris sombre piqueté, flanc vert-gris, ventre vert très pâle, joue et
+      // opercule argent bleuté, nageoires translucides olive (pectorales et pelviennes bleu-vert pâle).
+      couleur: 0x72866d, dos: 0x4a5a45, ventre: 0xa4bc9c, tete: 0x8db3ad, nageoires: 0x8f9880, oeil: 0xb4cccd,
+      nageoiresMotif: 'sandre',
+      nageoiresCouleurs: { dorsale: 0x7a8566, dorsale2: 0x8a9378, anale: 0x929882, pectorale: 0xa8c8b0,
+          pelvienne: 0xa0c0b4, caudale: [0x8c9680, 0x8c9680] },
+      // Robe : points sombres un par écaille (dos et haut du flanc, effacés vers le ventre), 9 barres
+      // verticales très discrètes (t = place le long du corps, large = largeur en fraction de LS,
+      // pente = inclinaison vers l'arrière, d = profondeur atteinte), joue argentée sans limite nette.
+      motif: 'barres', ecailles: 78, pointsEcailles: 0.42, forceRayures: 0.2, debutEcailles: 0.27, fonduTete: 0.7,
+      ombreDos: 0.7, ventreClair: 0.75, joueClaire: 0.08,
+      barres: [{ t: 0.335, large: 0.034, pente: 0.03, d: 0.5 }, { t: 0.4, large: 0.04, pente: 0.03, d: 0.58 },
+          { t: 0.47, large: 0.036, pente: 0.03, d: 0.52 }, { t: 0.54, large: 0.042, pente: 0.032, d: 0.6 },
+          { t: 0.61, large: 0.038, pente: 0.03, d: 0.55 }, { t: 0.68, large: 0.044, pente: 0.03, d: 0.6 },
+          { t: 0.75, large: 0.036, pente: 0.025, d: 0.54 }, { t: 0.82, large: 0.04, pente: 0.025, d: 0.56 },
+          { t: 0.895, large: 0.032, pente: 0.02, d: 0.5 }],
+      profil: 'sandre', anatomie: 'sandre' },
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [15, 60], k: 1.6, abondance: 2,
       profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], style: 'fonceur', couleur: 0x556a3f, motif: 'bandeLaterale' },
     { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [15, 80], k: 1.2, abondance: 2,
@@ -309,6 +327,23 @@ export const PROFILS = {
         { t: 0.6, h: 0.072, w: 0.04, y: 0 }, { t: 0.7, h: 0.062, w: 0.03, y: 0 },
         { t: 0.8, h: 0.052, w: 0.022, y: 0 }, { t: 0.9, h: 0.042, w: 0.016, y: 0 },
         { t: 1, h: 0.032, w: 0.011, y: 0 }],
+    // Sandre : sandre.jpg (900 × 387, tourné à gauche, posé sur du gravier), LS = 692 px
+    // (museau 57,203 → base de la caudale 748,232), contour relevé sur la photo quadrillée
+    // (scripts/trace-silhouette.py sandre). Corps haut pour une torpille (0,206 LS à t = 0,4),
+    // tête conique à front peu bombé, ventre presque droit, pédoncule fin (0,068 LS). Poisson vu de
+    // profil : largeur estimée (≈ 0,62 × hauteur, tête plus étroite).
+    sandre: [
+        { t: 0, h: 0.0051, w: 0.006, y: -0.0024 }, { t: 0.05, h: 0.0351, w: 0.024, y: -0.0129 },
+        { t: 0.1, h: 0.0528, w: 0.036, y: -0.0125 }, { t: 0.15, h: 0.0665, w: 0.045, y: -0.0067 },
+        { t: 0.2, h: 0.0781, w: 0.052, y: -0.0002 }, { t: 0.25, h: 0.0886, w: 0.058, y: 0.0059 },
+        { t: 0.3, h: 0.0969, w: 0.062, y: 0.0114 }, { t: 0.35, h: 0.1016, w: 0.064, y: 0.0161 },
+        { t: 0.4, h: 0.103, w: 0.065, y: 0.019 }, { t: 0.45, h: 0.1019, w: 0.064, y: 0.0193 },
+        { t: 0.5, h: 0.0994, w: 0.063, y: 0.019 }, { t: 0.55, h: 0.0925, w: 0.06, y: 0.0143 },
+        { t: 0.6, h: 0.09, w: 0.058, y: 0.0139 }, { t: 0.65, h: 0.086, w: 0.055, y: 0.0128 },
+        { t: 0.7, h: 0.0755, w: 0.049, y: 0.0074 }, { t: 0.75, h: 0.0651, w: 0.042, y: 0.0034 },
+        { t: 0.8, h: 0.0542, w: 0.035, y: 0.0012 }, { t: 0.85, h: 0.0455, w: 0.029, y: 0.0005 },
+        { t: 0.9, h: 0.0394, w: 0.025, y: 0.0016 }, { t: 0.95, h: 0.0369, w: 0.021, y: 0.0012 },
+        { t: 1, h: 0.034, w: 0.018, y: 0.0005 }],
     // Perche : perche.jpg (900 × 600, tournée à gauche, queue relevée), LS = 561 px
     // (museau 158,452 → base de la caudale 705,328), contour relevé sur la photo
     // quadrillée (scripts/trace-silhouette.py perche). Corps haut (0,30 LS à t = 0,3),
@@ -338,7 +373,9 @@ export const PROFILS = {
 //   pectorale : { t, y, longueur, pente (rad, + = vers le bas), forme: pointue | ronde | ovale,
 //                 eventail? (ouverture des rayons en rad, défaut 0,55) }
 //   pelvienne : { t, longueur, pente }
-//   oeil      : { t, y, r } ; bouche : { t (coin), y0 (museau), y1 (coin) }
+//   oeil      : { t, y, r, pupille? ('verticale') } ; bouche : { t (coin), y0 (museau), y1 (coin) }
+//   bec       : { longueur, aplatissement, nez, fond, saillieMachoire, largeur, arrondi, narine? } : tête en bec
+//               (avec `bouche` : fente ouverte de `epaisseur`, voir modelePoisson.js) ; operculeDoux
 //   opercule  : t du bord de l'ouïe ; barbillons : [{ t, y, longueur, chute, ecart }]
 export const ANATOMIES = {
     fusiforme: {
@@ -436,9 +473,16 @@ export const ANATOMIES = {
         anale: { type: 'analeBrochet', t0: 0.798, t1: 0.912, hauteur: 0.058 },
         pectorale: { t: 0.335, y: -0.066, longueur: 0.085, pente: 0.5, forme: 'ovale', eventail: 0.8 },
         pelvienne: { t: 0.613, longueur: 0.075, pente: 0.35, forme: 'ronde' },
-        oeil: { t: 0.18, y: 0.016, r: 0.0145 },
-        bouche: { t: 0.136, y0: -0.004, y1: -0.021, epaisseur: 0.007 },
-        opercule: 0.354, ligneCourbe: 0.2, contrasteOpercule: 0.03
+        oeil: { t: 0.18, y: 0.03, r: 0.0155, pupille: 'verticale' },
+        // Bec de canard : museau épais et aplati (dessus et dessous en droites), fente de
+        // gueule jusqu'à t 0,155 (épaisseur `epaisseur` au bout, 0 au coin), mâchoire
+        // inférieure qui dépasse de `saillieMachoire`, narines sur le dessus.
+        bec: { longueur: 0.16, aplatissement: 1, nez: 0.012, fond: -0.03, saillieMachoire: 0.009,
+            largeur: 0.55, arrondi: 0.05, narine: { t: 0.085, ecart: 0.5, rayon: 0.0055 } },
+        // Avec un bec, la ligne de bouche suit le sommet « lèvre » de la section (y0 et y1 y servent
+        // seulement de repère) ; `epaisseur` = ouverture de la fente au bout du museau.
+        bouche: { t: 0.155, y0: -0.013, y1: -0.022, epaisseur: 0.012 },
+        opercule: 0.354, ligneCourbe: 0.2, contrasteOpercule: 0.18, operculeDoux: true
     },
     // Silure : œil minuscule t 0,09 ; gueule large ; 2 grands barbillons maxillaires
     // (0,28 LS) + 4 courts sous le menton ; petite dorsale t 0,27 ; anale de t 0,42
@@ -478,6 +522,23 @@ export const ANATOMIES = {
         oeil: { t: 0.109, y: 0.005, r: 0.027 },
         bouche: { t: 0.1, y0: -0.01, y1: -0.06, epaisseur: 0.005 },
         opercule: 0.29, ligneCourbe: 0.45, contrasteOpercule: 0.1
+    },
+    // Sandre : mêmes photo et repère que le profil. Œil gros et vitreux t 0,092 (r 0,021) ; gueule
+    // large, coin sous l'arrière de l'œil (t 0,113) ; ouïe t 0,30 (plaque argentée, bord peu marqué) ;
+    // 1re dorsale épineuse t 0,347 → 0,622, repliée (0,05 LS) ; 2e dorsale souple t 0,666 → 0,921
+    // (0,064 LS, rayons couchés vers l'arrière) ; anale basse t 0,731 → 0,86 ; pectorale pâle t 0,319
+    // (0,115 LS) ; pelviennes t 0,355 (0,105 LS) ; caudale 0,155 LS, bord arrière presque droit
+    // (échancrure ≈ 10 %), coins arrondis, hauteur 0,11 LS.
+    sandre: {
+        queue: { type: 'sandre', longueur: 0.155, ecart: 0.056 },
+        dorsale: { type: 'dorsaleSandre', t0: 0.347, t1: 0.622, hauteur: 0.05 },
+        dorsale2: { type: 'dorsale2Sandre', t0: 0.666, t1: 0.921, hauteur: 0.064 },
+        anale: { type: 'analeSandre', t0: 0.731, t1: 0.86, hauteur: 0.03 },
+        pectorale: { t: 0.319, y: -0.02, longueur: 0.115, pente: 0.42, forme: 'ovale', eventail: 0.6 },
+        pelvienne: { t: 0.355, longueur: 0.105, pente: 0.15, ecart: 0.5, forme: 'pointue' },
+        oeil: { t: 0.092, y: 0.004, r: 0.021 },
+        bouche: { t: 0.113, y0: -0.006, y1: -0.05, epaisseur: 0.006 },
+        opercule: 0.3, ligneCourbe: 0.3, contrasteOpercule: 0.03
     },
     tanche: {
         queue: { type: 'echancree', longueur: 0.22, ecart: 0.13 },

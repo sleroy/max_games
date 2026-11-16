@@ -48,5 +48,6 @@ une par espèce) et 128 × 64 (rayons des nageoires, partagée).
 | Brème | `breme.jpg` | 720 | masque automatique (fond béton) | h max 0,196 à t 0,5 ; pédoncule 0,043 ; œil t 0,061 ; dorsale t 0,56-0,74 ; anale t 0,65-0,93 ; caudale 0,21 LS |
 | Brochet | `brochet.jpg` | 797 | contour relevé + superposition (gravier) | h max 0,0875 à t 0,55 ; œil t 0,18 ; ouïe t 0,354 ; dorsale t 0,82-0,94 ; anale t 0,80-0,91 |
 | Silure | `silure.jpg` | 691 | masque automatique (eau sombre), vue de trois quarts | tête large (w > h jusqu'à t 0,2) ; anale t 0,42-0,985 ; barbillons 0,28 LS |
+| Sandre | `sandre.jpg` | 692 | contour relevé + superposition (gravier), `scripts/trace-silhouette.py sandre` | h max 0,103 à t 0,4 ; pédoncule 0,034 ; œil t 0,092 (r 0,021) ; ouïe t 0,30 ; 1re dorsale t 0,347-0,622 (repliée) ; 2e dorsale t 0,666-0,921 ; anale t 0,731-0,86 ; caudale 0,155 LS, presque droite |
 
 Les 13 autres espèces utilisent le profil type de leur silhouette (à affiner une par une).
