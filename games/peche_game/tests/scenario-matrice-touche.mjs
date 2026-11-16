@@ -7,7 +7,7 @@
 //  1. MATRICE : espèces × tailles × esches × profondeurs d'eau × lignes × fonds × températures
 //     (+ quiver), évaluée par la fonction UNIQUE evaluerTouche, avec des règles générales :
 //     chaque espèce est pêchable, chaque esche sert, l'hameçon nu fait toujours moins bien, une
-//     chance nulle a toujours une raison, le mode facile ne bloque que l'hameçon pris…
+//     chance nulle a toujours une raison, mode facile = chance 1 ou 0 (100 % au-dessus de 60 %)…
 //  2. DÉLAI : heure × pression × tendance × température × espèce, toujours borné.
 //  3. CONCORDANCE : le VRAI jeu (poisson posé à côté de l'hameçon) suit evaluerTouche.
 //

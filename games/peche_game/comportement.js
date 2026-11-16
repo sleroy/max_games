@@ -7,10 +7,10 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=226';
-import { etat } from './etat.js?v=226';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=226';
-import { heureDeJeu } from './physique.js?v=226';
+import { COMPORTEMENTS } from './especes.js?v=227';
+import { etat } from './etat.js?v=227';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=227';
+import { heureDeJeu } from './physique.js?v=227';
 
 export function creerComportement(deps) {
     const {
@@ -398,10 +398,11 @@ export function creerComportement(deps) {
                 const refus = etat.refuseLEsche(data);   // il a refusé l'esche pendant ce lancer : il s'en désintéresse
                 // MODE FACILE : aimant à poissons. L'hameçon est repéré de très loin,
                 // sans refus d'esche, sans zone de vie ni couche d'eau : le poisson
-                // nage droit sur lui (c'est le mode « pêche ludique » pour enfants).
+                // nage droit sur lui (c'est le mode « pêche ludique » pour enfants). Seule une esche
+                // sous le seuil (esches.js, SEUIL_FACILE) est ignorée : le poisson ne vient pas.
                 const facile = !!etat.modeFacile;
                 const vu = facile
-                    ? bd < MODE_FACILE_RAYON
+                    ? bd < MODE_FACILE_RAYON && !etat.escheSansEspoir(data)
                     : !refus && bd < rayonVueEspece(data) && zoneOk && !etat.hameconDansLaVase
                         && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd)) && !etat.escheSansEspoir(data);
                 // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout proche (même dans

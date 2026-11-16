@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=226';
+import { etat } from './etat.js?v=227';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -115,6 +115,33 @@ export function efficaciteEsche(escheId, especeId, couche, substrat, longueurCm)
     return Math.max(0, Math.min(1, espece * (esche.couches[couche] === undefined ? 1 : esche.couches[couche]) * fond));
 }
 
+// MODE FACILE : seuil de la « meilleure chance » d'une esche pour une espèce (le pourcentage de la
+// matrice des touches, « meilleure chance par poisson et par esche », au meilleur réglage
+// profondeur / ligne / fond à 15 °C). Strictement au-dessus : la touche est certaine (100 %) ;
+// sinon le poisson ignore l'esche (0 %).
+export const SEUIL_FACILE = 0.6;
+
+// Meilleure chance (0 → 1) de l'esche pour l'espèce : le maximum de efficaciteEsche sur les trois
+// couches et sur tous les fonds de l'esche (plus le fond par défaut, de poids 1).
+// `escheId` null ou inconnue = hameçon nu (PROBA_NU).
+export function chanceMaximaleEsche(escheId, especeId, longueurCm) {
+    const esche = ESCHES.find(function (e) { return e.id === escheId; });
+    const substrats = [undefined].concat(esche ? Object.keys(esche.substrats) : []);
+    let meilleure = 0;
+    ['surface', 'mi-eau', 'fond'].forEach(function (couche) {
+        substrats.forEach(function (substrat) {
+            meilleure = Math.max(meilleure, efficaciteEsche(escheId, especeId, couche, substrat, longueurCm));
+        });
+    });
+    return meilleure;
+}
+
+// MODE FACILE : décision binaire, sans hasard. 1 si la meilleure chance de l'esche dépasse
+// SEUIL_FACILE (strictement), sinon 0 (le poisson ignore l'esche, hameçon nu compris).
+export function acceptationFacile(escheId, especeId, longueurCm) {
+    return chanceMaximaleEsche(escheId, especeId, longueurCm) > SEUIL_FACILE ? 1 : 0;
+}
+
 export function creerEsches(deps) {
     const { verdictFond, modeQuiver, statusDisplay, saveJournal, etiquette } = deps;
 
@@ -155,6 +182,8 @@ export function creerEsches(deps) {
 
     function probabilite(especeId, longueurCm) {
         const esche = escheAuBout();
+        // Facile : 1 ou 0 selon la meilleure chance de l'esche (ni couche ni fond, ni hasard).
+        if (etat.modeFacile) { return acceptationFacile(esche ? esche.id : null, especeId, longueurCm); }
         const c = contexte();
         return efficaciteEsche(esche ? esche.id : null, especeId, c.couche, c.substrat, longueurCm);
     }
@@ -162,10 +191,10 @@ export function creerEsches(deps) {
     // Le poisson arrivé sur l'hameçon prend-il l'esche ? Décision UNIQUE par poisson et par lancer :
     // un poisson qui refuse s'en désintéresse (voir comportement.js, `refuseLEsche`).
     function accepterTouche(fish) {
-        // MODE FACILE : tous les poissons acceptent l'esche (aucun refus).
-        if (etat.modeFacile) { return true; }
         if (!etat.eschesActives) { return true; }
         const d = fish.userData;
+        // MODE FACILE : 100 % ou rien (règle unique : acceptationFacile), sans hasard ni message.
+        if (etat.modeFacile) { return probabilite(d.especeId, d.longueurCm) > 0; }
         if (d.escheLancer === etat.numeroLancer) { return d.escheAccepte; }
         const accepte = hasard() < probabilite(d.especeId, d.longueurCm);
         d.escheLancer = etat.numeroLancer;
@@ -195,8 +224,9 @@ export function creerEsches(deps) {
 
     // Ce poisson ne PEUT PAS prendre l'esche (espèce non visée par une esche exclusive, trop petit pour
     // elle) : il l'ignore, il ne vient même pas tourner autour (sinon le bouchon « mordille » pour rien).
+    // En facile, une esche sous le seuil (SEUIL_FACILE) est aussi ignorée.
     function escheSansEspoir(d) {
-        if (etat.modeFacile || !etat.eschesActives) { return false; }
+        if (!etat.eschesActives) { return false; }
         return probabilite(d.especeId, d.longueurCm) <= 0;
     }
 

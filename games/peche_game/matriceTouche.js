@@ -7,9 +7,9 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=226';
-import { ESCHES } from './esches.js?v=226';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=226';
+import { SPECIES } from './especes.js?v=227';
+import { ESCHES, SEUIL_FACILE, acceptationFacile } from './esches.js?v=227';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=227';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
@@ -96,16 +96,26 @@ export function verifierRegles() {
             tailleHors.push(ctx.especeId + '/' + ctx.esche);
         }
     });
+    // Mode facile : chance 1 ou 0, 100 % si la meilleure chance de l'esche (mode normal, 15 °C) dépasse 60 %.
+    const res = calculerResume(15);
     const faciles = [];
     parcourir(function (ctx, r) {
         cas++;
-        if (r.possible === (r.raison === 'accroche') && faciles.length < 5) { faciles.push(ctx.especeId + '/' + ctx.esche); }
+        const fautif = r.possible !== (r.raison === null) || (r.possible && r.chance !== 1) || (!r.possible && r.chance !== 0);
+        let divergent = false;
+        if (r.raison !== 'accroche') {
+            const esche = ESCHES.find(function (x) { return x.id === ctx.esche; });
+            const petit = esche && esche.tailleMin && ctx.longueurCm < esche.tailleMin;
+            const max = res.parEsche[ctx.especeId + '|' + (ctx.esche || 'nu')].max;
+            const attendu = !petit && max > SEUIL_FACILE + 1e-9;
+            divergent = r.possible !== (acceptationFacile(ctx.esche, ctx.especeId, ctx.longueurCm) === 1) || r.possible !== attendu;
+        }
+        if ((fautif || divergent) && faciles.length < 5) { faciles.push(ctx.especeId + '/' + ctx.esche); }
     }, { mode: 'facile', temperatures: [15] });
     regle('coherence', 'chaque cas est cohérent (chance nulle ⇔ une raison connue)', incoherents);
-    regle('facile', 'mode facile : seul un hameçon pris au fond empêche la touche', faciles);
+    regle('facile', 'mode facile : chance 1 ou 0, 100 % si la meilleure chance de l’esche dépasse 60 %, sinon ignorée (hameçon pris au fond à part)', faciles);
     regle('taille', '« trop petit » n’arrive qu’avec la bouillette ou le vif', tailleHors);
 
-    const res = calculerResume(15);
     regle('pechable', 'chaque espèce a au moins une vraie façon d’être pêchée (chance ≥ ' + SEUIL_PECHABLE * 100 + ' %)',
         SPECIES.filter(function (e) { return !res.meilleur[e.id] || res.meilleur[e.id].chance < SEUIL_PECHABLE; })
             .map(function (e) { return e.id; }));
@@ -165,6 +175,18 @@ export function aSurveiller(resume) {
                     + Math.round(pe.max * 100) + ' % (couche d’eau ou fond qui la freinent).' });
             }
         });
+    });
+    // Mode facile : une espèce sans aucune esche à 100 % (meilleure chance ≤ 60 %) ne mord jamais en facile.
+    SPECIES.forEach(function (e) {
+        const aucune = ESCHES.every(function (esche) {
+            const pe = res.parEsche[e.id + '|' + esche.id];
+            return !pe || pe.max <= SEUIL_FACILE + 1e-9;
+        });
+        if (aucune) {
+            const m = res.meilleur[e.id];
+            liste.push({ espece: e.id, esche: m ? m.ctx.esche : null, texte: e.nom + ' : en mode facile, aucune esche n’atteint 100 % (au mieux '
+                + Math.round((m ? m.chance : 0) * 100) + ' %, le seuil est de ' + Math.round(SEUIL_FACILE * 100) + ' %).' });
+        }
     });
     return liste;
 }
