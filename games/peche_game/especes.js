@@ -39,6 +39,14 @@ export const SPECIES = [
       profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd', couleur: 0x474b42, motif: 'marbrures' }
 ];
 
+// Poids réaliste d'un poisson (kg) : formule du « facteur de condition » des
+// pêcheurs — K × longueur(cm)³ / 100 000. K = `k` de l'espèce (2,3 pour une
+// carpe bien nourrie, 0,2 pour une anguille très allongée). Source unique,
+// utilisée par le jeu (carnet, prises) et par la page des tailles.
+export function poidsKilos(espece, longueurCm) {
+    return espece.k * Math.pow(longueurCm, 3) / 100000;
+}
+
 // ---------------------------------------------------------------------------
 // COMPORTEMENTS : où et comment chaque espèce vit (d'après les fiches Wikipédia).
 //   couche    : 'surface' | 'mi-eau' | 'fond'. Une espèce « fond » reste collée au

@@ -16,7 +16,7 @@
 // crochets de test (`crochets`, repris par script.js dans window.__game).
 // ---------------------------------------------------------------------------
 import { etat } from './etat.js?v=145';
-import { COMPORTEMENTS } from './especes.js?v=189';
+import { COMPORTEMENTS } from './especes.js?v=195';
 
 // ---------------------------------------------------------------------------
 // Heure de jeu. dayPhase : 0 = aube, 0,25 = midi, 0,5 = crépuscule, 0,75 = nuit.

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1a24">
+    <title>Tailles des poissons — L'étang du Bois Neuf</title>
+    <link rel="stylesheet" href="tailles.css?v=195">
+</head>
+<body>
+    <header class="entete">
+        <p class="retour"><a href="./index.html">← Retour au jeu</a></p>
+        <h1>Tailles des poissons</h1>
+        <p class="intro">
+            Chaque espèce à sa taille <strong>minimale</strong> et <strong>maximale</strong>,
+            dessinée à la même échelle. La règle sous chaque poisson est graduée tous les
+            5 cm (traits longs : 10 cm). <strong>Clique un poisson</strong> pour l’agrandir.
+        </p>
+        <div class="commande">
+            <label for="curseur">Échelle</label>
+            <input id="curseur" type="range" aria-describedby="valeurEchelle">
+            <b id="valeurEchelle">3 px/cm</b>
+            <label for="tri">Ordre</label>
+            <select id="tri">
+                <option value="jeu">Ordre du jeu</option>
+                <option value="max">Taille croissante</option>
+                <option value="nom">Nom (A → Z)</option>
+            </select>
+            <span class="compte" id="compte" role="status" aria-live="polite">Fabrication…</span>
+        </div>
+        <p class="resume" id="resume"></p>
+    </header>
+
+    <main class="galerie" id="galerie" aria-label="Poissons par taille"></main>
+
+    <p class="note">
+        Les poissons sont fabriqués par le module du jeu <code>modelePoisson.js</code>, à la
+        taille exacte des bornes de <code>especes.js</code> (combativité et agressivité
+        moyennes de l’espèce). Le poids suit la formule du carnet :
+        <code>K × longueur³ / 100 000</code>. Le jeu dessine 1 cm = 1/50 d’unité 3D
+        (2 unités ≈ 1 m).
+    </p>
+
+    <dialog class="loupe" id="loupe" aria-labelledby="loupeTitre">
+        <div class="loupe-tete">
+            <h2 id="loupeTitre">Poisson</h2>
+            <button class="loupe-fermer" id="loupeFermer" type="button">Fermer</button>
+        </div>
+        <img class="loupe-image" id="loupeImage" alt="">
+        <p class="loupe-pied" id="loupePied"></p>
+    </dialog>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "./assets/three.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="tailles.js?v=195"></script>
+</body>
+</html>

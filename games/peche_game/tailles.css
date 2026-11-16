@@ -1,0 +1,339 @@
+/* ---------------------------------------------------------------------------
+   tailles.css — page de vérification des tailles des poissons.
+   Une seule échelle pour toutes les espèces : chaque poisson est dessiné à sa
+   longueur réelle (en cm), la règle sous lui est graduée tous les 5 / 10 cm.
+   --------------------------------------------------------------------------- */
+:root {
+    --fond: #0b1a24;
+    --fond-carte: #10222e;
+    --fond-piste: #0d1b25;
+    --texte: #e8f1f5;
+    --texte-doux: #9fb4bf;
+    --accent: #f9c74f;
+    --min: #6ec1ff;
+    --max: #ff9f68;
+    --px-cm: 3px;            /* échelle courante (modifiée par le curseur) */
+    color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 24px 20px 64px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--texte);
+    background:
+        radial-gradient(1200px 600px at 50% -200px, #173646 0%, transparent 70%),
+        var(--fond);
+}
+
+.entete {
+    max-width: 1120px;
+    margin: 0 auto 20px;
+}
+
+h1 {
+    margin: 0 0 6px;
+    font-size: clamp(1.4rem, 3vw, 2.1rem);
+    letter-spacing: 0.01em;
+}
+
+.intro {
+    margin: 0;
+    color: var(--texte-doux);
+    line-height: 1.5;
+    max-width: 72ch;
+}
+
+.intro strong { color: var(--texte); }
+
+.commande {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 10px 14px;
+    background: var(--fond-carte);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.commande label {
+    font-size: 0.9rem;
+    color: var(--texte-doux);
+}
+
+.commande input[type="range"] {
+    width: min(320px, 46vw);
+    accent-color: var(--accent);
+}
+
+.commande b {
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+}
+
+.compte {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--texte-doux);
+    font-variant-numeric: tabular-nums;
+}
+
+.retour {
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+}
+
+.retour a {
+    color: var(--texte-doux);
+    text-decoration: none;
+}
+
+.retour a:hover { color: var(--accent); }
+
+.commande select {
+    padding: 4px 8px;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--texte);
+    background: #0b1a24;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+}
+
+.resume {
+    margin: 10px 0 0;
+    font-size: 0.82rem;
+    color: var(--texte-doux);
+    font-variant-numeric: tabular-nums;
+}
+
+/* La galerie défile horizontalement quand on zoome : les noms restent collés
+   à gauche pour ne pas perdre l'espèce pendant le défilement. */
+.galerie {
+    max-width: 1120px;
+    margin: 0 auto;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.espece {
+    display: grid;
+    grid-template-columns: 136px max-content;
+    gap: 0 18px;
+    padding: 14px 16px 18px;
+    margin: 10px 0;
+    background: linear-gradient(180deg, var(--fond-carte), var(--fond-piste));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+
+.nom {
+    position: sticky;
+    left: 0;
+    align-self: start;
+    background: var(--fond-carte);
+    padding-right: 8px;
+}
+
+.nom h2 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+}
+
+.nom .meta {
+    display: block;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--texte-doux);
+}
+
+/* Une colonne par taille (MIN / MAX), alignées sur la même origine : on compare
+   directement les longueurs. */
+.specimens {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.specimen {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.specimen-tete {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #06131a;
+}
+
+.badge.min { background: var(--min); }
+.badge.max { background: var(--max); }
+
+.specimen-tete .taille { font-weight: 700; }
+.specimen-tete .poids { color: var(--texte-doux); }
+.specimen-tete .ratio { color: var(--texte-doux); font-size: 0.78rem; }
+
+.vue {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: radial-gradient(60% 80% at 50% 55%, rgba(125, 190, 215, 0.14), transparent 72%);
+    cursor: zoom-in;
+    line-height: 0;
+    border-radius: 8px;
+}
+
+.vue:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* Largeur de l'image = longueur nominale × échelle (variables posées par JS).
+   L'image est recadrée au pixel près sur le poisson : la largeur affichée est
+   donc EXACTEMENT sa longueur à l'échelle de la page. */
+.vue img,
+.regle {
+    width: calc(var(--px-cm) * var(--cm));
+}
+
+.vue img {
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.45));
+    transition: transform 0.15s ease;
+}
+
+.vue:hover img { transform: translateY(-2px); }
+
+/* Règle graduée : petits traits tous les 5 cm, grands tous les 10 cm. */
+.regle {
+    position: relative;
+    height: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+    background-image:
+        repeating-linear-gradient(to right,
+            rgba(255, 255, 255, 0.75) 0 1px, transparent 1px calc(var(--px-cm) * 5)),
+        repeating-linear-gradient(to right,
+            rgba(255, 255, 255, 0.4) 0 1px, transparent 1px calc(var(--px-cm) * 10));
+    background-size: 100% 6px, 100% 10px;
+    background-position: left bottom, left bottom;
+    background-repeat: repeat-x;
+}
+
+.regle-valeur {
+    position: absolute;
+    left: 100%;
+    bottom: -2px;
+    padding-left: 6px;
+    font-size: 0.72rem;
+    color: var(--texte-doux);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Chargement : l'image n'existe pas encore. */
+.vue img:not([src]) {
+    width: calc(var(--px-cm) * var(--cm));
+    min-height: 14px;
+    background: repeating-linear-gradient(45deg,
+        rgba(255, 255, 255, 0.05) 0 8px, rgba(255, 255, 255, 0.02) 8px 16px);
+    border-radius: 3px;
+}
+
+.note {
+    max-width: 1120px;
+    margin: 18px auto 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--texte-doux);
+}
+
+.note code {
+    color: var(--texte);
+    background: rgba(255, 255, 255, 0.07);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+/* --- Loupe ---------------------------------------------------------------- */
+dialog.loupe {
+    width: min(1120px, 94vw);
+    max-width: none;
+    padding: 16px 18px 20px;
+    color: var(--texte);
+    background: #0c1c26;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+dialog.loupe::backdrop {
+    background: rgba(3, 9, 13, 0.78);
+    backdrop-filter: blur(3px);
+}
+
+.loupe-tete {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.loupe-tete h2 { margin: 0; font-size: 1.15rem; }
+.loupe-tete p { margin: 0; color: var(--texte-doux); font-size: 0.85rem; }
+
+.loupe-fermer {
+    margin-left: auto;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--texte);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.loupe-fermer:hover { background: rgba(255, 255, 255, 0.16); }
+
+.loupe-image {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 74vh;
+    margin: 6px auto 0;
+    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.5));
+}
+
+.loupe-pied {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--texte-doux);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+    body { padding: 16px 10px 48px; }
+    .espece { grid-template-columns: 104px max-content; padding: 12px 10px 14px; }
+    .compte { margin-left: 0; }
+}

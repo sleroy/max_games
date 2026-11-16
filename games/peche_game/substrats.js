@@ -19,7 +19,7 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=189';
+import { COMPORTEMENTS } from './especes.js?v=195';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [
