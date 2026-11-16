@@ -50,6 +50,34 @@ function toucheAvec(especeId, cm, escheId, ligne) {
     return { mord, sansEspoir };
 }
 
+/** Lance (facile, esche donnée), pose un poisson à `distance` de l'hameçon, dit s'il vient le viser. */
+function attireAvec(especeId, cm, escheId, distance) {
+    const e = G().etat;
+    resetToIdle();
+    clearLilyPads();
+    G().setWind(0, 0);
+    G().setFloatType('coulisse');
+    G().setProfondeur(1.0);
+    e.equiperEsche(escheId);
+    castTo(0, -25);
+    parkFish();
+    const fish = G().spawnFish(SPECIES.find(sp => sp.id === especeId));
+    const d = fish.userData;
+    d.longueurCm = cm;
+    d.homeX = G().floatGroup.position.x;
+    d.homeZ = G().floatGroup.position.z;
+    d.homeRadius = 25;
+    d.depth = G().getHookDepth();
+    fish.position.set(G().floatGroup.position.x + distance, G().getHookDepth() - d.topOffset, G().floatGroup.position.z);
+    d.vx = 0;
+    d.vz = 0;
+    const vise = stepUntil(() => d.targeting === true, 6);
+    resetToIdle();
+    const i = G().fishes.indexOf(fish);
+    if (i >= 0) { G().fishes.splice(i, 1); }
+    return vise;
+}
+
 export function run() {
     group('74) Mode Facile (enfant) : poissons aimantés et « FERRER ! »');
 
@@ -119,6 +147,7 @@ export function run() {
         const e = G().etat;
         const flotteurAvant = G().getFloatType();
         const profondeurAvant = G().getProfondeur();
+        const ventAvant = G().getWind();
         e.eschesActives = true;
         G().setDifficulty('facile');
         const pain = toucheAvec('gardon', 20, 'pain', 1.0);
@@ -131,10 +160,14 @@ export function run() {
         const petit = toucheAvec('carassin', 20, 'bouillette', 3.25);
         check('facile : carassin de 20 cm + bouillette ⇒ aucune touche (tailleMin 25)', !petit.mord && petit.sansEspoir === true,
             JSON.stringify(petit));
+        check('facile : une bonne esche attire de loin (carpe + maïs à 12 unités)', attireAvec('carpe', 40, 'mais', 12));
+        check('facile : une esche sans espoir n’attire pas (carpe + mouche à 12 unités)',
+            !attireAvec('carpe', 40, 'mouche', 12));
         e.equiperEsche('ver');
         e.eschesActives = false;
         G().setFloatType(flotteurAvant);
         G().setProfondeur(profondeurAvant);
+        G().setWind(ventAvant.dir, ventAvant.strength);
 
         // --- On rend le jeu au mode Normal (aucun état caché) ---
         resetToIdle();

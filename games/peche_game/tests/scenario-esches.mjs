@@ -118,7 +118,7 @@ export function run() {
 
     check('ver : toujours mieux qu’un hameçon nu, même pour une espèce non visée',
         ['carpe', 'brochet', 'sandre', 'black-bass'].every(sp => f('ver', sp, 'mi-eau', 'sable') > PROBA_NU && f('ver', sp, 'mi-eau', 'sable') <= 0.3));
-    check('ver : l’ablette est une vraie cible (asticot / ver de vase, ses appâts de référence)',
+    check('ver : l’ablette est une vraie cible (le ver de terre fait office d’asticot / ver de vase)',
         f('ver', 'ablette', 'mi-eau', 'sable') >= 0.4);
     check('pain : l’ablette gobe la mie de pain en surface (≥ 0,65)',
         f('pain', 'ablette', 'surface', 'sable') >= 0.65);

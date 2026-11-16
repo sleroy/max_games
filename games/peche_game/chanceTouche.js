@@ -16,11 +16,11 @@
 // `evaluerTouche(contexte)` combine le tout pour UN poisson et UNE situation et dit pourquoi il ne
 // mord pas (`raison`). C'est ce qu'exploite la matrice de tests (tests/scenario-matrice-touche.mjs).
 // ---------------------------------------------------------------------------
-import { COMPORTEMENTS, SPECIES } from './especes.js?v=228';
-import { ESCHES, efficaciteEsche, acceptationFacile, coucheHamecon } from './esches.js?v=228';
-import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=228';
-import { hameconSurSubstrat } from './substrats.js?v=228';
-import { MARGE_VASE } from './environnement.js?v=228';
+import { COMPORTEMENTS, SPECIES } from './especes.js?v=229';
+import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=229';
+import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=229';
+import { hameconSurSubstrat } from './substrats.js?v=229';
+import { MARGE_VASE } from './environnement.js?v=229';
 
 export const RAYON_VUE_DEFAUT = 7;        // unités : poisson sans fiche de comportement
 export const RAYON_VUE_FACILE = 26;       // mode facile : aimant à poissons
@@ -105,8 +105,7 @@ export function evaluerTouche(c) {
     } else if (!facile && !dansCouche(comp ? comp.couche : 'mi-eau', espece.profondeur, hookY, -c.profondeurEau, th)) {
         raison = 'couche';
     } else if (acceptation <= 0) {
-        const esche = ESCHES.find(function (e) { return e.id === c.esche; });
-        raison = esche && esche.tailleMin && c.longueurCm < esche.tailleMin ? 'taille' : 'esche';
+        raison = tropPetitPourEsche(c.esche, c.longueurCm) ? 'taille' : 'esche';
     }
     return {
         possible: !raison, raison: raison, chance: raison ? 0 : acceptation, acceptation: acceptation,

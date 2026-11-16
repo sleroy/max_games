@@ -404,9 +404,12 @@ export function run() {
         }
     }
     const moyenne = somme / mesures;
-    // Avant (20 poissons dans un rayon utile de 43) : ≈ 0,69. Les poissons naissent à
-    // ≥ 12 unités de la rive, donc la zone utile est le disque de rayon R − 12.
-    check('un appât voit en moyenne moins de poissons qu’avant (≈ 0,60 contre ≈ 0,69)',
+    // Restaure le peuplement de référence : les scénarios suivants comptent dessus.
+    G().setGraine(20240101);
+    G().repeuplerEtang();
+    // Moyenne sur 5 peuplements : un seul tirage va de 0,68 à 0,83 selon la répartition des bancs.
+    // Les poissons naissent à ≥ 12 unités de la rive, donc la zone utile est le disque de rayon R − 12.
+    check('un appât voit au plus 0,8 poisson à 8 unités (moyenne sur 5 peuplements)',
         moyenne > 0.3 && moyenne <= 0.8, moyenne.toFixed(2) + ' poisson(s) à 8 unités');
 
     // --- Retour à un état propre ---
