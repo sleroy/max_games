@@ -7,8 +7,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=219';
-import { etat } from './etat.js?v=219';
+import { COMPORTEMENTS } from './especes.js?v=220';
+import { etat } from './etat.js?v=220';
 
 export function creerComportement(deps) {
     const {
@@ -422,21 +422,21 @@ export function creerComportement(deps) {
                 // sent l'appât que de très près (ligne latérale, odorat, barbillons).
                 const zoneEsp = data.profondeurZone;
                 const zoneOk = hameconDansZone(data, zoneEsp) && baitDansDomaine(data);
-                // Un poisson qui a refusé l'esche pendant ce lancer s'en désintéresse (esches.js).
-                const refus = etat.refuseLEsche(data);
+                const refus = etat.refuseLEsche(data);   // il a refusé l'esche pendant ce lancer : il s'en désintéresse
                 // MODE FACILE : aimant à poissons. L'hameçon est repéré de très loin,
                 // sans refus d'esche, sans zone de vie ni couche d'eau : le poisson
                 // nage droit sur lui (c'est le mode « pêche ludique » pour enfants).
                 const facile = !!etat.modeFacile;
                 const vu = facile
                     ? bd < MODE_FACILE_RAYON
-                    : !refus && bd < rayonVueEspece(data) && zoneOk
-                        && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd));
-                // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout
-                // proche (même dans son dos : ligne latérale), mais ne le sort ni de sa zone
-                // de vie ni de sa couche d'eau (seul `vu` fait changer sa profondeur).
-                const senti = !vu && !refus && zoneOk && etat.floatState === 'inWater' && bd < rayonRemous(data);
+                    : !refus && bd < rayonVueEspece(data) && zoneOk && !etat.hameconDansLaVase
+                        && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd)) && !etat.escheSansEspoir(data);
+                // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout proche (même dans
+                // son dos), sans le sortir de sa zone de vie ni de sa couche d'eau (seul `vu` change sa profondeur).
+                const senti = !vu && !refus && zoneOk && etat.floatState === 'inWater' && bd < rayonRemous(data)
+                    && !etat.hameconDansLaVase && !etat.escheSansEspoir(data);   // vase, esche immangeable : il ignore
                 if (vu || senti) {
+                    etat.patienceEsche(data, dt);   // trop longtemps sans mordre : il se lasse (esches.js)
                     etat.baitInterest = true;
                     data.targeting = true;
                     const inv = bd > 0.001 ? 1 / bd : 0;

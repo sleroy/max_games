@@ -15,13 +15,14 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=219';
+import { etat } from './etat.js?v=220';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
 export const PROBA_INADAPTEE = 0.06;
 export const PROBA_NU = 0.04;
 export const REFUS_MESSAGE = 3;   // un message discret tous les 3 refus
+export const PATIENCE_POISSON = 15;   // secondes à tourner autour de l'hameçon sans mordre avant de s'en lasser
 
 // cibles   : espèce → poids (1 = esche reine ; absent = PROBA_INADAPTEE) ;
 // couches  : poids par couche de l'hameçon ; une esche de fond posée en surface ne vaut presque rien ;
@@ -181,6 +182,27 @@ export function creerEsches(deps) {
         return etat.eschesActives && d.escheLancer === etat.numeroLancer && d.escheAccepte === false;
     }
 
+    // Ce poisson ne PEUT PAS prendre l'esche (espèce non visée par une esche exclusive, trop petit pour
+    // elle) : il l'ignore, il ne vient même pas tourner autour (sinon le bouchon « mordille » pour rien).
+    function escheSansEspoir(d) {
+        if (etat.modeFacile || !etat.eschesActives) { return false; }
+        return probabilite(d.especeId, d.longueurCm) <= 0;
+    }
+
+    // Filet de sécurité : un poisson qui tourne autour de l'hameçon depuis PATIENCE_POISSON secondes
+    // sans l'atteindre (relief, couche d'eau…) s'en lasse pour ce lancer, comme s'il avait refusé.
+    // Sans cela, son intérêt bloque l'attente (waitTimer) : le bouchon mordille sans fin, sans touche.
+    function patienceEsche(d, dt) {
+        if (etat.modeFacile || !etat.eschesActives) { return; }
+        if (d.patienceLancer !== etat.numeroLancer) { d.patienceLancer = etat.numeroLancer; d.patience = 0; }
+        d.patience += dt;
+        if (d.patience > PATIENCE_POISSON && d.escheLancer !== etat.numeroLancer) {
+            d.escheLancer = etat.numeroLancer;
+            d.escheAccepte = false;
+            d.targeting = false;
+        }
+    }
+
     // Ferrage RATÉ (le poisson a recraché) : il peut emporter l'esche. Renvoie vrai si elle est perdue.
     //  - normal : hameçon nu tout de suite, message et étiquette mis à jour ;
     //  - dur    : rien n'est dit (seul « Raté » s'affiche) ; découverte au retour de la ligne.
@@ -224,9 +246,11 @@ export function creerEsches(deps) {
     }
     etat.accepterTouche = accepterTouche;
     etat.refuseLEsche = refuseLEsche;
+    etat.escheSansEspoir = escheSansEspoir;
+    etat.patienceEsche = patienceEsche;
     etat.majEsche = majEtiquette;
     etat.volerEsche = volerEsche;
     etat.revelerEscheVolee = revelerEscheVolee;
 
-    return { accepterTouche, refuseLEsche, probabilite, contexte, majEtiquette, volerEsche, revelerEscheVolee };
+    return { accepterTouche, refuseLEsche, escheSansEspoir, patienceEsche, probabilite, contexte, majEtiquette, volerEsche, revelerEscheVolee };
 }
