@@ -1163,11 +1163,19 @@ décrochent pas : un hameçon posé à 2–4 unités n'est jamais visité.
 - [ ] **Fouille DANS la sphère** : arrivé dans le volume, le poisson **tourne à
   l'intérieur** en nage lente et irrégulière (points de passage tirés dans la sphère,
   re-tirés toutes les 2–4 s) — il ne quitte plus la zone tant que le nuage est actif.
-- [ ] **Hameçon présent dans le nuage** : un poisson en fouille vise aussi l'hameçon,
-  avec un poids **dégressif** selon la distance de l'hameçon au centre :
-  **plein à ≤ 2 u**, **nul à 6 u** (`p = clamp((R − d) / (R − 2), 0, 1)`).
-  Concrètement : chaque point de passage est l'hameçon avec probabilité `p × 0,5`,
-  sinon un point tiré dans la sphère. L'hameçon **hors du nuage** ne reçoit rien.
+- [ ] **Hameçon présent dans le nuage** — TROIS distances distinctes (pas une seule) :
+  1. **Détection** = **`COMPORTEMENTS[espèce].vue`** (brochet 8 u, perche 7, gardon 6,
+     carpe 4,5, tanche 3,5, anguille **2,5**), plafonnée à R=6, et **réduite la nuit**
+     (sauf `nocturne`) et sous la pluie : le système de vision existe déjà.
+  2. **Priorité de fouille** : poids **dégressif** selon la distance de l'hameçon au
+     centre du nuage — **plein ≤ 2 u, nul à 6 u** (`p = clamp((R − d) / (R − 2), 0, 1)`).
+     Chaque point de passage est l'hameçon avec probabilité `p × 0,5`, sinon un point
+     tiré dans la sphère.
+  3. **Touche** : la prise reste physique, à **≈ 0,9 u** (`BITE_RADIUS`), modulée par
+     l'esche (§15.2) et la couche d'eau. Un poisson à faible vue (anguille, tanche)
+     met donc beaucoup plus longtemps à trouver l'esche : c'est voulu.
+
+  L'hameçon **hors du nuage** ne reçoit rien.
 - [ ] **Conséquence attendue** : un amorçage bien posé (bouchon au cœur) produit des
   touches dans les 60 s ; un amorçage à côté ne change rien.
 - [ ] **Tests** : (a) poisson à 15 u attire vers la sphère ; (b) une fois dedans, il
