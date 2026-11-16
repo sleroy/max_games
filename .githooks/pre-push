@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# Hook pre-push : bloque le push si le dépôt est cassé (≈ 5 s, Node seul, aucune dépendance).
+#   1. aucune marque de conflit de fusion (<<<<<<< / >>>>>>>) dans les fichiers suivis ;
+#   2. syntaxe de tous les .js / .mjs de games/ (scripts/check-syntax.mjs) ;
+#   3. tests de non-régression du jeu de pêche (games/peche_game/tests/run.mjs).
+# Activé via :  git config core.hooksPath .githooks
+# Contourner (à éviter) :  git push --no-verify
+# ---------------------------------------------------------------------------
+set -u
+racine="$(git rev-parse --show-toplevel)"
+cd "$racine" || exit 1
+
+# Pas de vérification quand on supprime une branche distante (rien n'est poussé).
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        exit 0
+    fi
+done
+
+echo "🔎 pre-push : conflits, syntaxe, tests…"
+
+# 1) Marques de conflit (le script lui-même et ce hook n'en contiennent pas en début de ligne).
+if git grep -nE '^(<<<<<<<|>>>>>>>) ' -- . ':!*.md' >/dev/null 2>&1; then
+    echo "❌ Marques de conflit de fusion trouvées :"
+    git grep -nE '^(<<<<<<<|>>>>>>>) ' -- . ':!*.md' | head -10
+    echo "   Résous le conflit, puis recommence."
+    exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "⚠  node introuvable : vérifications de syntaxe et de tests ignorées."
+    exit 0
+fi
+
+# 2) Syntaxe.
+if ! node scripts/check-syntax.mjs >/tmp/pre-push-syntaxe.log 2>&1; then
+    tail -25 /tmp/pre-push-syntaxe.log
+    echo "❌ Erreur de syntaxe : push annulé."
+    exit 1
+fi
+tail -1 /tmp/pre-push-syntaxe.log
+
+# 3) Tests.
+if ! node games/peche_game/tests/run.mjs >/tmp/pre-push-tests.log 2>&1; then
+    grep -E "ECHEC|ERREUR|^  - " /tmp/pre-push-tests.log | head -20
+    echo "❌ Tests en échec : push annulé (détail : /tmp/pre-push-tests.log)."
+    exit 1
+fi
+grep -E "TOUT OK" /tmp/pre-push-tests.log | tail -1
+echo "✅ pre-push : tout est vert."
