@@ -172,6 +172,20 @@ def masque(espece):
         for x in range(228, 791):
             m[int(dos[x]):int(ventre[x]) + 1, x] = True
         germe = (500, 215)
+    elif espece == 'carassin':
+        # Carassin sur fond gris-bleu uniforme (tourné à gauche) : le dos brun sombre et le ventre jaune se
+        # confondent avec les ombres, donc le corps est rempli entre deux lignes relevées à la main sur la
+        # photo (grille 50 px) ; dorsale dressée, pectorale, pelviennes, anale et caudale (x > 688) sont
+        # exclues ; museau à x = 42, base de la caudale x = 688.
+        xs = np.arange(a.shape[1])
+        dos = np.interp(xs, [42, 50, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 690],
+                        [322, 312, 304, 291, 281, 257, 237, 214, 200, 190, 192, 203, 218, 238, 255, 260, 262])
+        ventre = np.interp(xs, [42, 50, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 530, 560, 600, 650, 690],
+                           [348, 360, 372, 388, 400, 425, 438, 442, 442, 440, 436, 430, 418, 410, 395, 372, 354, 350])
+        m = np.zeros(a.shape[:2], bool)
+        for x in range(42, 689):
+            m[int(dos[x]):int(ventre[x]) + 1, x] = True
+        germe = (350, 320)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)

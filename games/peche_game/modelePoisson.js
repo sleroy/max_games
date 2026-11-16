@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=224';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=224';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=224';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=225';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=225';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=225';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -451,7 +451,7 @@ function nageoiresPaires(lot, profil, LS, xNez, def, pelvienne, echelleHauteur) 
             let t;
             let y;
             if (pelvienne) {
-                t = def.t + 0.035 * s;
+                t = def.t + (def.base !== undefined ? def.base : 0.035) * s;   // `base` : largeur de l'insertion (défaut 0,035 LS)
                 y = profil.y(t) - profil.h(t) * 0.9;
             } else {
                 t = def.t + 0.012 * s;
@@ -460,7 +460,7 @@ function nageoiresPaires(lot, profil, LS, xNez, def, pelvienne, echelleHauteur) 
             const z = cote * zSurface(profil, t, y) * (pelvienne ? 0.6 : 0.97);
             // Éventail des rayons : sans lui, base et rayons sont parallèles et
             // la nageoire n'est qu'un trait vue de profil.
-            const angle = pente + (s - 0.5) * (pelvienne ? 0.8 : (def.eventail !== undefined ? def.eventail : 0.55));
+            const angle = pente + (s - 0.5) * (def.eventail !== undefined ? def.eventail : (pelvienne ? 0.8 : 0.55));
             const l = L * lirePolyligne(forme, s) * r;
             // Une pelvienne pend sous le ventre (vue de profil) au lieu de
             // s'étaler à plat : elle descend autant qu'elle s'écarte.
