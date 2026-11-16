@@ -1325,3 +1325,23 @@ Un ferrage raté est donc presque sans conséquence en mode enfant.
 - [ ] **Tests** : `fightAdvantage` identique en facile et en normal après un ferrage
   raté ; même valeur de combativité lue par `startStruggle` ; et le mode enfant garde
   ses aides de détection (fenêtre, densité, bandeau).
+
+### 17.9 Une seule ligne au départ (jeu plus tendu) — à faire
+
+Demande du joueur : « on devrait avoir une seule ligne quand on commence, pour rendre le
+jeu plus excitant ». Aujourd'hui `stocks.js:16` — `etat.MAX_LIGNES = 5` et la partie
+démarre avec **5 lignes = 5 vies**.
+
+- [ ] **Une ligne au départ** : `MAX_LIGNES = 1` (donc 1 vie). Une casse ou un
+  emmêlement non résolu = fin de partie immédiate. C'est le but : chaque lancer compte.
+- [ ] **Le compteur doit rester lisible** : « 🧵 Lignes : 1/1 » puis « 0/1 » à la casse,
+  et l'écran de fin doit expliquer clairement « plus de ligne » (message existant).
+- [ ] **Ne pas casser les chemins de secours** : une ligne perdue par emmêlement, par
+  lancer trop fort ou par remontée trop rapide mène bien à la fin de partie ; aucun état
+  bloqué sans ligne.
+- [ ] **À décider (suggestion)** : le mode **enfant** pourrait en donner **2** (tolérance
+  pour apprendre), les modes normal et difficile **1**. À valider par le joueur.
+- [ ] **Tests à adapter** (tous ceux qui supposent 5 vies) : `scenario-lignes` (5 → 1,
+  casse, fin de partie), `scenario-jouer` (HUD 1/1), `scenario-gameplay`/démêlage
+  (perte d'une ligne = fin), classement. Aucune vérification supprimée : les scénarios
+  passent simplement de 5 à 1 ligne, et les boucles « jusqu'à 0 ligne » restent.
