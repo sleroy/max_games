@@ -92,7 +92,11 @@ export function creerVegetation(deps) {
     if (roseauxMat) { brancherVent(roseauxMat, uniforms, AMPLITUDE_ROSEAUX); }
 
     // --- Herbe des berges : touffes instanciées, de la bande de sable jusqu'au sous-bois ---
-    let graine = 0x9e3779b9;
+    // Les touffes sont POSÉES (`poser`) d'après le contour ACTUEL : refaites quand la taille de l'étang change
+    // (`regler(densite, echelle)`). La même graine à chaque pose : même étang, même herbe. La bande d'herbe
+    // suit l'échelle de l'étang (× f borné [0,3 ; 3]) ; pour la plaine (f = 1), l'herbe d'origine.
+    const GRAINE_HERBE = 0x9e3779b9;
+    let graine = GRAINE_HERBE;
     function hasard() {
         graine = (graine + 0x6d2b79f5) >>> 0;
         let t = graine;
@@ -108,19 +112,27 @@ export function creerVegetation(deps) {
     const p = new THREE.Vector3();
     const s = new THREE.Vector3();
     const axeY = new THREE.Vector3(0, 1, 0);
-    for (let i = 0; i < TOUFFES; i++) {
-        const angle = hasard() * Math.PI * 2;
-        // Plus dense près de l'eau (là où la caméra regarde), clairsemée vers le sous-bois.
-        // Le sable du bord fait 3,4 à 5,8 unités (environnement.js) : l'herbe commence après.
-        const r = rayonEtang(angle) + 5 + hasard() * hasard() * 45;
-        p.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y, POND_CENTER.z + Math.sin(angle) * r);
-        q.setFromAxisAngle(axeY, hasard() * Math.PI * 2);
-        const taille = 0.35 + hasard() * 0.4;
-        s.set(taille * 1.4, taille, taille * 1.4);
-        m.compose(p, q, s);
-        herbe.setMatrixAt(i, m);
+    let echelleHerbe = null;
+    function poser(echelle) {
+        graine = GRAINE_HERBE;
+        const bande = 45 * Math.max(0.3, Math.min(3, echelle));
+        for (let i = 0; i < TOUFFES; i++) {
+            const angle = hasard() * Math.PI * 2;
+            // Plus dense près de l'eau (là où la caméra regarde), clairsemée vers le sous-bois.
+            // Le sable du bord fait 3,4 à 5,8 unités (environnement.js) : l'herbe commence après.
+            const r = rayonEtang(angle) + 5 + hasard() * hasard() * bande;
+            p.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y, POND_CENTER.z + Math.sin(angle) * r);
+            q.setFromAxisAngle(axeY, hasard() * Math.PI * 2);
+            const taille = 0.35 + hasard() * 0.4;
+            s.set(taille * 1.4, taille, taille * 1.4);
+            m.compose(p, q, s);
+            herbe.setMatrixAt(i, m);
+        }
+        herbe.instanceMatrix.needsUpdate = true;
+        herbe.boundingSphere = null;   // la sphère englobante mise en cache serait celle de l'ancien contour
+        echelleHerbe = echelle;
     }
-    herbe.instanceMatrix.needsUpdate = true;
+    poser(1);
     herbe.receiveShadow = true;
     // Les uniformes suivent le vent juste avant chaque rendu : rien à appeler depuis la boucle.
     herbe.onBeforeRender = function () { maj(); };
@@ -134,8 +146,11 @@ export function creerVegetation(deps) {
     }
     maj();
 
-    // Densité de l'herbe (0–1) : le biotope (milieux.js) fixe la part des touffes visibles.
-    function regler(densite) {
+    // Densité de l'herbe (0–1) : le biotope (milieux.js) fixe la part des touffes visibles. `echelle` (f = rayon /
+    // 90, optionnel) : si elle a changé, l'herbe est reposée le long du contour actuel.
+    function regler(densite, echelle) {
+        const f = echelle === undefined ? echelleHerbe : echelle;
+        if (f !== echelleHerbe) { poser(f); }
         herbe.count = Math.round(TOUFFES * Math.max(0, Math.min(1, densite === undefined ? 1 : densite)));
     }
 

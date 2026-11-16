@@ -2,26 +2,28 @@
 // milieux.js — BIOTOPES D'ÉTANG : six milieux au choix (accueil), UNE SEULE source de vérité.
 //
 // Un biotope change la FAUNE (parts de population), la FLORE et le DÉCOR (arbres, nénuphars,
-// roseaux, rochers), les FONDS (vase, herbier, sable, gravier, roche), la TEINTE de l'eau et la
-// TAILLE MAXIMALE des poissons. Il ne change JAMAIS la forme du plan d'eau : le contour, les
-// fosses, les postes, la barque et la caméra restent ceux de l'étang généré par la graine.
-// Un « petit étang de forêt » est petit écologiquement (peu de poissons, plus petits) et
-// visuellement (décor dense), pas par un contour rétréci.
+// roseaux, rochers), les FONDS (vase, herbier, sable, gravier, roche), la TEINTE de l'eau, la
+// TAILLE MAXIMALE des poissons et, depuis les tailles d'étang, la TAILLE du plan d'eau : `rayon`
+// (12 à 280 unités, 2 unités ≈ 1 m). Il ne change JAMAIS la FORME du plan d'eau : mêmes harmoniques
+// de contour, même relief normalisé, même profondeur. Seule l'ÉCHELLE change (f = rayon / 90 ; la
+// plaine, f = 1, est le monde de référence, inchangé).
 //
-// ⚠ `surfaceHa` et `profondeur` sont des données ÉCOLOGIQUES : elles ne servent qu'à la formule
-// de taille (`facteurTaille`) et à la densité de poissons (`capacite`). Ne jamais les utiliser
-// comme profondeur d'eau ni comme géométrie.
+// La SURFACE n'est plus une donnée écologique en dur : elle se déduit de la géométrie réelle
+// (`surfaceHaDe(milieu)` = surface d'un contour de ce rayon, dimensions.js). `capacite`, `facteurTaille`
+// et la biomasse lisent cette seule surface. `profondeur` reste une donnée ÉCOLOGIQUE (facteur de taille) :
+// ne jamais l'utiliser comme profondeur d'eau.
 //
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=237';
-import { etat } from './etat.js?v=237';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=238';
+import { etat } from './etat.js?v=238';
+import { RAYON_REFERENCE, surfaceHectares, echelleDeRayon } from './dimensions.js?v=238';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
 export const PLAFOND_POPULATION = 240;      // plafond technique (animation, bancs, téléphone)
-export const SURFACE_REFERENCE_HA = 0.64;   // l'étang de plaine : facteur de taille 1
+export const SURFACE_REFERENCE_HA = surfaceHectares(RAYON_REFERENCE);   // l'étang de plaine (≈ 0,64 ha) : facteur de taille 1
 export const PROFONDEUR_REFERENCE = 8.2;    // idem (unités : 2 = 1 m)
 
 // Ordre des colonnes de `parts` : celui de SPECIES (id de l'espèce → pourcentage, 0 = absente).
@@ -42,7 +44,7 @@ export const MILIEUX = [
         decor: { arbres: 64, nenuphars: 40, roseaux: 70, rochers: 24 },
         fonds: { vase: 0.28, herbier: 0.20, sable: 0.20, gravier: 0.20, roche: 0.12 },
         eau: { shallow: 0x3d7d92, deep: 0x0a2736, sky: 0x9fc7d6 },
-        surfaceHa: 0.64, profondeur: 8.2, densite: 1.0
+        rayon: 90, profondeur: 8.2, densite: 1.0
     },
     {
         id: 'canal', nom: 'Canal', icone: '🚤',
@@ -52,7 +54,7 @@ export const MILIEUX = [
         decor: { arbres: 20, nenuphars: 10, roseaux: 90, rochers: 10 },
         fonds: { vase: 0.55, herbier: 0.20, sable: 0.15, gravier: 0.08, roche: 0.02 },
         eau: { shallow: 0x4a7a5c, deep: 0x122a20, sky: 0x9fb6a6 },
-        surfaceHa: 0.35, profondeur: 5.0, densite: 1.0
+        rayon: 45, profondeur: 5.0, densite: 1.0
     },
     {
         id: 'carnassiers', nom: 'Étang à carnassiers', icone: '🦈',
@@ -61,7 +63,7 @@ export const MILIEUX = [
         decor: { arbres: 20, nenuphars: 60, roseaux: 90, rochers: 15 },
         fonds: { vase: 0.30, herbier: 0.35, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x35584f, deep: 0x081a18, sky: 0x8fa8a0 },
-        surfaceHa: 0.80, profondeur: 7.0, densite: 0.9
+        rayon: 70, profondeur: 7.0, densite: 0.9
     },
     {
         id: 'montagne', nom: 'Lac de montagne', icone: '🏔️',
@@ -70,7 +72,7 @@ export const MILIEUX = [
         decor: { arbres: 30, nenuphars: 0, roseaux: 10, rochers: 60 },
         fonds: { vase: 0.05, herbier: 0.05, sable: 0.15, gravier: 0.30, roche: 0.45 },
         eau: { shallow: 0x4f93b8, deep: 0x0d3448, sky: 0xb9d7e6 },
-        surfaceHa: 1.60, profondeur: 9.0, densite: 0.7
+        rayon: 180, profondeur: 9.0, densite: 0.7
     },
     {
         id: 'foret', nom: 'Petit étang de forêt', icone: '🌲',
@@ -79,7 +81,7 @@ export const MILIEUX = [
         decor: { arbres: 80, nenuphars: 30, roseaux: 40, rochers: 10 },
         fonds: { vase: 0.40, herbier: 0.25, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x5a6b3f, deep: 0x1a1f0f, sky: 0xa8b48f },
-        surfaceHa: 0.18, profondeur: 3.2, densite: 0.6
+        rayon: 12, profondeur: 3.2, densite: 0.6
     },
     {
         id: 'riviere', nom: 'Grande rivière (silures)', icone: '🌊',
@@ -90,7 +92,7 @@ export const MILIEUX = [
         decor: { arbres: 25, nenuphars: 10, roseaux: 50, rochers: 20 },
         fonds: { vase: 0.30, herbier: 0.10, sable: 0.25, gravier: 0.20, roche: 0.15 },
         eau: { shallow: 0x3b5f63, deep: 0x061b1d, sky: 0x93a9ab },
-        surfaceHa: 2.00, profondeur: 9.5, densite: 0.85
+        rayon: 280, profondeur: 9.5, densite: 0.85
     }
 ];
 
@@ -138,10 +140,30 @@ export function texteOuTrouver(especeId) {
 
 function borner(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-/** Facteur de taille d'un étang : le plus petit de ses deux facteurs (surface, profondeur). */
+/** Rayon nominal (unités) du plan d'eau d'un biotope : une DONNÉE du biotope (dimensions.js en tire la surface). */
+export function rayonDe(milieu) {
+    return milieuDe(milieu).rayon;
+}
+
+/** Facteur d'échelle du biotope par rapport à la plaine : rayon / 90 (1 pour la plaine). */
+export function echelleMilieu(milieu) {
+    return echelleDeRayon(rayonDe(milieu));
+}
+
+/**
+ * Surface (hectares) du plan d'eau du biotope, DÉDUITE de sa géométrie réelle (rayon → contour → aire).
+ * C'est la seule surface du jeu : la capacité, le facteur de taille et la biomasse la lisent. Un objet
+ * qui porte directement `surfaceHa` (tests de monotonie : `facteurTailleDe`) la fournit lui-même.
+ */
+export function surfaceHaDe(milieu) {
+    const m = milieuDe(milieu);
+    return typeof m.surfaceHa === 'number' ? m.surfaceHa : surfaceHectares(m.rayon);
+}
+
+/** Facteur de taille d'un étang : le plus petit de ses deux facteurs (surface réelle, profondeur). */
 export function facteurTaille(milieu) {
     const m = milieuDe(milieu);
-    const fSurface = borner(Math.sqrt(m.surfaceHa / SURFACE_REFERENCE_HA), 0.5, 1.2);
+    const fSurface = borner(Math.sqrt(surfaceHaDe(m) / SURFACE_REFERENCE_HA), 0.5, 1.2);
     const fProfondeur = borner(Math.pow(m.profondeur / PROFONDEUR_REFERENCE, 0.4), 0.6, 1.1);
     return Math.min(fSurface, fProfondeur);
 }
@@ -163,7 +185,7 @@ export function capacite(milieu, facteurDensite, plafond) {
     const m = milieuDe(milieu);
     const facteur = facteurDensite === undefined ? 2 : facteurDensite;
     return Math.min(plafond === undefined ? PLAFOND_POPULATION : plafond,
-        Math.round(m.surfaceHa * DENSITE_PAR_HECTARE * m.densite * facteur));
+        Math.round(surfaceHaDe(m) * DENSITE_PAR_HECTARE * m.densite * facteur));
 }
 
 function minimumBanc(id) {
@@ -260,9 +282,15 @@ export function texteMilieu(milieu) {
 // ---------------------------------------------------------------------------
 // SYSTÈME : applique le biotope choisi au monde et le mémorise dans le carnet.
 //
-// Un choix (accueil) ou un changement, même en cours de partie, RECONSTRUIT ce qui dépend du
-// biotope (eau, décor, fonds, herbe) puis REPEUPLE l'étang avec la composition du biotope.
-// Le contour de l'étang et ses fosses ne bougent pas.
+// Un choix (accueil) ou un changement RECONSTRUIT d'abord la GÉOMÉTRIE quand le rayon change
+// (`deps.setRayonMonde` : contour, centre, fosses, surface ; puis `deps.surGeometrie` : eau, rive,
+// fond, brume, ciel, caméra), AVANT le décor, les fonds et l'eau. Ordre ensuite : teinte de l'eau,
+// décor (les fonds en dépendent), obstacles (qui évitent le décor, comme dans le monde d'origine),
+// fonds et leur texture, `deps.apresGeometrie` (partie redémarrée et poste de départ : ce n'est PAS un
+// changement « à chaud »), puis le repeuplement de l'étang avec la composition du biotope.
+//
+// Le monde est construit en « plaine » ; le biotope mémorisé dans le carnet est appliqué par `demarrer()`,
+// appelé par script.js quand TOUT le reste existe (carte de placement, barque, partie).
 // ---------------------------------------------------------------------------
 export function creerMilieux(deps) {
     const radios = deps.radios || {};
@@ -288,14 +316,23 @@ export function creerMilieux(deps) {
         cocherRadios(m.id);
         if (m.id === courant) { return false; }
         courant = m.id;
+        // 1) La TAILLE d'abord : tout le reste (décor, fonds, poissons) se pose dans le nouveau contour.
+        const changeTaille = !!deps.setRayonMonde && !!deps.monde && deps.monde.rayon !== m.rayon;
+        if (changeTaille) {
+            deps.setRayonMonde(m.rayon);
+            if (deps.surGeometrie) { deps.surGeometrie(m); }
+        }
         appliquerEau(eauDe(m));
-        // Ordre : le décor d'abord (les fonds en dépendent : herbier autour des nénuphars et roseaux), puis les fonds
-        // et leur texture. Les obstacles déjà posés ne bougent pas : le décor les évite.
-        if (deps.decor) { deps.decor.appliquerMilieu(m, deps.obstacles ? deps.obstacles.liste : null); }
+        // 2) Décor d'abord (les fonds en dépendent : herbier autour des nénuphars et roseaux), puis les obstacles
+        //    qui l'évitent (taille changée : ils sont reposés), puis les fonds et leur texture. À taille égale,
+        //    les obstacles en place ne bougent pas : le décor les évite.
+        if (deps.decor) { deps.decor.appliquerMilieu(m, !changeTaille && deps.obstacles ? deps.obstacles.liste : null); }
+        if (changeTaille && deps.obstacles) { deps.obstacles.reconstruire(); }
         if (deps.substrats) {
             deps.substrats.appliquerMilieu(m);
             if (deps.fond) { deps.substrats.habillerFond(deps.fond); }
         }
+        if (changeTaille && deps.apresGeometrie) { deps.apresGeometrie(m); }
         deps.repeuplerEtang(m);
         return true;
     }
@@ -310,6 +347,8 @@ export function creerMilieux(deps) {
         return change;
     }
 
-    appliquer(etat.journal.milieu);   // le carnet est déjà chargé : on applique le biotope mémorisé
-    return { appliquer: appliquer, choisir: choisir, courant: function () { return milieuParId(courant); } };
+    // Applique le biotope du carnet (déjà chargé) : à appeler une fois le monde entièrement construit.
+    function demarrer() { return appliquer(etat.journal.milieu); }
+
+    return { appliquer: appliquer, choisir: choisir, demarrer: demarrer, courant: function () { return milieuParId(courant); } };
 }

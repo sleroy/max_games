@@ -17,7 +17,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=237';
+import { etat } from './etat.js?v=238';
 
 // 16 couleurs bien distinctes (une par espèce, dans l'ordre de SPECIES).
 const PALETTE = [
@@ -36,19 +36,22 @@ const RAYON_PAR_CM = 0.04;
 export function creerRadar(deps) {
     const {
         fishes, angler, floatGroup, panneau, fondEl, vivantEl, substrats, POND_CENTER, rayonEtang,
-        RAYON_CADRE_CARTE, SPECIES, COMPORTEMENTS
+        monde, SPECIES, COMPORTEMENTS
     } = deps;
 
     // Échelle : le cadre (demi-hauteur 58) contient le plus grand rayon du contour + la couronne
     // de placement, comme la carte du carnet. Le nord est en haut (z croissant vers le bas).
     const cx = LARGEUR / 2;
     const cy = HAUTEUR / 2;
-    const ech = 58 / RAYON_CADRE_CARTE;
+    // L'échelle suit la TAILLE de l'étang (`monde.rayonCadre`, lu à chaque rafraîchissement : le biotope peut la changer).
+    let ech = 58 / monde.rayonCadre;
+    function majEchelle() { ech = 58 / monde.rayonCadre; }
     const mx = function (x) { return cx + (x - POND_CENTER.x) * ech; };
     const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
 
     let actif = false;
     let fondDessine = false;
+    let cleFond = '';     // grille des fonds et échelle du dernier fond dessiné : un autre biotope ou une autre taille le redessine
     let attente = 0;
     let misesAJour = 0;
     let derniersPoints = [];
@@ -127,8 +130,9 @@ export function creerRadar(deps) {
         return d + 'Z';
     }
 
-    // Le fond ne change jamais : dessiné une seule fois, à la première ouverture.
+    // Le fond est dessiné à la première ouverture, puis seulement si la grille ou l'échelle change (biotope).
     function dessinerFond() {
+        majEchelle();
         const chemins = {};
         substrats.rectsCarte().forEach(function (r) {
             const w = (r.w * ech).toFixed(2);
@@ -148,6 +152,7 @@ export function creerRadar(deps) {
         svg += '</g><path d="' + bord + '" fill="none" stroke="#eaf6ff" stroke-width="0.8"/>';
         fondEl.innerHTML = svg;
         fondDessine = true;
+        cleFond = cleDuFond();
     }
 
     function triangle(p) {
@@ -190,7 +195,11 @@ export function creerRadar(deps) {
         vivantEl.innerHTML = svg;
     }
 
+    function cleDuFond() { return substrats.empreinte() + '|' + monde.rayonCadre + '|' + POND_CENTER.x + ',' + POND_CENTER.z; }
+
     function rafraichir() {
+        if (fondDessine && cleDuFond() !== cleFond) { dessinerFond(); }   // autre biotope ou autre taille : fond refait
+        majEchelle();
         derniersPoints = fishes.map(pointDe);
         dernierPecheur = pecheurDe();
         dessiner();

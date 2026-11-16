@@ -102,10 +102,14 @@ export function creerObstacles(deps) {
     const { scene, POND_CENTER, rayonEtang, fondY, FOSSES, lilyPads, decor, ANGLE_BASE, POSTES,
         POSTE_ANGLER, POSTE_BOURRICHE, POSTE_MARGE, RIVE_Y } = deps;
     // Copie des nénuphars de départ : refaire() (tests) rejoue le même placement même si les
-    // nénuphars ont été vidés entre-temps.
-    const padsInitiaux = lilyPads.map(function (p) { return { x: p.x, z: p.z, radius: p.radius }; });
-    const CX = POND_CENTER.x;
-    const CZ = POND_CENTER.z;
+    // nénuphars ont été vidés entre-temps. Refaite à chaque reconstruction (taille d'étang changée).
+    let padsInitiaux = lilyPads.map(function (p) { return { x: p.x, z: p.z, radius: p.radius }; });
+    // Le monde ACTUEL (environnement.js `monde`) : l'échelle f = rayon / 90 (1 dans la plaine). Le centre de l'étang
+    // et son contour sont lus à chaque pose : le placement se refait dans le nouveau contour (reconstruire()).
+    const monde = deps.monde || { echelle: 1 };
+    let CX = POND_CENTER.x;
+    let CZ = POND_CENTER.z;
+    let ECH = 1;                         // échelle des distances au bord et des zones libres pour CE placement
     const _m = new THREE.Matrix4();
     const _q = new THREE.Quaternion();
     const _p = new THREE.Vector3();
@@ -439,7 +443,13 @@ export function creerObstacles(deps) {
 
     // --- Références à éviter : les 4 postes de berge (pêcheur + bourriche) ----------------------
     // Même calcul que bateau.js (rotation autour du centre puis recalage radial à POSTE_MARGE).
-    const postesRef = POSTES.map(function (poste) {
+    // Remplie EN PLACE (reposer) : le centre et le contour dépendent de la taille de l'étang.
+    const postesRef = [];
+    function calculerPostesRef() {
+        postesRef.length = 0;
+        POSTES.forEach(function (poste) { postesRef.push(posteRef(poste)); });
+    }
+    function posteRef(poste) {
         const delta = poste.delta;
         const cos = Math.cos(delta);
         const sin = Math.sin(delta);
@@ -456,7 +466,7 @@ export function creerObstacles(deps) {
         pecheur.x += ux * decal; pecheur.z += uz * decal;
         bourriche.x += ux * decal; bourriche.z += uz * decal;
         return { angle: ANGLE_BASE - delta, pecheur: pecheur, bourriche: bourriche };
-    });
+    }
 
     // --- Placement déterministe ---------------------------------------------------------------
     const liste = [];
@@ -475,8 +485,8 @@ export function creerObstacles(deps) {
             for (let k = 0; k < postesRef.length; k++) {
                 const ref = postesRef[k];
                 if (ecartAngle(ang, ref.angle) < COULOIR_POSTE) { return false; }
-                if (Math.hypot(c.x - ref.pecheur.x, c.z - ref.pecheur.z) < c.r + 10) { return false; }
-                if (Math.hypot(c.x - ref.bourriche.x, c.z - ref.bourriche.z) < c.r + 8) { return false; }
+                if (Math.hypot(c.x - ref.pecheur.x, c.z - ref.pecheur.z) < c.r + 10 * Math.min(1, ECH)) { return false; }
+                if (Math.hypot(c.x - ref.bourriche.x, c.z - ref.bourriche.z) < c.r + 8 * Math.min(1, ECH)) { return false; }
             }
             if (c.eau) {
                 for (let k = 0; k < FOSSES.length; k++) {
@@ -514,7 +524,7 @@ export function creerObstacles(deps) {
         for (let i = 0; i < DECALAGES_ANGLE.length; i++) {
             for (let j = 0; j < bords.length; j++) {
                 const angle = (spec.angle + DECALAGES_ANGLE[i]) * DEG;
-                const rayon = rayonEtang(angle) - (spec.d + bords[j]);
+                const rayon = rayonEtang(angle) - (spec.d + bords[j]) * Math.max(ECH, 0.35);   // distances au bord : × f (≥ 0,35 : un obstacle garde ses 1,5 unité d'eau) ; inchangées dans la plaine
                 // Repère local : x vers la berge (u), z perpendiculaire (v).
                 const pose = { x: CX + Math.cos(angle) * rayon, z: CZ + Math.sin(angle) * rayon,
                     cos: Math.cos(angle), sin: Math.sin(angle), angle: angle };
@@ -542,7 +552,7 @@ export function creerObstacles(deps) {
         // Centre de la zone de vie : à 10,5 du bord au moins (les poissons évitent la rive).
         const angle = Math.atan2(z - CZ, x - CX);
         const dBord = rayonEtang(angle) - Math.hypot(x - CX, z - CZ);
-        const recul = Math.max(0, 10.5 - dBord);
+        const recul = Math.max(0, 10.5 * Math.min(1, ECH) - dBord);
         liste.push({
             id: spec.type + '-' + index, type: spec.type, nom: type.nom, x: x, z: z, rayon: rayon,
             angle: angle, axe: place.pose.angle, cercles: place.cercles, groupe: groupe,
@@ -553,12 +563,33 @@ export function creerObstacles(deps) {
         });
     }
 
-    SPECS.forEach(construire);
-
     const parEspece = {};
-    liste.forEach(function (o) {
-        o.attire.especes.forEach(function (id) { (parEspece[id] = parEspece[id] || []).push(o); });
-    });
+    // Le ponton est aussi un POSTE de pêche : choisi sur la carte (angle dans `demi` de l'axe), le
+    // pêcheur se place sur le plancher, à 10,5 unités de la berge, et la girouette est rangée.
+    let pontonPoste = null;
+
+    // Pose (ou REPOSE) tous les obstacles dans le contour ACTUEL. Les tailles ne changent pas : seules les distances
+    // au bord et les zones libres autour des postes suivent l'échelle. Un obstacle qui ne trouve aucune place libre
+    // est omis. Les listes (`liste`, `postesRef`) sont refaites EN PLACE : leurs lecteurs gardent la référence.
+    function reposer() {
+        liste.forEach(function (o) {
+            scene.remove(o.groupe);
+            o.groupe.traverse(function (n) { if (n.geometry && n.geometry.dispose) { n.geometry.dispose(); } });
+        });
+        liste.length = 0;
+        CX = POND_CENTER.x;
+        CZ = POND_CENTER.z;
+        ECH = 1;   // distances au bord et zones libres d'origine (la mise à l'échelle × f arrive avec la suite)
+        calculerPostesRef();
+        SPECS.forEach(construire);
+        Object.keys(parEspece).forEach(function (id) { delete parEspece[id]; });
+        liste.forEach(function (o) {
+            o.attire.especes.forEach(function (id) { (parEspece[id] = parEspece[id] || []).push(o); });
+        });
+        const ponton = liste.find(function (o) { return o.type === 'ponton'; });
+        pontonPoste = ponton ? { axe: ponton.axe, demi: 0.05, marge: -10.5, hauteur: 0.67, id: ponton.id } : null;
+    }
+    reposer();
 
     // --- Requêtes de jeu ----------------------------------------------------------------------
     // Obstacle qui coince un hameçon tombé en `point` (null si l'eau est libre).
@@ -654,14 +685,15 @@ export function creerObstacles(deps) {
         return stats.poissons;
     }
 
-    // Le ponton est aussi un POSTE de pêche : choisi sur la carte (angle dans `demi` de l'axe), le
-    // pêcheur se place sur le plancher, à 10,5 unités de la berge, et la girouette est rangée.
-    const ponton = liste.find(function (o) { return o.type === 'ponton'; });
-    const pontonPoste = ponton ? { axe: ponton.axe, demi: 0.05, marge: -10.5, hauteur: 0.67, id: ponton.id } : null;
-
     return {
-        liste: liste, pontonPoste: pontonPoste, TYPES: TYPES, ACCROCHAGES: ACCROCHAGES, RAYON_BARQUE: RAYON_BARQUE,
-        postesRef: postesRef, stats: stats, nenupharsDepart: padsInitiaux, empreinte: function () { return signature(liste); },
+        liste: liste, get pontonPoste() { return pontonPoste; }, TYPES: TYPES, ACCROCHAGES: ACCROCHAGES, RAYON_BARQUE: RAYON_BARQUE,
+        postesRef: postesRef, stats: stats, get nenupharsDepart() { return padsInitiaux; }, empreinte: function () { return signature(liste); },
+        // Taille d'étang changée : repose tout dans le nouveau contour (décor et nénuphars déjà refaits).
+        reconstruire: function () {
+            padsInitiaux = lilyPads.map(function (p) { return { x: p.x, z: p.z, radius: p.radius }; });
+            reposer();
+            return liste;
+        },
         // Rejoue le placement dans une scène jetable : deux exécutions doivent donner la même liste.
         refaire: function () {
             return creerObstacles(Object.assign({}, deps, { scene: new THREE.Group(), lilyPads: padsInitiaux }));

@@ -4,8 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=237';
-import { ESCHES, ESCHE_DEPART } from './esches.js?v=237';
+import { etat } from './etat.js?v=238';
+import { ESCHES, ESCHE_DEPART } from './esches.js?v=238';
 
 export function creerStocks(deps) {
     const {

@@ -19,13 +19,13 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 const MODULES = [
     'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
     'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'substrats.js', 'esches.js',
-    'physique.js', 'menus.js', 'radar.js', 'modelePoisson.js', 'teteBec.js', 'texturesPoisson.js', 'apercuPoisson.js', 'blackBass.js', 'chevesne.js', 'rotengle.js', 'goujon.js', 'motifBande.js', 'vegetation.js', 'chanceTouche.js', 'matriceTouche.js', 'avion.js', 'conseilLocal.js', 'milieux.js',
+    'physique.js', 'menus.js', 'radar.js', 'modelePoisson.js', 'teteBec.js', 'texturesPoisson.js', 'apercuPoisson.js', 'blackBass.js', 'chevesne.js', 'rotengle.js', 'goujon.js', 'motifBande.js', 'vegetation.js', 'chanceTouche.js', 'matriceTouche.js', 'avion.js', 'conseilLocal.js', 'milieux.js', 'dimensions.js', 'tailleEtang.js',
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 3077;   // inchangé avec les biotopes (v233) : majChoixRadio est passé dans partie.js ; 3075 en v197 (choix de technique/difficulté en boutons radio, +12) ; 3063 en v197 (choix de difficulté sur l'accueil, +6 sur le câblage densité v197) ; 3057 en v197 (densité de poissons par difficulté) ; 3042 en v195 (menus + radar) ; 3039 en v192 (menus) ; 3031 en v193 (radar) ; 3019 en v189 ; 3011 en v186 (physique) ; 3006 en v185 (graine variable) ; 2971 en v180
+const PLAFOND_SCRIPT = 3075;   // 3075 avec les tailles d'étang (v239 : la taille du monde vit dans tailleEtang.js ; 8 lignes de commentaires vides retirées en fin de fichier) ; 3077 avec les biotopes (v233) : majChoixRadio est passé dans partie.js ; 3075 en v197 (choix de technique/difficulté en boutons radio, +12) ; 3063 en v197 (choix de difficulté sur l'accueil, +6 sur le câblage densité v197) ; 3057 en v197 (densité de poissons par difficulté) ; 3042 en v195 (menus + radar) ; 3039 en v192 (menus) ; 3031 en v193 (radar) ; 3019 en v189 ; 3011 en v186 (physique) ; 3006 en v185 (graine variable) ; 2971 en v180
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;
@@ -103,6 +103,8 @@ export function run() {
         'avion.js': 'export function creerAvion(',
         'conseilLocal.js': 'export function creerConseilLocal(',
         'milieux.js': 'export function creerMilieux(',
+        'dimensions.js': 'export function porteeLancer(',
+        'tailleEtang.js': 'export function creerTailleEtang(',
         'physique.js': 'export function creerPhysique(',
         'radar.js': 'export function creerRadar(',
         'apercuPoisson.js': 'export function creerApercuPoisson(',

@@ -4,21 +4,25 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=237';
+import { etat } from './etat.js?v=238';
 
 export function creerCarnetUI(deps) {
     const {
-        tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
-        FOND_CENTRE, FOSSES, PROFONDEUR_MAX, RAYON_CADRE_CARTE, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES,
+        tabPages, journalTabs, pondMap, monde, POND_CENTER, cheminContourEtang, FOND_BORD,
+        FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES,
         profondeurLocale, substrats
     } = deps;
 
     // Les zones de fond (§14.3) viennent de la MÊME grille que la texture du fond et que
-    // l'habitat des poissons (substrats.js). Un seul tracé par substrat, calculé une fois
-    // (la grille ne change jamais) : des rectangles de la grille, en coordonnées de la carte.
+    // l'habitat des poissons (substrats.js). Un seul tracé par substrat : des rectangles de la
+    // grille, en coordonnées de la carte. Mémorisé tant que la grille et l'échelle ne changent pas
+    // (un autre biotope, ou une autre taille d'étang, refait le tracé).
     let tracesFonds = null;
+    let cleFonds = '';
     function tracerFonds(mx, mz, ech) {
-        if (tracesFonds) { return tracesFonds; }
+        const cle = substrats.empreinte() + '|' + ech + '|' + POND_CENTER.x + ',' + POND_CENTER.z;
+        if (tracesFonds && cle === cleFonds) { return tracesFonds; }
+        cleFonds = cle;
         const chemins = {};
         substrats.rectsCarte().forEach(function (r) {
             chemins[r.substrat] = (chemins[r.substrat] || '') + 'M' + mx(r.x).toFixed(1) + ' ' + mz(r.z).toFixed(1)
@@ -69,13 +73,13 @@ export function creerCarnetUI(deps) {
         if (!pondMap) {
             return;
         }
-        const R = POND_RADIUS;
+        const R = monde.rayon;   // rayon nominal du biotope (le contour réel ondule autour de lui)
         const cx = 100;
         const cy = 60;
         // Échelle : le cadre (demi-hauteur 58 px) contient le plus grand rayon du
         // contour + la couronne de placement (RAYON_CADRE_CARTE), donc le pêcheur
         // et la bourriche ne sortent jamais de la carte, même à l'extrémité des lobes.
-        const ech = 58 / RAYON_CADRE_CARTE;     // unités du monde → pixels du plan
+        const ech = 58 / monde.rayonCadre;      // unités du monde → pixels du plan
         const mx = function (x) { return cx + (x - POND_CENTER.x) * ech; };
         const mz = function (z) { return cy + (z - POND_CENTER.z) * ech; };
         // Chemin SVG du contour GÉNÉRÉ (facteur 1 = bord de l'eau, < 1 = isobathe).
@@ -149,7 +153,7 @@ export function creerCarnetUI(deps) {
         svg += '</svg>';
         // Légende : les espèces de chaque zone, d'après leurs profondeurs RÉELLES.
         // Échelle de profondeur, en clair (c'est ce qui aide à choisir son poste).
-        const profMax = PROFONDEUR_MAX;
+        const profMax = monde.profondeurMax;
         let legende = '<div class="map-profondeur">Profondeur : <b>'
             + (FOND_BORD / 2).toFixed(1).replace('.', ',') + ' m</b> au bord → <b>'
             + (FOND_CENTRE / 2).toFixed(1).replace('.', ',') + ' m</b> au centre → <b>'

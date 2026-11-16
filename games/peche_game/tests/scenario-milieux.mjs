@@ -109,10 +109,13 @@ export async function run() {
 
     // --- 3) Les tailles ---------------------------------------------------------------------
     checkClose('plaine : facteur de taille 1', facteurTaille('plaine'), 1, 1e-9);
-    checkClose('forêt : facteur ≈ 0,53', facteurTaille('foret'), 0.53, 0.01);
+    // ATTENDU MODIFIÉ (tailles d'étang) : la surface n'est plus 0,18 ha « écologiques » mais celle du contour réel (rayon 12 :
+    // 0,011 ha) ; le facteur de surface tombe sous le plancher 0,5, qui devient le facteur de la forêt (0,53 avant).
+    checkClose('forêt : facteur au plancher 0,5 (surface réelle 0,011 ha)', facteurTaille('foret'), 0.5, 1e-9);
     checkClose('montagne : facteur ≈ 1,04', facteurTaille('montagne'), 1.04, 0.01);
     checkClose('rivière : facteur ≈ 1,06', facteurTaille('riviere'), 1.06, 0.01);
-    checkClose('forêt : carpe ≈ 65 cm', tailleMaxEspece(espece('carpe'), 'foret'), 65, 1);
+    // ATTENDU MODIFIÉ (tailles d'étang) : facteur 0,5 au lieu de 0,53, donc 62,5 cm au lieu de 65.
+    checkClose('forêt : carpe ≈ 62,5 cm', tailleMaxEspece(espece('carpe'), 'foret'), 62.5, 1);
     checkClose('forêt : gardon ≈ 27 cm', tailleMaxEspece(espece('gardon'), 'foret'), 27, 1);
     checkEqual('rivière : le silure est plafonné à 220 cm', tailleMaxEspece(espece('silure'), 'riviere'), 220);
     MILIEUX.forEach(function (m) {
@@ -295,8 +298,10 @@ export async function run() {
     const grillesMilieu = [];
     M.parcourir(function (ctx) { grillesMilieu.push(ctx.longueurCm); },
         { especes: SPECIES.filter(function (s) { return s.id === 'carpe'; }), cmMax: function (s) { return tailleMaxEspece(s, 'foret'); }, temperatures: [15] });
-    check('la grille d’un biotope utilise la taille maximale de l’étang (carpe de forêt ≤ 65 cm)',
-        Math.max.apply(null, grillesMilieu) === 65, String(Math.max.apply(null, grillesMilieu)));
+    // ATTENDU MODIFIÉ (tailles d'étang) : la taille maximale de la carpe de forêt est 62,5 cm (65 cm avant).
+    const carpeForetMax = Math.round(tailleMaxEspece(espece('carpe'), 'foret'));
+    check('la grille d’un biotope utilise la taille maximale de l’étang (carpe de forêt ≤ ' + carpeForetMax + ' cm)',
+        Math.max.apply(null, grillesMilieu) === carpeForetMax, String(Math.max.apply(null, grillesMilieu)));
 
     // --- 7) Conseils : seulement les espèces du biotope -----------------------------------------
     const presentesForet = especesPresentes('foret');

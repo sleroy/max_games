@@ -6,14 +6,14 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=237';
+import { etat } from './etat.js?v=238';
 
 export function creerBateau(deps) {
     const {
         scene, POSTE_MARGE, rayonEtang, angler, boatLeft, boatRow, boatRight, boatPad,
         boatButton, ensureSound, statusDisplay, sound, waterWaveHeightAt, POSTES, POND_CENTER,
         ANGLE_BASE, cameraTarget, camera, compassDisplay, azimutTexte, SUN_AZIMUT,
-        RAYON_ETANG_MAX, PLACEMENT_MARGE_MIN, PLACEMENT_MARGE_MAX, POSTE_ANGLER, POSTE_ROD_BASE,
+        monde, PLACEMENT_MARGE_MIN, PLACEMENT_MARGE_MAX, POSTE_ANGLER, POSTE_ROD_BASE,
         rodBase, POSTE_ROD_TIP, rodTip, POSTE_BOURRICHE, BOURRICHE_POS, POSTE_GIROUETTE,
         vaneGroup, POSTE_CAM_POS, NORMAL_CAM_POS, POSTE_CAM_TARGET, NORMAL_CAM_TARGET, rodPivot,
         rodGroup, rodTipVisual, floatIdle, floatGroup, bourriche, resetCameraView, feedAim,
@@ -28,9 +28,10 @@ export function creerBateau(deps) {
     // ---------------------------------------------------------------------------
        // pas de rotation (flèches gauche / droite)
          // pas d'avancée / recul (flèches haut / bas)
-    const BATEAU_MARGE_BORD = 4;      // au plus près : 4 unités DANS l'eau du bord
-    const BATEAU_MIN_CENTRE = 10;     // jamais à moins de 10 unités du centre (la
-                                      // visée a besoin d'une direction vers le milieu)
+    // Limites de déplacement : au plus près 4 unités DANS l'eau du bord ; jamais à moins de 10 unités du
+    // centre (la visée a besoin d'une direction vers le milieu). Le rayon max est lu à chaque usage.
+    function margeBordBateau() { return 4; }
+    function minCentreBateau() { return 10; }
 
     etat.bateauGroupe.visible = false;
     scene.add(etat.bateauGroupe);
@@ -130,7 +131,7 @@ export function creerBateau(deps) {
 
     // Embarquer : à peu près à mi-étang, dans l'axe du poste actuel.
     function margeBateauMilieu(angle) {
-        const distance = Math.max(BATEAU_MIN_CENTRE, rayonEtang(angle) * 0.5);
+        const distance = Math.max(minCentreBateau(), rayonEtang(angle) * 0.5);
         return distance - rayonEtang(angle);
     }
 
@@ -172,8 +173,8 @@ export function creerBateau(deps) {
         const viser = function (part) {
             const angle = avant.angle + deltaAngle * part;
             const rayon = rayonEtang(angle);
-            const marge = Math.max(BATEAU_MIN_CENTRE - rayon,
-                Math.min(-BATEAU_MARGE_BORD, avant.marge + deltaMarge * part));
+            const marge = Math.max(minCentreBateau() - rayon,
+                Math.min(-margeBordBateau(), avant.marge + deltaMarge * part));
             return placerALAngle(angle, marge, -1, true);
         };
         const ok = viser(1);
@@ -434,8 +435,8 @@ export function creerBateau(deps) {
         if (surPonton) { angle = pp.axe; marge = pp.marge; }
         const margeBrute = Number.isFinite(marge) ? marge : POSTE_MARGE;
         const margeVoulue = surPonton ? pp.marge : etat.modeBateau
-            ? Math.max(BATEAU_MIN_CENTRE - RAYON_ETANG_MAX,
-                Math.min(-BATEAU_MARGE_BORD, margeBrute))
+            ? Math.max(minCentreBateau() - monde.rayonMax,
+                Math.min(-margeBordBateau(), margeBrute))
             : Math.max(PLACEMENT_MARGE_MIN,
                 Math.min(PLACEMENT_MARGE_MAX, margeBrute));
         etat.emplacementAngle = angle;
@@ -527,8 +528,10 @@ export function creerBateau(deps) {
         const dx = POND_CENTER.x - angler.position.x;
         const dz = POND_CENTER.z - angler.position.z;
         const d = Math.hypot(dx, dz) || 1;
-        etat.castAim.set(angler.position.x + (dx / d) * 30, 0.1, angler.position.z + (dz / d) * 30);
-        feedAim.set(angler.position.x + (dx / d) * 22, 0.1, angler.position.z + (dz / d) * 22);
+        const viseeCanne = 30;
+        const viseeAmorce = 22;
+        etat.castAim.set(angler.position.x + (dx / d) * viseeCanne, 0.1, angler.position.z + (dz / d) * viseeCanne);
+        feedAim.set(angler.position.x + (dx / d) * viseeAmorce, 0.1, angler.position.z + (dz / d) * viseeAmorce);
         etat.castTarget.set(etat.castAim.x, 0.1, etat.castAim.z);
 
         majCoupeProfondeur();

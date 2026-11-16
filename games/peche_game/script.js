@@ -1,62 +1,63 @@
 import * as THREE from 'three';
-// Le « ?v=237 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=238 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=237';
-import { creerJeuDemelage } from './demelage.js?v=237';
-import { creerModeQuiver } from './quiver.js?v=237';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=237';
+import { SoundEngine } from './sound.js?v=238';
+import { creerJeuDemelage } from './demelage.js?v=238';
+import { creerModeQuiver } from './quiver.js?v=238';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=238';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=237';
-import { creerPoissons } from './poissons.js?v=237';
-import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=237';
-import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
-    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=237';
-import { creerDecor } from './decor.js?v=237';
-import { creerObstacles } from './obstacles.js?v=237';
-import { creerSubstrats } from './substrats.js?v=237';
-import { creerEsches } from './esches.js?v=237';
-import { ligneQuiver } from './chanceTouche.js?v=237';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=237';
-import { creerBourriche } from './bourriche.js?v=237';
-import { creerOndulations } from './ondulations.js?v=237';
-import { creerMessages } from './messages.js?v=237';
-import { creerSplashes } from './splashes.js?v=237';
-import { creerCombat } from './combat.js?v=237';
-import { creerComportement } from './comportement.js?v=237';
-import { creerBateau } from './bateau.js?v=237';
-import { creerLancerPoisson } from './lancerPoisson.js?v=237';
-import { creerCarnetUI } from './carnetUI.js?v=237';
-import { creerBoutique } from './boutique.js?v=237';
-import { creerMenus } from './menus.js?v=237';
-import { creerFiches } from './fiches.js?v=237';
-import { creerLancerCanne } from './lancerCanne.js?v=237';
-import { creerLancer } from './lancer.js?v=237';
-import { creerAmorcage } from './amorcage.js?v=237';
-import { creerFrein } from './frein.js?v=237';
-import { creerLigne } from './ligne.js?v=237';
-import { creerBouchons } from './bouchons.js?v=237';
-import { creerPlacement } from './placement.js?v=237';
-import { creerMeteo } from './meteo.js?v=237';
-import { creerPhysique } from './physique.js?v=237';
-import { creerVie } from './vie.js?v=237';
-import { creerSonar } from './sonar.js?v=237';
-import { creerStocks } from './stocks.js?v=237';
-import { creerJournal } from './journal.js?v=237';
-import { creerTouches } from './touches.js?v=237';
-import { creerCycleLigne } from './cycleLigne.js?v=237';
-import { creerAccrochage } from './accrochage.js?v=237';
-import { creerAmbiance } from './ambiance.js?v=237';
-import { creerEntrees } from './entrees.js?v=237';
-import { creerRadar } from './radar.js?v=237';
-import { creerCheat } from './cheat.js?v=237';
-import { creerBoucle } from './boucle.js?v=237';
-import { creerPartie, majChoixRadio } from './partie.js?v=237';
-import { creerPecheur } from './pecheur.js?v=237';
-import { creerRendu } from './rendu.js?v=237';
-import { etat } from './etat.js?v=237';
+import { dessinerPortrait } from './portraits.js?v=238';
+import { creerPoissons } from './poissons.js?v=238';
+import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=238';
+import { POND_CENTER, RIVE_Y, rayonEtang, monde, setRayonMonde,
+    FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE,
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=238';
+import { creerTailleEtang } from './tailleEtang.js?v=238';
+import { creerDecor } from './decor.js?v=238';
+import { creerObstacles } from './obstacles.js?v=238';
+import { creerSubstrats } from './substrats.js?v=238';
+import { creerEsches } from './esches.js?v=238';
+import { ligneQuiver } from './chanceTouche.js?v=238';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=238';
+import { creerBourriche } from './bourriche.js?v=238';
+import { creerOndulations } from './ondulations.js?v=238';
+import { creerMessages } from './messages.js?v=238';
+import { creerSplashes } from './splashes.js?v=238';
+import { creerCombat } from './combat.js?v=238';
+import { creerComportement } from './comportement.js?v=238';
+import { creerBateau } from './bateau.js?v=238';
+import { creerLancerPoisson } from './lancerPoisson.js?v=238';
+import { creerCarnetUI } from './carnetUI.js?v=238';
+import { creerBoutique } from './boutique.js?v=238';
+import { creerMenus } from './menus.js?v=238';
+import { creerFiches } from './fiches.js?v=238';
+import { creerLancerCanne } from './lancerCanne.js?v=238';
+import { creerLancer } from './lancer.js?v=238';
+import { creerAmorcage } from './amorcage.js?v=238';
+import { creerFrein } from './frein.js?v=238';
+import { creerLigne } from './ligne.js?v=238';
+import { creerBouchons } from './bouchons.js?v=238';
+import { creerPlacement } from './placement.js?v=238';
+import { creerMeteo } from './meteo.js?v=238';
+import { creerPhysique } from './physique.js?v=238';
+import { creerVie } from './vie.js?v=238';
+import { creerSonar } from './sonar.js?v=238';
+import { creerStocks } from './stocks.js?v=238';
+import { creerJournal } from './journal.js?v=238';
+import { creerTouches } from './touches.js?v=238';
+import { creerCycleLigne } from './cycleLigne.js?v=238';
+import { creerAccrochage } from './accrochage.js?v=238';
+import { creerAmbiance } from './ambiance.js?v=238';
+import { creerEntrees } from './entrees.js?v=238';
+import { creerRadar } from './radar.js?v=238';
+import { creerCheat } from './cheat.js?v=238';
+import { creerBoucle } from './boucle.js?v=238';
+import { creerPartie, majChoixRadio } from './partie.js?v=238';
+import { creerPecheur } from './pecheur.js?v=238';
+import { creerRendu } from './rendu.js?v=238';
+import { etat } from './etat.js?v=238';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -1407,7 +1408,7 @@ async function loadShoreTextures(material) {
         if (loader) { loader.dispose(); }
     }
 }
-loadShoreTextures(shore.material);
+loadShoreTextures(shore.material).then(function () { tailleEtang.majRive(); });   // la texture arrive : elle reçoit l'échelle de la rive
 shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
 shore.receiveShadow = true;
 scene.add(shore);
@@ -1434,7 +1435,7 @@ const decor = creerDecor({
 const { lilyPads } = decor;
 
 // Types de fond (§14.3) : grille déterministe (sans rand()) lue par la texture du fond, la carte, les poissons et les accrochages.
-const substrats = creerSubstrats({ POND_CENTER, rayonEtang, profondeurLocale, FOSSES, RAYON_ETANG_MAX, DEMI_COTE_FOND, MARGE_VASE,
+const substrats = creerSubstrats({ POND_CENTER, rayonEtang, profondeurLocale, FOSSES, monde, MARGE_VASE,
     verdictBase: verdictFondBase, lilyPads, roseaux: decor.roseaux });
 substrats.habillerFond(pondBottom);
 const verdictFond = substrats.verdictFond;   // SOURCE UNIQUE du fond sous l'hameçon (§14.8), substrat compris
@@ -1703,7 +1704,7 @@ let emplacementAngle = ANGLE_BASE;
 let emplacementMarge = POSTE_MARGE;
 // Obstacles aquatiques (ponton, écluse, roches, souches…) : placement sans rand().
 const obstacles = creerObstacles({ scene, POND_CENTER, rayonEtang, fondY, FOSSES, lilyPads, decor, ANGLE_BASE,
-    POSTES, POSTE_ANGLER, POSTE_BOURRICHE, POSTE_MARGE, RIVE_Y });
+    POSTES, POSTE_ANGLER, POSTE_BOURRICHE, POSTE_MARGE, RIVE_Y, monde });
 
 let BATEAU_PAS_ANGLE = 0.055;
 let BATEAU_PAS_MARGE = 2.4;   // v173 : étang 1,6 × plus grand → pas d'avancée × 1,5
@@ -1716,7 +1717,7 @@ const {
 } = creerBateau({
     scene, POSTE_MARGE, rayonEtang, angler, boatLeft, boatRow, boatRight, boatPad, boatButton,
     ensureSound, statusDisplay, sound, waterWaveHeightAt, POSTES, POND_CENTER, ANGLE_BASE,
-    cameraTarget, camera, compassDisplay, azimutTexte, SUN_AZIMUT, RAYON_ETANG_MAX,
+    cameraTarget, camera, compassDisplay, azimutTexte, SUN_AZIMUT, monde,
     PLACEMENT_MARGE_MIN, PLACEMENT_MARGE_MAX, POSTE_ANGLER, POSTE_ROD_BASE, rodBase,
     POSTE_ROD_TIP, rodTip, POSTE_BOURRICHE, BOURRICHE_POS, POSTE_GIROUETTE, vaneGroup,
     POSTE_CAM_POS, NORMAL_CAM_POS, POSTE_CAM_TARGET, NORMAL_CAM_TARGET, rodPivot, rodGroup,
@@ -1744,12 +1745,12 @@ let fishThrowT;
 let fishThrowLanding;
 let fishThrowOrigin;
 const {
-    hauteurCarte, projeterPlacement, cheminContourEtang, renderCartePlacement
+    hauteurCarte, projeterPlacement, cheminContourEtang, renderCartePlacement, reconstruireCarte
 } = creerPlacement({
     POND_CENTER, rayonEtang, profondeurLocale, RIVE_Y, directionAzimut, SUN_AZIMUT,
     PLACEMENT_MARGE_MIN, PLACEMENT_MARGE_MAX, cartePlacement, POSTE_MARGE, cartePlacementAide,
     azimutPosteTexte, POSTES, cartePlacementRepere, ensureSound, choisirEmplacement, obstacles,
-    majEtiquettePoste
+    majEtiquettePoste, monde
 });
 
 // ---------------------------------------------------------------------------
@@ -1836,8 +1837,8 @@ let ZONES_CARTE = [
 const {
     montrerOnglet, rendreCarteEtang
 } = creerCarnetUI({
-    tabPages, journalTabs, pondMap, POND_RADIUS, POND_CENTER, cheminContourEtang, FOND_BORD,
-    FOND_CENTRE, FOSSES, PROFONDEUR_MAX, RAYON_CADRE_CARTE, lilyPads, BOURRICHE_POS, angler, floatGroup,
+    tabPages, journalTabs, pondMap, monde, POND_CENTER, cheminContourEtang, FOND_BORD,
+    FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup,
     SPECIES, profondeurLocale, substrats
 });
 
@@ -1908,7 +1909,7 @@ const {
 } = creerLancerCanne({
     filEquipe, angler, feedGaugeFill, totalLignes, feedGauge, feedGaugeTarget, ensureSound,
     statusDisplay, casserLigne: (...args) => casserLigne(...args), startCast: (...args) => startCast(...args), floatGroup, angleNormalise, rodLocalTip,
-    CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE
+    CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE, monde
 });
 
 let dragLoosened = false;
@@ -1937,7 +1938,7 @@ let rainPoints;
 const {
     weatherName, setWeather, updateWeather
 } = creerMeteo({
-    POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound
+    POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound, monde
 });
 const physique = creerPhysique({ weatherName, setWeather, hud: document.getElementById('heureEau'), hudEau: document.getElementById('depthEau'), dureeJour: DAY_LENGTH });
 
@@ -1948,7 +1949,7 @@ let bubbles;
 const {
     updateAmbiante, spawnBubbles, updateBubbles
 } = creerVie({
-    scene, POND_CENTER, sound
+    scene, POND_CENTER, sound, monde
 });
 
 // ---------------------------------------------------------------------------
@@ -1968,13 +1969,18 @@ const { fishes, styleEspece, makeFish, spawnFish, randomFishPosition,
     POND_CENTER: POND_CENTER,
     fondY: fondY,
     FOSSES: FOSSES,
-    SURFACE_HA: SURFACE_HA,
+    monde: monde,
     obstacles: obstacles,
     substrats: substrats
 });
 
 // Biotope du carnet (journal.milieu), appliqué juste après le peuplement d'origine (plaine) ; l'accueil le change ensuite.
-const milieux = creerMilieux({ radios: accueilMilieuRadios, uniformsEau: waterUniforms, repeuplerEtang, saveJournal, renderJournal, decor, substrats, obstacles, fond: pondBottom });
+// La TAILLE de l'étang suit le biotope (milieux.js, `rayon`) : setRayonMonde refait la géométrie, tailleEtang.js les maillages,
+// l'ambiance et le poste de départ (la partie redémarre : voir tailleEtang.js). Le biotope du carnet est appliqué en toute fin de fichier.
+const tailleEtang = creerTailleEtang({ camera, sky, skyMat, water, shore, fond: pondBottom, brume: scene.fog,
+    reconstruireCarte: () => reconstruireCarte(), recommencerPartie: () => recommencerPartie(), placerAuPoste: (i) => placerAuPoste(i) });
+const milieux = creerMilieux({ radios: accueilMilieuRadios, uniformsEau: waterUniforms, repeuplerEtang, saveJournal, renderJournal, decor, substrats, obstacles, fond: pondBottom,
+    monde, setRayonMonde, surGeometrie: tailleEtang.surGeometrie, apresGeometrie: tailleEtang.apresGeometrie });
 
 // ---------------------------------------------------------------------------
 // État du jeu
@@ -2137,7 +2143,7 @@ const {
 const {
     hameconDansZone, updateFish, updateFloat, updateLine
 } = creerComportement({
-    floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang, fishes,
+    floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang, fishes, monde,
     animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL, ripples,
     spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
     risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond, verdictFond,
@@ -2161,7 +2167,7 @@ creerEntrees({
 
 // Cheat « radar » (§17.3) : carte 2D des poissons, pilotée par le mot secret de cheat.js.
 const radar = creerRadar({
-    fishes, angler, floatGroup, substrats, POND_CENTER, rayonEtang, RAYON_CADRE_CARTE, SPECIES, COMPORTEMENTS,
+    fishes, angler, floatGroup, substrats, POND_CENTER, rayonEtang, monde, SPECIES, COMPORTEMENTS,
     panneau: document.getElementById('radarPanel'),
     fondEl: document.getElementById('radarFond'),
     vivantEl: document.getElementById('radarVivant')
@@ -2421,7 +2427,7 @@ window.__game = {
             bourricheCm: cm(0.72 * 2),
             canneM: Math.round(rodTip.distanceTo(rodBase) / u * 10) / 10,
             pecheurM: Math.round(3.4 / u * 100) / 100,
-            etangM: Math.round(POND_RADIUS * 2 / u),
+            etangM: Math.round(monde.rayon * 2 / u),
             fondM: Math.round(FOND_CENTRE / u * 10) / 10,
             poisson3DCm: poisson3DCm,
             poissonReelCm: poisson ? poisson.userData.longueurCm : 0
@@ -2444,8 +2450,14 @@ window.__game = {
         return stats;
     },
     getEtangInfo: function () {
-        return { fosses: FOSSES, surfaceHa: SURFACE_HA, profondeurMax: PROFONDEUR_MAX,
-            rayonCadre: RAYON_CADRE_CARTE, pasBateau: { angle: BATEAU_PAS_ANGLE, marge: BATEAU_PAS_MARGE } };
+        return { fosses: FOSSES, surfaceHa: monde.surfaceHa, profondeurMax: monde.profondeurMax,
+            rayonCadre: monde.rayonCadre, pasBateau: { angle: BATEAU_PAS_ANGLE, marge: BATEAU_PAS_MARGE } };
+    },
+    // Taille de l'étang (tests) : géométrie du biotope, portées, ambiance (brume, ciel, plan lointain de la caméra).
+    getMonde: function () {
+        return { rayon: monde.rayon, echelle: monde.echelle, rayonMax: monde.rayonMax, surfaceHa: monde.surfaceHa, porteeLancer: monde.porteeLancer,
+            porteeAmorce: FEED_MAX_RANGE, cameraFar: camera.far, brume: { proche: scene.fog.near, loin: scene.fog.far },
+            ciel: sky.geometry.parameters.radius, pasBateauMarge: BATEAU_PAS_MARGE, monde3D: CARTE_3D_MONDE };
     },
     setHorsNormeChance: setHorsNormeChance,
     getHorsNormeChance: getHorsNormeChance,
@@ -2824,10 +2836,10 @@ window.__game = {
     getFeedLanding: function () { return { x: feedLanding.x, z: feedLanding.z }; },
     getFeedRange: function () { return { min: FEED_MIN_RANGE, max: FEED_MAX_RANGE }; },
     getPondCenter: function () { return { x: POND_CENTER.x, z: POND_CENTER.z }; },
-    getPondRadius: function () { return POND_RADIUS; },
+    getPondRadius: function () { return monde.rayon; },
     // Contour généré de l'étang (idee 3) — exposé pour les tests et la carte.
     getRayonEtang: function (angle) { return rayonEtang(angle); },
-    getRayonEtangMax: function () { return RAYON_ETANG_MAX; },
+    getRayonEtangMax: function () { return monde.rayonMax; },
     getContourEtang: function (segments) {
         const n = Math.max(8, Math.floor(segments || 96));
         const points = [];
@@ -2869,7 +2881,7 @@ window.__game = {
     profondeurLocale: profondeurLocale,
     // Profondeur maximale de l'étang (fond de la fosse la plus profonde).
     getProfondeurMaxEtang: function () {
-        return PROFONDEUR_MAX;
+        return monde.profondeurMax;
     },
     fondY: fondY,
     isHameconDansLaVase: function () { return hameconDansLaVase; },
@@ -3052,25 +3064,11 @@ window.__game = {
 
 // La fiche des touches est construite tout à la fin : le catalogue des touches
 // est déclaré plus bas dans le fichier (on évite ainsi un accès avant création).
-// ---------------------------------------------------------------------------
-
-
-
-// ---------------------------------------------------------------------------
-
-
-
-// ---------------------------------------------------------------------------
-
-
-
-// ---------------------------------------------------------------------------
-
-
-
 renderFicheTouches();
 // Et on ouvre le carnet sur l'onglet « Prises ».
 montrerOnglet('prises');
 // Le poste par défaut est calé sur la rive LOCALE de l'étang généré : comme ce
 // n'est pas un cercle, on ne peut pas se contenter des positions historiques.
 placerAuPoste(0);
+// Le biotope mémorisé dans le carnet (taille de l'étang comprise) s'applique quand TOUT le monde existe.
+milieux.demarrer();

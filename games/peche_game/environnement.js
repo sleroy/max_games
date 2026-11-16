@@ -8,20 +8,44 @@
 // Contrat (voir docs/modules.md) : pas d'accès aux globales de script.js, pas
 // de dépendance à `window`. Seul `scene` est injecté (pour ajouter le fond 3D).
 //
-// ⚠ Échelle du monde : 2 unités ≈ 1 m. POND_RADIUS est le rayon NOMINAL ; le
-// contour réel ondule autour de lui (somme d'harmoniques, voir BRUIT_ETANG).
+// ⚠ Échelle du monde : 2 unités ≈ 1 m. Le rayon NOMINAL de l'étang n'est plus une constante : c'est
+// une DONNÉE DU BIOTOPE (milieux.js : 12 à 280 unités). `POND_RADIUS` (90, la plaine) reste le monde de
+// RÉFÉRENCE ; `setRayonMonde(r)` reconstruit toute la géométrie (contour, centre, fosses, surface,
+// profondeur max, cadre de la carte) pour un autre rayon. La FORME ne change pas : mêmes harmoniques
+// (BRUIT_ETANG), même relief normalisé, même profondeur ; seule l'échelle change. Le contour réel ondule
+// autour du rayon nominal (somme d'harmoniques, voir BRUIT_ETANG).
+//
+// Les valeurs qui dépendent du rayon (`RAYON_ETANG_MAX`, `SURFACE_ETANG`, `SURFACE_HA`,
+// `PROFONDEUR_MAX`, `RAYON_CADRE_CARTE`, `DEMI_COTE_FOND`) sont des liaisons VIVANTES (`export let`) et
+// l'objet `monde` les expose en accesseurs : un module qui les copie dans un objet « deps » garde une
+// valeur périmée, il doit lire `monde.xxx` à chaque usage. `FOSSES` est un tableau rempli EN PLACE et
+// `POND_CENTER` un vecteur modifié EN PLACE : leurs lecteurs gardent la bonne référence.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import {
+    RAYON_REFERENCE, HARMONIQUES, VARIATION_CONTOUR, rayonContour, surfaceUnites, surfaceHectares,
+    echelleDeRayon, porteeLancer, porteeAmorce
+} from './dimensions.js?v=238';
 
-// Centre de l'étang : le monde entier est bâti autour de ce point.
+// Centre de l'étang DE RÉFÉRENCE (la plaine) : le monde entier est bâti autour de ce point.
 // v173 : l'étang passe de 55 à 90 de rayon. Le centre recule de (0, -40) à (0, -71)
 // pour que la rive SUD (poste de départ, pêcheur en (-4, 18), bourriche, girouette,
 // caméra) reste exactement où le joueur la connaît : l'étang grandit vers le NORD.
-export const POND_CENTER = new THREE.Vector3(0, 0, -71);
+const CENTRE_REFERENCE = { x: 0, z: -71 };
+// Le même principe sert à TOUTES les tailles : le centre se déplace pour que la rive sud (au point visé
+// par le pêcheur de départ, en (-4, 18)) reste en place. L'étang est une homothétie de la plaine autour
+// de ce point d'ancrage ; le poste de départ, la girouette et la caméra ne bougent jamais.
+const POSTE_DEPART = { x: -4, z: 18 };
+const ANGLE_ANCRE = Math.atan2(POSTE_DEPART.z - CENTRE_REFERENCE.z, POSTE_DEPART.x - CENTRE_REFERENCE.x);
+const ANCRE = {
+    x: CENTRE_REFERENCE.x + Math.cos(ANGLE_ANCRE) * rayonContour(RAYON_REFERENCE, ANGLE_ANCRE),
+    z: CENTRE_REFERENCE.z + Math.sin(ANGLE_ANCRE) * rayonContour(RAYON_REFERENCE, ANGLE_ANCRE)
+};
+export const POND_CENTER = new THREE.Vector3(CENTRE_REFERENCE.x, 0, CENTRE_REFERENCE.z);
 
-// Rayon NOMINAL (la forme réelle ondule autour de lui).
+// Rayon NOMINAL de RÉFÉRENCE (la plaine ; la forme réelle ondule autour de lui).
 // v173 : 55 → 90 (≈ 45 m de rayon, ≈ 0,64 ha au lieu de 0,23 ha) : « étang moyen ».
-export const POND_RADIUS = 90;
+export const POND_RADIUS = RAYON_REFERENCE;
 
 // Hauteur de la rive. La rive est légèrement PLUS HAUTE que l'eau : celle-ci
 // reste « dans son bol ». Sans cela, la surface de l'eau arrive exactement au
@@ -35,21 +59,15 @@ export const RIVE_Y = 0.35;
 // (coefficients fixes, donc déterministe). Les basses fréquences donnent une
 // forme allongée et lobée (une vraie « mare »), les hautes ajoutent des criques.
 // Amplitude totale : 10,5 % + 6 % + 3,5 % + 2 % = 22 % du rayon nominal.
-// Le rayon varie donc d'environ 70 à 110 unités : ce n'est plus un cercle.
+// Le rayon varie donc de ≈ 78 % à 122 % du rayon nominal : ce n'est plus un cercle.
 // Aucun tirage aléatoire n'est consommé : le monde des tests reste reproductible.
+// Les harmoniques et la surface sont dans dimensions.js (pur, partagé avec milieux.js).
 // ---------------------------------------------------------------------------
-export const BRUIT_ETANG = [
-    { amplitude: 0.105, frequence: 2, phase: 0.6 },
-    { amplitude: 0.060, frequence: 3, phase: 2.4 },
-    { amplitude: 0.035, frequence: 5, phase: 4.1 },
-    { amplitude: 0.020, frequence: 7, phase: 1.3 }
-];
+export const BRUIT_ETANG = HARMONIQUES;
+export const RAYON_ETANG_VARIATION = VARIATION_CONTOUR;
 
-export const RAYON_ETANG_VARIATION = BRUIT_ETANG.reduce(function (total, bruit) {
-    return total + bruit.amplitude;
-}, 0);
-
-export const RAYON_ETANG_MAX = POND_RADIUS * (1 + RAYON_ETANG_VARIATION);
+// Rayon NOMINAL du monde actuel : 90 (la plaine) tant qu'un autre biotope n'a pas été choisi.
+let rayonMonde = RAYON_REFERENCE;
 
 // Rayon de l'étang dans la direction `angle` (radians, x = cos, z = sin).
 export function rayonEtang(angle) {
@@ -58,22 +76,22 @@ export function rayonEtang(angle) {
         const bruit = BRUIT_ETANG[i];
         facteur += bruit.amplitude * Math.sin(bruit.frequence * angle + bruit.phase);
     }
-    return POND_RADIUS * facteur;
+    return rayonMonde * facteur;
 }
 
-// Surface de l'eau, en unités² (aire d'un contour polaire : ∫ r²/2 dθ, par 2 000
-// tranches), puis en HECTARES (2 unités = 1 m, donc 4 unités² = 1 m²). Sert à calculer
-// la population de poissons à partir de la surface (poissons.js) et les tests.
-export const SURFACE_ETANG = (function () {
-    const tranches = 2000;
-    let aire = 0;
-    for (let i = 0; i < tranches; i++) {
-        const r = rayonEtang(((i + 0.5) / tranches) * Math.PI * 2);
-        aire += (r * r / 2) * (Math.PI * 2 / tranches);
-    }
-    return aire;
-}());
-export const SURFACE_HA = SURFACE_ETANG / 4 / 10000;
+// Valeurs qui dépendent du rayon : recalculées par setRayonMonde (liaisons vivantes, voir l'en-tête).
+//  - RAYON_ETANG_MAX : le plus grand rayon du contour ;
+//  - SURFACE_ETANG : surface de l'eau en unités² ; SURFACE_HA : en HECTARES (2 unités = 1 m, donc
+//    4 unités² = 1 m²). La surface sert à la population de poissons (poissons.js, milieux.js) et aux tests ;
+//  - PROFONDEUR_MAX : le point le plus bas d'une fosse ;
+//  - RAYON_CADRE_CARTE : cadre de la carte du carnet (rayon max + couronne de placement + un peu d'air) ;
+//  - DEMI_COTE_FOND : demi-côté du carré qui porte la texture du fond (substrats.js).
+export let RAYON_ETANG_MAX = 0;
+export let SURFACE_ETANG = 0;
+export let SURFACE_HA = 0;
+export let PROFONDEUR_MAX = 0;
+export let RAYON_CADRE_CARTE = 0;
+export let DEMI_COTE_FOND = 0;
 
 // ---------------------------------------------------------------------------
 // Relief de l'étang : le fond est un BASSIN (peu profond au bord, profond au
@@ -87,15 +105,19 @@ export const SURFACE_HA = SURFACE_ETANG / 4 / 10000;
 // Les deux grandes fosses sont à ≈ 37 unités du centre, donc à plus de 60 unités de la
 // rive : hors de portée d'un lancer (52 maxi), il faut la BARQUE. La troisième, près
 // de la rive nord, reste accessible depuis la berge.
-// Coordonnées absolues (le centre de l'étang est en (0, -71)).
+// Coordonnées absolues dans l'étang de référence (le centre est en (0, -71)). Pour un autre rayon, les
+// décalages depuis le centre ET les rayons des fosses sont multipliés par r / 90 ; leur profondeur
+// supplémentaire (`plus`) ne change pas : même relief normalisé, même profondeur.
 // ---------------------------------------------------------------------------
 export const FOND_BORD = 1.4;         // profondeur au bord (≈ 0,7 m)
 export const FOND_CENTRE = 5.0;       // profondeur au centre (≈ 2,5 m)
-export const FOSSES = [
+const FOSSES_REFERENCE = [
     { x: -28, z: -95, rayon: 22, plus: 3.6 },   // la grande fosse (nord-ouest)
     { x: 30, z: -53, rayon: 18, plus: 3.3 },    // fosse sud-est
     { x: 4, z: -123, rayon: 16, plus: 3.8 }     // fosse nord
 ];
+// Remplie EN PLACE par setRayonMonde : même tableau pour tous les lecteurs.
+export const FOSSES = [];
 
 // Profondeur d'eau (positive) à un point de l'étang. Le bord suit le CONTOUR
 // GÉNÉRÉ : à un même éloignement du centre, on n'a pas la même profondeur
@@ -116,25 +138,82 @@ export function profondeurLocale(x, z) {
     return prof;
 }
 
-// Profondeur MAXIMALE réelle de l'étang (le point le plus bas d'une fosse), mesurée
-// une fois au chargement sur une grille de 0,5 unité dans chaque fosse. Le tout est
-// déterministe. Les bouchons doivent descendre au moins jusque-là (voir bouchons.js).
-export const PROFONDEUR_MAX = (function () {
+// Profondeur MAXIMALE réelle de l'étang (le point le plus bas d'une fosse), mesurée à chaque changement
+// de rayon sur une grille de 0,5 unité (× r / 90 : les mêmes points du relief normalisé) dans chaque fosse.
+// Le tout est déterministe. Les bouchons doivent descendre au moins jusque-là (voir bouchons.js).
+function mesurerProfondeurMax(echelle) {
+    const pas = 0.5 * echelle;
     let max = FOND_CENTRE;
     FOSSES.forEach(function (fosse) {
-        for (let dx = -fosse.rayon; dx <= fosse.rayon; dx += 0.5) {
-            for (let dz = -fosse.rayon; dz <= fosse.rayon; dz += 0.5) {
+        for (let dx = -fosse.rayon; dx <= fosse.rayon; dx += pas) {
+            for (let dz = -fosse.rayon; dz <= fosse.rayon; dz += pas) {
                 max = Math.max(max, profondeurLocale(fosse.x + dx, fosse.z + dz));
             }
         }
     });
     return Math.round(max * 100) / 100;
-}());
+}
 
-// Rayon du cadre de la CARTE du carnet (SVG) : le plus grand rayon du contour, plus
-// la couronne de placement (6 unités) et un peu d'air. La carte est dessinée à
-// l'échelle de ce rayon : rien (rive, pêcheur, bourriche) ne sort du cadre.
-export const RAYON_CADRE_CARTE = RAYON_ETANG_MAX + 8;
+/** Rayon nominal du monde actuel (unités). */
+export function getRayonMonde() { return rayonMonde; }
+
+/**
+ * Reconstruit la GÉOMÉTRIE du monde pour un autre rayon nominal : centre, contour, fosses, surface,
+ * profondeur max, cadre de la carte. `r = 90` redonne EXACTEMENT le monde d'origine (mêmes valeurs, au bit
+ * près). Le centre se déplace pour que la rive sud reste au point d'ancrage du poste de départ : le poste,
+ * la girouette et la caméra ne bougent pas, l'étang est une homothétie de la plaine autour de ce point.
+ * N'utilise jamais `rand()`. Les meshes (eau, rive, fond) sont refaits par l'appelant (script.js).
+ */
+export function setRayonMonde(r) {
+    const rayon = Number(r);
+    if (!(rayon > 0) || !Number.isFinite(rayon)) { return false; }
+    rayonMonde = rayon;
+    const f = echelleDeRayon(rayon);
+    if (f === 1) {
+        POND_CENTER.set(CENTRE_REFERENCE.x, 0, CENTRE_REFERENCE.z);
+    } else {
+        POND_CENTER.set(ANCRE.x + f * (CENTRE_REFERENCE.x - ANCRE.x), 0, ANCRE.z + f * (CENTRE_REFERENCE.z - ANCRE.z));
+    }
+    FOSSES.length = 0;
+    FOSSES_REFERENCE.forEach(function (fosse) {
+        FOSSES.push({
+            x: POND_CENTER.x + (fosse.x - CENTRE_REFERENCE.x) * f,
+            z: POND_CENTER.z + (fosse.z - CENTRE_REFERENCE.z) * f,
+            rayon: fosse.rayon * f,
+            plus: fosse.plus
+        });
+    });
+    RAYON_ETANG_MAX = rayon * (1 + RAYON_ETANG_VARIATION);
+    SURFACE_ETANG = surfaceUnites(rayon);
+    SURFACE_HA = surfaceHectares(rayon);
+    PROFONDEUR_MAX = mesurerProfondeurMax(f);
+    RAYON_CADRE_CARTE = RAYON_ETANG_MAX + 8;
+    DEMI_COTE_FOND = Math.ceil(RAYON_ETANG_MAX + 4.5);
+    return true;
+}
+
+// Le monde naît dans l'étang de référence (la plaine).
+setRayonMonde(RAYON_REFERENCE);
+
+/**
+ * Lecteur du monde ACTUEL : des accesseurs, jamais des copies. À passer aux modules (`deps.monde`) qui
+ * doivent suivre un changement de biotope. `echelle` = rayon / 90 (1 dans la plaine).
+ */
+export const monde = {
+    get rayon() { return rayonMonde; },
+    get echelle() { return echelleDeRayon(rayonMonde); },
+    get rayonMax() { return RAYON_ETANG_MAX; },
+    get surfaceEtang() { return SURFACE_ETANG; },
+    get surfaceHa() { return SURFACE_HA; },
+    get profondeurMax() { return PROFONDEUR_MAX; },
+    get rayonCadre() { return RAYON_CADRE_CARTE; },
+    get demiCoteFond() { return DEMI_COTE_FOND; },
+    get porteeLancer() { return porteeLancer(rayonMonde); },
+    get porteeAmorce() { return porteeAmorce(rayonMonde); },
+    // Centre de l'étang de référence (la plaine) : l'homothétie qui donne les autres tailles est faite autour d'un point d'ancrage.
+    centreReference: CENTRE_REFERENCE,
+    fosses: FOSSES
+};
 
 // Hauteur (y) du fond à un point : négative, sous la surface de l'eau (y = 0).
 export function fondY(x, z) {
@@ -156,9 +235,8 @@ export function verdictFond(x, z, profondeurLigne, auFond) {
     };
 }
 
-// Demi-côté (unités) du carré centré sur l'étang qui porte la TEXTURE du fond (substrats.js,
-// §14.3) : le contour le plus large + la marge du maillage du fond (2) + un peu d'air.
-export const DEMI_COTE_FOND = Math.ceil(RAYON_ETANG_MAX + 4.5);
+// DEMI_COTE_FOND (déclaré plus haut) : demi-côté (unités) du carré centré sur l'étang qui porte la TEXTURE
+// du fond (substrats.js, §14.3) : le contour le plus large + la marge du maillage du fond (2) + un peu d'air.
 
 // Maillage du fond : un disque « polaire » qui suit le contour, avec une
 // profondeur (`aDepth`) stockée par sommet pour foncer l'eau au large, et des UV planaires

@@ -16,12 +16,12 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=237';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=237';
+} from './especes.js?v=238';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=238';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=237';
+} from './milieux.js?v=238';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -32,7 +32,9 @@ export function creerPoissons(deps) {
     const fondY = deps.fondY;
     // Fosses (refuge des poissons de fond) et surface (en hectares) de l'étang.
     const FOSSES = deps.FOSSES;
-    const SURFACE_HA = deps.SURFACE_HA;
+    // Le monde ACTUEL (environnement.js `monde`) : surface réelle, échelle f = rayon / 90. Des accesseurs, lus à chaque
+    // usage (le biotope peut changer la taille de l'étang) : jamais copiés.
+    const monde = deps.monde;
     // Biotope courant (milieux.js) : parts de population, taille maximale, surface écologique.
     // Le monde est construit en « plaine » ; setMilieu / repeuplerEtang(milieu) le changent.
     let milieuCourant = milieuParId(deps.milieu || MILIEU_DEFAUT);
@@ -86,10 +88,9 @@ export function creerPoissons(deps) {
         return quotasEspeces(milieu, capacite(milieu, FACTEUR_DENSITE, FISH_COUNT)).total;
     }
     let POPULATION_CIBLE = populationPourMilieu(milieuCourant);
-    // Surface utilisée pour les kg/ha : la plaine est l'étang généré tel quel (sa surface réelle fait foi),
-    // les autres biotopes ont leur surface écologique.
+    // Surface utilisée pour les kg/ha : la surface RÉELLE du plan d'eau (géométrie du biotope, une seule vérité).
     function surfaceBiomasse() {
-        return milieuCourant.id === MILIEU_DEFAUT ? SURFACE_HA : milieuCourant.surfaceHa;
+        return monde.surfaceHa;
     }
 
     // ---------------------------------------------------------------------------

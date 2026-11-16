@@ -15,14 +15,17 @@
 // toujours le même décor pour la même graine, sans toucher au hasard du monde. Les tableaux exposés
 // (lilyPads, arbres, rochers, roseaux) sont remplis EN PLACE : leurs lecteurs gardent la bonne référence.
 //
+// TAILLE DE L'ÉTANG (milieux.js : rayon 12 à 280) : le contour (`rayonEtang`) est lu à chaque pose, donc le décor
+// se construit APRÈS `setRayonMonde` ; les sphères englobantes des instances sont remises à zéro à chaque pose.
+//
 // Important : le décor consomme `rand()` dans un ordre PRÉCIS. On l'appelle
 // exactement à la place de l'ancien bloc (même séquence de tirages), sinon tout
 // le reste du monde (poissons, nénuphars, rochers) se décale et les tests de
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerVegetation } from './vegetation.js?v=237';
-import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor } from './milieux.js?v=237';
+import { creerVegetation } from './vegetation.js?v=238';
+import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu } from './milieux.js?v=238';
 
 export function creerDecor(deps) {
     const scene = deps.scene;
@@ -166,27 +169,36 @@ export function creerDecor(deps) {
         arbres.length = 0;
         trunkCount = 0;
         foliageCount = 0;
+        // Un petit étang (f < 1) retente ailleurs une place refusée (devant la caméra, dans l'eau, sur un obstacle) :
+        // sinon sa couronne d'arbres perdrait la moitié de ses arbres. La plaine et les grands lacs ne retentent
+        // jamais : mêmes tirages qu'à l'origine.
+        const reessais = echelleMilieu(milieu) < 1 ? 8 : 0;
         for (let i = 0; i < d.arbres; i++) {
-            const angle = (i / d.arbres) * Math.PI * 2 + tirage() * 0.1;
-            const radius = rayonEtang(angle) + style.bandeArbres[0] + tirage() * style.bandeArbres[1];
-            const x = POND_CENTER.x + Math.cos(angle) * radius;
-            const z = POND_CENTER.z + Math.sin(angle) * radius;
-            // Laisse dégagé l'espace devant la caméra et le pêcheur.
-            if (z > 5 && Math.abs(x) < 30) {
-                continue;
+            for (let essai = 0; essai <= reessais; essai++) {
+                const angle = essai === 0 ? (i / d.arbres) * Math.PI * 2 + tirage() * 0.1 : tirage() * Math.PI * 2;
+                const radius = rayonEtang(angle) + style.bandeArbres[0] + tirage() * style.bandeArbres[1];
+                const x = POND_CENTER.x + Math.cos(angle) * radius;
+                const z = POND_CENTER.z + Math.sin(angle) * radius;
+                // Laisse dégagé l'espace devant la caméra et le pêcheur.
+                if (z > 5 && Math.abs(x) < 30) {
+                    continue;
+                }
+                // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
+                if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angle) + 4) {
+                    continue;
+                }
+                const echelle = style.echelleArbres[0] + tirage() * style.echelleArbres[1];
+                if (occupe(x, z, 1.2 * echelle)) { continue; }
+                addTree(x, z, echelle);
+                break;
             }
-            // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
-            if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angle) + 4) {
-                continue;
-            }
-            const echelle = style.echelleArbres[0] + tirage() * style.echelleArbres[1];
-            if (occupe(x, z, 1.2 * echelle)) { continue; }
-            addTree(x, z, echelle);
         }
         trunkInst.count = trunkCount;
         foliageInst.count = foliageCount;
         trunkInst.instanceMatrix.needsUpdate = true;
         foliageInst.instanceMatrix.needsUpdate = true;
+        trunkInst.boundingSphere = null;     // sphères englobantes recalculées : le décor a pu changer de taille d'étang
+        foliageInst.boundingSphere = null;
 
         // Nénuphars : DANS l'eau, à distance du bord local. La racine carrée répartit les nénuphars à
         // densité égale sur toute la surface (un tirage linéaire les entassait au milieu, v173).
@@ -229,8 +241,9 @@ export function creerDecor(deps) {
         }
         reedInst.count = reedCount;
         reedInst.instanceMatrix.needsUpdate = true;
-        // L'herbe des berges suit le décor du biotope (arbres et roseaux).
-        vegetation.regler(d.herbe);
+        reedInst.boundingSphere = null;
+        // L'herbe des berges suit le décor du biotope (arbres et roseaux) et la taille de l'étang.
+        vegetation.regler(d.herbe, echelleMilieu(milieu));
 
         // Rochers (instanciés) : sur la berge, derrière le bord local.
         rochers.length = 0;
@@ -251,6 +264,7 @@ export function creerDecor(deps) {
         }
         rockInst.count = rockCount;
         rockInst.instanceMatrix.needsUpdate = true;
+        rockInst.boundingSphere = null;
     }
 
     // Monde d'origine : la plaine, avec le `rand()` du jeu (ordre des tirages inchangé). Les tirages sont

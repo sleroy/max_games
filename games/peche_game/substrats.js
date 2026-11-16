@@ -19,8 +19,8 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=237';
-import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=237';
+import { COMPORTEMENTS } from './especes.js?v=238';
+import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=238';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [
@@ -60,12 +60,12 @@ export function hameconSurSubstrat(profondeurEau, profondeurLigne, auFond, subst
 export const SONS_FOND = { vase: ['plouf', 0.45], roche: ['pas', 0.5], gravier: ['pas', 0.3] };
 
 // --- Géométrie de la grille -------------------------------------------------------------
-const CELLULE = 1;                  // unités par cellule (≈ 0,5 m)
+const CELLULE_BASE = 1;             // unités par cellule (≈ 0,5 m) dans la plaine ; × f (borné [0,35 ; 2,5]) pour les autres tailles
 const MARGE_FOND = 2.5;             // le fond dépasse un peu le contour (voir makeFondGeometry)
-const MARGE_RIVE_ANCRE = 8;         // un poisson ne vit pas à moins de 8 de la rive
+const MARGE_RIVE_ANCRE = 8;         // un poisson ne vit pas à moins de 8 de la rive (× min(1, f))
 // Vent dominant : direction VERS laquelle il souffle (x = cos, z = sin) → du sud-ouest vers le nord-est.
 export const VENT_DOMINANT = -Math.PI / 4;
-const FETCH_EXPOSE = 85;            // une rive est « exposée » si le vent traverse ≥ 85 unités d'eau avant elle
+const FETCH_EXPOSE = 85;            // une rive est « exposée » si le vent traverse ≥ 85 unités d'eau avant elle (× f)
 const PROBA_HABITAT = 0.8;          // part des poissons (ou bancs) installés sur leur substrat
 
 // Bruit fixe (somme de sinus, valeurs ≈ -1 → 1) : rend les limites de zones organiques.
@@ -93,7 +93,11 @@ function ciblesDe(milieu) {
 }
 
 export function creerSubstrats(deps) {
-    const { POND_CENTER, rayonEtang, profondeurLocale, FOSSES, RAYON_ETANG_MAX, DEMI_COTE_FOND, verdictBase, MARGE_VASE } = deps;
+    const { POND_CENTER, rayonEtang, profondeurLocale, FOSSES, verdictBase, MARGE_VASE } = deps;
+    // Le monde ACTUEL (environnement.js `monde` : accesseurs). La GRILLE dépend de la taille de l'étang : elle est
+    // reconfigurée (`configurerGeometrie`) quand le biotope change le rayon, jamais calculée une fois pour toutes.
+    const monde = deps.monde || { echelle: 1, rayon: 90, rayonMax: deps.RAYON_ETANG_MAX, demiCoteFond: deps.DEMI_COTE_FOND,
+        porteeLancer: 52, centreReference: { x: POND_CENTER.x, z: POND_CENTER.z } };
     // Sources d'herbier : COPIE des nénuphars et roseaux du décor au moment de la construction
     // (les tests vident `lilyPads` : la grille, elle, ne bouge plus).
     const padsCopie = [];
@@ -110,11 +114,35 @@ export function creerSubstrats(deps) {
     }
     lireSources();
 
-    // Le même carré que les UV du maillage du fond (environnement.js).
-    const demi = DEMI_COTE_FOND || Math.ceil(RAYON_ETANG_MAX + 4.5);
-    const N = Math.ceil(demi * 2 / CELLULE);
-    const X0 = POND_CENTER.x - demi;
-    const Z0 = POND_CENTER.z - demi;
+    // --- Géométrie de la grille : dépend de la TAILLE de l'étang (reconfigurée par configurerGeometrie) ---
+    // Le même carré que les UV du maillage du fond (environnement.js). La taille d'une cellule suit l'échelle f
+    // (une grille de pas fixe sur un lac de 560 unités serait trop lourde, et trop grossière sur 24 unités).
+    let CELLULE = CELLULE_BASE;
+    let ECHELLE = 1;                // f = rayon / 90 du monde pour lequel la grille est construite
+    let demi = 0;
+    let N = 0;
+    let X0 = 0;
+    let Z0 = 0;
+    let PAS_FETCH = 4;
+    let NF = 0;
+    let fetchGrille = null;
+    let proxGrille = null;
+    let grille = null;
+    let dedans = null;
+    let affinite = null;
+    let etiquettes = null;
+    let COTE = 0;
+    let geometrieDe = null;         // rayon du monde pour lequel la grille est construite
+    const ventX = Math.cos(VENT_DOMINANT);
+    const ventZ = Math.sin(VENT_DOMINANT);
+
+    // Le bruit fixe des limites de zones, ramené à l'échelle de l'étang : la plaine garde le bruit d'origine, une autre
+    // taille en est l'homothétie (même motif, vu de plus près ou de plus loin).
+    function bruitMonde(x, z) {
+        if (ECHELLE === 1) { return bruit(x, z); }
+        const c = monde.centreReference || { x: 0, z: -71 };
+        return bruit(c.x + (x - POND_CENTER.x) / ECHELLE, c.z + (z - POND_CENTER.z) / ECHELLE);
+    }
 
     function dansEtang(x, z, marge) {
         const dx = x - POND_CENTER.x;
@@ -122,32 +150,52 @@ export function creerSubstrats(deps) {
         return Math.hypot(dx, dz) < rayonEtang(Math.atan2(dz, dx)) + marge;
     }
 
-    // --- Exposition au vent : longueur d'eau traversée en remontant le vent (grille de 4) ---
-    const PAS_FETCH = 4;
-    const NF = Math.ceil(demi * 2 / PAS_FETCH);
-    const fetchGrille = new Float32Array(NF * NF);
-    const ventX = Math.cos(VENT_DOMINANT);
-    const ventZ = Math.sin(VENT_DOMINANT);
-    for (let j = 0; j < NF; j++) {
-        for (let i = 0; i < NF; i++) {
-            const x = X0 + (i + 0.5) * PAS_FETCH;
-            const z = Z0 + (j + 0.5) * PAS_FETCH;
-            let longueur = 0;
-            if (dansEtang(x, z, 0)) {
-                // On remonte le vent (direction opposée) tant qu'on est sur l'eau.
-                while (longueur < 2 * demi && dansEtang(x - ventX * longueur, z - ventZ * longueur, 0)) { longueur += 3; }
-            }
-            fetchGrille[j * NF + i] = longueur;
-        }
-    }
     function fetchEn(x, z) {
         const i = Math.max(0, Math.min(NF - 1, Math.floor((x - X0) / PAS_FETCH)));
         const j = Math.max(0, Math.min(NF - 1, Math.floor((z - Z0) / PAS_FETCH)));
         return fetchGrille[j * NF + i];
     }
 
+    function configurerGeometrie() {
+        ECHELLE = monde.echelle;
+        CELLULE = CELLULE_BASE * Math.max(0.35, Math.min(2.5, ECHELLE));
+        const rapport = CELLULE / CELLULE_BASE;
+        demi = monde.demiCoteFond || Math.ceil(monde.rayonMax + 4.5);
+        N = Math.ceil(demi * 2 / CELLULE);
+        X0 = POND_CENTER.x - demi;
+        Z0 = POND_CENTER.z - demi;
+        COTE = demi * 2;
+        // --- Exposition au vent : longueur d'eau traversée en remontant le vent (grille de 4 × rapport) ---
+        PAS_FETCH = 4 * rapport;
+        NF = Math.ceil(demi * 2 / PAS_FETCH);
+        fetchGrille = new Float32Array(NF * NF);
+        for (let j = 0; j < NF; j++) {
+            for (let i = 0; i < NF; i++) {
+                const x = X0 + (i + 0.5) * PAS_FETCH;
+                const z = Z0 + (j + 0.5) * PAS_FETCH;
+                let longueur = 0;
+                if (dansEtang(x, z, 0)) {
+                    // On remonte le vent (direction opposée) tant qu'on est sur l'eau.
+                    while (longueur < 2 * demi && dansEtang(x - ventX * longueur, z - ventZ * longueur, 0)) { longueur += 3 * rapport; }
+                }
+                fetchGrille[j * NF + i] = longueur;
+            }
+        }
+        proxGrille = new Float32Array(N * N);
+        grille = new Uint8Array(N * N);
+        dedans = new Uint8Array(N * N);
+        affinite = new Float32Array(N * N * 5);
+        etiquettes = new Int32Array(N * N).fill(-1);
+        for (let j = 0; j < N; j++) {
+            for (let i = 0; i < N; i++) {
+                if (dansEtang(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, MARGE_FOND)) { dedans[j * N + i] = 1; }
+            }
+        }
+        geometrieDe = monde.rayon;
+    }
+    configurerGeometrie();
+
     // --- Proximité de l'herbier (0 = loin, 1 = sur la plante) : étalée sur les cellules ----
-    const proxGrille = new Float32Array(N * N);
     function calculerProximite() {
         proxGrille.fill(0);
         sources.forEach(function (s) {
@@ -169,7 +217,7 @@ export function creerSubstrats(deps) {
     // --- La règle : quel substrat en (x, z) ? (priorité : roche, herbier, vase, gravier, sable) ---
     function classer(x, z, prox) {
         const prof = profondeurLocale(x, z);
-        const n = bruit(x, z);
+        const n = bruitMonde(x, z);
         // 1) roche : tombants et bordures des fosses (anneau entre 0,55 et 1,2 rayon).
         for (let k = 0; k < FOSSES.length; k++) {
             const f = FOSSES[k];
@@ -180,7 +228,7 @@ export function creerSubstrats(deps) {
         if (prox > 0.12 - 0.1 * n && prof < 3.6 + 0.3 * n) { return 5; }
         // 3) vase : fosses et grand bassin, anses calmes un peu profondes.
         if (prof + 0.4 * n >= 4.2) { return 3; }
-        const abrite = fetchEn(x, z) < FETCH_EXPOSE;
+        const abrite = fetchEn(x, z) < FETCH_EXPOSE * ECHELLE;
         if (abrite) { return prof + 0.3 * n >= 3.2 ? 3 : 1; }
         // 4) gravier : hauts-fonds exposés au vent ; sinon vase en eau plus profonde.
         return prof + 0.3 * n < 3.7 ? 2 : 3;
@@ -188,13 +236,6 @@ export function creerSubstrats(deps) {
 
     // --- La grille : 0 = hors étang, 1 à 5 = indice dans SUBSTRATS + 1 ---------------------
     // Remplie EN PLACE (même tableau) : reconstruite quand le biotope change (appliquerMilieu).
-    const grille = new Uint8Array(N * N);
-    const dedans = new Uint8Array(N * N);
-    for (let j = 0; j < N; j++) {
-        for (let i = 0; i < N; i++) {
-            if (dansEtang(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, MARGE_FOND)) { dedans[j * N + i] = 1; }
-        }
-    }
     function remplirNaturel() {
         grille.fill(0);
         for (let j = 0; j < N; j++) {
@@ -231,13 +272,13 @@ export function creerSubstrats(deps) {
     // hasard) fait ensuite coller les parts du biotope : même graine + même biotope = même grille.
     function affinites(x, z, prox, sortie) {
         const prof = profondeurLocale(x, z);
-        const n = bruit(x, z);
+        const n = bruitMonde(x, z);
         let anneau = 0;
         for (let k = 0; k < FOSSES.length; k++) {
             const q = Math.hypot(x - FOSSES[k].x, z - FOSSES[k].z) / FOSSES[k].rayon;
             anneau = Math.max(anneau, 1 - Math.abs(q - 0.88 - 0.05 * n) / 0.45);
         }
-        const abrite = fetchEn(x, z) < FETCH_EXPOSE;
+        const abrite = fetchEn(x, z) < FETCH_EXPOSE * ECHELLE;
         sortie[0] = (abrite ? 0.55 : 0.2) * (prof < 3.6 ? 1 : 0.4) - 0.15 * n + 0.1;                    // sable
         sortie[1] = (abrite ? 0.15 : 0.6) * (prof < 4 ? 1 : 0.4) + 0.15 * n;                            // gravier
         sortie[2] = Math.min(1.2, Math.max(0, (prof - 2) / 5)) + (abrite ? 0.2 : 0);                     // vase
@@ -245,9 +286,8 @@ export function creerSubstrats(deps) {
         sortie[4] = 1.3 * Math.min(1, prox * 2) * (prof < 3.8 ? 1 : 0.3) + 0.1 * n;                      // herbier
         // Un bruit lisse DIFFÉRENT par substrat : des plaques organiques, et surtout des parts qui varient
         // de façon continue avec le décalage (sans lui, les plateaux de la règle font sauter les parts).
-        for (let k = 0; k < 5; k++) { sortie[k] += 0.45 * bruit(x * 0.9 + 13.7 * k, z * 0.9 - 8.3 * k); }
+        for (let k = 0; k < 5; k++) { sortie[k] += 0.45 * bruitMonde(x * 0.9 + 13.7 * k, z * 0.9 - 8.3 * k); }
     }
-    const affinite = new Float32Array(N * N * 5);
     function remplirVersCibles(cibles) {
         const tmp = [0, 0, 0, 0, 0];
         const nombres = [0, 0, 0, 0, 0];
@@ -309,7 +349,6 @@ export function creerSubstrats(deps) {
     // Objets remplis EN PLACE par analyser() : les lecteurs (carnet, radar) gardent la même référence.
     const aires = {};
     const parts = {};
-    const etiquettes = new Int32Array(N * N).fill(-1);
     const zones = [];
     const compteurs = {};
     function analyser() {
@@ -436,7 +475,7 @@ export function creerSubstrats(deps) {
                 const z = Z0 + (j + 0.5) * CELLULE;
                 const dx = x - POND_CENTER.x;
                 const dz = z - POND_CENTER.z;
-                if (rayonEtang(Math.atan2(dz, dx)) - Math.hypot(dx, dz) < MARGE_RIVE_ANCRE) { continue; }
+                if (rayonEtang(Math.atan2(dz, dx)) - Math.hypot(dx, dz) < MARGE_RIVE_ANCRE * Math.min(1, ECHELLE)) { continue; }
                 // Espèces de fosse : bien DANS une fosse (marge pour l'écart du banc), jamais au bord.
                 if (fosseSeulement && !FOSSES.some(function (f) { return Math.hypot(x - f.x, z - f.z) < f.rayon * 0.78; })) { continue; }
                 liste.push({ x: x, z: z });
@@ -519,12 +558,14 @@ export function creerSubstrats(deps) {
     // -------------------------------------------------------------------------
     const POSTES_ANGLE = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
     const PAR_POSTE = 4;       // zones de vie garanties à portée de chaque poste
-    const PORTEE_POSTE = 30;   // rayon de lancer couvert (portée réelle ≈ 52)
+    const PORTEE_POSTE_BASE = 30;   // rayon de lancer couvert (portée réelle ≈ 52) ; suit la portée du lancer de l'étang
 
     function garantirPecheDuBord(poissons) {
         let deplaces = 0;
+        const PORTEE_POSTE = PORTEE_POSTE_BASE * (monde.porteeLancer || 52) / 52;
+        const decalPoste = 14 * Math.min(1, ECHELLE);
         POSTES_ANGLE.forEach(function (angle) {
-            const ray = rayonEtang(angle) - 14;      // là où le pêcheur se tient
+            const ray = rayonEtang(angle) - decalPoste;      // là où le pêcheur se tient
             const px = POND_CENTER.x + Math.cos(angle) * ray;
             const pz = POND_CENTER.z + Math.sin(angle) * ray;
             const proches = poissons.filter(function (f) {
@@ -598,7 +639,6 @@ export function creerSubstrats(deps) {
     // --- Texture du fond (générée en code, 100 % procédurale) --------------------------------
     // Une image carrée centrée sur l'étang : chaque pixel prend la couleur du substrat de la
     // grille (fondue entre cellules voisines), avec un grain propre à chaque substrat.
-    const COTE = demi * 2;
     const COULEURS = {
         sable: [222, 205, 150], gravier: [158, 152, 142], vase: [78, 68, 46],
         roche: [104, 110, 118], herbier: [58, 124, 66]
@@ -700,6 +740,7 @@ export function creerSubstrats(deps) {
     let biotope = deps.milieu ? milieuParId(deps.milieu).id : MILIEU_DEFAUT;
     function appliquerMilieu(milieu) {
         biotope = milieuParId(typeof milieu === 'string' ? milieu : milieu && milieu.id).id;
+        if (geometrieDe !== monde.rayon) { configurerGeometrie(); }   // l'étang a changé de taille : nouvelle grille
         lireSources();
         calculerProximite();
         remplirGrille(biotope === MILIEU_DEFAUT ? null : ciblesDe(biotope));
@@ -713,7 +754,8 @@ export function creerSubstrats(deps) {
 
     return {
         SUBSTRATS: SUBSTRATS, ACCROCHAGES_FOND: ACCROCHAGES_FOND, SONS_FOND: SONS_FOND,
-        grille: grille, COULEURS: COULEURS, taille: N, cellule: CELLULE, origine: { x: X0, z: Z0 }, cote: COTE,
+        get grille() { return grille; }, COULEURS: COULEURS, get taille() { return N; }, get cellule() { return CELLULE; },
+        get origine() { return { x: X0, z: Z0 }; }, get cote() { return COTE; },
         aires: aires, parts: parts, zones: zones, stats: stats,
         substratEn: substratEn, zoneEn: zoneEn, rectsCarte: rectsCarte, verdictFond: verdictFond,
         accrochageDe: accrochageDe, attirer: attirer, ancresDe: ancresDe, especesDe: especesDe,
