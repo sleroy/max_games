@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=199';
+import { SoundEngine } from './sound.js?v=200';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -22,7 +22,7 @@ import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=196';
+import { creerCombat } from './combat.js?v=200';
 import { creerComportement } from './comportement.js?v=196';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
@@ -41,7 +41,7 @@ import { creerMeteo } from './meteo.js?v=189';
 import { creerPhysique } from './physique.js?v=189';
 import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=179';
-import { creerStocks } from './stocks.js?v=192';
+import { creerStocks } from './stocks.js?v=200';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=196';
@@ -51,7 +51,7 @@ import { creerEntrees } from './entrees.js?v=179';
 import { creerRadar } from './radar.js?v=193';
 import { creerCheat } from './cheat.js?v=193';
 import { creerBoucle } from './boucle.js?v=169';
-import { creerPartie } from './partie.js?v=198';
+import { creerPartie } from './partie.js?v=200';
 import { creerPecheur } from './pecheur.js?v=171';
 import { creerRendu } from './rendu.js?v=172';
 import { etat } from './etat.js?v=145';
@@ -566,15 +566,16 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 
 // ---------------------------------------------------------------------------
 // Difficulté — réglable depuis le carnet (Facile / Normal / Dur).
-// En augmentant la difficulté :
-//   • le poisson tire plus fort et reprend plus de fil (épreuve de force) ;
-//   • le temps de l'épreuve de force est plus court ;
-//   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
+// Le combat d'un poisson est aussi dur en Facile qu'en Normal (§17.7, `difficulty` 1,3) : le
+// mode enfant n'aide qu'à DÉTECTER la touche (fenêtre, densité, pas d'emmêlement). Le mode Dur
+// reste plus dur : poisson plus fort, épreuve plus courte, fenêtre de ferrage plus courte.
 // ---------------------------------------------------------------------------
 // `poissons` = facteur de DENSITE (demande du joueur 2026-11-16) : facile ×3,
 // normale ×2, difficile ×1,5. Il multiplie la population calculee par la surface.
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0, poissons: 3, xp: 0.75 },
+    // §17.7 : `difficulty` (combativité) est la MEME en facile et en normal — le mode
+    // enfant n'aide que la détection. §17.8 : `xp` récompense la difficulté choisie.
+    facile: { difficulty: 1.3, biteWindow: 1.6, tangleChance: 0, poissons: 3, xp: 0.75 },
     normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08, poissons: 2, xp: 1 },
     dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15, poissons: 1.5, xp: 1.5 }
 };

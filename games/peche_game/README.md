@@ -273,15 +273,15 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **2,5 m** de fond (3,3 m dans les fosses) ; chaque poisson a **exactement sa taille réelle**
   (un gardon de 28 cm fait 28 cm à l'écran) et le bouchon ne s'enfonce que de quelques
   dizaines de centimètres, comme un vrai.
-- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **5
-  lignes en nylon**. **Carnet → Boutique** vend des lots de trois pour l’XP
+- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **1
+  ligne en nylon** (§17.9). **Carnet → Boutique** vend des lots de trois pour l’XP
   carrière. Les recharges achetées sont conservées entre les parties tant
   qu’elles n’ont pas servi. Change de fil au repos dans la boutique.
   Le **fluorocarbone** réduit de moitié le risque d’emmêlement et la **tresse**
   supporte mieux les fortes tractions et la remontée rapide.
-- **5 lignes… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
+- **Une seule ligne… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
   ou une **remontée trop rapide** à la manivelle (avertissements « la ligne souffre », puis
-  risque croissant) **casse une ligne**. À zéro ligne, la partie s'arrête : tu saisis ton
+  risque croissant) **casse la ligne** ; un emmêlement non résolu aussi. À zéro ligne (« Lignes : 0/1 »), la partie s'arrête : tu saisis ton
   **nom** et ta partie rejoint le **classement local** (onglets 🐟 Poissons / ⚖️ Poids total
   / 🥇 Records par espèce), accessible aussi en jeu par le bouton **🏆 Classement**.
 - **Records d'espèce** : quand un poisson range dans la bourriche est plus lourd que le
@@ -326,9 +326,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
 - **Difficulté réglable dès l’accueil** (menu déroulant à côté de la technique) **et depuis
-  le carnet** : **Facile / Normal / Dur** (le poisson tire plus ou moins fort, le chrono et
-  la fenêtre de ferrage changent ; les deux sélecteurs restent synchronisés).
-- **Mode Facile enfant** (pêche ludique) : les poissons repèrent l’hameçon de très loin
+  le carnet** : **Facile / Normal / Dur** (Facile et Normal ont le même combat ; Dur ajoute un poisson plus
+  fort et un chrono plus court ; la fenêtre de ferrage change ; les deux sélecteurs restent synchronisés).
+- **Mode Facile enfant** (pêche ludique) : il n'aide qu'à **repérer la touche** ; le **combat
+  reste aussi dur qu'en Normal** (§17.7 : même avantage au ferrage, même traction). Les poissons repèrent l’hameçon de très loin
   et nagent droit dessus, même depuis une autre zone de vie ou une autre couche d’eau ;
   ils mordent vite (une seule fausse touche) avec une **grande fenêtre de ferrage**, et
   un gros panneau **« FERRER ! »** s’affiche pendant la vraie touche. Chaque prise

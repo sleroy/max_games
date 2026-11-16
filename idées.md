@@ -1,6 +1,6 @@
 # idées.md — Suivi des idées du jeu de pêche
 
-> Dernière mise à jour : **2026-11-15** · version du jeu : **v189**
+> Dernière mise à jour : **2026-11-16** · version du jeu : **v200**
 > Légende : `[x]` fait · `[~]` partiel / à compléter · `[ ]` à faire
 > Chaque item terminé doit être couvert par un test dans `games/peche_game/tests/`.
 
@@ -895,7 +895,7 @@ directement depuis le haut de l'écran ».
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **2794 vérifications vertes** (v189) (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **3053 vérifications vertes** (v200) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
@@ -1306,7 +1306,7 @@ normale, 1,5 en difficile ». Base 90 poissons/ha → **270 / 180 / 135 par hect
   chaîne d'intérêt → approche → décision d'esche (par poisson) avant de retoucher un
   chiffre.
 
-### 17.7 Mode enfant : la COMBATIVITÉ doit rester intacte — à faire
+### 17.7 Mode enfant : la COMBATIVITÉ doit rester intacte — livré (v200)
 
 Demande du joueur : « en mode enfant c'est un peu trop facile, la difficulté de ramener
 les poissons doit rester intacte (la combativité) ».
@@ -1315,33 +1315,45 @@ Aujourd'hui le mode facile adoucit **aussi le combat** :
 `combat.js:408` — `etat.fightAdvantage = etat.modeFacile ? (1.0 / 1.05) : (1.15 / 1.3)`.
 Un ferrage raté est donc presque sans conséquence en mode enfant.
 
-- [ ] **Le combat ne dépend plus du mode** : `fightAdvantage`, tension, traction du
+- [x] **Le combat ne dépend plus du mode** : `fightAdvantage`, tension, traction du
   poisson, risque de décrochage et vitesse de fatigue doivent être **identiques** dans
   les trois modes. La combativité d'une carpe ou d'un silure reste la même.
-- [ ] **Ce que le mode enfant peut garder** (aide à la *détection*, pas au combat) :
+- [x] **Ce que le mode enfant peut garder** (aide à la *détection*, pas au combat) :
   fenêtre de ferrage plus large (`biteWindow`), pas d'emmêlement (`tangleChance 0`),
   faux signaux réduits, délai de touche plus court, bandeau « FERRER ! »,
   `hameconDansZone` non filtrant, densité ×3, messages encourageants.
-- [ ] **Tests** : `fightAdvantage` identique en facile et en normal après un ferrage
+- [x] **Tests** : `fightAdvantage` identique en facile et en normal après un ferrage
   raté ; même valeur de combativité lue par `startStruggle` ; et le mode enfant garde
   ses aides de détection (fenêtre, densité, bandeau).
+- [x] **Livré (v200)** : `combat.js` n'a plus de branche `modeFacile` dans le calcul de
+  `fightAdvantage` (tôt 1,15 / tard 1,3 dans tous les modes) et `DIFFICULTY_MODES.facile.difficulty`
+  passe de 1,0 à 1,3 (traction, coups, intervalle, temps limite = ceux du mode Normal).
+  Mesure : même poisson, ferrage raté, facile vs normal → traction 3,475, coups 0,915 / 1,194 s,
+  endurance 14, avantage 1,3, identiques. Test : `scenario-combat-mode.mjs`.
+- Remarque : le mode **Dur** garde son combat plus dur (difficulté 1,6) ; seul le mode enfant
+  était adouci. À confirmer si le joueur veut un combat strictement identique dans les 3 modes.
 
-### 17.9 Une seule ligne au départ (jeu plus tendu) — à faire
+### 17.9 Une seule ligne au départ (jeu plus tendu) — livré (v200)
 
 Demande du joueur : « on devrait avoir une seule ligne quand on commence, pour rendre le
 jeu plus excitant ». Aujourd'hui `stocks.js:16` — `etat.MAX_LIGNES = 5` et la partie
 démarre avec **5 lignes = 5 vies**.
 
-- [ ] **Une ligne au départ** : `MAX_LIGNES = 1` (donc 1 vie). Une casse ou un
+- [x] **Une ligne au départ** : `MAX_LIGNES = 1` (donc 1 vie). Une casse ou un
   emmêlement non résolu = fin de partie immédiate. C'est le but : chaque lancer compte.
-- [ ] **Le compteur doit rester lisible** : « 🧵 Lignes : 1/1 » puis « 0/1 » à la casse,
+- [x] **Le compteur doit rester lisible** : « 🧵 Lignes : 1/1 » puis « 0/1 » à la casse,
   et l'écran de fin doit expliquer clairement « plus de ligne » (message existant).
-- [ ] **Ne pas casser les chemins de secours** : une ligne perdue par emmêlement, par
+- [x] **Ne pas casser les chemins de secours** : une ligne perdue par emmêlement, par
   lancer trop fort ou par remontée trop rapide mène bien à la fin de partie ; aucun état
   bloqué sans ligne.
-- [ ] **À décider (suggestion)** : le mode **enfant** pourrait en donner **2** (tolérance
+- [~] **À décider (suggestion)** : le mode **enfant** pourrait en donner **2** (tolérance
   pour apprendre), les modes normal et difficile **1**. À valider par le joueur.
-- [ ] **Tests à adapter** (tous ceux qui supposent 5 vies) : `scenario-lignes` (5 → 1,
+- [x] **Tests à adapter** (tous ceux qui supposent 5 vies) : `scenario-lignes` (5 → 1,
   casse, fin de partie), `scenario-jouer` (HUD 1/1), `scenario-gameplay`/démêlage
   (perte d'une ligne = fin), classement. Aucune vérification supprimée : les scénarios
   passent simplement de 5 à 1 ligne, et les boucles « jusqu'à 0 ligne » restent.
+- [x] **Livré (v200)** : `stocks.js` `MAX_LIGNES = 1`. Compteur « 1/1 » puis « 0/1 », écran
+  « Plus de lignes ! ». Scénarios adaptés (5 → 1) : `lignes`, `jouer`, `demelage`, `fin`,
+  `vitesse`, `boutique`, `gameplay`, `vase` ; le harnais gagne `donnerFilsDeRechange()`,
+  `viderFilsDeRechange()` et `rejouerSiTerminee()` (appelé par `resetToIdle`).
+- [~] Le choix « 2 lignes en mode enfant » reste **à valider** par le joueur (non fait : 1 ligne partout).

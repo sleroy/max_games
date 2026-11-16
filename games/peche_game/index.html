@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=199">
+    <link rel="stylesheet" href="style.css?v=200">
 </head>
 <body>
     <div class="game-wrap">
@@ -36,7 +36,7 @@
                 </div>
                 <div class="hud-counters">
                     <span>Score : <span id="score">0</span></span>
-                    <span id="lignesLabel">🧵 Lignes : 5/5</span>
+                    <span id="lignesLabel">🧵 Lignes : 1/1</span>
                     <span id="xpTop" title="XP de la partie en cours">⭐ 0 XP</span>
                     <span id="heureEau" title="Heure de jeu et pression atmosphérique">🕒 — · — hPa</span>
                 </div>
@@ -188,7 +188,7 @@
             <div class="overlay-panel" id="gameOver" role="dialog" aria-modal="true"
                 aria-labelledby="gameOverTitle">
                 <h2 class="overlay-title" id="gameOverTitle">💥 Plus de lignes !</h2>
-                <p class="overlay-text" id="gameOverText">Tu as cassé tes 5 lignes. Voici ta partie :</p>
+                <p class="overlay-text" id="gameOverText">Tu n’as plus de ligne. Voici ta partie :</p>
                 <div class="overlay-score" id="gameOverScore"></div>
                 <label class="overlay-label" for="playerName">Ton nom :</label>
                 <input class="overlay-input" id="playerName" maxlength="12" placeholder="Ton prénom">
@@ -396,6 +396,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=199"></script>
+    <script type="module" src="script.js?v=200"></script>
 </body>
 </html>

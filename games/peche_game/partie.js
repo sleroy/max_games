@@ -395,7 +395,8 @@ export function creerPartie(deps) {
         if (gameOver) { gameOver.classList.remove('active'); }
         fermerClassement();
         majModalBackdrop();
-        statusDisplay.textContent = 'Nouvelle partie : ' + totalLignes() + ' lignes et ' + stockAmorce() + ' boules d’amorce.';
+        statusDisplay.textContent = 'Nouvelle partie : ' + totalLignes() + (totalLignes() > 1 ? ' lignes' : ' ligne')
+            + ' et ' + stockAmorce() + ' boules d’amorce.';
     }
 
     // --- Boutons du panneau de fin de partie et du classement ---

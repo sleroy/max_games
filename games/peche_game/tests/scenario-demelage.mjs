@@ -44,7 +44,7 @@ export function run() {
     checkEqual('la ligne est marquée tendue', G().isLigneTendue(), true);
     attendreEtat('inWater', 4);
     checkEqual('une ligne tendue arrive sans emmêlement', state(), 'inWater');
-    checkEqual('aucune ligne perdue', G().getLignes(), 5);
+    checkEqual('aucune ligne perdue', G().getLignes(), 1);
 
     resetToIdle();
     G().startCast({ x: 0, y: 0, z: -25 });
@@ -70,7 +70,7 @@ export function run() {
     check('une popup annonce l’emmêlement',
         G().getFloatingTexts().some(function (t) { return t.indexOf('emmêlée') >= 0; }),
         G().getFloatingTexts().join(' / '));
-    checkEqual('aucune ligne perdue avant la résolution', G().getLignes(), 5);
+    checkEqual('aucune ligne perdue avant la résolution', G().getLignes(), 1);
 
     // 3) Suivre tout le câble (les points du parcours) démêle la ligne.
     const parcours = G().getDemelagePath();
@@ -91,7 +91,7 @@ export function run() {
     checkEqual('le panneau de démêlage se ferme',
         el('tangleGame').classList.contains('active'), false);
     checkEqual('la ligne est récupérée', state(), 'inWater');
-    checkEqual('le tracé réussi ne coûte pas de ligne', G().getLignes(), 5);
+    checkEqual('le tracé réussi ne coûte pas de ligne', G().getLignes(), 1);
 
     // 4) Abandonner le mini-jeu coûte une ligne.
     resetToIdle();
@@ -102,6 +102,7 @@ export function run() {
     G().abandonnerEmmElement();
     checkEqual('l’abandon ferme le mini-jeu', G().isTangleActif(), false);
     checkEqual('l’abandon coûte une ligne', G().getLignes(), lignesAvant - 1);
+    checkEqual('avec une seule ligne, l’abandon finit la partie', G().isPartieTerminee(), true);
     checkEqual('la pêche revient au repos', state(), 'idle');
 
     // 5) Le temps écoulé coûte aussi une ligne.
@@ -114,6 +115,7 @@ export function run() {
     step(0.05);
     checkEqual('le temps écoulé ferme le mini-jeu', G().isTangleActif(), false);
     checkEqual('le temps écoulé coûte une ligne', G().getLignes(), lignesAvantTemps - 1);
+    checkEqual('avec une seule ligne, le temps écoulé finit la partie', G().isPartieTerminee(), true);
     checkEqual('la pêche revient au repos après le temps', state(), 'idle');
 
     G().setTangleChance(0);
