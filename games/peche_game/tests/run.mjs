@@ -48,6 +48,7 @@ import scenarioBateau from './scenario-bateau.mjs';
 import scenarioPortraits from './scenario-portraits.mjs';
 import scenarioModules from './scenario-modules.mjs';
 import scenarioCheat from './scenario-cheat.mjs';
+import { run as scenarioRadar } from './scenario-radar.mjs';
 import { run as scenarioSonar } from './scenario-sonar.mjs';
 import scenarioGrandEtang from './scenario-grand-etang.mjs';
 import { run as scenarioObstacles } from './scenario-obstacles.mjs';
@@ -59,6 +60,8 @@ import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
 import { run as scenarioModeles } from './scenario-modeles.mjs';
+import { run as scenarioFacile } from './scenario-facile.mjs';
+import { run as scenarioCombatMode } from './scenario-combat-mode.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
@@ -136,6 +139,8 @@ try {
     debutScenario();
     scenarioRemontee();         // la manivelle seule ramène la ligne (plus de clic)
     debutScenario();
+    scenarioFacile();           // mode Facile (enfant) : aimant à poissons + « FERRER ! »
+    debutScenario();
     scenarioVitesse();          // remontée trop rapide : poids du poisson + fil
     debutScenario();
     scenarioBateau();           // mode bateau : barque achetable, ramer, pêche à bord
@@ -167,6 +172,10 @@ try {
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
     debutScenario();
     await scenarioModeles();    // moteur de poisson 3D paramétrique (v197) : longueurs, budget, motifs, nage
+    debutScenario();
+    scenarioRadar();            // cheat « radar » (§17.3) : carte 2D des poissons
+    debutScenario();
+    scenarioCombatMode();       // §17.7 : combat identique en mode enfant, aides de détection gardées (en dernier : ses prises modifient le carnet)
 } catch (error) {
     crashed = error;
 } finally {

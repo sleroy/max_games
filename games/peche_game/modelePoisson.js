@@ -21,8 +21,8 @@
 //   pelviennes, yeux (sclère + iris + pupille), bouche, barbillons.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=198';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=198';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=201';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=201';
 
 export const SECTIONS = 60;          // anneaux le long du corps
 export const SEGMENTS = 30;          // sommets par anneau (tour du corps)

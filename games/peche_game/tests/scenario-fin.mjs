@@ -44,7 +44,7 @@ export function run() {
     fire('playButton', 'click');
     checkEqual('l’accueil se ferme', G().isAccueilVisible(), false);
     checkEqual('la partie est relancée', G().isPartieTerminee(), false);
-    checkEqual('5 lignes neuves', G().getLignes(), 5);
+    checkEqual('1 ligne neuve', G().getLignes(), 1);
     checkEqual('le fond modal disparaît', G().isModalBackdropVisible(), false);
 
     // 5) XP de partie : à zéro au début, gagnée en pêchant, remise à zéro à JOUER.

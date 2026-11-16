@@ -149,7 +149,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
   (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.
   Si tu laisses vraiment passer, il recrache l'hameçon.
-- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). **Le poisson se défend pour de bon** : même un gardon tire en continu et donne des coups brusques — un combat dure **3 à 15 s** selon le poisson et ta vitesse de manivelle (trop lent = la ligne casse ou le temps file). Il **se fatigue** au bout de quelques secondes (ses tirades faiblissent de 60 %) : c'est le moment d'accélérer. Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
+- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). **Le poisson se défend pour de bon** : même un gardon tire en continu et donne des coups brusques — un combat dure **3 à 15 s** selon le poisson et ta vitesse de manivelle (trop lent = la ligne casse ou le temps file). Il **se fatigue** au bout de quelques secondes (ses tirades faiblissent de 60 %) : c'est le moment d'accélérer. Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens le clic droit** (souris) ou le bouton **« 🔓 Lâcher du fil »** (tablette) : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
 - **Manivelle** (en bas à droite **dès que la ligne est à l'eau**) : fais glisser la poignée en cercle pour ramener la ligne — pour relancer ailleurs, ou pendant l'épreuve de force et la remontée. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
   alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
@@ -273,15 +273,15 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **2,5 m** de fond (3,3 m dans les fosses) ; chaque poisson a **exactement sa taille réelle**
   (un gardon de 28 cm fait 28 cm à l'écran) et le bouchon ne s'enfonce que de quelques
   dizaines de centimètres, comme un vrai.
-- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **5
-  lignes en nylon**. **Carnet → Boutique** vend des lots de trois pour l’XP
+- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **1
+  ligne en nylon** (§17.9). **Carnet → Boutique** vend des lots de trois pour l’XP
   carrière. Les recharges achetées sont conservées entre les parties tant
   qu’elles n’ont pas servi. Change de fil au repos dans la boutique.
   Le **fluorocarbone** réduit de moitié le risque d’emmêlement et la **tresse**
   supporte mieux les fortes tractions et la remontée rapide.
-- **5 lignes… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
+- **Une seule ligne… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
   ou une **remontée trop rapide** à la manivelle (avertissements « la ligne souffre », puis
-  risque croissant) **casse une ligne**. À zéro ligne, la partie s'arrête : tu saisis ton
+  risque croissant) **casse la ligne** ; un emmêlement non résolu aussi. À zéro ligne (« Lignes : 0/1 »), la partie s'arrête : tu saisis ton
   **nom** et ta partie rejoint le **classement local** (onglets 🐟 Poissons / ⚖️ Poids total
   / 🥇 Records par espèce), accessible aussi en jeu par le bouton **🏆 Classement**.
 - **Records d'espèce** : quand un poisson range dans la bourriche est plus lourd que le
@@ -296,8 +296,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   les **écarts latéraux** — et le carnet les décrit pour chaque poisson.
 - **Lancer au dosage** : le lancer de la canne se fait comme l'amorçage (viser, maintenir,
   relâcher quand la jauge passe sur le repère) — un vrai geste à réussir.
-- **Frein du moulinet** : bouton « 🔓 Lâcher du fil » pendant le combat (le poisson
-  reprend de la ligne mais elle ne casse pas).
+- **Frein du moulinet** : maintiens le **clic droit** (souris) ou le bouton « 🔓 Lâcher du fil »
+  (tablette) pendant le combat (le poisson reprend de la ligne mais elle ne casse pas).
 - **Barre de tension accessible** : zone dangereuse **hachurée** + légende à symboles
   (🟩 🟨 ✖) : lisible même en cas de daltonisme.
 - **Météo** : cycle beau temps → **rafales** (le vent souffle plus fort) → **pluie**
@@ -325,8 +325,16 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   le chargement ou le décodage échoue. Voir `assets/CREDITS.txt`.
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
-- **Difficulté réglable** depuis le carnet : **Facile / Normal / Dur** (le poisson tire
-  plus ou moins fort, le chrono et la fenêtre de ferrage changent).
+- **Difficulté réglable dès l’accueil** (menu déroulant à côté de la technique) **et depuis
+  le carnet** : **Facile / Normal / Dur** (Facile et Normal ont le même combat ; Dur ajoute un poisson plus
+  fort et un chrono plus court ; la fenêtre de ferrage change ; les deux sélecteurs restent synchronisés).
+- **Mode Facile enfant** (pêche ludique) : il n'aide qu'à **repérer la touche** ; le **combat
+  reste aussi dur qu'en Normal** (§17.7 : même avantage au ferrage, même traction). Les poissons repèrent l’hameçon de très loin
+  et nagent droit dessus, même depuis une autre zone de vie ou une autre couche d’eau ;
+  ils mordent vite (une seule fausse touche) avec une **grande fenêtre de ferrage**, et
+  un gros panneau **« FERRER ! »** s’affiche pendant la vraie touche. Chaque prise
+  affiche **« 🎉 BRAVO ! »** ; la manivelle est aussi un peu plus grosse pour les
+  petites mains. Aucun poisson ne refuse l’esche.
 - **Options d'accessibilité** : gros texte, animations calmes (moins de clignotements).
 - **Jouable sur téléphone et tablette** : commandes tactiles (appui/relâchement pour
   l'amorçage et le lancer du poisson, manivelle au doigt), invite à passer en paysage,

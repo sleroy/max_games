@@ -16,8 +16,8 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=198';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=198';
+} from './especes.js?v=201';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=201';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -62,7 +62,7 @@ export function creerPoissons(deps) {
     //  - Les solitaires (silure, brochet, sandre, black-bass, truite, anguille) restent
     //    rares : au plus 2 de chaque, 1 seul silure. Les bancs portent l'essentiel.
     // ---------------------------------------------------------------------------
-    const FISH_COUNT = 64;                       // plafond technique
+    const FISH_COUNT = 240;                      // plafond technique (v197 : 64 -> 240, densite par difficulte)
     const DENSITE_PAR_HECTARE = 90;              // poissons / ha
     const BIOMASSE_MIN_KG_HA = 100;              // bornes réalistes (kg / ha)
     const BIOMASSE_MAX_KG_HA = 300;
@@ -71,7 +71,9 @@ export function creerPoissons(deps) {
     const MAX_PAR_SOLITAIRE = { silure: 1, defaut: 2 };
     // Les poissons de fosse vivent dans les trous profonds : on les atteint en barque.
     const ESPECES_DE_FOSSE = ['silure', 'anguille', 'sandre'];
-    const POPULATION_CIBLE = Math.min(FISH_COUNT, Math.round(SURFACE_HA * DENSITE_PAR_HECTARE));
+    // Densité par difficulté (idées.md §17.6) : ×1,5 / ×2 / ×3 sur la base 90/ha.
+    const FACTEUR_DENSITE = (typeof etat !== 'undefined' && etat.facteurDensite) || 2;
+    const POPULATION_CIBLE = Math.min(FISH_COUNT, Math.round(SURFACE_HA * DENSITE_PAR_HECTARE * FACTEUR_DENSITE));
 
     // ---------------------------------------------------------------------------
     // Espèces d'eau douce : silhouette, longueur réelle (cm), poids, combativité,

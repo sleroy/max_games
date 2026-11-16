@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=145';
+import { etat } from './etat.js?v=201';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -110,6 +110,8 @@ export function creerEsches(deps) {
     // Le poisson arrivé sur l'hameçon prend-il l'esche ? Décision UNIQUE par poisson et par lancer :
     // un poisson qui refuse s'en désintéresse (voir comportement.js, `refuseLEsche`).
     function accepterTouche(fish) {
+        // MODE FACILE : tous les poissons acceptent l'esche (aucun refus).
+        if (etat.modeFacile) { return true; }
         if (!etat.eschesActives) { return true; }
         const d = fish.userData;
         if (d.escheLancer === etat.numeroLancer) { return d.escheAccepte; }
@@ -135,6 +137,7 @@ export function creerEsches(deps) {
 
     // Ce poisson a-t-il refusé l'esche pendant CE lancer ? (il ne s'intéresse plus à l'hameçon)
     function refuseLEsche(d) {
+        if (etat.modeFacile) { return false; }
         return etat.eschesActives && d.escheLancer === etat.numeroLancer && d.escheAccepte === false;
     }
 

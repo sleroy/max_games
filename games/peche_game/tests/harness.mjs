@@ -402,7 +402,8 @@ export function installEnvironment() {
         title: '',
         addEventListener: () => {},
         getElementById: id => el(id),
-        createElement: tag => makeElement('<' + tag + '>')
+        createElement: tag => makeElement('<' + tag + '>'),
+        body: makeElement('<body>')
     };
 }
 
@@ -586,8 +587,43 @@ export function clearLilyPads() {
     G().lilyPads.length = 0;
 }
 
+/**
+ * Une partie démarre avec UNE seule ligne (§17.9) : la moindre casse finit la partie.
+ * Les scénarios qui cassent une ligne « en passant » repartent donc sur une partie neuve
+ * (1 ligne) avant de continuer. Sans effet si la partie est encore en cours.
+ */
+export function rejouerSiTerminee() {
+    if (G().isPartieTerminee()) { G().recommencerPartie(); }
+}
+
+/**
+ * Achète un lot de nylon (3 fils) à la boutique, sans toucher à l'XP du joueur : la
+ * prochaine casse coûte un fil sans finir la partie. Sert aux scénarios qui testent la
+ * CASSE elle-même (et non la fin de partie), maintenant que la partie démarre avec une
+ * seule ligne (§17.9).
+ */
+export function donnerFilsDeRechange() {
+    const xp = G().getExperience();
+    G().setExperience(xp + 18);   // prix d'un lot de nylon
+    fire('boutique', 'click', { target: { dataset: { action: 'recharger', id: 'nylon' } } });
+    G().setExperience(xp);
+}
+
+/**
+ * Reprend une partie neuve avec la seule ligne de départ : épuise les fils de rechange
+ * (ils persistent d'une partie à l'autre, comme le carnet) puis relance la partie.
+ */
+export function viderFilsDeRechange() {
+    let garde = 0;
+    while (G().getLignes() > 0 && !G().isPartieTerminee() && garde++ < 50) {
+        G().casserLigne('Vidage des fils de rechange');
+    }
+    G().recommencerPartie();
+}
+
 /** Ramène la partie à l'état « repos », quelle que soit la situation. */
 export function resetToIdle(maxSeconds = 200) {
+    rejouerSiTerminee();
     parkFish();
     let t = 0;
     while (state() !== 'idle' && t < maxSeconds) {

@@ -10,8 +10,8 @@
 // écran, recadré au pixel près, puis affiché à sa longueur réelle.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { SPECIES, poidsKilos } from './especes.js?v=198';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=198';
+import { SPECIES, poidsKilos } from './especes.js?v=201';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=201';
 
 const LARGEUR_RENDU = 1200;   // résolution interne d'un portrait (assez pour la loupe)
 const HAUTEUR_RENDU = 800;

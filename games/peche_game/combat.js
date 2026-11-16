@@ -6,7 +6,7 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=145';
+import { etat } from './etat.js?v=201';
 
 export function creerCombat(deps) {
     const {
@@ -18,7 +18,7 @@ export function creerCombat(deps) {
         fishes, CARNASSIERS, PREDATOR_ATTACK_ADVANTAGE, flotteurCourant, rand, TOUCHES_PAR_ID,
         choisirTouche, biteOrigine, rodTipVisual, setFloatOpacity, modeQuiver, punishFish,
         dureeTouche, appliquerMouvement, mouvementDeTouche, BITE_VIEW_LINGER, majIndiceSnag,
-        fermerPanneauCombat, consumeCrankTurns, vitesseMaxTours
+        fermerPanneauCombat, consumeCrankTurns, vitesseMaxTours, kidCue
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -47,7 +47,8 @@ export function creerCombat(deps) {
 
 
     function showCatchMessage(weight, espece, record, horsNorme) {
-        catchMessage.textContent = (horsNorme ? '✨ HORS NORME — ' : '')
+        catchMessage.textContent = (etat.modeFacile ? '🎉 BRAVO ! ' : '')
+            + (horsNorme ? '✨ HORS NORME — ' : '')
             + (record ? '🏆 RECORD — ' : '')
             + (espece ? espece + ' ! ' : 'Poisson attrapé ! ') + fmtPoids(weight) + ' 🎣';
         catchMessage.classList.toggle('record', !!record);
@@ -328,7 +329,8 @@ export function creerCombat(deps) {
         // …et certains bouchons achetés l'allongent encore (capacité « fenetre »).
         etat.biteFenetre = etat.BITE_WINDOW * flotteur.sensibilite * cap.fenetre;
         // …mais plus il montre de fausses touches ! (« fausses » < 1 = moins de pièges)
-        const signauxBase = 2 + Math.floor(rand() * 2);   // 2 ou 3 faux signaux AVANT le vrai
+        // MODE FACILE : une seule fausse touche, très courte — on apprend sans punir.
+        const signauxBase = etat.modeFacile ? 1 : 2 + Math.floor(rand() * 2);   // 2 ou 3 faux signaux AVANT le vrai
         etat.biteSignauxRestants = cap.fausses >= 1
             ? signauxBase
             : Math.max(1, Math.round(signauxBase * cap.fausses));
@@ -345,7 +347,9 @@ export function creerCombat(deps) {
             etat.biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression, etat.biteStyle);
         }
         // Longue attente possible (3 à 8 s) avant le 1er signal, × facteur d'heure et de pression (physique.js).
-        etat.biteSinkAt = (3 + rand() * 5) * etat.facteurTouche(fish.userData.comp);
+        // MODE FACILE : le poisson se décide tout de suite (0,7 à 1,3 s).
+        etat.biteSinkAt = (etat.modeFacile ? 0.7 + rand() * 0.6 : 3 + rand() * 5)
+            * etat.facteurTouche(fish.userData.comp);
         etat.biteSignalTimer = 0;
         etat.biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
         etat.strikeQuality = '';
@@ -368,6 +372,7 @@ export function creerCombat(deps) {
     function hideBiteView() {
         etat.biteViewActive = false;
         etat.cameraMode = 'normal';
+        if (kidCue) { kidCue.classList.remove('active'); }
         setFloatOpacity(1);
         floatGroup.rotation.z = 0;
         modeQuiver.reset();
@@ -398,6 +403,7 @@ export function creerCombat(deps) {
         }
         if (etat.bitePhase === 'fausse' || etat.bitePhase === 'ratee') {
             // Trop tôt (sur une fausse touche) ou trop tard : le poisson a l'avantage.
+            // Le COMBAT ne dépend pas du mode (§17.7) : le mode enfant n'aide qu'à DÉTECTER la touche.
             etat.strikeQuality = (etat.bitePhase === 'fausse') ? 'tot' : 'tard';
             etat.fightAdvantage = (etat.bitePhase === 'fausse') ? 1.15 : 1.3;
             etat.biteFish = null;
@@ -494,7 +500,8 @@ export function creerCombat(deps) {
                 etat.bitePhase = 'floating';
                 etat.biteViewTimer = 0;
                 // La pause peut être longue (2 à 8 s) avant le signal suivant (même facteur que le premier).
-                etat.biteSinkAt = (2 + rand() * 6)
+                // MODE FACILE : 0,5 à 1,1 s seulement.
+                etat.biteSinkAt = (etat.modeFacile ? 0.5 + rand() * 0.6 : 2 + rand() * 6)
                     * etat.facteurTouche(etat.biteFish ? etat.biteFish.userData.comp : null);
                 floatGroup.rotation.z = 0;
                 floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
@@ -546,6 +553,14 @@ export function creerCombat(deps) {
                 etat.signalerToucheRatee(floatGroup.position);
                 etat.biteViewHideTimer = BITE_VIEW_LINGER;
             }
+        }
+        // MODE FACILE : gros panneau « FERRER ! » pendant LA vraie touche.
+        // Mis à jour APRÈS les transitions de phase : c'est ce même appel qui
+        // vient de passer en « touche ». C'est le seul moment où il faut cliquer :
+        // les enfants n'ont pas à reconnaître un dessin de bouchon pour réussir.
+        if (kidCue) {
+            kidCue.classList.toggle('active',
+                !!etat.modeFacile && etat.floatState === 'bite' && etat.bitePhase === 'touche');
         }
     }
 

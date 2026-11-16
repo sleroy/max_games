@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=145';
+import { etat } from './etat.js?v=201';
 
 export function creerPartie(deps) {
     const {
@@ -19,7 +19,8 @@ export function creerPartie(deps) {
         resetCameraView, pauseButton, renderJournal, majCoupeProfondeur, updateToolDock,
         updateCrankVisibility, updateLine, stockAmorce, saveScore, showRanking, rankingButton,
         closeRanking, restartGame, saveAndMenu, backToMenu, endGameButton, ensureSound,
-        playButton, accueilClassement, techniqueSelect, setTechnique
+        playButton, accueilClassement, accueilTechniqueRadios, setTechnique,
+        accueilDifficulteRadios, setDifficulty
     } = deps;
 
     // LIGNES (VIES) : on part avec 5 lignes. Un lancer trop fort ou une remontée
@@ -394,7 +395,8 @@ export function creerPartie(deps) {
         if (gameOver) { gameOver.classList.remove('active'); }
         fermerClassement();
         majModalBackdrop();
-        statusDisplay.textContent = 'Nouvelle partie : ' + totalLignes() + ' lignes et ' + stockAmorce() + ' boules d’amorce.';
+        statusDisplay.textContent = 'Nouvelle partie : ' + totalLignes() + (totalLignes() > 1 ? ' lignes' : ' ligne')
+            + ' et ' + stockAmorce() + ' boules d’amorce.';
     }
 
     // --- Boutons du panneau de fin de partie et du classement ---
@@ -450,11 +452,19 @@ export function creerPartie(deps) {
     }
     if (playButton) { playButton.addEventListener('click', demarrerJeu); }
     if (accueilClassement) { accueilClassement.addEventListener('click', ouvrirClassement); }
-    if (techniqueSelect) {
-        techniqueSelect.addEventListener('change', function () {
-            setTechnique(this.value);
+    // Choix de l'accueil en boutons (radio), sans dropdown. Le carnet reste
+    // synchronisé via setTechnique / setDifficulty.
+    function ecouterChoixRadios(radios, appliquer) {
+        Object.keys(radios || {}).forEach(function (valeur) {
+            const radio = radios[valeur];
+            if (!radio) { return; }
+            radio.addEventListener('change', function () {
+                if (radio.checked) { appliquer(valeur); }
+            });
         });
     }
+    ecouterChoixRadios(accueilTechniqueRadios, setTechnique);
+    ecouterChoixRadios(accueilDifficulteRadios, setDifficulty);
 
     return {
         majLignes, casserLigne, vitesseMaxTours, risqueCasseVitesse, avertirVitesse,

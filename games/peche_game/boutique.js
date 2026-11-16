@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=145';
+import { etat } from './etat.js?v=201';
 
 export function creerBoutique(deps) {
     const {
@@ -27,7 +27,10 @@ export function creerBoutique(deps) {
     function xpPourPrise(poids) {
         // Courbe douce : la racine évite qu'un très gros poisson achète tout d'un coup.
         const brut = 5 + Math.sqrt(Math.max(0, poids || 0)) * 12;
-        return Math.max(3, Math.round(brut * capaciteBouchon().xp));
+        // v198 : un niveau plus difficile rapporte plus d'XP par poisson
+        // (facile x0,75 ; normal x1 ; difficile x1,5).
+        const facteur = etat.facteurXp || 1;
+        return Math.max(3, Math.round(brut * capaciteBouchon().xp * facteur));
     }
 
     // Encaisse l'expérience d'une prise. Renvoie le nombre de XP gagnés.

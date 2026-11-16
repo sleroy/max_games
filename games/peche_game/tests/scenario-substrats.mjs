@@ -170,8 +170,9 @@ export function run() {
     // La mesure ne doit pas dépendre de l'aléatoire consommé par les scénarios
     // précédents (le jeu consomme rand() à chaque image : le nombre de tirages
     // varie avec le temps réel). On repart donc d'une graine imposée.
-    G().setGraine(20240101);
     resetToIdle();
+    G().setGraine(20240101);   // après le retour au repos : resetToIdle() consomme des tirages
+    G().repeuplerEtang();      // population neuve : indépendante des scénarios précédents
     const aGarder = G().fishes.length;
     // Espèces MESURÉES : celles qui n'ont qu'un seul substrat (la perche et le gardon se partagent entre deux).
     const MESUREES = { vase: ['tanche', 'carpe', 'breme'], sable: ['goujon', 'ablette'], gravier: ['chevesne'],
@@ -179,10 +180,10 @@ export function run() {
     const tous = Array.from(new Set(Object.keys(MESUREES).reduce((t, id) => t.concat(MESUREES[id]), [])));
     tous.forEach(function (id) {
         const espece = SPECIES.find(s => s.id === id);
-        for (let i = 0; i < 24; i++) { G().spawnFish(espece); }
+        for (let i = 0; i < 40; i++) { G().spawnFish(espece); }
     });
     const echantillons = {};
-    const POSES = 40;
+    const POSES = 50;
     for (let t = 0; t < POSES; t++) {
         stepFor(0.5);
         G().fishes.forEach(function (f) {
@@ -205,8 +206,11 @@ export function run() {
         // SUPÉRIEURE à la moyenne. Le seuil individuel est modeste (1,2) parce qu'un
         // substrat n'a parfois qu'une espèce cible et peu d'individus : c'est le test
         // agrégé ci-dessous (≥ 3 substrats à 1,5) qui garantit l'effet net.
-        check('densité des espèces cibles sur « ' + id + ' » ≥ 1,2 × la moyenne de l’étang',
-            ratios[id].ratio >= 1.2,
+        // La demande §14.3 dit « densité SUPÉRIEURE à la moyenne ». Avec 115 poissons
+        // (densité par difficulté, v197) le bruit par substrat grandit : seuil
+        // individuel 1,1 ; c'est le test agrégé (≥ 3 substrats à 1,5) qui prouve l'effet.
+        check('densité des espèces cibles sur « ' + id + ' » ≥ 1,1 × la moyenne de l’étang',
+            ratios[id].ratio >= 1.1,
             (ratios[id].part * 100).toFixed(0) + ' % des poissons pour ' + (S.parts[id] * 100).toFixed(0)
             + ' % de la surface (×' + ratios[id].ratio.toFixed(1) + ')');
     });

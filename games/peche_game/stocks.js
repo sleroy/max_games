@@ -4,8 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=145';
-import { ESCHES, ESCHE_DEPART } from './esches.js?v=192';
+import { etat } from './etat.js?v=201';
+import { ESCHES, ESCHE_DEPART } from './esches.js?v=201';
 
 export function creerStocks(deps) {
     const {
@@ -13,7 +13,7 @@ export function creerStocks(deps) {
         renderJournal, lineSelect
     } = deps;
 
-    etat.MAX_LIGNES = 5;
+    etat.MAX_LIGNES = 1;
     etat.AMORCE_DEPART = 3;
     etat.RECHARGES = [
         { id: 'amorce', nom: 'Boules d’amorce', prix: 12, desc: 'Attirent les poissons vers le point de chute.' },

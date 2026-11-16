@@ -7,8 +7,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=198';
-import { etat } from './etat.js?v=145';
+import { COMPORTEMENTS } from './especes.js?v=201';
+import { etat } from './etat.js?v=201';
 
 export function creerComportement(deps) {
     const {
@@ -22,6 +22,11 @@ export function creerComportement(deps) {
         startHoldingFish, endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS,
         linePositions, lineGeometry
     } = deps;
+
+    // MODE FACILE (enfant) : les poissons repèrent l'hameçon de très loin et
+    // nagent droit dessus, quelle que soit leur zone de vie ou leur couche d'eau.
+    const MODE_FACILE_RAYON = 26;      // unités (l'étang fait ~90 de rayon)
+    const MODE_FACILE_VITESSE = 9;     // approche (BITE_APPROACH_ACCEL = 4.5)
 
     // ---------------------------------------------------------------------------
     // COMPORTEMENT DES POISSONS : vue, zone de vie, banc, vitesse et humeur propres
@@ -419,8 +424,14 @@ export function creerComportement(deps) {
                 const zoneOk = hameconDansZone(data, zoneEsp) && baitDansDomaine(data);
                 // Un poisson qui a refusé l'esche pendant ce lancer s'en désintéresse (esches.js).
                 const refus = etat.refuseLEsche(data);
-                const vu = !refus && bd < rayonVueEspece(data) && zoneOk
-                    && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd));
+                // MODE FACILE : aimant à poissons. L'hameçon est repéré de très loin,
+                // sans refus d'esche, sans zone de vie ni couche d'eau : le poisson
+                // nage droit sur lui (c'est le mode « pêche ludique » pour enfants).
+                const facile = !!etat.modeFacile;
+                const vu = facile
+                    ? bd < MODE_FACILE_RAYON
+                    : !refus && bd < rayonVueEspece(data) && zoneOk
+                        && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd));
                 // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout
                 // proche (même dans son dos : ligne latérale), mais ne le sort ni de sa zone
                 // de vie ni de sa couche d'eau (seul `vu` fait changer sa profondeur).
@@ -429,12 +440,13 @@ export function creerComportement(deps) {
                     etat.baitInterest = true;
                     data.targeting = true;
                     const inv = bd > 0.001 ? 1 / bd : 0;
-                    const wanted = Math.min(BITE_APPROACH_ACCEL, bd * 2.2);
+                    const wanted = Math.min(facile ? MODE_FACILE_VITESSE : BITE_APPROACH_ACCEL,
+                        bd * (facile ? 3 : 2.2));
                     const k = Math.min(1, dt * 4);
                     data.vx += (bx * inv * wanted - data.vx) * k;
                     data.vz += (bz * inv * wanted - data.vz) * k;
                     if (vu) {
-                        data.depth += (etat.HOOK_DEPTH - data.depth) * Math.min(1, dt * 2.5);
+                        data.depth += (etat.HOOK_DEPTH - data.depth) * Math.min(1, dt * (facile ? 4 : 2.5));
                     }
                 }
             }

@@ -1,23 +1,42 @@
 // ---------------------------------------------------------------------------
 // Scénario 13 : les LIGNES (vies) — casse, fin de partie et classement local.
 // ---------------------------------------------------------------------------
-import { group, check, checkEqual, G, el, fire, resetToIdle, stepFor } from './harness.mjs';
+import { group, check, checkEqual, G, el, fire, resetToIdle, stepFor, state } from './harness.mjs';
 
 export function run() {
     group('49) Lignes (vies) : lancer trop fort, remontée trop rapide');
     G().recommencerPartie();
-    checkEqual('on commence avec 5 lignes', G().getLignes(), 5);
-    checkEqual('le compteur affiche les 5 lignes', el('lignesLabel').textContent, '🧵 Lignes : 5/5');
+    checkEqual('on commence avec UNE seule ligne', G().getLignes(), 1);
+    checkEqual('la réserve maximale est de 1 ligne', G().maxLignes, 1);
+    checkEqual('le compteur affiche 1/1', el('lignesLabel').textContent, '🧵 Lignes : 1/1');
+    checkEqual('la partie est en cours', G().isPartieTerminee(), false);
 
     // 1) Lancer au maximum de la jauge = ligne cassée.
     resetToIdle();
     G().startCastCharge({ x: 0, y: 0, z: -25 });
     G().setCastPower(1);
     G().releaseCast();
-    checkEqual('un lancer trop fort casse la ligne', G().getLignes(), 4);
+    checkEqual('un lancer trop fort casse la ligne', G().getLignes(), 0);
     check('le jeu explique la casse', el('status').textContent.indexOf('trop fort') >= 0,
         el('status').textContent);
-    checkEqual('le compteur suit', el('lignesLabel').textContent, '🧵 Lignes : 4/5');
+    checkEqual('le compteur suit : 0/1', el('lignesLabel').textContent, '🧵 Lignes : 0/1');
+    checkEqual('une seule casse = fin de partie directe', G().isPartieTerminee(), true);
+    checkEqual('le panneau de fin s’affiche aussitôt',
+        el('gameOver').classList.contains('active'), true);
+    check('l’écran de fin dit clairement qu’il n’y a plus de ligne',
+        el('gameOverTitle').textContent.indexOf('Plus de lignes') >= 0
+        && el('gameOverText').textContent.indexOf('plus de lignes') >= 0,
+        el('gameOverTitle').textContent + ' / ' + el('gameOverText').textContent);
+    checkEqual('aucun état bloqué : la pêche est au repos', state(), 'idle');
+    G().casserLigne('Encore');
+    checkEqual('une casse de plus n’a aucun effet', G().getLignes(), 0);
+
+    // Nouvelle partie : 1/1 de nouveau, avant les avertissements de vitesse.
+    G().recommencerPartie();
+    checkEqual('relancer une partie repart à 1 ligne', G().getLignes(), 1);
+    check('le message de départ dit « 1 ligne » (singulier)', el('status').textContent.indexOf('1 ligne et') >= 0,
+        el('status').textContent);
+    checkEqual('le compteur repart à 1/1', el('lignesLabel').textContent, '🧵 Lignes : 1/1');
 
     // 2) Remontée trop rapide : avertissements (risque croissant).
     G().avertirVitesse();
@@ -72,7 +91,8 @@ export function run() {
 
     // 4) Rejouer.
     G().recommencerPartie();
-    checkEqual('rejouer redonne 5 lignes', G().getLignes(), 5);
+    checkEqual('rejouer redonne 1 ligne', G().getLignes(), 1);
+    checkEqual('rejouer remet le compteur à 1/1', el('lignesLabel').textContent, '🧵 Lignes : 1/1');
     checkEqual('la partie est relancée', G().isPartieTerminee(), false);
     check('le panneau s’est refermé', !el('gameOver').classList.contains('active'));
     checkEqual('les statistiques repartent de zéro', G().getPartieStats().poissons, 0);

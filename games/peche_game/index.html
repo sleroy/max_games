@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=198">
+    <link rel="stylesheet" href="style.css?v=201">
 </head>
 <body>
     <div class="game-wrap">
@@ -36,7 +36,7 @@
                 </div>
                 <div class="hud-counters">
                     <span>Score : <span id="score">0</span></span>
-                    <span id="lignesLabel">🧵 Lignes : 5/5</span>
+                    <span id="lignesLabel">🧵 Lignes : 1/1</span>
                     <span id="xpTop" title="XP de la partie en cours">⭐ 0 XP</span>
                     <span id="heureEau" title="Heure de jeu et pression atmosphérique">🕒 — · — hPa</span>
                 </div>
@@ -102,6 +102,13 @@
                 <canvas id="sonarRadar" width="104" height="104" role="img" aria-label="Radar du sonar"></canvas>
                 <span id="sonarCount">0 poisson</span>
             </div>
+            <div class="radar-panel" id="radarPanel" hidden>
+                <svg id="radarSvg" viewBox="0 0 200 120" role="img"
+                    aria-label="Radar : position des poissons et du pêcheur">
+                    <g id="radarFond"></g>
+                    <g id="radarVivant"></g>
+                </svg>
+            </div>
             <div class="camera-controls" id="cameraControls" hidden role="group" aria-label="Commandes de la caméra">
                 <div class="camera-turn">
                     <button id="cameraLeft" aria-label="Tourner la vue à gauche">↶</button>
@@ -117,12 +124,44 @@
                 aria-labelledby="accueilTitre">
                 <h2 class="overlay-title" id="accueilTitre">🎣 L’étang du Bois Neuf</h2>
                 <div class="accueil-config">
-                    <div class="panel-row technique-row">
-                        <label for="techniqueSelect">🎣 Technique</label>
-                        <select id="techniqueSelect" class="overlay-input">
-                            <option value="bouchon" selected>Bouchon (flotteur)</option>
-                            <option value="quiver">Quiver (scion de canne)</option>
-                        </select>
+                    <div class="accueil-choix">
+                        <fieldset class="accueil-bloc">
+                            <legend>Technique</legend>
+                            <div class="choix-segmented">
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilTechniqueBouchon"
+                                        name="accueilTechnique" value="bouchon" checked>
+                                    <span>Bouchon<small>flotteur</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilTechniqueQuiver"
+                                        name="accueilTechnique" value="quiver">
+                                    <span>Quiver<small>scion de canne</small></span>
+                                </label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="accueil-bloc">
+                            <legend>Difficulté</legend>
+                            <div class="choix-segmented">
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilDifficulteFacile"
+                                        name="accueilDifficulte" value="facile">
+                                    <span>Facile<small>enfant</small></span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilDifficulteNormal"
+                                        name="accueilDifficulte" value="normal" checked>
+                                    <span>Normal</span>
+                                </label>
+                                <label class="choix-option">
+                                    <input type="radio" id="accueilDifficulteDur"
+                                        name="accueilDifficulte" value="dur">
+                                    <span>Dur<small>expert</small></span>
+                                </label>
+                            </div>
+                        </fieldset>
+                        <p class="accueil-astuce">Astuce : en Facile, les poissons viennent
+                            droit sur l’hameçon et un gros « FERRER ! » t’aide à cliquer.</p>
                     </div>
                     <div class="poste-choix">
                         <span class="poste-choix-label">Choisis ta place</span>
@@ -149,7 +188,7 @@
             <div class="overlay-panel" id="gameOver" role="dialog" aria-modal="true"
                 aria-labelledby="gameOverTitle">
                 <h2 class="overlay-title" id="gameOverTitle">💥 Plus de lignes !</h2>
-                <p class="overlay-text" id="gameOverText">Tu as cassé tes 5 lignes. Voici ta partie :</p>
+                <p class="overlay-text" id="gameOverText">Tu n’as plus de ligne. Voici ta partie :</p>
                 <div class="overlay-score" id="gameOverScore"></div>
                 <label class="overlay-label" for="playerName">Ton nom :</label>
                 <input class="overlay-input" id="playerName" maxlength="12" placeholder="Ton prénom">
@@ -264,7 +303,9 @@
                         <option value="dur">Dur</option>
                     </select>
                 </div>
-                <p class="overlay-text">En mode Facile, la ligne ne s’emmêle pas au lancer.</p>
+                <p class="overlay-text">En mode Facile (enfant) : les poissons sont attirés par
+                    l’hameçon et mordent vite, un gros <b>« FERRER ! »</b> aide à cliquer au bon
+                    moment, et la ligne ne s’emmêle pas au lancer.</p>
                 <div class="panel-row">
                     <label><input type="checkbox" id="effectsToggle"> Effets visuels (lumière douce)</label>
                 </div>
@@ -292,6 +333,7 @@
                 </div>
             </div>
             <div class="catch-message" id="catchMessage"></div>
+            <div class="kid-cue" id="kidCue" role="alert">❗ FERRER !</div>
             <div class="ragondin-alert" id="ragondinAlert" role="alert">
                 🐀 RAGONDIN près de la bourriche ! Clique sur lui 3 fois !
             </div>
@@ -305,7 +347,8 @@
                     </div>
                     <div class="struggle-timer" id="struggleTimer"></div>
                     <div class="struggle-hint" id="struggleHint" hidden></div>
-                    <button class="drag-button" id="dragButton">🔓 Lâcher du fil</button>
+                    <button class="drag-button" id="dragButton"
+                        title="Souris : maintiens le clic droit. Tablette : maintiens ce bouton.">🔓 Lâcher du fil</button>
                 </div>
             </div>
             <div class="quiver-panel" id="quiverPanel" aria-hidden="true">
@@ -353,6 +396,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=198"></script>
+    <script type="module" src="script.js?v=201"></script>
 </body>
 </html>

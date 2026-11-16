@@ -1,59 +1,60 @@
 import * as THREE from 'three';
-// Le « ?v=87 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=201 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=198';
-import { creerJeuDemelage } from './demelage.js?v=120';
-import { creerModeQuiver } from './quiver.js?v=121';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=198';
+import { SoundEngine } from './sound.js?v=201';
+import { creerJeuDemelage } from './demelage.js?v=201';
+import { creerModeQuiver } from './quiver.js?v=201';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=201';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=140';
-import { creerPoissons } from './poissons.js?v=198';
+import { dessinerPortrait } from './portraits.js?v=201';
+import { creerPoissons } from './poissons.js?v=201';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=183';
-import { creerDecor } from './decor.js?v=178';
-import { creerObstacles } from './obstacles.js?v=178';
-import { creerSubstrats } from './substrats.js?v=198';
-import { creerEsches } from './esches.js?v=192';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=192';
-import { creerBourriche } from './bourriche.js?v=144';
-import { creerOndulations } from './ondulations.js?v=144';
-import { creerMessages } from './messages.js?v=144';
-import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=189';
-import { creerComportement } from './comportement.js?v=198';
-import { creerBateau } from './bateau.js?v=178';
-import { creerLancerPoisson } from './lancerPoisson.js?v=148';
-import { creerCarnetUI } from './carnetUI.js?v=189';
-import { creerBoutique } from './boutique.js?v=192';
-import { creerMenus } from './menus.js?v=194';
-import { creerFiches } from './fiches.js?v=151';
-import { creerLancerCanne } from './lancerCanne.js?v=152';
-import { creerLancer } from './lancer.js?v=179';
-import { creerAmorcage } from './amorcage.js?v=179';
-import { creerFrein } from './frein.js?v=182';
-import { creerLigne } from './ligne.js?v=189';
-import { creerBouchons } from './bouchons.js?v=173';
-import { creerPlacement } from './placement.js?v=178';
-import { creerMeteo } from './meteo.js?v=189';
-import { creerPhysique } from './physique.js?v=198';
-import { creerVie } from './vie.js?v=173';
-import { creerSonar } from './sonar.js?v=179';
-import { creerStocks } from './stocks.js?v=192';
-import { creerJournal } from './journal.js?v=184';
-import { creerTouches } from './touches.js?v=163';
-import { creerCycleLigne } from './cycleLigne.js?v=194';
-import { creerAccrochage } from './accrochage.js?v=183';
-import { creerAmbiance } from './ambiance.js?v=198';
-import { creerEntrees } from './entrees.js?v=179';
-import { creerCheat } from './cheat.js?v=170';
-import { creerBoucle } from './boucle.js?v=169';
-import { creerPartie } from './partie.js?v=170';
-import { creerPecheur } from './pecheur.js?v=171';
-import { creerRendu } from './rendu.js?v=172';
-import { etat } from './etat.js?v=145';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=201';
+import { creerDecor } from './decor.js?v=201';
+import { creerObstacles } from './obstacles.js?v=201';
+import { creerSubstrats } from './substrats.js?v=201';
+import { creerEsches } from './esches.js?v=201';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=201';
+import { creerBourriche } from './bourriche.js?v=201';
+import { creerOndulations } from './ondulations.js?v=201';
+import { creerMessages } from './messages.js?v=201';
+import { creerSplashes } from './splashes.js?v=201';
+import { creerCombat } from './combat.js?v=201';
+import { creerComportement } from './comportement.js?v=201';
+import { creerBateau } from './bateau.js?v=201';
+import { creerLancerPoisson } from './lancerPoisson.js?v=201';
+import { creerCarnetUI } from './carnetUI.js?v=201';
+import { creerBoutique } from './boutique.js?v=201';
+import { creerMenus } from './menus.js?v=201';
+import { creerFiches } from './fiches.js?v=201';
+import { creerLancerCanne } from './lancerCanne.js?v=201';
+import { creerLancer } from './lancer.js?v=201';
+import { creerAmorcage } from './amorcage.js?v=201';
+import { creerFrein } from './frein.js?v=201';
+import { creerLigne } from './ligne.js?v=201';
+import { creerBouchons } from './bouchons.js?v=201';
+import { creerPlacement } from './placement.js?v=201';
+import { creerMeteo } from './meteo.js?v=201';
+import { creerPhysique } from './physique.js?v=201';
+import { creerVie } from './vie.js?v=201';
+import { creerSonar } from './sonar.js?v=201';
+import { creerStocks } from './stocks.js?v=201';
+import { creerJournal } from './journal.js?v=201';
+import { creerTouches } from './touches.js?v=201';
+import { creerCycleLigne } from './cycleLigne.js?v=201';
+import { creerAccrochage } from './accrochage.js?v=201';
+import { creerAmbiance } from './ambiance.js?v=201';
+import { creerEntrees } from './entrees.js?v=201';
+import { creerRadar } from './radar.js?v=201';
+import { creerCheat } from './cheat.js?v=201';
+import { creerBoucle } from './boucle.js?v=201';
+import { creerPartie } from './partie.js?v=201';
+import { creerPecheur } from './pecheur.js?v=201';
+import { creerRendu } from './rendu.js?v=201';
+import { etat } from './etat.js?v=201';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -306,6 +307,7 @@ function fermerPanneauCombat() {
     portraitEspeceCourante = null;
 }
 const catchMessage = document.getElementById('catchMessage');
+const kidCue = document.getElementById('kidCue');
 const windFill = document.getElementById('windFill');
 const windArrow = document.getElementById('windArrow');
 const soundToggle = document.getElementById('soundToggle');
@@ -361,7 +363,22 @@ const tangleProgress = document.getElementById('tangleProgress');
 const tangleMessage = document.getElementById('tangleMessage');
 const tangleGiveUp = document.getElementById('tangleGiveUp');
 const ragondinAlert = document.getElementById('ragondinAlert');
-const techniqueSelect = document.getElementById('techniqueSelect');
+const accueilTechniqueRadios = {
+    bouchon: document.getElementById('accueilTechniqueBouchon'),
+    quiver: document.getElementById('accueilTechniqueQuiver')
+};
+const accueilDifficulteRadios = {
+    facile: document.getElementById('accueilDifficulteFacile'),
+    normal: document.getElementById('accueilDifficulteNormal'),
+    dur: document.getElementById('accueilDifficulteDur')
+};
+
+// Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
+function majChoixRadio(radios, valeur) {
+    Object.keys(radios || {}).forEach(function (cle) {
+        if (radios[cle]) { radios[cle].checked = (cle === valeur); }
+    });
+}
 const quiverPanel = document.getElementById('quiverPanel');
 const quiverCanvas = document.getElementById('quiverCanvas');
 const compassDisplay = document.getElementById('compass');
@@ -549,15 +566,18 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 
 // ---------------------------------------------------------------------------
 // Difficulté — réglable depuis le carnet (Facile / Normal / Dur).
-// En augmentant la difficulté :
-//   • le poisson tire plus fort et reprend plus de fil (épreuve de force) ;
-//   • le temps de l'épreuve de force est plus court ;
-//   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
+// Le combat d'un poisson est aussi dur en Facile qu'en Normal (§17.7, `difficulty` 1,3) : le
+// mode enfant n'aide qu'à DÉTECTER la touche (fenêtre, densité, pas d'emmêlement). Le mode Dur
+// reste plus dur : poisson plus fort, épreuve plus courte, fenêtre de ferrage plus courte.
 // ---------------------------------------------------------------------------
+// `poissons` = facteur de DENSITE (demande du joueur 2026-11-16) : facile ×3,
+// normale ×2, difficile ×1,5. Il multiplie la population calculee par la surface.
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 0.85, tangleChance: 0 },
-    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08 },
-    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15 }
+    // §17.7 : `difficulty` (combativité) est la MEME en facile et en normal — le mode
+    // enfant n'aide que la détection. §17.8 : `xp` récompense la difficulté choisie.
+    facile: { difficulty: 1.3, biteWindow: 1.6, tangleChance: 0, poissons: 3, xp: 0.75 },
+    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08, poissons: 2, xp: 1 },
+    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15, poissons: 1.5, xp: 1.5 }
 };
 let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
 let tangleChance = DIFFICULTY_MODES.normal.tangleChance;
@@ -585,7 +605,7 @@ function crankPointerAngle(event) {
 }
 
 crank.addEventListener('pointerdown', event => {
-    if (paused) { return; }
+    if (paused || (event.button !== undefined && event.button !== 0)) { return; }
     ensureSound();
     crankDragging = true;
     crankLastAngle = crankPointerAngle(event);
@@ -1527,7 +1547,7 @@ function appliquerTechniqueVisuelle() {
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
         document.body.classList.toggle('mode-quiver', quiver);
     }
-    if (techniqueSelect) { techniqueSelect.value = techniqueCourante; }
+    majChoixRadio(accueilTechniqueRadios, techniqueCourante);
     modeQuiver.setActif(quiver);
     if (quiver) {
         floatGroup.visible = false;
@@ -1540,7 +1560,7 @@ function setTechnique(value) {
     const nouvelle = value === 'quiver' ? 'quiver' : 'bouchon';
     if (floatState !== 'idle' && nouvelle !== techniqueCourante) {
         statusDisplay.textContent = 'Termine la ligne en cours avant de changer de technique.';
-        if (techniqueSelect) { techniqueSelect.value = techniqueCourante; }
+        majChoixRadio(accueilTechniqueRadios, techniqueCourante);
         return false;
     }
     techniqueCourante = nouvelle;
@@ -1842,12 +1862,26 @@ function hideJournal() {
     journalPanel.classList.remove('open');
 }
 
+// Declare AVANT setDifficulty : cette fonction est appelee a l'initialisation du
+// module et ecrit BITE_WINDOW (sinon : « Cannot access before initialization »).
+let BITE_WINDOW = 0.7;
+
 function setDifficulty(mode) {
     const preset = DIFFICULTY_MODES[mode] || DIFFICULTY_MODES.normal;
     DIFFICULTY = preset.difficulty;
+    etat.facteurDensite = preset.poissons || 2;
+    etat.facteurXp = preset.xp || 1;   // plus difficile = plus d'XP par poisson
     BITE_WINDOW = preset.biteWindow;
     tangleChance = preset.tangleChance;
-    if (difficultySelect.value !== mode) {
+    // MODE FACILE (enfant) : aimant à poissons, touche rapide, gros « FERRER ! ».
+    // Les modules lisent `etat.modeFacile` ; le CSS reçoit aussi la classe.
+    etat.modeFacile = (mode === 'facile');
+    if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.toggle('mode-facile', etat.modeFacile);
+    }
+    // Le choix de l'accueil et celui du carnet restent synchronisés.
+    majChoixRadio(accueilDifficulteRadios, mode);
+    if (difficultySelect && difficultySelect.value !== mode) {
         difficultySelect.value = mode;
     }
 }
@@ -1883,7 +1917,7 @@ let dragLoosened = false;
 let TUTORIAL_STEPS = [
     { main: '👆', texte: 'Maintiens sur l’eau pour doser le lancer. Relâche, puis appuie sur « Tendre le fil » pendant qu’il vole : cela évite qu’il s’emmêle. En mode Facile, tu peux simplement laisser le fil se poser.' },
     { main: '✊', texte: 'Quand le bouchon mordille puis s’enfonce, clique vite pour ferrer le poisson : un seul essai !' },
-    { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens « Lâcher du fil ».' },
+    { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens le clic droit (ou « Lâcher du fil » sur tablette).' },
     { main: '🐟', texte: 'Garde le poisson en main et lance-le dans la bourriche 🧺 (comme l’amorce) pour le ranger dans ton carnet.' }
 ];
 let tutorialStepIndex = 0;
@@ -1977,7 +2011,7 @@ let strikeQuality = '';             // '' | 'parfait' | 'tot' | 'tard'
 let fightAdvantage = 1;             // < 1 = avantage au joueur, > 1 = au poisson
 // Fenêtre pour ferrer : temps pendant lequel le bouchon s'enfonce avant que le
 // poisson ne recrache l'hameçon. Plus elle est courte, plus le ferrage est dur.
-let BITE_WINDOW = 0.7;
+setDifficulty(difficultySelect.value);   // applique le mode choisi (et etat.modeFacile)
 // Le poisson mordille le bouchon avant de l'enfoncer : le joueur est prévenu.
 const BITE_NIBBLE_DURATION = 0.6;
 // Durée pendant laquelle on laisse « Trop tard ! » affiché après une touche
@@ -2063,7 +2097,7 @@ const {
     PREDATOR_ATTACK_ADVANTAGE, flotteurCourant, rand, TOUCHES_PAR_ID, choisirTouche, biteOrigine,
     rodTipVisual, setFloatOpacity, modeQuiver, punishFish, dureeTouche, appliquerMouvement,
     mouvementDeTouche, BITE_VIEW_LINGER, majIndiceSnag: (...args) => majIndiceSnag(...args), fermerPanneauCombat, consumeCrankTurns,
-    vitesseMaxTours: (...args) => vitesseMaxTours(...args)
+    vitesseMaxTours: (...args) => vitesseMaxTours(...args), kidCue
 });
 
 const {
@@ -2125,10 +2159,18 @@ creerEntrees({
     majCoupeProfondeur, waterUniforms, fishButton
 });
 
+// Cheat « radar » (§17.3) : carte 2D des poissons, pilotée par le mot secret de cheat.js.
+const radar = creerRadar({
+    fishes, angler, floatGroup, substrats, POND_CENTER, rayonEtang, RAYON_CADRE_CARTE, SPECIES, COMPORTEMENTS,
+    panneau: document.getElementById('radarPanel'),
+    fondEl: document.getElementById('radarFond'),
+    vivantEl: document.getElementById('radarVivant')
+});
+
 const {
     cheatTouche
 } = creerCheat({
-    saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
+    radar, saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
     fermerOutils, toolDock, deplacerBateau, ensureSound, tendreLigneAuLancer, releaseCast,
     releaseFishThrow, startFishThrow, hookFish, reelClick, camera, water, startCastCharge
 });
@@ -2232,6 +2274,7 @@ function animate() {
         updateFloatingTexts(dt);
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
+        radar.maj(dt);
     }
     updateCrankVisibility();
     majPadBateau();
@@ -2285,7 +2328,8 @@ const {
     effrayerRagondin, ragondinAlert, scoreDisplay, resetCameraView, pauseButton, renderJournal,
     majCoupeProfondeur, updateToolDock, updateCrankVisibility, updateLine, stockAmorce,
     saveScore, showRanking, rankingButton, closeRanking, restartGame, saveAndMenu, backToMenu,
-    endGameButton, ensureSound, playButton, accueilClassement, techniqueSelect, setTechnique
+    endGameButton, ensureSound, playButton, accueilClassement,
+    accueilTechniqueRadios, setTechnique, accueilDifficulteRadios, setDifficulty
 });
 
 window.__game = {
@@ -2683,6 +2727,7 @@ window.__game = {
     gagnerExperience: gagnerExperience,
     // Cheat « poisson » — exposé pour les tests.
     cheatTouche: cheatTouche,
+    radar: radar,
     getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
@@ -2916,7 +2961,7 @@ window.__game = {
         };
     },
     setDifficulty: setDifficulty,
-    getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW }; },
+    getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW, modeFacile: !!etat.modeFacile }; },
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },
     showJournal: showJournal,
     hideJournal: hideJournal,
@@ -2999,6 +3044,7 @@ window.__game = {
         updateFloatingTexts(dt);
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
+        radar.maj(dt);
         updateToolDock();
         majPadBateau();
     }
