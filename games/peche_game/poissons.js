@@ -61,8 +61,8 @@ export function creerPoissons(deps) {
     //  - Les solitaires (silure, brochet, sandre, black-bass, truite, anguille) restent
     //    rares : au plus 2 de chaque, 1 seul silure. Les bancs portent l'essentiel.
     // ---------------------------------------------------------------------------
-    const FISH_COUNT = 64;                       // plafond technique
-    const DENSITE_PAR_HECTARE = 90;              // poissons / ha
+    const FISH_COUNT = 96;                       // plafond technique (v193 : 64 -> 96)
+    const DENSITE_PAR_HECTARE = 125;             // poissons / ha (v193 : 90 -> 125)
     const BIOMASSE_MIN_KG_HA = 100;              // bornes réalistes (kg / ha)
     const BIOMASSE_MAX_KG_HA = 300;
     const ESPECES_MIN = 10;                      // diversité minimale de l'étang

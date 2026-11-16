@@ -97,6 +97,9 @@ export function creerStocks(deps) {
         if (etat.floatState !== 'idle' && etat.floatState !== 'inWater') { return false; }
         if (id && !ESCHES.some(e => e.id === id)) { return false; }
         etat.journal.esche = id || null;
+        // « Hameçon nu » est un CHOIX : on le mémorise pour ne pas le remplacer par
+        // l'esche de départ au prochain chargement.
+        etat.journal.escheNu = !id;
         saveJournal();
         etat.majEsche();
         return true;

@@ -51,10 +51,14 @@ export function chargerCarnet(options) {
         // hameçon nu) est conservé. Un carnet d'avant les esches reçoit les vers de départ.
         const eschesIds = Array.isArray(opts.eschesIds) ? opts.eschesIds : [];
         if (eschesIds.length) {
-            if (!('esche' in saved) && opts.eschesDepart) {
-                data.esche = opts.eschesDepart.id;
+            // On ne commence JAMAIS avec un hameçon nu (6 % de touche) : le joueur qui
+            // n'a rien choisi reçoit l'esche de départ ; « hameçon nu » reste un choix
+            // explicite, mémorisé par `escheNu`.
+            const defaut = opts.eschesDepart ? opts.eschesDepart.id : eschesIds[0];
+            if (saved.escheNu === true) {
+                data.esche = null;
             } else {
-                data.esche = eschesIds.indexOf(saved.esche) >= 0 ? saved.esche : null;
+                data.esche = eschesIds.indexOf(saved.esche) >= 0 ? saved.esche : defaut;
             }
         }
         data.technique = saved.technique === 'quiver' ? 'quiver' : 'bouchon';

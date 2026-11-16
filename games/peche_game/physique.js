@@ -67,7 +67,7 @@ export function texteHeure(heure) {
 // Plancher d'activité 0,30 : le facteur ne dépasse jamais 2,5 (pas de division par ≈ 0).
 // ---------------------------------------------------------------------------
 export const A_REF = 0.75;
-export const ACTIVITE_MIN = 0.30;
+export const ACTIVITE_MIN = 0.42;   // v193 : 0,30 -> 0,42 (nuit x1,8 au lieu de x2,5)
 
 export function activiteHoraire(heure, nocturne) {
     const jour = lumiere(heure);
@@ -111,7 +111,7 @@ export function facteurPression(pression, tendance) {
 
 /** Le facteur total reste dans une fourchette sûre (jamais ≈ 0, jamais interminable). */
 export const FACTEUR_MIN = 0.5;
-export const FACTEUR_MAX = 6;
+export const FACTEUR_MAX = 3.5;    // v193 : 6 -> 3,5 (jamais de désert)
 export function limiterFacteur(f) {
     return limiter(f, FACTEUR_MIN, FACTEUR_MAX);
 }
