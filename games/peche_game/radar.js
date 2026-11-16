@@ -30,8 +30,8 @@ const LARGEUR = 200;          // viewBox du SVG : 200 × 120 (même cadre que la
 const HAUTEUR = 120;
 const PERIODE = 0.1;          // s entre deux rafraîchissements (~10 Hz)
 const RAYON_MIN = 1.4;        // rayon d'un point, en unités du viewBox
-const RAYON_MAX = 6.5;
-const RAYON_PAR_CM = 0.05;
+const RAYON_MAX = 5.5;
+const RAYON_PAR_CM = 0.04;
 
 export function creerRadar(deps) {
     const {
@@ -143,7 +143,7 @@ export function creerRadar(deps) {
             + '<g clip-path="url(#radar-clip-fonds)" opacity="0.6">';
         substrats.SUBSTRATS.forEach(function (sub) {
             svg += '<path class="radar-fond radar-fond-' + sub.id + '" d="' + (chemins[sub.id] || '')
-                + '" fill="' + sub.couleur + '"/>';
+                + '" fill="' + sub.couleur + '" stroke="' + sub.couleur + '" stroke-width="0.4"/>';   // le trait comble les fines coutures entre rangées
         });
         svg += '</g><path d="' + bord + '" fill="none" stroke="#eaf6ff" stroke-width="0.8"/>';
         fondEl.innerHTML = svg;

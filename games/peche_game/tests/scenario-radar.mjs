@@ -128,7 +128,7 @@ function detailsDuRadar(radar) {
     check('un poisson plus long a un point plus grand', pointDe(b).rayon > pointDe(a).rayon,
         pointDe(a).rayon.toFixed(2) + ' < ' + pointDe(b).rayon.toFixed(2));
     check('le rayon reste borné (visible, pas écrasant)',
-        radar.points().every(function (p) { return p.rayon >= 1.4 && p.rayon <= 6.5; }));
+        radar.points().every(function (p) { return p.rayon >= 1.4 && p.rayon <= 5.5; }));
     check('rayonDe est croissant puis plafonné',
         radar.rayonDe(10) < radar.rayonDe(50) && radar.rayonDe(50) < radar.rayonDe(100)
             && radar.rayonDe(300) === radar.rayonDe(500));

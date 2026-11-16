@@ -1918,6 +1918,53 @@ body.calm .struggle-marker {
     aspect-ratio: 1;
 }
 
+/* Cheat « radar » (§17.3) : carte 2D superposée, discrète, qui ne bloque jamais le jeu. */
+.radar-panel {
+    position: absolute;
+    top: calc(60px + env(safe-area-inset-top, 0px));
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    width: min(260px, 46vw);
+    padding: 4px;
+    border-radius: 10px;
+    background: rgba(16, 42, 54, 0.62);
+    border: 1px solid #7896a0;
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.22), inset -1px -1px 0 rgba(0, 0, 0, 0.35),
+        0 4px 12px rgba(6, 25, 36, 0.4);
+    pointer-events: none;   /* on continue de viser et de lancer à travers la carte */
+    z-index: 4;
+}
+
+.radar-panel[hidden] {
+    display: none;
+}
+
+#radarSvg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 200 / 120;
+    border-radius: 7px;
+}
+
+/* Le sonar occupe déjà le coin : le radar se range juste dessous. */
+.hud:has(.sonar-panel:not([hidden])) .radar-panel {
+    top: calc(196px + env(safe-area-inset-top, 0px));
+}
+
+@media (max-width: 700px) {
+    .tool-dock.ouvert ~ .radar-panel {
+        display: none;
+    }
+}
+
+/* Petit écran : la carte reste lisible mais ne mange pas la vue. */
+@media (max-width: 530px), (max-height: 430px) {
+    .radar-panel {
+        width: min(260px, 36vw);
+        padding: 3px;
+    }
+}
+
 @media (max-width: 530px) {
     .hud-top .wind-gauge {
         gap: 4px;
