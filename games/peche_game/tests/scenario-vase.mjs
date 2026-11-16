@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual, checkClose,
-    G, el, fire, resetToIdle, clearLilyPads, castTo, step, stepFor, state
+    G, el, fire, resetToIdle, clearLilyPads, castTo, step, stepFor, state, donnerFilsDeRechange, viderFilsDeRechange
 } from './harness.mjs';
 
 /** Provoque un accrochage DANS LA VASE : hameçon franchement trop profond. */
@@ -122,6 +122,7 @@ export function run() {
     resetToIdle();
 
     // --- Sans cliquer, la vase casse la ligne ---
+    donnerFilsDeRechange();   // une casse ne doit pas finir la partie (1 seule ligne au départ)
     declencherVase();
     checkEqual('nouvel accrochage dans la vase', state(), 'snag');
     let garde = 0;
@@ -134,6 +135,8 @@ export function run() {
         el('status').textContent);
     stepFor(1.5);
     checkEqual('on peut relancer après la casse', state(), 'idle');
+    checkEqual('la casse a coûté un fil de rechange, pas la partie', G().isPartieTerminee(), false);
+    viderFilsDeRechange();
 
     // --- Les nénuphars restent FACILES (pas de temps de récupération) ---
     declencherNenuphar();

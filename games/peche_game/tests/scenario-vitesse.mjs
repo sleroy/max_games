@@ -39,7 +39,7 @@ export function run() {
         G().getRisqueCasseVitesse(), 0);
     tournerTresVite();
     checkEqual('on peut rembobiner un bouchon vide très vite sans casser',
-        G().getLignes(), 5);
+        G().getLignes(), 1);
     checkEqual('et sans avertissement', G().getAvertissements(), 0);
 
     // --- 2) Un poisson ferré : le seuil baisse avec le poids ---

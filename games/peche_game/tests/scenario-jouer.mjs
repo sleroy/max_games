@@ -57,15 +57,18 @@ export function run() {
     checkEqual('les statistiques de partie comptent la prise',
         G().getPartieStats().poissons, 1);
 
-    // --- Deux lignes perdues ---
-    G().casserLigne('Test 1');
-    G().casserLigne('Test 2');
-    checkEqual('deux lignes ont été perdues', G().getLignes(), 3);
-
     // --- Un poisson en main au moment de cliquer JOUER ---
     const poissonEnMain = pecherEtGarderEnMain();
     check('un poisson est bien en main', !!poissonEnMain);
     checkEqual('la partie est en état « holding »', state(), 'holding');
+
+    // --- La seule ligne est perdue : fin de partie (§17.9) ---
+    checkEqual('on joue avec une seule ligne', G().getLignes(), 1);
+    G().casserLigne('Test 1');
+    G().casserLigne('Test 2');   // sans effet : la partie est déjà terminée
+    checkEqual('la ligne a été perdue', G().getLignes(), 0);
+    checkEqual('le compteur affiche 0/1', el('lignesLabel').textContent, '🧵 Lignes : 0/1');
+    checkEqual('la partie est terminée', G().isPartieTerminee(), true);
     const journalApres = G().getJournal().total;
     const xpApres = G().getExperience();
 
@@ -80,9 +83,9 @@ export function run() {
     check('le libellé de bourriche repart à zéro',
         el('bourricheLabel').textContent === '🧺 Bourriche : 0',
         el('bourricheLabel').textContent);
-    checkEqual('les 5 lignes sont rendues', G().getLignes(), 5);
-    checkEqual('le libellé des lignes est remis à 5/5',
-        el('lignesLabel').textContent, '🧵 Lignes : 5/5');
+    checkEqual('la ligne est rendue', G().getLignes(), 1);
+    checkEqual('le libellé des lignes est remis à 1/1',
+        el('lignesLabel').textContent, '🧵 Lignes : 1/1');
     checkEqual('les statistiques de partie repartent à zéro',
         G().getPartieStats().poissons, 0);
     checkEqual('la partie n’est pas terminée', G().isPartieTerminee(), false);

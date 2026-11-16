@@ -273,15 +273,15 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   **2,5 m** de fond (3,3 m dans les fosses) ; chaque poisson a **exactement sa taille réelle**
   (un gardon de 28 cm fait 28 cm à l'écran) et le bouchon ne s'enfonce que de quelques
   dizaines de centimètres, comme un vrai.
-- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **5
-  lignes en nylon**. **Carnet → Boutique** vend des lots de trois pour l’XP
+- **Recharges** : chaque partie commence avec **3 boules d’amorce** et **1
+  ligne en nylon** (§17.9). **Carnet → Boutique** vend des lots de trois pour l’XP
   carrière. Les recharges achetées sont conservées entre les parties tant
   qu’elles n’ont pas servi. Change de fil au repos dans la boutique.
   Le **fluorocarbone** réduit de moitié le risque d’emmêlement et la **tresse**
   supporte mieux les fortes tractions et la remontée rapide.
-- **5 lignes… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
+- **Une seule ligne… et la partie peut se terminer** : un **lancer trop fort** (jauge au maximum)
   ou une **remontée trop rapide** à la manivelle (avertissements « la ligne souffre », puis
-  risque croissant) **casse une ligne**. À zéro ligne, la partie s'arrête : tu saisis ton
+  risque croissant) **casse la ligne** ; un emmêlement non résolu aussi. À zéro ligne (« Lignes : 0/1 »), la partie s'arrête : tu saisis ton
   **nom** et ta partie rejoint le **classement local** (onglets 🐟 Poissons / ⚖️ Poids total
   / 🥇 Records par espèce), accessible aussi en jeu par le bouton **🏆 Classement**.
 - **Records d'espèce** : quand un poisson range dans la bourriche est plus lourd que le

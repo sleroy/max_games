@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=199';
+import { SoundEngine } from './sound.js?v=200';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -22,7 +22,7 @@ import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=196';
+import { creerCombat } from './combat.js?v=200';
 import { creerComportement } from './comportement.js?v=196';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
@@ -41,7 +41,7 @@ import { creerMeteo } from './meteo.js?v=189';
 import { creerPhysique } from './physique.js?v=189';
 import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=179';
-import { creerStocks } from './stocks.js?v=192';
+import { creerStocks } from './stocks.js?v=200';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=196';
@@ -51,7 +51,7 @@ import { creerEntrees } from './entrees.js?v=179';
 import { creerRadar } from './radar.js?v=193';
 import { creerCheat } from './cheat.js?v=193';
 import { creerBoucle } from './boucle.js?v=169';
-import { creerPartie } from './partie.js?v=198';
+import { creerPartie } from './partie.js?v=200';
 import { creerPecheur } from './pecheur.js?v=171';
 import { creerRendu } from './rendu.js?v=172';
 import { etat } from './etat.js?v=145';

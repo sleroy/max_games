@@ -6,7 +6,7 @@ import {
     G, el, fire, state, statusText, step, stepFor, stepUntil,
     castDistance, distanceToShore, parkFish, clearLilyPads, resetToIdle,
     castTo, forceBite, strike, startFight,
-    crankTurns, crankDragTurns, crankWidgetActive, adapterAuBouchon
+    crankTurns, crankDragTurns, crankWidgetActive, adapterAuBouchon, donnerFilsDeRechange, viderFilsDeRechange
 } from './harness.mjs';
 
 // La population attendue (v173 : calculée d'après la surface de l'étang, ≈ 58 poissons
@@ -364,6 +364,7 @@ export function run() {
     resetToIdle();
     clearLilyPads();
     G().lilyPads.push({ x: 0, z: -25, radius: 6 });
+    donnerFilsDeRechange();   // une casse ne doit pas finir la partie (1 seule ligne au départ)
     castTo(0, -25);
     checkEqual('nouvel accrochage', state(), 'snag');
     guard = 0;
@@ -377,6 +378,8 @@ export function run() {
     checkEqual('on peut relancer peu après', state(), 'idle');
     checkEqual('le bouchon est revenu', G().floatGroup.visible, true);
     checkEqual('bouton réactivé', el('fishButton').disabled, false);
+    checkEqual('la casse a coûté un fil de rechange, pas la partie', G().isPartieTerminee(), false);
+    viderFilsDeRechange();
 
     group('21) Vent et girouette');
     resetToIdle();

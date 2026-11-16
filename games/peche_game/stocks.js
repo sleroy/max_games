@@ -13,7 +13,7 @@ export function creerStocks(deps) {
         renderJournal, lineSelect
     } = deps;
 
-    etat.MAX_LIGNES = 5;
+    etat.MAX_LIGNES = 1;
     etat.AMORCE_DEPART = 3;
     etat.RECHARGES = [
         { id: 'amorce', nom: 'Boules d’amorce', prix: 12, desc: 'Attirent les poissons vers le point de chute.' },

@@ -379,6 +379,7 @@ export function run() {
     resetToIdle();
 
     // --- 8) Pas plus facile : même densité par surface qu'avant ---
+    G().setGraine(20240101);   // mesure statistique : indépendante de l'aléatoire consommé avant
     G().repeuplerEtang();
     const ancienneDensite = 20 / (Math.PI * 55 * 55 * 1.0108);     // 20 poissons, rayon 55
     const densite = G().fishes.length / (info.surfaceHa * 4 * 10000);

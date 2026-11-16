@@ -290,7 +290,7 @@ export function run() {
 
     acheter('fluorocarbone');
     checkEqual('le fluorocarbone coûte 28 XP', G().getExperience(), 60);
-    checkEqual('trois nouveaux fils s’ajoutent aux cinq fils de départ', G().getLignes(), 8);
+    checkEqual('trois nouveaux fils s’ajoutent au fil de départ', G().getLignes(), 4);
     el('lineSelect').value = 'fluorocarbone';
     fire('lineSelect', 'change');
     G().setDifficulty('normal');
@@ -298,7 +298,7 @@ export function run() {
     checkClose('le fluorocarbone divise le risque par deux', G().getTangleChance(), 0.04, 1e-9);
     G().setTangleChance(0);
     for (let i = 0; i < 3; i++) { G().casserLigne('Test'); }
-    checkEqual('les casses débitent le fil équipé', G().getLignes(), 5);
+    checkEqual('les casses débitent le fil équipé', G().getLignes(), 1);
     checkEqual('quand le lot est épuisé, on reprend le nylon', el('lineSelect').value, 'nylon');
 
     const store = { value: '', getItem() { return this.value; }, setItem(key, value) { this.value = value; } };
