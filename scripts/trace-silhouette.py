@@ -51,6 +51,27 @@ TRACES = {
                    'anale_ar': (650, 260), 'anale_bout': (640, 281), 'queue_haut': (857, 188),
                    'queue_bas': (850, 262), 'queue_creux': (848, 225), 'queue_bout': (858, 225)}
     },
+    # Truite : truite.jpg (900 x 453), fario sur fond noir, tournée à gauche, gueule entrouverte
+    # (mâchoire inférieure rabattue : le ventre de la tête est tracé bouche fermée) ;
+    # LS = 684 px (museau 78,239 -> base de la caudale 762,256). Contour lu sur le masque
+    # luminance > 38 (nageoires dorsale, pectorale, pelvienne, anale écartées du tracé).
+    'truite': {
+        'museau': (78, 239), 'pedoncule': (762, 256),
+        'dos': [(78, 237), (90, 227), (110, 217), (130, 208), (150, 202), (170, 197), (190, 191),
+                (210, 186), (230, 184), (250, 182), (270, 179), (290, 176), (310, 174), (330, 173),
+                (350, 171), (370, 170), (390, 169), (410, 168), (450, 167), (500, 172), (540, 176),
+                (580, 181), (620, 190), (660, 198), (700, 205), (730, 212), (762, 219)],
+        'ventre': [(78, 243), (90, 262), (110, 285), (130, 300), (150, 311), (190, 324), (230, 331),
+                   (270, 336), (310, 340), (370, 343), (410, 343), (450, 343), (500, 344), (550, 343),
+                   (600, 337), (640, 325), (680, 318), (720, 306), (762, 292)],
+        'oeil': (158, 239, 17),
+        'points': {'opercule': (282, 270), 'bouche': (138, 285), 'pectorale_base': (278, 318),
+                   'pectorale_bout': (385, 398), 'pelvienne_base': (515, 345), 'pelvienne_bout': (610, 350),
+                   'dorsale_av': (455, 166), 'dorsale_ar': (620, 188), 'dorsale_pointe': (543, 86),
+                   'adipeuse_av': (690, 198), 'adipeuse_ar': (735, 210), 'adipeuse_pointe': (715, 188),
+                   'anale_av': (648, 322), 'anale_ar': (728, 310), 'anale_bout': (695, 343),
+                   'queue_haut': (858, 170), 'queue_bas': (858, 312), 'queue_creux': (848, 245)}
+    },
     'brochet': {
         'museau': (885, 512), 'pedoncule': (100, 375),
         'dos': [(885, 505), (870, 490), (840, 474), (800, 457), (750, 440), (700, 420), (650, 405),

@@ -343,19 +343,69 @@ const MOTIFS = {
         }
     },
 
-    // Points noirs + points rouges cerclés de clair (truite).
-    pointsRouges: function (g, W, H, c, aleatoire) {
-        g.fillStyle = css(0x16120e, 0.65);
-        for (let i = 0; i < 80; i++) {
-            tache(g, W * (0.08 + aleatoire() * 0.9), H * aleatoire() * 0.55, 1.4 + aleatoire(), 1.4 + aleatoire());
+    // Points noirs + points rouges à halo clair (truite). Options de l'espèce :
+    // `pointsNoirs` (nombre, défaut 80) : points sombres du dos et du haut du flanc, plus quelques-uns
+    // sur l'ouïe ; `pointsRouges` (nombre, défaut 18) : points rouges du milieu du flanc, de l'ouïe à la
+    // queue. Semis irrégulier (distance minimale entre points) ; la texture est plus étirée en v au
+    // sommet du dos, les points y sont donc allongés pour rester ronds vus de côté.
+    pointsRouges: function (g, W, H, c, aleatoire, espece) {
+        const nbNoirs = espece && espece.pointsNoirs !== undefined ? espece.pointsNoirs : 80;
+        const nbRouges = espece && espece.pointsRouges !== undefined ? espece.pointsRouges : 18;
+        const encre = melanger(c.dos, 0x000000, 0.8);
+        const pale = melanger(c.flanc, 0xffffff, 0.55);
+        const rouge = 0xa83c2e;
+        const posees = [];
+        // hauteur apparente (0 = dos, 1 = ventre) -> ordonnée de la texture
+        const vDe = f => Math.acos(1 - 2 * f) / Math.PI;
+        // pas apparent d'un pixel de v par rapport à un pixel de u, à la hauteur v
+        const etire = v => Math.min(2.4, 1.25 / Math.max(0.05, Math.sin(Math.PI * v)));
+        function poser(x0, x1, f0, f1, rayon, ecart, forme) {
+            for (let essai = 0; essai < 24; essai++) {
+                const x = W * (x0 + aleatoire() * (x1 - x0));
+                const f = f0 + (f1 - f0) * (forme ? forme(aleatoire()) : aleatoire());
+                const v = vDe(f);
+                const y = v * H;
+                const e = etire(v);
+                let libre = true;
+                for (let k = 0; k < posees.length; k++) {
+                    const dx = posees[k][0] - x;
+                    const dy = (posees[k][1] - y) / e;
+                    if (dx * dx + dy * dy < ecart * ecart) { libre = false; break; }
+                }
+                if (libre) {
+                    posees.push([x, y]);
+                    return { x: x, y: y, e: e, rx: rayon * (0.8 + aleatoire() * 0.5) };
+                }
+            }
+            return null;
         }
-        for (let i = 0; i < 18; i++) {
-            const x = W * (0.25 + aleatoire() * 0.7);
-            const y = H * (0.4 + aleatoire() * 0.22);
-            g.fillStyle = 'rgba(235,225,205,0.7)';
-            tache(g, x, y, 3.2, 3.2);
-            g.fillStyle = 'rgba(190,52,38,0.9)';
-            tache(g, x, y, 2, 2);
+        // Points noirs : plus serrés sur le dos, de plus en plus rares vers le bas du flanc.
+        for (let i = 0; i < nbNoirs; i++) {
+            const p = poser(0.19, 0.985, 0.03, 0.62, 1.3, 4.2, a => Math.pow(a, 1.35));
+            if (!p) { continue; }
+            const a = (aleatoire() - 0.5) * 0.7;
+            if (aleatoire() < 0.3) {
+                g.fillStyle = css(pale, 0.16);
+                tache(g, p.x, p.y, p.rx + 0.9, (p.rx + 0.9) * p.e, a);
+            }
+            g.fillStyle = css(encre, 0.55 + aleatoire() * 0.3);
+            tache(g, p.x, p.y, p.rx, p.rx * p.e * (0.85 + aleatoire() * 0.3), a);
+        }
+        // Quelques points sur l'ouïe et la joue, et sur le museau.
+        for (let i = 0; i < 7; i++) {
+            const p = poser(0.1, 0.27, 0.12, 0.55, 1.05, 4.2);
+            if (!p) { continue; }
+            g.fillStyle = css(encre, 0.45 + aleatoire() * 0.25);
+            tache(g, p.x, p.y, p.rx, p.rx * p.e, (aleatoire() - 0.5) * 0.7);
+        }
+        // Points rouges : un cœur rouge-brun, un halo clair à peine plus large.
+        for (let i = 0; i < nbRouges; i++) {
+            const p = poser(0.27, 0.975, 0.3, 0.7, 1.35, 5.5);
+            if (!p) { continue; }
+            g.fillStyle = css(pale, 0.3);
+            tache(g, p.x, p.y, p.rx + 0.9, (p.rx + 0.9) * p.e, 0);
+            g.fillStyle = css(rouge, 0.75 + aleatoire() * 0.2);
+            tache(g, p.x, p.y, p.rx, p.rx * p.e, 0);
         }
     },
 
@@ -611,6 +661,30 @@ export function textureNageoire(variante) {
         const alea = hasard(7);
         for (let i = 0; i < 46; i++) {
             tache(g, alea() * W, 6 + alea() * (H - 10), 1.1 + alea() * 1.2, 0.9 + alea() * 0.8);
+        }
+        const t = new THREE.CanvasTexture(canvas);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = THREE.RepeatWrapping;
+        _texturesNageoire[cle] = t;
+        return t;
+    }
+    if (cle === 'truite') {
+        // Membrane translucide plus sombre vers la base, rayons fins et nets, liseré clair au bord
+        // libre (nageoires de la truite : brun-ambre, rayons visibles).
+        const membrane = g.createLinearGradient(0, 0, 0, H);
+        membrane.addColorStop(0, '#f6f6f6');
+        membrane.addColorStop(0.15, '#dcdcdc');
+        membrane.addColorStop(1, '#8e8e8e');
+        g.fillStyle = membrane;
+        g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(22,14,6,0.4)';
+        g.lineWidth = 1.3;
+        for (let i = 0; i < 16; i++) {
+            const x = (i + 0.5) * (W / 16);
+            g.beginPath();
+            g.moveTo(x, H);
+            g.lineTo(x, 5);
+            g.stroke();
         }
         const t = new THREE.CanvasTexture(canvas);
         t.colorSpace = THREE.SRGBColorSpace;

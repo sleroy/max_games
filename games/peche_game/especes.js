@@ -88,7 +88,19 @@ export const SPECIES = [
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [15, 60], k: 1.6, abondance: 2,
       profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], style: 'fonceur', couleur: 0x556a3f, motif: 'bandeLaterale' },
     { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [15, 80], k: 1.2, abondance: 2,
-      profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], style: 'fonceur', couleur: 0x7d6a4a, motif: 'pointsRouges' },
+      profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], style: 'fonceur',
+      // Couleurs : médianes PIL sur assets/references/truite.jpg (fario sur fond noir, photo sombre) :
+      // dos brun-olive (#77634b), flanc gris-brun doré (#7f6e61 → #8b7c71 au 80e centile), joue dorée
+      // (#b8a487), ventre au 80e centile (#998c80) un peu éclairci (le bas du ventre est dans l'ombre) ;
+      // nageoires brun-ambre translucides (dorsale presque noire), iris gris-doré.
+      couleur: 0x8b7a67, dos: 0x5c4b33, ventre: 0xc2b8a0, tete: 0xa8946f, nageoires: 0x6b5c45, oeil: 0xb9a888,
+      nageoiresMotif: 'truite',
+      nageoiresCouleurs: { dorsale: 0x4e4538, adipeuse: 0x7a5a3c, anale: 0x8a7a5c, pectorale: 0x8a7656,
+          pelvienne: 0x94835f, caudale: [0x6a5c48, 0x75604a] },
+      // Robe : points noirs (dos et haut du flanc, quelques-uns sur l'ouïe) et points rouges à halo clair
+      // (milieu du flanc, de l'ouïe à la queue), semis irrégulier ; pas de barres.
+      motif: 'pointsRouges', pointsNoirs: 150, pointsRouges: 50, ombreDos: 0.7, ventreClair: 0.85, fonduTete: 0.2, joueClaire: 0,
+      profil: 'truite', anatomie: 'truite' },
     { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [30, 130], k: 0.2, abondance: 2,
       profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], style: 'glisseur', couleur: 0x3f4a30, motif: 'aucun' },
     { id: 'silure', nom: 'Silure', form: 'barbu', cm: [60, 220], k: 1.0, abondance: 1,
@@ -361,7 +373,25 @@ export const PROFILS = {
         { t: 0.7, h: 0.1168, w: 0.057, y: 0.0163 }, { t: 0.75, h: 0.1052, w: 0.051, y: 0.0101 },
         { t: 0.8, h: 0.0918, w: 0.044, y: 0.0047 }, { t: 0.85, h: 0.0767, w: 0.036, y: 0.0003 },
         { t: 0.9, h: 0.0606, w: 0.029, y: -0.0024 }, { t: 0.95, h: 0.0464, w: 0.023, y: -0.0015 },
-        { t: 1, h: 0.0441, w: 0.019, y: -0.0002 }]
+        { t: 1, h: 0.0441, w: 0.019, y: -0.0002 }],
+    // Truite : truite.jpg (900 × 453, fario sur fond noir, tournée à gauche, gueule entrouverte),
+    // LS = 684 px (museau 78,239 → base de la caudale 762,256), contour relevé sur la photo
+    // (scripts/trace-silhouette.py truite ; ventre de la tête tracé bouche fermée). Corps en
+    // torpille souple : hauteur max 0,128 LS à t = 0,52, petite tête arrondie, dos presque
+    // droit, pédoncule assez épais (0,053 LS). Poisson vu de profil : largeur estimée
+    // (≈ 0,58 × hauteur, tête plus étroite).
+    truite: [
+        { t: 0, h: 0.006, w: 0.006, y: -0.0017 }, { t: 0.05, h: 0.0515, w: 0.03, y: -0.016 },
+        { t: 0.1, h: 0.0767, w: 0.045, y: -0.0215 }, { t: 0.15, h: 0.0928, w: 0.055, y: -0.0222 },
+        { t: 0.2, h: 0.1041, w: 0.062, y: -0.0211 }, { t: 0.25, h: 0.1103, w: 0.066, y: -0.0207 },
+        { t: 0.3, h: 0.1173, w: 0.07, y: -0.0189 }, { t: 0.35, h: 0.1217, w: 0.072, y: -0.0174 },
+        { t: 0.4, h: 0.125, w: 0.074, y: -0.0156 }, { t: 0.45, h: 0.1268, w: 0.075, y: -0.0138 },
+        { t: 0.5, h: 0.1282, w: 0.075, y: -0.0116 }, { t: 0.55, h: 0.1282, w: 0.075, y: -0.0101 },
+        { t: 0.6, h: 0.1264, w: 0.074, y: -0.012 }, { t: 0.65, h: 0.1239, w: 0.072, y: -0.0131 },
+        { t: 0.7, h: 0.1202, w: 0.068, y: -0.0138 }, { t: 0.75, h: 0.1129, w: 0.062, y: -0.0138 },
+        { t: 0.8, h: 0.1016, w: 0.055, y: -0.012 }, { t: 0.85, h: 0.0906, w: 0.048, y: -0.0098 },
+        { t: 0.9, h: 0.0807, w: 0.042, y: -0.0072 }, { t: 0.95, h: 0.0672, w: 0.036, y: -0.0039 },
+        { t: 1, h: 0.0533, w: 0.03, y: 0.0005 }]
 };
 
 // ANATOMIES : position des nageoires et des détails, en fractions de LS.
@@ -548,11 +578,22 @@ export const ANATOMIES = {
     goujon: {
         barbillons: [{ t: 0.03, y: -0.02, longueur: 0.05, chute: 0.8, ecart: 0.3, rayon: 0.002 }]
     },
+    // Truite : mêmes photo et repère que le profil. Œil moyen t 0,117 (r 0,024) ; gueule grande,
+    // coin sous l'arrière de l'œil (t 0,145) ; ouïe t 0,29 ; dorsale courte et haute t 0,548 → 0,79
+    // (0,125 LS, bord avant oblique, pointe vers t 0,67, bord arrière qui retombe) ; adipeuse
+    // minuscule t 0,89 → 0,96 ; anale basse t 0,83 → 0,955 (0,05 LS) ; pectorale basse t 0,30
+    // (0,20 LS, éventail ambré) ; pelviennes t 0,635 plaquées sous le ventre (0,14 LS) ;
+    // caudale 0,14 LS, bord arrière presque droit (tronquée), hauteur 0,21 LS.
     truite: {
-        queue: { type: 'echancree', longueur: 0.2, ecart: 0.13 },
-        dorsale: { type: 'souple', t0: 0.38, t1: 0.52, hauteur: 0.13 },
-        adipeuse: { type: 'adipeuse', t0: 0.79, t1: 0.86, hauteur: 0.04 },
-        bouche: { t: 0.1, y0: -0.004, y1: -0.02 }
+        queue: { type: 'truite', longueur: 0.14, ecart: 0.105 },
+        dorsale: { type: 'dorsaleTruite', t0: 0.548, t1: 0.79, hauteur: 0.125, recul: 0.95 },
+        adipeuse: { type: 'adipeuse', t0: 0.9, t1: 0.955, hauteur: 0.026 },
+        anale: { type: 'analeTruite', t0: 0.83, t1: 0.955, hauteur: 0.052, recul: 0.6 },
+        pectorale: { t: 0.3, y: -0.115, longueur: 0.2, pente: 0.62, forme: 'ovale', eventail: 0.8 },
+        pelvienne: { t: 0.635, longueur: 0.14, pente: -0.15, ecart: 0.95, forme: 'ovale' },
+        oeil: { t: 0.117, y: 0.003, r: 0.024 },
+        bouche: { t: 0.145, y0: -0.004, y1: -0.045, epaisseur: 0.008 },
+        opercule: 0.29, ligneCourbe: 0.3, contrasteOpercule: 0.1
     }
 };
 

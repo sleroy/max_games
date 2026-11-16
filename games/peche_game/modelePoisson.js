@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=209';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=209';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=209';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=210';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=210';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=210';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -234,7 +234,11 @@ const NAGEOIRES = {
     // rayons couchés vers la queue ; anale basse, rayons mous arrondis.
     dorsaleSandre: { h: [[0, 0.35], [0.1, 0.8], [0.22, 1], [0.4, 0.95], [0.65, 0.72], [0.85, 0.5], [1, 0.32]], recul: 0.75, epines: true, epinesAmp: 0.82 },
     dorsale2Sandre: { h: [[0, 0.3], [0.12, 0.75], [0.3, 0.95], [0.45, 1], [0.62, 0.92], [0.8, 0.62], [1, 0.25]], recul: 0.75 },
-    analeSandre: { h: [[0, 0.55], [0.15, 1], [0.4, 0.88], [0.75, 0.55], [1, 0.28]], recul: 0.8 }
+    analeSandre: { h: [[0, 0.55], [0.15, 1], [0.4, 0.88], [0.75, 0.55], [1, 0.28]], recul: 0.8 },
+    // Truite : dorsale courte et haute, bord avant oblique (grand recul) jusqu'à une pointe arrondie,
+    // bord arrière qui retombe presque en ligne droite vers le dos ; anale basse en trapèze arrondi.
+    dorsaleTruite: { h: [[0, 0.78], [0.07, 0.96], [0.16, 1], [0.3, 0.86], [0.55, 0.58], [0.8, 0.3], [1, 0.1]], recul: 0.95 },
+    analeTruite: { h: [[0, 0.5], [0.15, 0.95], [0.3, 1], [0.6, 0.8], [0.85, 0.5], [1, 0.3]], recul: 0.6 }
 };
 
 // Pectorales / pelviennes : longueur relative de chaque rayon (s = 0 rayon
@@ -267,6 +271,9 @@ const CAUDALES = {
     // Sandre : bord arrière presque droit (légère échancrure), coins arrondis.
     sandre: [[-0.78, 1], [-0.92, 0.98], [-0.99, 0.88], [-1, 0.7], [-0.96, 0.4], [-0.92, 0.12],
         [-0.91, -0.1], [-0.95, -0.4], [-0.99, -0.7], [-0.98, -0.88], [-0.9, -0.98], [-0.76, -1]],
+    // Truite : caudale tronquée, bord arrière presque droit (légère échancrure ≈ 8 %), coins arrondis.
+    truite: [[-0.8, 1], [-0.93, 0.96], [-0.99, 0.84], [-0.98, 0.6], [-0.94, 0.3], [-0.92, 0.05],
+        [-0.93, -0.2], [-0.97, -0.5], [-1, -0.78], [-0.98, -0.94], [-0.88, -1], [-0.78, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
