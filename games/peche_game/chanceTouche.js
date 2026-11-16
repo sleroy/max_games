@@ -17,11 +17,11 @@
 // `evaluerTouche(contexte)` combine le tout pour UN poisson et UNE situation et dit pourquoi il ne
 // mord pas (`raison`). C'est ce qu'exploite la matrice de tests (tests/scenario-matrice-touche.mjs).
 // ---------------------------------------------------------------------------
-import { COMPORTEMENTS, SPECIES } from './especes.js?v=232';
-import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=232';
-import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=232';
-import { hameconSurSubstrat } from './substrats.js?v=232';
-import { MARGE_VASE } from './environnement.js?v=232';
+import { COMPORTEMENTS, SPECIES } from './especes.js?v=233';
+import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=233';
+import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=233';
+import { hameconSurSubstrat } from './substrats.js?v=233';
+import { MARGE_VASE } from './environnement.js?v=233';
 
 export const RAYON_VUE_DEFAUT = 7;        // unités : poisson sans fiche de comportement
 export const RAYON_VUE_FACILE = 26;       // mode facile : aimant à poissons
@@ -75,6 +75,22 @@ export function profondeurHamecon(profondeurLigne, profondeurEau, surLeFond, pri
 // Au quiver, la ligne est réglée pour poser l'hameçon juste au-dessus du fond.
 export function ligneQuiver(profondeurEau) {
     return Math.max(0.6, profondeurEau - ECART_LIGNE_QUIVER);
+}
+
+/**
+ * PROFONDEUR IDÉALE (source unique : l'avion, le conseil local, la matrice) : parmi les longueurs de ligne
+ * `lignes`, celles qui donnent le meilleur score forment un PLATEAU (un poisson mord dans toute sa tranche
+ * d'eau, ± 0,5 unité) ; l'idéal est le MILIEU de ce plateau, pas son bord. `score(ligne)` → nombre.
+ * Renvoie { ligne, score, plateau: [min, max] } (ligne null si aucun score > 0).
+ */
+export function ligneIdeale(lignes, score, tolerance) {
+    const tol = tolerance === undefined ? 0.02 : tolerance;
+    const notes = lignes.map(function (l) { return { ligne: l, score: score(l) }; });
+    const meilleur = notes.reduce(function (m, n) { return n.score > m ? n.score : m; }, 0);
+    if (meilleur <= 0) { return { ligne: null, score: 0, plateau: null }; }
+    const plateau = notes.filter(function (n) { return n.score >= meilleur * (1 - tol); });
+    return { ligne: plateau[Math.floor((plateau.length - 1) / 2)].ligne, score: meilleur,
+        plateau: [plateau[0].ligne, plateau[plateau.length - 1].ligne] };
 }
 
 /**

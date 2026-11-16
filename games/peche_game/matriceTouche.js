@@ -7,9 +7,9 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=232';
-import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche, tropPetitPourEsche } from './esches.js?v=232';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=232';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=233';
+import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche, tropPetitPourEsche } from './esches.js?v=233';
+import { evaluerTouche, RAISONS, ligneIdeale } from './chanceTouche.js?v=233';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
@@ -21,6 +21,9 @@ export const PORTEE_BORD = 4.5;                       // ≈ eau au plus loin d'
 export const SEUIL_PECHABLE = 0.5;                    // une espèce doit atteindre au moins cette chance
 export const SEUIL_BORD = 0.3;                        // … et celle-ci depuis le bord (hors fosses)
 export const SEUIL_ESCHE_REINE = 0.7;                 // en dessous : aucune esche n'est vraiment faite pour elle
+
+// Longueurs de ligne essayées pour trouver la profondeur idéale (pas de 0,25 unité, comme le réglage du jeu).
+export const LIGNES_FINES = (function () { const l = []; for (let u = 0.5; u <= 7 + 1e-9; u += 0.25) { l.push(u); } return l; }());
 
 export function taillesDe(espece) {
     return [espece.cm[0], Math.round((espece.cm[0] + espece.cm[1]) / 2), espece.cm[1]];
@@ -225,13 +228,25 @@ export function conseilsEsches(resume) {
         const icone = function (id) { return ESCHES.find(function (x) { return x.id === id; }).icone + ' ' + nomEsche(id); };
         const texte = e.nom + ' : préfère ' + meilleures.map(icone).join(', puis ')
             + ' — ' + (pire.max <= 0 ? 'jamais ' : 'rarement ') + icone(pire.id);
+        // Profondeur idéale du meilleur choix : milieu du plateau où l'espèce mord (eau de 2,25 m, fond de vase),
+        // ou « au fond » pour une espèce de fond (sa profondeur suit celle de l'étang).
+        const comp = COMPORTEMENTS[e.id];
+        let profondeur = 'Au fond';
+        if (meilleures.length && !(comp && comp.couche === 'fond')) {
+            const r = ligneIdeale(LIGNES_FINES, function (l) {
+                return evaluerTouche({ especeId: e.id, longueurCm: e.cm[1], esche: meilleures[0], profondeurLigne: l,
+                    profondeurEau: PORTEE_BORD, substrat: 'vase' }).chance;
+            });
+            profondeur = r.ligne === null ? '' : 'À ' + (Math.round(r.ligne / 2 * 10) / 10).toLocaleString('fr-FR') + ' m';
+        }
         // Version courte sur 2 lignes (banderole de l'avion : lisible de loin, même par un enfant).
         const court = function (id) {
             const x = ESCHES.find(function (y) { return y.id === id; });
             return x.icone + ' ' + x.nom.split(' / ')[0].replace(' de terre', '');
         };
         const lignes = [e.nom + ' préfère ' + meilleures.map(court).join(' puis '),
-            (pire.max <= 0 ? 'Jamais : ' : 'Rarement : ') + court(pire.id)];
-        return { especeId: e.id, meilleures: meilleures, pire: pire.id, pireJamais: pire.max <= 0, texte: texte, lignes: lignes };
+            profondeur + ' · ' + (pire.max <= 0 ? 'jamais ' : 'rarement ') + court(pire.id)];
+        return { especeId: e.id, meilleures: meilleures, pire: pire.id, pireJamais: pire.max <= 0, texte: texte, lignes: lignes,
+            profondeur: profondeur };
     });
 }
