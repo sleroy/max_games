@@ -1,0 +1,114 @@
+{
+  "gardon": {
+    "fichier": "assets/references/gardon.jpg",
+    "titre": "Blankvoorn gevangen met een hengel kan wel 50cm lang worden.jpg",
+    "auteur": "Peter van der Sluijs",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Blankvoorn_gevangen_met_een_hengel_kan_wel_50cm_lang_worden.jpg"
+  },
+  "rotengle": {
+    "fichier": "assets/references/rotengle.jpg",
+    "titre": "Hele grote ruisvoorn gevangen aan de hengel.jpg",
+    "auteur": "Peter van der Sluijs",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Hele_grote_ruisvoorn_gevangen_aan_de_hengel.jpg"
+  },
+  "ablette": {
+    "fichier": "assets/references/ablette.jpg",
+    "titre": "Alvers komen veel in scholen voor.jpg",
+    "auteur": "Peter van der Sluijs",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Alvers_komen_veel_in_scholen_voor.jpg"
+  },
+  "goujon": {
+    "fichier": "assets/references/goujon.jpg",
+    "titre": "LS 09776a gruendling.jpg",
+    "auteur": "Lorenz Seebauer",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:LS_09776a_gruendling.jpg"
+  },
+  "breme": {
+    "fichier": "assets/references/breme.jpg",
+    "titre": "Cejn velký 05.jpg",
+    "auteur": "Pohled 111",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Cejn_velk%C3%BD_05.jpg"
+  },
+  "tanche": {
+    "fichier": "assets/references/tanche.jpg",
+    "titre": "FemaleTench1.JPG",
+    "auteur": "Viridiflavus",
+    "licence": "CC BY-SA 3.0",
+    "page": "https://commons.wikimedia.org/wiki/File:FemaleTench1.JPG"
+  },
+  "carpe": {
+    "fichier": "assets/references/carpe.jpg",
+    "titre": "Slagharen - Karper (Cyprinus carpio).jpg",
+    "auteur": "Rudolphous",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Slagharen_-_Karper_(Cyprinus_carpio).jpg"
+  },
+  "carassin": {
+    "fichier": "assets/references/carassin.jpg",
+    "titre": "Männliche Karausche.jpg",
+    "auteur": "Swaggo42",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:M%C3%A4nnliche_Karausche.jpg"
+  },
+  "perche": {
+    "fichier": "assets/references/perche.jpg",
+    "titre": "Perca fluviatilis - Perche commune - European perch.jpg",
+    "auteur": "Gilles San Martin",
+    "licence": "CC BY-SA 2.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Perca_fluviatilis_-_Perche_commune_-_European_perch.jpg"
+  },
+  "chevesne": {
+    "fichier": "assets/references/chevesne.jpg",
+    "titre": "Jelec tloušť (Squalius cephalus) 02.jpg",
+    "auteur": "Pohled 111",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Jelec_tlou%C5%A1%C5%A5_(Squalius_cephalus)_02.jpg"
+  },
+  "brochet": {
+    "fichier": "assets/references/brochet.jpg",
+    "titre": "Hal - Esox lucius - 2.jpg",
+    "auteur": "Emőke Dénes",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Hal_-_Esox_lucius_-_2.jpg"
+  },
+  "sandre": {
+    "fichier": "assets/references/sandre.jpg",
+    "titre": "Rousse Ecomuseum - Sander lucioperca.jpg",
+    "auteur": "Tiia Monto",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Rousse_Ecomuseum_-_Sander_lucioperca.jpg"
+  },
+  "black-bass": {
+    "fichier": "assets/references/black-bass.jpg",
+    "titre": "Largemouth Bass (icropterus salmoides) (51846336026).jpg",
+    "auteur": "USFWS Mountain Prairie",
+    "licence": "Public domain",
+    "page": "https://commons.wikimedia.org/wiki/File:Largemouth_Bass_(icropterus_salmoides)_(51846336026).jpg"
+  },
+  "truite": {
+    "fichier": "assets/references/truite.jpg",
+    "titre": "Brown Trout (Salmo trutta).jpg",
+    "auteur": "USFWS Mountain Prairie",
+    "licence": "Public domain",
+    "page": "https://commons.wikimedia.org/wiki/File:Brown_Trout_(Salmo_trutta).jpg"
+  },
+  "anguille": {
+    "fichier": "assets/references/anguille.jpg",
+    "titre": "Anguille nanCy 1005916.jpg",
+    "auteur": "G.Garitan",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Anguille_nanCy_1005916.jpg"
+  },
+  "silure": {
+    "fichier": "assets/references/silure.jpg",
+    "titre": "Freischwimmender Wels.jpg",
+    "auteur": "HalbsHännile",
+    "licence": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:Freischwimmender_Wels.jpg"
+  }
+}

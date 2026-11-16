@@ -98,3 +98,8 @@ attribution requise (auteur + lien ci-dessous), partage à l'identique pour CC B
 La texture du fond de l'étang (sable, gravier, vase, roche, herbier) est GÉNÉRÉE en code (substrats.js) : aucune image,
 aucune licence. Les bruits associés réutilisent des sons déjà crédités ci-dessus (pas-gravier.mp3 pour les cailloux,
 plouf.mp3 pour la bulle de la vase).
+
+--- Photos de référence des espèces (assets/references) ---
+16 photos de poissons (Wikimedia Commons : domaine public, CC BY-SA 2.0 / 3.0 / 4.0), affichées sur la page
+tailles.html. Auteur, licence et page d'origine de chaque photo : voir assets/references/SOURCES.md
+(et assets/references/photos.json). Retouche : réduction à 900 px de large, JPEG qualité 85, EXIF supprimé.

@@ -20,6 +20,7 @@ const PX_CM_DEFAUT = 3;       // échelle d'affichage au chargement (1 cm = 3 px
 const PX_CM_MIN = 0.8;
 const PX_CM_MAX = 6;
 const CLÉ_ECHELLE = 'peche-tailles-px-cm';
+const URL_PHOTOS = 'assets/references/photos.json';   // photos de référence (voir SOURCES.md)
 
 // Poids lisible : grammes sous 1 kg, kilos arrondis au-dessus.
 function formaterPoids(kg) {
@@ -32,6 +33,92 @@ function formaterPoids(kg) {
 
 function formaterNombre(n, decimales) {
     return n.toFixed(decimales === undefined ? 1 : decimales).replace('.', ',');
+}
+
+// --- Photos de référence ----------------------------------------------------
+// Charge photos.json. Ne rejette jamais : en cas d'échec (fichier absent, JSON
+// invalide, page ouverte en file://), renvoie {} et la page affiche « photo à venir ».
+function chargerPhotos() {
+    if (typeof fetch !== 'function') {
+        return Promise.resolve({});
+    }
+    return fetch(URL_PHOTOS, { cache: 'no-cache' })
+        .then(function (reponse) {
+            if (!reponse.ok) { throw new Error('HTTP ' + reponse.status); }
+            return reponse.json();
+        })
+        .then(function (donnees) {
+            return donnees && typeof donnees === 'object' ? donnees : {};
+        })
+        .catch(function () { return {}; });
+}
+
+// Chemin relatif au jeu uniquement (pas d'URL externe, pas de remontée de dossier).
+function cheminSur(chemin) {
+    return typeof chemin === 'string' && chemin !== '' && !/^([a-z][a-z0-9+.-]*:|\/|\\)/i.test(chemin)
+        && chemin.indexOf('..') === -1;
+}
+
+function creerReference() {
+    const figure = document.createElement('figure');
+    figure.className = 'reference';
+    const cadre = document.createElement('div');
+    cadre.className = 'reference-cadre';
+    figure.append(cadre);
+    return figure;
+}
+
+// Cadre « photo à venir » (aussi utilisé si l'image ne se charge pas).
+function montrerPhotoAVenir(figure, espece) {
+    figure.classList.add('vide');
+    figure.querySelector('.reference-cadre').replaceChildren(
+        Object.assign(document.createElement('span'), {
+            className: 'reference-vide',
+            textContent: 'photo à venir'
+        })
+    );
+    const ancienne = figure.querySelector('figcaption');
+    if (ancienne) { ancienne.remove(); }
+    figure.title = 'Pas encore de photo de référence pour ' + espece.nom;
+}
+
+function montrerPhoto(figure, espece, entree) {
+    if (!entree || typeof entree !== 'object' || !cheminSur(entree.fichier)) {
+        montrerPhotoAVenir(figure, espece);
+        return;
+    }
+    const image = document.createElement('img');
+    image.className = 'reference-image';
+    image.alt = 'Photo de ' + espece.nom;
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.addEventListener('error', function () { montrerPhotoAVenir(figure, espece); });
+    image.src = entree.fichier;
+    figure.classList.remove('vide');
+    figure.removeAttribute('title');
+    figure.querySelector('.reference-cadre').replaceChildren(image);
+
+    // Crédit discret : auteur · licence (lien vers la page d'origine si possible).
+    const ancienne = figure.querySelector('figcaption');
+    if (ancienne) { ancienne.remove(); }
+    const credit = document.createElement('figcaption');
+    const auteur = typeof entree.auteur === 'string' ? entree.auteur.trim() : '';
+    const licence = typeof entree.licence === 'string' ? entree.licence.trim() : '';
+    const texte = [auteur, licence].filter(Boolean).join(' · ');
+    if (texte !== '') {
+        if (typeof entree.page === 'string' && /^https:\/\//i.test(entree.page)) {
+            const lien = document.createElement('a');
+            lien.href = entree.page;
+            lien.target = '_blank';
+            lien.rel = 'noopener noreferrer';
+            lien.textContent = texte;
+            lien.title = 'Voir la photo et sa licence sur Wikimedia Commons';
+            credit.append(lien);
+        } else {
+            credit.textContent = texte;
+        }
+        figure.append(credit);
+    }
 }
 
 function creerVueLigne(espece) {
@@ -50,12 +137,16 @@ function creerVueLigne(espece) {
         + ' · K ' + formaterNombre(espece.k);
     nom.append(titre, meta);
 
+    // --- colonne photo de référence (remplie quand photos.json est chargé) ----
+    const reference = creerReference();
+    montrerPhotoAVenir(reference, espece);
+
     // --- colonne des deux tailles ----------------------------------------
     const specimens = document.createElement('div');
     specimens.className = 'specimens';
-    article.append(nom, specimens);
+    article.append(nom, reference, specimens);
 
-    return { article, specimens };
+    return { article, specimens, reference };
 }
 
 function creerSpecimen(espece, role, cm) {
@@ -275,6 +366,7 @@ function initPage() {
 
     const modeles = [];      // { article, specimens, espece }
     const specimens = [];    // un par taille (min / max)
+    const references = [];   // { figure, espece } : cadre photo de chaque espèce
 
     SPECIES.forEach(function (espece) {
         const ligne = creerVueLigne(espece);
@@ -286,6 +378,16 @@ function initPage() {
         });
         galerie.append(ligne.article);
         modeles.push({ article: ligne.article, specimens: ligne.specimens, espece: espece });
+        references.push({ figure: ligne.reference, espece: espece });
+    });
+
+    // Photos de référence : chargées en parallèle du rendu 3D, jamais bloquantes.
+    chargerPhotos().then(function (photos) {
+        references.forEach(function (ref) {
+            const entree = Object.prototype.hasOwnProperty.call(photos, ref.espece.id)
+                ? photos[ref.espece.id] : null;
+            if (entree) { montrerPhoto(ref.figure, ref.espece, entree); }
+        });
     });
 
     document.getElementById('resume').textContent = SPECIES.length + ' espèces · '
