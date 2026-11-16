@@ -1096,3 +1096,85 @@ direct aux variables globales, donc testable sans navigateur.
 
 > Faire le découpage **avant** l'étang agrandi (14.1) et les fonds (14.3) évite de
 > déplacer du code deux fois.
+
+## 17. File d'attente — ordre de livraison (2026-11-16)
+
+> Mis à jour après la passe v185 → v191. L'ordre ci-dessous est celui dans lequel le
+> travail est mené ; chaque ligne indique l'état réel, pas l'intention.
+
+| # | Sujet | État | Où |
+|---|---|---|---|
+| 1 | **Menus de la barre du haut + esches illimitées** | esches illimitées **livrées** (v192) ; menus `🪱 Esche` / `🎈 Matériel` en cours | §17.1 |
+| 2 | **Gradient taille ↔ distance à la rive** (petits au bord, gros au large) | à faire | §17.2 |
+| 3 | **Supprimer la remontée automatique de la ligne** (`REEL_AUTO`) | à faire | §14.11 |
+| 4 | **Cheat `radar`** (carte des poissons) + futur **objet payant** | en cours (worktree séparé) | §17.3 |
+| 5 | Densité/population (reste de §14.4), détritus (§14.5) | à faire | §14.4, §14.5 |
+| 6 | Combat : frein réglable + épuisette (§15.3) | à faire | §15.3 |
+| 7 | Maille légale + remise à l'eau (§15.4) | à faire | §15.4 |
+
+### 17.1 Menus de la barre du haut et esches illimitées — LIVRÉ (esches) v192
+
+Demande du joueur (2026-11-16) : « les esches ne devraient pas être limitées » et
+« un bouton à côté du carnet qui ouvre un petit menu déroulant, pas de fenêtre
+modale », idem pour changer de bouchon ou de scion.
+
+- [x] **Esches illimitées** (v192, commit dédié) : plus de stock, plus de
+  consommation à la touche ferrée, toutes les esches équipables sans achat, widget
+  sans compteur. Les **fils et l'amorce restent consommables**.
+- [ ] **`🪱 Esche`** (`#escheTopButton`) : menu déroulant listant toutes les esches,
+  équipement en un clic, superposé au jeu (aucune modale, aucun fond assombri).
+- [ ] **`🎈 Matériel`** (`#materielTopButton`) : menu déroulant des **bouchons**
+  possédés / achetables en XP, et des **scions** quand la technique est le quiver.
+- [ ] Accessibilité (`aria-expanded`, `role="menu"`, clavier, Échap, clic extérieur),
+  un seul menu ouvert à la fois, responsive ≤ 600 px.
+- [ ] Module **`menus.js`** (`creerMenus(deps)`, ≤ 400 lignes) ; `script.js` ne reçoit
+  qu'un import + un appel.
+
+### 17.2 Gradient taille ↔ distance à la rive (bande de rive) — à faire
+
+Correction demandée par le joueur : **ce n'est pas une règle par espèce**, c'est un
+gradient par taille, comme dans la réalité.
+
+- [ ] **Ouvrir la bande de rive** comme habitat : ancres entre **2 et 14 unités** de
+  la rive (aujourd'hui `MARGE_RIVE_ANCRE = 8` les exclut toutes, `substrats.js:57`).
+- [ ] **Distance-cible par poisson** : calculée à partir de **son poids réel**
+  (`userData.weight`) et de la taille type de l'espèce — un juvénile d'ablette vit à
+  quelques unités du bord, une carpe de 15 kg au large, un gardon moyen entre les deux.
+  On choisit ensuite, parmi les ancres du **substrat préféré** de l'espèce, celle dont
+  la distance à la rive est la plus proche de cette cible.
+- [ ] **Conserver l'attraction par substrat** (§14.3) : un même fond est habité à
+  toutes les distances, par des classes de taille différentes.
+- [ ] **Tests** : le quartile des plus petits poissons est **plus près de la rive**
+  que celui des plus gros ; ≥ 40 % des petits à moins de 20 u ; la pêche du bord
+  donne des touches **sans** le garde-fou de secours (v191) ; la pêche au large et en
+  fosse reste bonne ; densité par substrat inchangée.
+- Note : le garde-fou `garantirPecheDuBord()` (v191) reste en place comme filet de
+  sécurité, mais ne doit plus être le mécanisme principal.
+
+### 17.3 Cheat `radar` — carte vivante des poissons (et futur objet payant) — en cours
+
+Demande du joueur : afficher une **carte radar de tous les poissons** en train de
+nager, en réutilisant la **même carte que pour choisir son poste**, avec des
+**couleurs et des tailles** distinguant les espèces, et la **position du pêcheur**.
+
+- [ ] **Mot secret `radar`** (tapé au clavier, comme `poisson` et `aquarium`,
+  `cheat.js`) : affiche / masque une carte 2D **superposée** au jeu (pas de modale).
+- [ ] **Fond de carte** : le tracé du carnet (contour de l'étang + 5 zones de
+  substrat), pour la lisibilité.
+- [ ] **Un point par poisson** : couleur **stable par espèce** (palette de 16),
+  **rayon ∝ longueur** (les gros sujets sautent aux yeux), petite **queue de cap**
+  pour voir qui nage où, et cercle discret de **zone de vie** (`homeX/homeZ` + domaine).
+- [ ] **Le pêcheur** : triangle orienté (position + direction) ; **le bouchon** en
+  point clair ; **la barque** en pastille distincte quand on est à bord.
+- [ ] Rafraîchi ≈ 10 Hz (58 points max : aucun coût perceptible), fermeture par
+  re-taper `radar` ou `Échap`.
+- [ ] **Évolution payante** : le radar pourra devenir un **objet de la boutique**
+  (comme le sonar à 150 XP) — par exemple « carte des fonds + poissons à 12 m »
+  autour de la barque, ou achat unique donnant la carte complète en pause. Le cheat
+  reste gratuit et hors carnet ; l'objet payant, lui, s'achète en XP et se range
+  comme les autres.
+- [ ] **Tests** : `radar` affiche un point par poisson, se referme au second mot ou à
+  `Échap` ; couleur identique pour deux poissons de la même espèce et différente entre
+  espèces ; rayon plus grand pour un poisson plus long ; position du pêcheur sur la
+  carte cohérente avec `angler.position` ; aucun DOM mis à jour quand le cheat est
+  inactif.
