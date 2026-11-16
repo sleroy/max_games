@@ -21,7 +21,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=236';
+import { etat } from './etat.js?v=237';
 
 export function creerLancer(deps) {
     const {

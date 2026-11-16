@@ -71,11 +71,15 @@ export function run() {
     dz /= n;
     parkFish();
     const fish = G().fishes.find(f => !f.userData.hooked && !f.userData.biting);
-    fish.position.set(chum0.x + dx * 15, -2, chum0.z + dz * 15);
+    // Le poisson vit dans la couche du nuage (celui-ci coule vers la profondeur de la ligne) : un poisson
+    // d'une autre couche l'ignore et nage normalement (voir scenario-amorce-couche.mjs).
+    fish.userData.depth = G().getHookDepth();
+    fish.position.set(chum0.x + dx * 15, fish.userData.depth - fish.userData.topOffset, chum0.z + dz * 15);
     fish.userData.vx = 0;
     fish.userData.vz = 0;
     const before = Math.hypot(fish.position.x - chum0.x, fish.position.z - chum0.z);
-    stepFor(3);
+    // Un poisson de fond (tanche…) n'est dans la couche du nuage qu'une fois celui-ci descendu : on lui laisse 8 s.
+    stepFor(8);
     const now = G().getChum();
     const after = Math.hypot(fish.position.x - now.x, fish.position.z - now.z);
     check('le poisson se rapproche du nuage', after < before - 1,

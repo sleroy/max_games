@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=236';
+import { etat } from './etat.js?v=237';
 
 export function creerBouchons(deps) {
     const {
@@ -26,7 +26,7 @@ export function creerBouchons(deps) {
     //   temps    : temps d'épreuve de force (> 1 = plus de temps)
     //   xp       : expérience gagnée (> 1 = plus d'expérience)
     //   voyant   : le bouchon reste visible la nuit
-    const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false };
+    const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false, sonnette: false };
 
     // Bouchons offerts au départ (les autres s'ACHÈTENT avec l'expérience).
     etat.BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
@@ -176,7 +176,8 @@ export function creerBouchons(deps) {
             avantage: c.avantage || CAPACITE_BASE.avantage,
             temps: c.temps || CAPACITE_BASE.temps,
             xp: c.xp || CAPACITE_BASE.xp,
-            voyant: !!c.voyant
+            voyant: !!c.voyant,
+            sonnette: !!c.sonnette   // une clochette tinte à chaque touche (scions du quiver)
         };
     }
 

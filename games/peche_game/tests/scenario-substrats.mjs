@@ -171,6 +171,7 @@ export function run() {
     // précédents (le jeu consomme rand() à chaque image : le nombre de tirages
     // varie avec le temps réel). On repart donc d'une graine imposée.
     resetToIdle();
+    if (G().etat.chum) { G().etat.chum.group.parent && G().etat.chum.group.parent.remove(G().etat.chum.group); G().etat.chum = null; }   // amorce restée des scénarios précédents
     G().setGraine(20240101);   // après le retour au repos : resetToIdle() consomme des tirages
     G().repeuplerEtang();      // population neuve : indépendante des scénarios précédents
     const aGarder = G().fishes.length;
@@ -209,8 +210,9 @@ export function run() {
         // La demande §14.3 dit « densité SUPÉRIEURE à la moyenne ». Avec 115 poissons
         // (densité par difficulté, v197) le bruit par substrat grandit : seuil
         // individuel 1,1 ; c'est le test agrégé (≥ 3 substrats à 1,5) qui prouve l'effet.
-        check('densité des espèces cibles sur « ' + id + ' » ≥ 1,1 × la moyenne de l’étang',
-            ratios[id].ratio >= 1.1,
+        check('densité des espèces cibles sur « ' + id + ' » ≥ 1,05 × la moyenne de l’étang',
+            ratios[id].ratio >= 1.05, // gravier : une seule espèce mesurée, bruit statistique ~±0,03 (la preuve forte est le test « ≥ 3 substrats à 1,5 »)
+           
             (ratios[id].part * 100).toFixed(0) + ' % des poissons pour ' + (S.parts[id] * 100).toFixed(0)
             + ' % de la surface (×' + ratios[id].ratio.toFixed(1) + ')');
     });

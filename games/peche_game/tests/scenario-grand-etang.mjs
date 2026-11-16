@@ -422,7 +422,7 @@ export function run() {
     // ≈ 0,77 mesuré avec vent calme, 0,83 au pire tirage : marge volontaire sous 0,85.
     // Les poissons naissent à ≥ 12 unités de la rive, donc la zone utile est le disque de rayon R − 12.
     check('un appât voit au plus 0,85 poisson à 8 unités (moyenne sur 5 peuplements, vent calme)',
-        moyenne > 0.3 && moyenne <= 0.8, moyenne.toFixed(2) + ' poisson(s) à 8 unités');
+        moyenne > 0.3 && moyenne <= 0.85, moyenne.toFixed(2) + ' poisson(s) à 8 unités');
 
     // --- Retour à un état propre ---
     G().placerAuPoste(0);

@@ -7,10 +7,10 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=236';
-import { etat } from './etat.js?v=236';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=236';
-import { heureDeJeu } from './physique.js?v=236';
+import { COMPORTEMENTS } from './especes.js?v=237';
+import { etat } from './etat.js?v=237';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=237';
+import { heureDeJeu } from './physique.js?v=237';
 
 export function creerComportement(deps) {
     const {
@@ -313,11 +313,9 @@ export function creerComportement(deps) {
                 const cx = etat.chum.position.x - fish.position.x;
                 const cz = etat.chum.position.z - fish.position.z;
                 const cd = Math.hypot(cx, cz);                     // distance au CENTRE
-                if (cd < detect && cd > 0.001) {
-                    // L'amorçage n'attire que les poissons de SA couche d'eau.
-                    if (Math.abs(data.depth - etat.chum.position.y) > 1.6) {
-                        return;
-                    }
+                // L'amorçage n'attire que les poissons de SA couche d'eau : les autres l'ignorent et nagent
+                // normalement (un `return` ici les figeait pour toute la durée du nuage, 60 s).
+                if (cd < detect && cd > 0.001 && Math.abs(data.depth - etat.chum.position.y) <= 1.6) {
                     data.attire = true;
                     // HORS de la sphère : on y va. DEDANS : on FOUILLE — le poisson tourne
                     // dans le nuage, et vise l'hameçon s'il est dans la sphère ET qu'il le

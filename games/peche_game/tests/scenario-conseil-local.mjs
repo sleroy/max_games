@@ -121,7 +121,7 @@ export async function run() {
     e.equiperEsche('mais');
     castTo(0, -25);
     parkFish();
-    const proches = G().fishes.filter(f => f.userData.especeId === 'gardon' || f.userData.especeId === 'perche').slice(0, 3);
+    const proches = [1, 2, 3].map(() => G().spawnFish(SPECIES.find(s => s.id === 'gardon')));
     const profondeurs = [-1.0, -1.4, -1.8];
     proches.forEach((f, i) => {
         f.userData.depth = profondeurs[i];
@@ -136,6 +136,7 @@ export async function run() {
     } else {
         check('en jeu : 3 poissons disponibles pour le test', false, String(proches.length));
     }
+    proches.forEach(f => G().fishes.splice(G().fishes.indexOf(f), 1));
     resetToIdle();
     G().setDifficulty('normal');
     e.equiperEsche('ver');
