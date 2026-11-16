@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=227';
+import { etat } from './etat.js?v=228';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -42,14 +42,17 @@ export const ESCHES = [
       cibles: { gardon: 1, perche: 1, anguille: 1, goujon: 1, rotengle: 0.5, chevesne: 0.5, truite: 0.5, tanche: 0.35, breme: 0.35, carassin: 0.35,
                // Silure : une grosse grappe de vers, très odorante, est l'un de ses meilleurs appâts.
                silure: 0.75,
+               // Ablette : l'asticot et le ver de vase sont SES appâts de référence (pêche au coup).
+               ablette: 0.5,
                // Un ver qui gigote tente parfois même les autres : mieux qu'un hameçon nu, sans être leur esche.
-               ablette: 0.3, carpe: 0.15, brochet: 0.15, sandre: 0.15, 'black-bass': 0.15 },
+               carpe: 0.15, brochet: 0.15, sandre: 0.15, 'black-bass': 0.15 },
       couches: { surface: 0.45, 'mi-eau': 1, fond: 0.9 },
       substrats: { vase: 1, sable: 1, gravier: 1, roche: 0.85, herbier: 0.8 } },
     { id: 'pain', nom: 'Pain / flocons', icone: '🍞', prix: 6,
       desc: 'Léger, il flotte et se délite en petits nuages.',
       exclusif: true,
-      cibles: { gardon: 1, rotengle: 1, chevesne: 1, ablette: 0.5 },
+      // Mie de pain : classique d'été de l'ablette, qui gobe les miettes en surface.
+      cibles: { gardon: 1, rotengle: 1, chevesne: 1, ablette: 0.7 },
       couches: { surface: 1, 'mi-eau': 0.45, fond: 0.1 },
       substrats: { herbier: 0.8 } },
     { id: 'bouillette', nom: 'Bouillette', icone: '🟤', prix: 14,

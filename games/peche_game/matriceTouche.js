@@ -7,9 +7,9 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=227';
-import { ESCHES, SEUIL_FACILE, acceptationFacile } from './esches.js?v=227';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=227';
+import { SPECIES } from './especes.js?v=228';
+import { ESCHES, SEUIL_FACILE, acceptationFacile } from './esches.js?v=228';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=228';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
