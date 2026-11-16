@@ -60,10 +60,11 @@ export const SPECIES = [
       profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], style: 'fonceur', couleur: 0x9aa39c, motif: 'argent' },
     { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [25, 130], k: 0.9, abondance: 3,
       profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], style: 'fonceur',
-      // Couleurs de assets/references/brochet.jpg (sujet clair d'aquarium) ; ventre
-      // relevé sous la tête (le reste du ventre est dans l'ombre sur la photo).
-      couleur: 0x9e9478, dos: 0x7d7258, ventre: 0xcfc9b0, tete: 0x9a9474, teinteMotif: 0xd8d2b4, nageoires: 0x6b5236,
-      nageoiresMotif: 'taches', oeil: 0x9a8a5c, motif: 'tachesClaires', profil: 'brochet', anatomie: 'brochet' },
+      // Brochet typique (la photo, sujet d'aquarium très pâle, est beige) : dos vert-olive
+      // foncé, flancs olive, ventre blanc-jaune ; taches jaune pâle ; nageoires orange-brun.
+      couleur: 0x66723f, dos: 0x38421f, ventre: 0xe4dfb4, tete: 0x56603a, teinteMotif: 0xe6dc96, nageoires: 0x9a6a40,
+      nageoiresMotif: 'brochet', oeil: 0xcfa62e, motif: 'tachesClaires', profil: 'brochet', anatomie: 'brochet',
+      ombreDos: 0.55, ventreClair: 0.85, fonduTete: 0.6, tachesDebut: 0.35, tachesDensite: 1.5, tachesTaille: 0.75, joueClaire: 0.03 },
     { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [20, 110], k: 0.8, abondance: 2,
       profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], style: 'glisseur', couleur: 0x8f9a83, motif: 'barres' },
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [15, 60], k: 1.6, abondance: 2,
@@ -424,18 +425,20 @@ export const ANATOMIES = {
         oeil: { t: 0.061, y: -0.007, r: 0.019 }, bouche: { t: 0.03, y0: -0.02, y1: -0.034, epaisseur: 0.0045 },
         opercule: 0.222, ligneCourbe: 1.2, contrasteOpercule: 0.1
     },
-    // Brochet : œil t 0,18 (r 0,015), haut sur la tête ; gueule jusqu'à t 0,136 ;
-    // ouïe t 0,354 ; pectorale basse t 0,335 ; pelviennes t 0,613 ; dorsale et anale
-    // tout à l'arrière (t 0,82 → 0,94 et 0,80 → 0,91) ; caudale fourchue.
+    // Brochet : œil t 0,18 (r 0,016), haut sur la tête ; gueule jusqu'à t 0,136 ;
+    // ouïe t 0,354 (peu marquée) ; pectorale basse et petite t 0,335 (0,085 LS) ; pelviennes
+    // t 0,613 ; dorsale et anale tout à l'arrière (t 0,82 → 0,94 et 0,80 → 0,91), couchées vers
+    // la queue ; caudale 0,125 LS, échancrure modérée, lobes arrondis.
     brochet: {
-        queue: { type: 'fourche', longueur: 0.13, ecart: 0.088 },
-        dorsale: { type: 'reculee', t0: 0.821, t1: 0.944, hauteur: 0.078 },
+        queue: { type: 'brochet', longueur: 0.125, ecart: 0.07 },
+        dorsale: { type: 'dorsaleBrochet', t0: 0.821, t1: 0.944, hauteur: 0.07 },
         dorsale2: null,
-        anale: { type: 'reculee', t0: 0.798, t1: 0.912, hauteur: 0.068 },
-        pectorale: { t: 0.335, y: -0.066, longueur: 0.1, pente: 0.35, forme: 'ronde' },
-        pelvienne: { t: 0.613, longueur: 0.085, pente: 0.35, forme: 'ronde' },
-        oeil: { t: 0.18, y: 0.016, r: 0.015 }, bouche: { t: 0.136, y0: -0.002, y1: -0.022 },
-        opercule: 0.354, ligneCourbe: 0.2, contrasteOpercule: 0.3
+        anale: { type: 'analeBrochet', t0: 0.798, t1: 0.912, hauteur: 0.058 },
+        pectorale: { t: 0.335, y: -0.066, longueur: 0.085, pente: 0.5, forme: 'ovale', eventail: 0.8 },
+        pelvienne: { t: 0.613, longueur: 0.075, pente: 0.35, forme: 'ronde' },
+        oeil: { t: 0.18, y: 0.016, r: 0.0145 },
+        bouche: { t: 0.136, y0: -0.004, y1: -0.021, epaisseur: 0.007 },
+        opercule: 0.354, ligneCourbe: 0.2, contrasteOpercule: 0.03
     },
     // Silure : œil minuscule t 0,09 ; gueule large ; 2 grands barbillons maxillaires
     // (0,28 LS) + 4 courts sous le menton ; petite dorsale t 0,27 ; anale de t 0,42

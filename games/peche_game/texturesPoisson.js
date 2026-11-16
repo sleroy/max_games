@@ -249,28 +249,61 @@ const MOTIFS = {
     },
 
     // Taches claires en grain de haricot sur fond olive (brochet).
-    tachesClaires: function (g, W, H, c, aleatoire) {
-        // Fond un peu marbré (vert-brun), puis taches pâles en grains de haricot,
-        // disposées en chevrons irréguliers, plus grosses au milieu du flanc.
+    // Dessinées en unités « physiques » (la texture est étirée : ~2,4 px de v pour
+    // 1 px de u par unité de longueur), donc de vrais grains ronds-allongés à l'écran.
+    // Options de l'espèce : tachesDebut (0,34 : fraction de W où les taches commencent,
+    // la tête n'en porte pas), tachesDensite (1), tachesTaille (1).
+    tachesClaires: function (g, W, H, c, aleatoire, espece) {
+        const ETIRE = 2.4;
+        const debut = ((espece && espece.tachesDebut) !== undefined ? espece.tachesDebut : 0.34) * W;
+        const densite = (espece && espece.tachesDensite) || 1;
+        const taille = (espece && espece.tachesTaille) || 1;
         const clair = c.motif !== null ? c.motif : melanger(c.flanc, 0xffffff, 0.45);
-        g.fillStyle = css(melanger(c.dos, 0x000000, 0.2), 0.18);
-        for (let i = 0; i < 70; i++) {
-            tache(g, W * (0.22 + aleatoire() * 0.78), H * (0.1 + aleatoire() * 0.65),
-                3 + aleatoire() * 5, 2 + aleatoire() * 3, aleatoire() * 3);
+        const sombre = melanger(c.dos, 0x000000, 0.35);
+        const lumiere = melanger(c.flanc, c.motif !== null ? c.motif : 0xffffff, 0.3);
+        const hPhys = H / ETIRE;
+        // (pas de transformations du contexte : le faux canvas des tests n'en a pas ;
+        // on convertit nous-mêmes les unités physiques en pixels de texture.)
+        // Marbrure du fond : plages vert foncé sur le dos, un peu de lumière sur le flanc.
+        for (let i = 0; i < 90; i++) {
+            const v = Math.pow(aleatoire(), 1.3) * 0.8;
+            g.fillStyle = css(v < 0.42 ? sombre : lumiere, v < 0.42 ? 0.1 + aleatoire() * 0.1 : 0.05 + aleatoire() * 0.05);
+            const xm = debut * 0.9 + aleatoire() * (W - debut * 0.9);
+            tache(g, xm, v * H, 3 + aleatoire() * 6, (1.5 + aleatoire() * 3) * ETIRE, aleatoire() * Math.PI);
         }
-        // Les taches commencent sur la joue et grossissent derrière l'ouïe.
-        const colonnes = 40;
-        for (let k = 0; k < colonnes; k++) {
-            const x0 = W * (0.24 + 0.75 * k / colonnes);
-            const fondu = Math.min(1, 0.35 + k / 8);
-            for (let rang = 0; rang < 7; rang++) {
-                if (aleatoire() < 0.18) { continue; }
-                const v = 0.12 + rang * 0.1 + (aleatoire() - 0.5) * 0.05;
-                const milieu = 1 - Math.abs(v - 0.45) * 1.4;
-                const x = x0 + (rang % 2) * W * 0.008 + (aleatoire() - 0.5) * 3;
-                g.fillStyle = css(clair, (0.25 + aleatoire() * 0.22) * fondu);
-                tache(g, x, H * v, (1.1 + milieu * 1.1 + aleatoire() * 0.8) * fondu, 0.8 + milieu * 0.6 + aleatoire() * 0.5,
-                    0.9 + (aleatoire() - 0.5) * 0.8);
+        // Grains de haricot : grille irrégulière (décalage, vides, amas), jamais en lignes.
+        const pas = 6.2 / Math.sqrt(densite);
+        const rangs = Math.floor(hPhys * 0.82 / pas);
+        for (let k = 0; debut + k * pas < W + pas; k++) {
+            for (let r = 0; r < rangs; r++) {
+                if (aleatoire() > 0.78 * Math.min(1, densite)) { continue; }
+                const x = debut + (k + (r % 2) * 0.5 + (aleatoire() - 0.5) * 0.95) * pas;
+                const v = 0.09 + (r + 0.5 + (aleatoire() - 0.5) * 0.95) / rangs * 0.73;
+                if (x >= W || v > 0.84) { continue; }
+                // plus grosses et plus nettes au milieu du flanc, rares vers le ventre
+                const milieu = Math.max(0, 1 - Math.abs(v - 0.42) * 2.2);
+                const entree = Math.min(1, (x - debut) / (W * 0.08));        // pas de bord net derrière l'ouïe
+                const bas = v > 0.62 ? Math.max(0, 1 - (v - 0.62) / 0.22) : 1;
+                const force = entree * bas;
+                if (force < 0.12) { continue; }
+                const longueur = (2.2 + milieu * 2.4 + aleatoire() * 2.2) * taille * (0.55 + 0.45 * entree);
+                const epais = (0.75 + milieu * 0.55 + aleatoire() * 0.5) * taille;
+                const rayon = longueur / 1.1;
+                const ouverture = 0.3 + aleatoire() * 0.35;
+                const rotation = (aleatoire() - 0.5) * 2.6;
+                aleatoire();   // (tirage conservé : même suite de hasard qu'avec le décalage de l'arc)
+                g.fillStyle = css(clair, (0.3 + aleatoire() * 0.34) * force);
+                // le grain suit un arc court : une chaîne de petites ellipses, plus fines aux bouts
+                const n = Math.max(3, Math.round(longueur / (epais * 0.7)));
+                for (let i = 0; i <= n; i++) {
+                    const a = -ouverture + 2 * ouverture * i / n;
+                    const px = rayon * Math.cos(a) - rayon * Math.cos(ouverture * 0.5);
+                    const py = rayon * Math.sin(a);
+                    const qx = px * Math.cos(rotation) - py * Math.sin(rotation);
+                    const qy = px * Math.sin(rotation) + py * Math.cos(rotation);
+                    const fin = 0.55 + 0.45 * Math.sin(Math.PI * i / n);
+                    tache(g, x + qx, (v * hPhys + qy) * ETIRE, epais * 0.5 * fin, epais * 0.5 * fin * ETIRE, 0);
+                }
             }
         }
     },
@@ -376,7 +409,9 @@ export function dessinerRobe(g, W, H, espece, repere) {
     }
     const joue = g.createLinearGradient(0, H * 0.4, 0, H);
     joue.addColorStop(0, css(melanger(c.flanc, 0xffffff, 0.12), 0));
-    joue.addColorStop(1, css(melanger(c.ventre, 0xffffff, 0.1), 0.25));
+    // `joueClaire` (0,25) : reflet de la joue ; plus bas, la limite de l'ouïe s'efface.
+    const alphaJoue = espece && espece.joueClaire !== undefined ? espece.joueClaire : 0.25;
+    joue.addColorStop(1, css(melanger(c.ventre, 0xffffff, 0.1), alphaJoue));
     g.fillStyle = joue;
     g.fillRect(0, H * 0.4, xOp, H * 0.6);
     const contraste = r.contrasteOpercule !== undefined ? r.contrasteOpercule : 0.4;
@@ -462,6 +497,34 @@ export function textureNageoire(variante) {
             g.moveTo(x, H);
             g.lineTo(x, 2);
             g.stroke();
+        }
+        const t = new THREE.CanvasTexture(canvas);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = THREE.RepeatWrapping;
+        _texturesNageoire[cle] = t;
+        return t;
+    }
+    if (cle === 'brochet') {
+        // Membrane claire et translucide, rayons fins, quelques petites taches brunes
+        // (nageoires du brochet : orange-brun clair tacheté, pas de plaque sombre).
+        const membrane = g.createLinearGradient(0, 0, 0, H);
+        membrane.addColorStop(0, '#f4f4f4');
+        membrane.addColorStop(1, '#bcbcbc');
+        g.fillStyle = membrane;
+        g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(20,14,8,0.28)';
+        g.lineWidth = 1.1;
+        for (let i = 0; i < 16; i++) {
+            const x = (i + 0.5) * (W / 16);
+            g.beginPath();
+            g.moveTo(x, H);
+            g.lineTo(x, 2);
+            g.stroke();
+        }
+        g.fillStyle = 'rgba(30,18,8,0.36)';
+        const alea = hasard(7);
+        for (let i = 0; i < 46; i++) {
+            tache(g, alea() * W, 6 + alea() * (H - 10), 1.1 + alea() * 1.2, 0.9 + alea() * 0.8);
         }
         const t = new THREE.CanvasTexture(canvas);
         t.colorSpace = THREE.SRGBColorSpace;

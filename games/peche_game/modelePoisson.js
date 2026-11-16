@@ -21,8 +21,8 @@
 //   pelviennes, yeux (sclère + iris + pupille), bouche, barbillons.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=206';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=206';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=207';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=207';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -216,6 +216,10 @@ const NAGEOIRES = {
     adipeuse: { h: [[0, 0.3], [0.4, 1], [1, 0.5]], recul: 0.7 },
     // Dorsale de brème : sommet arrondi près de l'avant, bord arrière concave.
     dorsaleBreme: { h: [[0, 0.66], [0.07, 0.94], [0.17, 1], [0.34, 0.86], [0.62, 0.58], [1, 0.3]], recul: 0.4 },
+    // Dorsale / anale du brochet : base courte tout à l'arrière, premiers rayons les plus
+    // longs, sommet arrondi, bord arrière en pente douce, nageoire couchée vers la queue.
+    dorsaleBrochet: { h: [[0, 0.3], [0.06, 0.7], [0.16, 0.93], [0.3, 1], [0.6, 0.88], [0.85, 0.62], [1, 0.36]], recul: 0.75 },
+    analeBrochet: { h: [[0, 0.3], [0.08, 0.72], [0.2, 0.95], [0.36, 1], [0.65, 0.8], [1, 0.38]], recul: 0.7 },
     // Dorsale de carpe : longue, premier rayon épineux (pointe étroite à l'avant),
     // bord supérieur concave qui s'abaisse doucement vers l'arrière.
     dorsaleCarpe: { h: [[0, 0.58], [0.035, 1], [0.1, 0.84], [0.25, 0.7], [0.55, 0.56], [0.85, 0.46], [1, 0.34]], recul: 0.8 }
@@ -245,6 +249,9 @@ const CAUDALES = {
     // Perche : légère échancrure, lobes pointus mais pas aiguilleux, lobe du haut un peu plus long.
     perche: [[-0.84, 1], [-0.98, 0.95], [-1, 0.84], [-0.95, 0.64], [-0.9, 0.42], [-0.87, 0.18],
         [-0.85, 0], [-0.86, -0.2], [-0.9, -0.5], [-0.95, -0.76], [-0.97, -0.92], [-0.92, -1], [-0.82, -1]],
+    // Brochet : échancrure modérée (≈ 45 % de la longueur), lobes arrondis.
+    brochet: [[-0.8, 1], [-0.92, 0.94], [-0.99, 0.8], [-0.95, 0.6], [-0.82, 0.4], [-0.66, 0.2],
+        [-0.55, 0], [-0.66, -0.2], [-0.82, -0.4], [-0.95, -0.6], [-0.99, -0.8], [-0.92, -0.94], [-0.8, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
