@@ -2712,7 +2712,7 @@ window.__game = {
             return {
                 id: f.id, nom: f.nom, sensibilite: f.sensibilite,
                 remontee: f.remontee, longueur: f.longueur, desc: f.desc,
-                prix: f.prix || 0, atout: f.atout || '',
+                prix: f.prix || 0, atout: f.atout || '', triche: !!f.triche,
                 capacite: capaciteBouchon(f)
             };
         });

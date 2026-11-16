@@ -32,18 +32,18 @@ export function run() {
 
     // --- Contenu de la boutique ---
     const bouchons = G().getFloats();
-    checkEqual('8 bouchons proposés au total', bouchons.length, 8);
+    checkEqual('11 bouchons proposés au total', bouchons.length, 11);
     const offerts = bouchons.filter(f => f.prix === 0);
     const aVendre = bouchons.filter(f => f.prix > 0);
     checkEqual('4 bouchons offerts au départ', offerts.length, 4);
-    checkEqual('4 bouchons à acheter avec l’expérience', aVendre.length, 4);
+    checkEqual('7 bouchons à acheter avec l’expérience (dont 3 triches)', aVendre.length, 7);
     check('chaque bouchon à vendre a un prix et un atout',
         aVendre.every(f => f.prix > 0 && f.atout.length > 0),
         aVendre.map(f => f.nom + ' (' + f.prix + ' XP)').join(' · '));
     check('chaque bouchon à vendre a une capacité spéciale',
         aVendre.every(f => f.capacite.fenetre !== 1 || f.capacite.fausses !== 1
             || f.capacite.avantage !== 1 || f.capacite.temps !== 1
-            || f.capacite.xp !== 1 || f.capacite.voyant),
+            || f.capacite.xp !== 1 || f.capacite.voyant || f.capacite.geant || f.capacite.detecteur || f.capacite.balise),
         aVendre.map(f => f.nom).join(' · '));
     checkEqual('les bouchons de départ sont possédés',
         offerts.every(f => G().getBouchonsPossedes().indexOf(f.id) >= 0), true);
