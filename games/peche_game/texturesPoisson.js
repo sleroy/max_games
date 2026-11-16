@@ -427,26 +427,48 @@ const MOTIFS = {
         g.fillRect(W * 0.1, H * 0.5, W * 0.9, H * 0.35);
     },
 
-    // Marbrures (silure) : grandes plages sombres + semis serré de taches pâles,
-    // plus dense sur l'arrière du corps (comme sur la photo).
+    // Marbrures (silure) : plages sombres irrégulières (chaînes de taches qui se chevauchent,
+    // plus nombreuses et plus grandes sur le dos), voile gris-vert clair sur le flanc, puis semis
+    // fin de petites taches pâles groupées en nuages (jamais une grille régulière), plus dense
+    // sur le dos et vers la queue. Peau lisse : aucune écaille.
     marbrures: function (g, W, H, c, aleatoire) {
-        // Marbrures sombres : amas de petites taches qui se chevauchent (contours
-        // irréguliers), puis un semis serré de points pâles, plus dense vers la queue.
-        g.fillStyle = css(melanger(c.dos, 0x000000, 0.3), 0.16);
-        for (let amas = 0; amas < 34; amas++) {
-            const cx = W * (0.14 + aleatoire() * 0.86);
-            const cy = H * (0.08 + aleatoire() * 0.62);
-            for (let i = 0; i < 6; i++) {
-                tache(g, cx + (aleatoire() - 0.5) * 12, cy + (aleatoire() - 0.5) * 8,
-                    2 + aleatoire() * 4, 1.5 + aleatoire() * 3, aleatoire() * 3);
+        const sombre = melanger(c.dos, 0x000000, 0.35);
+        const moyen = melanger(c.flanc, c.dos, 0.5);
+        // 1. Nuages moyens (flanc plus clair, par plaques) : cassent l'uniformité du dégradé.
+        for (let i = 0; i < 26; i++) {
+            const cx = W * (0.15 + aleatoire() * 0.85);
+            const cy = H * (0.18 + aleatoire() * 0.5);
+            g.fillStyle = css(c.motif !== null ? melanger(c.motif, c.flanc, 0.5) : c.flanc, 0.05 + aleatoire() * 0.06);
+            tache(g, cx, cy, W * (0.02 + aleatoire() * 0.035), H * (0.05 + aleatoire() * 0.09), (aleatoire() - 0.5) * 0.8);
+        }
+        // 2. Marbrures sombres : chaînes de 4 à 9 taches (marche aléatoire), départ plutôt sur le dos.
+        for (let chaine = 0; chaine < 46; chaine++) {
+            let x = W * (0.16 + aleatoire() * 0.84);
+            let y = H * (0.06 + Math.pow(aleatoire(), 1.5) * 0.6);
+            const maillons = 4 + Math.floor(aleatoire() * 6);
+            const dos = 1 - Math.min(1, y / (H * 0.5));            // 1 sur le dos → 0 plus bas
+            g.fillStyle = css(chaine % 3 === 0 ? sombre : moyen, 0.1 + 0.1 * dos + aleatoire() * 0.07);
+            for (let k = 0; k < maillons; k++) {
+                tache(g, x, y, 1.6 + aleatoire() * (2.6 + 2.4 * dos), 1.2 + aleatoire() * (1.8 + 1.4 * dos),
+                    aleatoire() * 3);
+                x += (aleatoire() - 0.3) * 6;
+                y += (aleatoire() - 0.5) * 4;
             }
         }
+        // 3. Petites taches pâles, en nuages : on tire des centres, puis des points autour.
         const pale = c.motif !== null ? c.motif : melanger(c.flanc, 0xd8dccc, 0.55);
-        for (let i = 0; i < 1300; i++) {
-            const u = 0.1 + Math.sqrt(aleatoire()) * 0.9;   // plus dense vers la queue
-            const v = 0.1 + aleatoire() * 0.7;
-            g.fillStyle = css(pale, 0.2 + aleatoire() * 0.35);
-            tache(g, W * u, H * v, 0.5 + aleatoire() * 0.9, 0.4 + aleatoire() * 0.6, aleatoire() * 3);
+        for (let nuage = 0; nuage < 70; nuage++) {
+            const u0 = 0.12 + Math.sqrt(aleatoire()) * 0.88;          // plus dense vers la queue
+            const v0 = 0.08 + Math.pow(aleatoire(), 1.3) * 0.62;      // plus dense sur le dos
+            const rayon = 6 + aleatoire() * 14;
+            const nombre = 6 + Math.floor(aleatoire() * 14);
+            for (let k = 0; k < nombre; k++) {
+                const a = aleatoire() * Math.PI * 2;
+                const d = Math.sqrt(aleatoire()) * rayon;
+                g.fillStyle = css(pale, 0.12 + aleatoire() * 0.26);
+                tache(g, W * u0 + Math.cos(a) * d * 1.6, H * v0 + Math.sin(a) * d * 0.7,
+                    0.45 + aleatoire() * 0.8, 0.4 + aleatoire() * 0.55, aleatoire() * 3);
+            }
         }
     }
 };
@@ -734,9 +756,10 @@ export function textureNageoire(variante) {
         _texturesNageoire[cle] = t;
         return t;
     }
-    // Variante « doux » : rayons discrets (membrane fine : brème, gardon…).
-    g.strokeStyle = cle === 'doux' ? 'rgba(20,16,12,0.2)' : 'rgba(20,16,12,0.45)';
-    g.lineWidth = cle === 'doux' ? 1.2 : 1.6;
+    // Variante « doux » : rayons discrets (membrane fine : brème, gardon…) ; « silure » : plus fins encore.
+    const fin = cle === 'doux' || cle === 'silure';
+    g.strokeStyle = fin ? 'rgba(20,16,12,0.2)' : 'rgba(20,16,12,0.45)';
+    g.lineWidth = cle === 'silure' ? 0.9 : cle === 'doux' ? 1.2 : 1.6;
     for (let i = 0; i < 16; i++) {
         const x = (i + 0.5) * (W / 16);
         g.beginPath();

@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=211';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=211';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=211';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=212';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=212';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=212';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -217,6 +217,9 @@ const NAGEOIRES = {
     reculee: { h: [[0, 0.32], [0.25, 0.85], [0.55, 1], [0.85, 0.82], [1, 0.45]], recul: 0.35 },
     petite: { h: [[0, 0.6], [0.3, 1], [1, 0.3]], recul: 0.5 },
     continue: { h: [[0, 0.15], [0.2, 0.75], [0.9, 1], [1, 1]], recul: 0.15 },
+    // Silure : membrane basse et continue (t 0,45 → 0,995) : naît du ventre, atteint sa plus grande
+    // hauteur vers le milieu et ne retombe qu'à ~45 % au pédoncule, où elle se fond dans la caudale.
+    analeSilure: { h: [[0, 0.1], [0.06, 0.45], [0.22, 0.82], [0.5, 1], [0.78, 0.8], [0.92, 0.58], [1, 0.45]], recul: 0.12 },
     analeLongue: { h: [[0, 0.05], [0.12, 0.6], [0.3, 0.9], [0.85, 1], [1, 0.85]], recul: 0.22 },
     analeBreme: { h: [[0, 0.72], [0.12, 1], [0.35, 0.55], [0.7, 0.28], [1, 0.12]], recul: 0.6 },
     adipeuse: { h: [[0, 0.3], [0.4, 1], [1, 0.5]], recul: 0.7 },
@@ -278,7 +281,10 @@ const CAUDALES = {
         [-0.93, -0.2], [-0.97, -0.5], [-1, -0.78], [-0.98, -0.94], [-0.88, -1], [-0.78, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
-    silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
+    // Silure : palette arrondie sans angle ; le bord du bas démarre à la hauteur où finit l'anale
+    // (membrane continue), celui du haut sort du dos du pédoncule.
+    silure: [[-0.05, 0.5], [-0.3, 0.85], [-0.58, 0.99], [-0.84, 0.86], [-0.98, 0.5], [-1, 0.02],
+        [-0.98, -0.42], [-0.9, -0.7], [-0.7, -0.88], [-0.4, -0.88], [-0.04, -0.8]],
     fine: [[-0.45, 0.7], [-1, 0], [-0.45, -0.7]],
     // Anguille : bout de queue en ogive, prolongement direct des nageoires dorsale et anale.
     anguille: [[-0.04, 1], [-0.3, 0.82], [-0.6, 0.52], [-0.85, 0.22], [-1, 0], [-0.85, -0.22], [-0.6, -0.52],
@@ -407,6 +413,8 @@ function nageoireImpaire(lot, profil, LS, xNez, def, sens, echelleHauteur) {
         const bord = profil.y(t) + sens * profil.h(t) * 0.94;
         let haut = H * lirePolyligne(type.h, s) * (1 + 0.05 * bruitFin(i, def.t0 + def.t1));
         if (type.epines && i % 2 === 1) { haut *= type.epinesAmp || 0.78; }
+        // Bord libre légèrement ondulé (`ondule` : amplitude relative, silure) : pas d'arête droite.
+        if (def.ondule) { haut *= 1 + def.ondule * (Math.sin(i * 0.55 + 1.3) * 0.6 + bruitFin(i, 2.1)); }
         const bombe = Math.sin(Math.PI * r) * 0.04 * haut;      // membrane légèrement courbe
         return [xNez - t * LS - recul * haut * r - bombe,
             bord * LS + sens * haut * r, 0, 1 - 0.25 * r];
@@ -517,20 +525,23 @@ function bouche(lot, profil, LS, xNez, def) {
 
 // Barbillons : tubes effilés qui partent du museau, s'écartent puis traînent.
 function barbillons(lot, profil, LS, xNez, liste) {
-    const K = 10;
     const C = 4;
     liste.forEach(function (b) {
+        const K = b.ondule ? 14 : 10;      // barbillon souple : plus de segments, courbe lisse
         for (const cote of [1, -1]) {
             const z0 = cote * zSurface(profil, b.t, b.y) * LS;
             const centre = [];
             for (let k = 0; k <= K; k++) {
                 const s = k / K;
                 const L = b.longueur * LS;
+                // `ondule` : courbure en S (barbillon souple qui flotte, silure) ; 0 = arc simple.
+                const o = b.ondule || 0;
                 centre.push([xNez - b.t * LS - L * 0.78 * Math.pow(s, 1.3),
                     b.y * LS - L * (b.chute || 0.6) * 0.55 * Math.pow(s, 1.5)
-                        + L * 0.07 * Math.sin(Math.PI * s),     // léger arc, pas un bâton
-
-                    z0 + cote * L * (b.ecart || 0.3) * (s - 0.35 * s * s)]);
+                        + L * 0.07 * Math.sin(Math.PI * s)     // léger arc, pas un bâton
+                        + L * o * 0.5 * s * Math.sin(Math.PI * 1.6 * s),
+                    z0 + cote * L * ((b.ecart || 0.3) * (s - 0.35 * s * s)
+                        + o * 0.8 * Math.sin(Math.PI * 1.2 * s))]);
             }
             const base = lot.pos.length / 3;
             for (let k = 0; k <= K; k++) {
@@ -608,7 +619,7 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     const bodyMat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(0xffffff).lerp(new THREE.Color(0xff7a55), rouge * 0.45),
         map: textureCorps(espece, repere),
-        roughness: motif === 'marbrures' || motif === 'aucun' ? 0.38 : motif === 'peauLisse' ? 0.36 : 0.45,
+        roughness: motif === 'aucun' ? 0.38 : motif === 'marbrures' ? 0.5 : motif === 'peauLisse' ? 0.36 : 0.45,
         metalness: brillant
     });
     const couleurNageoires = espece && espece.nageoires !== undefined ? espece.nageoires

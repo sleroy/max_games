@@ -113,10 +113,16 @@ export const SPECIES = [
       profil: 'anguille', anatomie: 'anguille' },
     { id: 'silure', nom: 'Silure', form: 'barbu', cm: [60, 220], k: 1.0, abondance: 1,
       profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd',
-      // Couleurs de assets/references/silure.jpg : dos presque noir, flanc gris-olive
-      // semé de taches pâles (80e centile du flanc), gorge claire.
-      couleur: 0x50554d, dos: 0x2a2c29, ventre: 0x9c9d8e, tete: 0x3c423c, teinteMotif: 0x8f9587, nageoires: 0x34352f,
-      oeil: 0x9b8f5a, barbillonsCouleur: 0xb9b69c, motif: 'marbrures', profil: 'silure', anatomie: 'silure' }
+      // Couleurs de assets/references/silure.jpg (médianes PIL par zones ; photo sombre et verdâtre) :
+      // dos gris-vert très foncé (#2a2c2b), flanc gris-olive (#5a5d53) semé de petites taches pâles
+      // (#92978b), ventre et gorge clairs (80e centile #949b8a / #c8ccac), tête (#3e443f), nageoires
+      // gris-brun translucides, barbillons chair-brun clair. Peau sans écailles : marbrures.
+      couleur: 0x4a5750, dos: 0x1f2926, ventre: 0xa0aa9b, tete: 0x37433c, teinteMotif: 0x95a095, nageoires: 0x363a33,
+      nageoiresMotif: 'silure',
+      nageoiresCouleurs: { dorsale: 0x363a33, anale: 0x43463c, pectorale: 0x4a4d44, pelvienne: 0x4a4d44,
+          caudale: [0x2e322d, 0x2e322d] },
+      oeil: 0x8f8a58, barbillonsCouleur: 0xa98d6f, motif: 'marbrures', ombreDos: 0.6, ventreClair: 0.85,
+      fonduTete: 0.15, joueClaire: 0, rondeur: 0.045, profil: 'silure', anatomie: 'silure' }
 ];
 
 // Poids réaliste d'un poisson (kg) : formule du « facteur de condition » des
@@ -342,16 +348,17 @@ export const PROFILS = {
         { t: 1, h: 0.025, w: 0.013, y: 0 }],
     // Silure : silure.jpg, LS = 691 px (museau 722,440 → pédoncule 150,52). Vue de
     // trois quarts dessus : la hauteur mesurée mêle hauteur et largeur, et la
-    // perspective grossit la tête. Retenu : tête large et plate (w > h, ventre
-    // plat nb = 3), corps qui s'amincit régulièrement, queue comprimée.
+    // perspective grossit la tête. Retenu : tête aplatie et LARGE en bec de canard
+    // (w > h, dessus presque plat n = 2,6, ventre plat nb = 3,4), corps qui
+    // s'amincit régulièrement vers un pédoncule comprimé (queue haute, étroite).
     silure: [
-        { t: 0, h: 0.022, w: 0.034, y: -0.004, n: 2.4, nb: 3.2 }, { t: 0.05, h: 0.045, w: 0.068, y: 0, n: 2.4, nb: 3.2 },
-        { t: 0.1, h: 0.062, w: 0.082, y: 0.004, n: 2.2, nb: 3 }, { t: 0.15, h: 0.072, w: 0.086, y: 0.006, n: 2.1, nb: 2.6 },
-        { t: 0.2, h: 0.078, w: 0.084, y: 0.006 }, { t: 0.3, h: 0.088, w: 0.074, y: 0.004 },
+        { t: 0, h: 0.03, w: 0.05, y: -0.004, n: 2.8, nb: 3.6 }, { t: 0.05, h: 0.046, w: 0.085, y: 0, n: 2.7, nb: 3.5 },
+        { t: 0.1, h: 0.054, w: 0.097, y: 0.003, n: 2.6, nb: 3.4 }, { t: 0.15, h: 0.064, w: 0.1, y: 0.005, n: 2.4, nb: 3 },
+        { t: 0.2, h: 0.072, w: 0.092, y: 0.006, n: 2.2, nb: 2.6 }, { t: 0.3, h: 0.086, w: 0.076, y: 0.004 },
         { t: 0.4, h: 0.09, w: 0.062, y: 0.002 }, { t: 0.5, h: 0.083, w: 0.05, y: 0 },
         { t: 0.6, h: 0.072, w: 0.04, y: 0 }, { t: 0.7, h: 0.062, w: 0.03, y: 0 },
-        { t: 0.8, h: 0.052, w: 0.022, y: 0 }, { t: 0.9, h: 0.042, w: 0.016, y: 0 },
-        { t: 1, h: 0.032, w: 0.011, y: 0 }],
+        { t: 0.8, h: 0.05, w: 0.022, y: 0 }, { t: 0.9, h: 0.036, w: 0.016, y: 0 },
+        { t: 1, h: 0.026, w: 0.011, y: 0 }],
     // Sandre : sandre.jpg (900 × 387, tourné à gauche, posé sur du gravier), LS = 692 px
     // (museau 57,203 → base de la caudale 748,232), contour relevé sur la photo quadrillée
     // (scripts/trace-silhouette.py sandre). Corps haut pour une torpille (0,206 LS à t = 0,4),
@@ -531,11 +538,24 @@ export const ANATOMIES = {
         bouche: { t: 0.155, y0: -0.013, y1: -0.022, epaisseur: 0.012 },
         opercule: 0.354, ligneCourbe: 0.2, contrasteOpercule: 0.18, operculeDoux: true
     },
-    // Silure : œil minuscule t 0,09 ; gueule large ; 2 grands barbillons maxillaires
-    // (0,28 LS) + 4 courts sous le menton ; petite dorsale t 0,27 ; anale de t 0,42
-    // jusqu'à la queue ; caudale petite et arrondie.
+    // Silure : mêmes photo et repère que le profil. Œil minuscule, haut et en arrière sur la tête
+    // plate (t 0,1) ; gueule large et terminale, coin sous l'œil ; 1 paire de grands barbillons
+    // maxillaires (0,28 LS, courbes) + 2 paires courtes sous le menton ; dorsale minuscule très en
+    // avant (t 0,265 → 0,3) ; pectorales sombres sur l'ouïe (0,10 LS, éventail arrondi) ; pelviennes
+    // petites (t 0,40) ; anale = membrane basse continue de t 0,45 à 0,995 qui rejoint la caudale ;
+    // caudale petite et arrondie, sans angle (queue de type `silure`).
     silure: {
-        queue: { type: 'silure', longueur: 0.1, ecart: 0.062 }
+        queue: { type: 'silure', longueur: 0.1, ecart: 0.062 },
+        dorsale: { type: 'petite', t0: 0.265, t1: 0.3, hauteur: 0.03 },
+        anale: { type: 'analeSilure', t0: 0.45, t1: 0.995, hauteur: 0.05, ondule: 0.1 },
+        pectorale: { t: 0.2, y: -0.04, longueur: 0.1, pente: 0.6, forme: 'ovale', eventail: 0.6 },
+        pelvienne: { t: 0.4, longueur: 0.05, pente: 0.3, forme: 'ronde' },
+        oeil: { t: 0.1, y: 0.04, r: 0.0055 },
+        bouche: { t: 0.1, y0: -0.008, y1: -0.022, epaisseur: 0.006 },
+        opercule: 0.19, contrasteOpercule: 0, ligneCourbe: 0.3,
+        barbillons: [{ t: 0.06, y: -0.014, longueur: 0.28, chute: 0.6, ecart: 0.6, rayon: 0.0034, ondule: 0.06 },
+            { t: 0.05, y: -0.036, longueur: 0.075, chute: 1.3, ecart: 0.3, rayon: 0.0027, ondule: 0.07 },
+            { t: 0.08, y: -0.04, longueur: 0.06, chute: 1.3, ecart: 0.4, rayon: 0.0027, ondule: 0.07 }]
     },
     // Carpe : œil t 0,073 (r 0,016), haut sur la tête ; bouche petite, protractile ; ouïe t 0,215 ;
     // pectorale basse t 0,233 (0,16 LS) ; pelviennes t 0,477 ; dorsale LONGUE t 0,48 → 0,84

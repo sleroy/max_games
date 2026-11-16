@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=211';
+import { etat } from './etat.js?v=212';
 
 export function creerPlacement(deps) {
     const {
