@@ -15,6 +15,7 @@
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { creerVegetation } from './vegetation.js?v=219';
 
 export function creerDecor(deps) {
     const scene = deps.scene;
@@ -169,7 +170,7 @@ export function creerDecor(deps) {
     }
 
     // --- Roseaux (instanciés : un seul appel de dessin). Pivot à la base pour
-    // qu'ils puissent se balancer au vent (animés ailleurs, via le vent).
+    // qu'ils puissent se balancer au vent (shader de vent : vegetation.js).
     const reedMat = new THREE.MeshStandardMaterial({ color: 0x2f6b3f, roughness: 0.9 });
     const reedGeo = new THREE.CylinderGeometry(0.02, 0.035, 1, 5);
     reedGeo.translate(0, 0.5, 0);
@@ -194,6 +195,8 @@ export function creerDecor(deps) {
     reedInst.count = reedCount;
     reedInst.instanceMatrix.needsUpdate = true;
     scene.add(reedInst);
+    // Roseaux et herbe des berges ondulent au vent (shader, vegetation.js ; aucun tirage de rand()).
+    const vegetation = creerVegetation({ scene, wind: deps.wind, roseauxMat: reedMat, rayonEtang, POND_CENTER, RIVE_Y });
 
     // --- Rochers (instanciés).
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 1 });
@@ -217,5 +220,5 @@ export function creerDecor(deps) {
     rockInst.instanceMatrix.needsUpdate = true;
     scene.add(rockInst);
 
-    return { lilyPads: lilyPads, arbres: arbres, rochers: rochers, roseaux: roseaux };
+    return { lilyPads: lilyPads, arbres: arbres, rochers: rochers, roseaux: roseaux, vegetation: vegetation };
 }
