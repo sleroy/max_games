@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 import {
     group, check, checkEqual, checkClose,
-    G, el, state, step, stepFor, stepUntil,
+    G, el, fire, state, step, stepFor, stepUntil,
     castTo, parkFish, clearLilyPads, resetToIdle
 } from './harness.mjs';
 
@@ -22,7 +22,15 @@ export function run() {
     group('74) Mode Facile (enfant) : poissons aimantés et « FERRER ! »');
 
     try {
-        G().setDifficulty('facile');
+        // --- Le niveau se choisit DÈS L'ACCUEIL (et reste synchro avec le carnet) ---
+        G().setDifficulty('normal');
+        const accueilDifficulte = el('accueilDifficultySelect');
+        accueilDifficulte.value = 'facile';
+        fire('accueilDifficultySelect', 'change');
+        checkEqual('le mode Facile se choisit sur l’accueil', G().getDifficulty().modeFacile, true);
+        checkEqual('le carnet est synchronisé avec l’accueil',
+            el('difficultySelect').value, 'facile');
+
         const diff = G().getDifficulty();
         checkEqual('le mode Facile est actif', diff.modeFacile, true);
         check('la fenêtre de ferrage est très large (≥ 1,5 s)', diff.biteWindow >= 1.5,
@@ -79,6 +87,8 @@ export function run() {
         resetToIdle();
         G().setDifficulty('normal');
         checkEqual('le mode Facile est bien désactivé', G().getDifficulty().modeFacile, false);
+        checkEqual('le sélecteur d’accueil repasse en Normal',
+            el('accueilDifficultySelect').value, 'normal');
         checkEqual('la classe mode-facile est retirée',
             document.body.classList.contains('mode-facile'), false);
         checkClose('la fenêtre de ferrage redevient normale', G().getDifficulty().biteWindow, 0.7, 1e-9);

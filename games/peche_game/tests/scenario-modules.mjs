@@ -25,7 +25,7 @@ const MODULES = [
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 3054;   // 3042 en v195 (menus + radar) ; 3039 en v192 (menus) ; 3031 en v193 (radar) ; 3019 en v189 ; 3011 en v186 (physique) ; 3006 en v185 (graine variable) ; 2971 en v180
+const PLAFOND_SCRIPT = 3063;   // 3063 en v197 (choix de difficulté sur l'accueil, +6 sur le câblage densité v197) ; 3057 en v197 (densité de poissons par difficulté) ; 3042 en v195 (menus + radar) ; 3039 en v192 (menus) ; 3031 en v193 (radar) ; 3019 en v189 ; 3011 en v186 (physique) ; 3006 en v185 (graine variable) ; 2971 en v180
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;

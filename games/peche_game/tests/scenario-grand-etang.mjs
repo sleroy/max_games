@@ -305,13 +305,15 @@ export function run() {
 
     // --- 7) La population (§14.4) ---
     const pop = G().getPopulation();
-    check('population ≈ 55–60 poissons (calculée d’après la surface)',
-        pop.total >= 55 && pop.total <= 60, pop.total + ' poissons');
+    check('population ≈ 110–125 poissons en mode normal (surface × densité × 2)',
+        pop.total >= 105 && pop.total <= 130, pop.total + ' poissons');
     checkEqual('le nombre de poissons est la cible calculée', pop.total, pop.cible);
     check('FISH_COUNT n’est plus qu’un plafond (≥ cible)', pop.plafond >= pop.cible,
         pop.plafond + ' ≥ ' + pop.cible);
-    check('densité : ≈ 90 poissons/ha, comme avant (87/ha)',
-        pop.poissonsParHa >= 80 && pop.poissonsParHa <= 100, pop.poissonsParHa + ' /ha');
+    // v197 : la densité dépend de la DIFFICULTÉ (×1,5 / ×2 / ×3 sur 90/ha).
+    // En mode normal (×2) : ≈ 180 poissons/ha.
+    check('densité en mode normal : ≈ 180 poissons/ha (×2 sur 90)',
+        pop.poissonsParHa >= 160 && pop.poissonsParHa <= 200, pop.poissonsParHa + ' /ha');
     check('au moins 10 espèces différentes', pop.especes >= 10, pop.especes + ' espèces');
     const rares = pop.solitairesListe;
     check('les solitaires (silure, brochet, sandre, black-bass, truite, anguille) restent rares : ≤ 2 chacun',
@@ -351,8 +353,8 @@ export function run() {
             }
         });
     }
-    check('12 tirages : toujours 55–60 poissons', pires.total[0] >= 55 && pires.total[1] <= 60,
-        pires.total.join(' → '));
+    check('12 tirages : population stable autour de 110–125 poissons (mode normal)',
+        pires.total[0] >= 105 && pires.total[1] <= 130, pires.total.join(' → '));
     check('12 tirages : biomasse toujours dans 100–300 kg/ha',
         pires.biomasse[0] >= 100 && pires.biomasse[1] <= 300, pires.biomasse.join(' → ') + ' kg/ha');
     check('12 tirages : toujours ≥ 10 espèces', pires.especes >= 10, String(pires.especes));
@@ -380,8 +382,10 @@ export function run() {
     G().repeuplerEtang();
     const ancienneDensite = 20 / (Math.PI * 55 * 55 * 1.0108);     // 20 poissons, rayon 55
     const densite = G().fishes.length / (info.surfaceHa * 4 * 10000);
-    check('densité par surface : au plus 15 % de plus qu’avant (la pêche ne devient pas plus facile)',
-        densite <= ancienneDensite * 1.15, (densite * 1000).toFixed(2) + ' ‰ vs ' + (ancienneDensite * 1000).toFixed(2) + ' ‰ (poissons par 1 000 u²)');
+    // v197 : décision du joueur — la densité augmente avec la difficulté choisie
+    // (×2 en normal). On vérifie simplement qu'elle reste dans la fourchette prévue.
+    check('densité par surface conforme au facteur de difficulté (×2 en normal)',
+        densite <= ancienneDensite * 2.4, (densite * 1000).toFixed(2) + ' ‰ vs ' + (ancienneDensite * 1000).toFixed(2) + ' ‰ avant (poissons par 1 000 u²)');
     // Poissons dans le rayon de vue d'un appât (8 unités) autour de 600 points d'eau.
     let somme = 0;
     let mesures = 0;

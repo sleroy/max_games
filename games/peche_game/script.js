@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=196';
+import { SoundEngine } from './sound.js?v=197';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -51,7 +51,7 @@ import { creerEntrees } from './entrees.js?v=179';
 import { creerRadar } from './radar.js?v=193';
 import { creerCheat } from './cheat.js?v=193';
 import { creerBoucle } from './boucle.js?v=169';
-import { creerPartie } from './partie.js?v=170';
+import { creerPartie } from './partie.js?v=197';
 import { creerPecheur } from './pecheur.js?v=171';
 import { creerRendu } from './rendu.js?v=172';
 import { etat } from './etat.js?v=145';
@@ -364,6 +364,7 @@ const tangleMessage = document.getElementById('tangleMessage');
 const tangleGiveUp = document.getElementById('tangleGiveUp');
 const ragondinAlert = document.getElementById('ragondinAlert');
 const techniqueSelect = document.getElementById('techniqueSelect');
+const accueilDifficultySelect = document.getElementById('accueilDifficultySelect');
 const quiverPanel = document.getElementById('quiverPanel');
 const quiverCanvas = document.getElementById('quiverCanvas');
 const compassDisplay = document.getElementById('compass');
@@ -556,10 +557,12 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 //   • le temps de l'épreuve de force est plus court ;
 //   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
 // ---------------------------------------------------------------------------
+// `poissons` = facteur de DENSITE (demande du joueur 2026-11-16) : facile ×3,
+// normale ×2, difficile ×1,5. Il multiplie la population calculee par la surface.
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0 },
-    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08 },
-    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15 }
+    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0, poissons: 3 },
+    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08, poissons: 2 },
+    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15, poissons: 1.5 }
 };
 let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
 let tangleChance = DIFFICULTY_MODES.normal.tangleChance;
@@ -1851,6 +1854,7 @@ let BITE_WINDOW = 0.7;
 function setDifficulty(mode) {
     const preset = DIFFICULTY_MODES[mode] || DIFFICULTY_MODES.normal;
     DIFFICULTY = preset.difficulty;
+    etat.facteurDensite = preset.poissons || 2;
     BITE_WINDOW = preset.biteWindow;
     tangleChance = preset.tangleChance;
     // MODE FACILE (enfant) : aimant à poissons, touche rapide, gros « FERRER ! ».
@@ -1861,6 +1865,10 @@ function setDifficulty(mode) {
     }
     if (difficultySelect.value !== mode) {
         difficultySelect.value = mode;
+    }
+    // Le choix de l'accueil et celui du carnet restent synchronisés.
+    if (accueilDifficultySelect && accueilDifficultySelect.value !== mode) {
+        accueilDifficultySelect.value = mode;
     }
 }
 
@@ -2306,7 +2314,8 @@ const {
     effrayerRagondin, ragondinAlert, scoreDisplay, resetCameraView, pauseButton, renderJournal,
     majCoupeProfondeur, updateToolDock, updateCrankVisibility, updateLine, stockAmorce,
     saveScore, showRanking, rankingButton, closeRanking, restartGame, saveAndMenu, backToMenu,
-    endGameButton, ensureSound, playButton, accueilClassement, techniqueSelect, setTechnique
+    endGameButton, ensureSound, playButton, accueilClassement, techniqueSelect, setTechnique,
+    accueilDifficultySelect, setDifficulty
 });
 
 window.__game = {

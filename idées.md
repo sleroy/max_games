@@ -1289,3 +1289,19 @@ nager, en réutilisant la **même carte que pour choisir son poste**, avec des
   espèces ; rayon plus grand pour un poisson plus long ; position du pêcheur sur la
   carte cohérente avec `angler.position` ; aucun DOM mis à jour quand le cheat est
   inactif.
+
+### 17.6 Densité de poissons par difficulté — LIVRÉ v197
+
+Demande du joueur : « la densité devrait être multipliée par 3 en facile, 2 en
+normale, 1,5 en difficile ». Base 90 poissons/ha → **270 / 180 / 135 par hectare**
+(étang 0,64 ha : **≈ 170 / 115 / 85 poissons**), plafond technique porté de 64 à 240.
+
+- [x] `DIFFICULTY_MODES` porte un champ `poissons` (3 / 2 / 1,5) appliqué par
+  `setDifficulty()` à `etat.facteurDensite`.
+- [x] `poissons.js` : `POPULATION_CIBLE = surface × 90 × facteurDensite`.
+- [x] Mesure en jeu (mode normal, 115 poissons) : poissons à moins de 8 u du bouchon
+  **6 au lieu de 2**, à moins de 15 u **6 au lieu de 3** sur 60 s.
+- [ ] **Reste à faire** : sur la même session instrumentée, **aucune touche en 55 s**
+  alors que 6 poissons tournent dans les 8 u. Prochaine étape : journaliser toute la
+  chaîne d'intérêt → approche → décision d'esche (par poisson) avant de retoucher un
+  chiffre.

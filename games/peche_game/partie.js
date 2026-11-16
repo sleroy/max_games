@@ -19,7 +19,8 @@ export function creerPartie(deps) {
         resetCameraView, pauseButton, renderJournal, majCoupeProfondeur, updateToolDock,
         updateCrankVisibility, updateLine, stockAmorce, saveScore, showRanking, rankingButton,
         closeRanking, restartGame, saveAndMenu, backToMenu, endGameButton, ensureSound,
-        playButton, accueilClassement, techniqueSelect, setTechnique
+        playButton, accueilClassement, techniqueSelect, setTechnique,
+        accueilDifficultySelect, setDifficulty
     } = deps;
 
     // LIGNES (VIES) : on part avec 5 lignes. Un lancer trop fort ou une remontée
@@ -453,6 +454,12 @@ export function creerPartie(deps) {
     if (techniqueSelect) {
         techniqueSelect.addEventListener('change', function () {
             setTechnique(this.value);
+        });
+    }
+    // Difficulté choisie dès l'accueil (le carnet reste synchronisé via setDifficulty).
+    if (accueilDifficultySelect) {
+        accueilDifficultySelect.addEventListener('change', function () {
+            setDifficulty(accueilDifficultySelect.value);
         });
     }
 
