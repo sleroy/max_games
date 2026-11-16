@@ -158,6 +158,20 @@ def masque(espece):
         for x in range(135, 697):
             m[int(dos[x]):int(ventre[x]) + 1, x] = e[int(dos[x]):int(ventre[x]) + 1, x]
         germe = (400, 280)
+    elif espece == 'goujon':
+        # Goujon translucide couché sur du sable (tourné à droite) : le ventre se confond avec l'ombre, donc le
+        # corps est rempli entre deux lignes relevées à la main sur la photo (grille 20 px) ; la dorsale
+        # couchée, la pectorale, la pelvienne et la caudale (x < 228) sont exclues ; museau à x = 788,
+        # base de la caudale x = 228.
+        xs = np.arange(a.shape[1])
+        dos = np.interp(xs, [228, 250, 270, 300, 340, 380, 420, 460, 500, 540, 580, 620, 660, 700, 730, 760, 780, 790],
+                        [228, 227, 224, 218, 210, 203, 191, 179, 167, 161, 155, 154, 154, 157, 162, 170, 184, 196])
+        ventre = np.interp(xs, [228, 260, 300, 340, 380, 400, 440, 480, 520, 560, 600, 660, 700, 740, 770, 785, 790],
+                           [265, 270, 272, 273, 270, 268, 266, 264, 262, 257, 252, 243, 237, 224, 212, 205, 200])
+        m = np.zeros(a.shape[:2], bool)
+        for x in range(228, 791):
+            m[int(dos[x]):int(ventre[x]) + 1, x] = True
+        germe = (500, 215)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)
