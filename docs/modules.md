@@ -1,6 +1,6 @@
 # Modules du jeu de pêche — contrats et propriété
 
-> Dernière mise à jour : **2026-11-15** · jeu **v190** (cheat « aquarium » : poissons visibles)
+> Dernière mise à jour : **2026-11-16** · jeu **v192** (esches illimitées + menus 🪱 Esche / 🎈 Matériel)
 > Objectif : permettre à **plusieurs agents de travailler en parallèle** sans se
 > marcher dessus, en gardant des fichiers petits (coût de modification faible).
 
@@ -59,7 +59,8 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `meteo.js` | Météo : beau temps → rafales → pluie, piloté par le temps de jeu (état via `etat`) | 110 | Météo / ambiance |
 | `vie.js` | Vie ambiante (oiseaux, libellules, poisson qui saute) et bulles sous l’eau (état via `etat`) | 171 | Ambiance / faune |
 | `sonar.js` | Sonar : bouée **lancée comme une amorce** (via `lancer.js`), radar, ondes jaunes, achats (sonar, barque), rangement (état via `etat`) | 233 | Sonar / boutique |
-| `stocks.js` | Stocks : lignes de rechange, fils, esches (stock, esche équipée, consommation), amorce de départ, achat de recharges (état via `etat`) | ~150 | Boutique / stocks |
+| `stocks.js` | Stocks : lignes de rechange, fils, **esches ILLIMITÉES** (toutes disponibles, esche équipée, aucune consommation depuis la v192), amorce de départ, achat de recharges (état via `etat`) | ~145 | Boutique / stocks |
+| `menus.js` | Menus déroulants de la barre du haut : 🪱 **Esche** (toutes les esches, équipement immédiat) et 🎈 **Matériel** (bouchons, ou scions en quiver : possédés à équiper, puis achats en XP). Panneau superposé, sans modale ni fond assombri ; un seul menu ouvert ; clic extérieur / Échap ; clavier ↑ ↓ Home Fin Entrée (role=`menu`, `aria-expanded`, `aria-activedescendant`) | ~260 | UI / barre du haut |
 | `journal.js` | Carnet de pêche : chargement/sauvegarde, rendu, ajout d’une prise (état via `etat`) | 112 | Carnet / persistance |
 | `touches.js` | Catalogue des touches : durées, mouvements du bouchon, tirage vrai/faux (état via `etat`) | 165 | Touches / contenu |
 | `cycleLigne.js` | Cycle de la ligne : visée sur l’eau, lancer, remontée, touche détectée, fin du lancer (état via `etat`) | 197 | Lancer / ligne |

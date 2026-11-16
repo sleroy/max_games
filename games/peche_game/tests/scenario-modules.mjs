@@ -19,13 +19,13 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 const MODULES = [
     'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
     'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'substrats.js', 'esches.js',
-    'physique.js',
+    'physique.js', 'menus.js',
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 3019;   // 3019 en v189 (physique de l'eau : thermocline, +2 sur v188 ; cliquet resserré) ; 3021 en v188 (cheat « aquarium » : uniforme uClear de l'eau + getter) ; 3013 en v187 (physique de l'eau : +2) ; 3011 en v186 (câblage de physique.js : +5) ; 3006 en v185 (graine du monde variable : +22) ; 2984 en v184 (câblage de esches.js : +4) ; 2980 en v183 (câblage de substrats.js : +9, comme obstacles.js en v174) ; 3030 avant la v173, 2995 en v173 ; 3001 en v174-178 (câblage de obstacles.js) ; 2999 en v179 (geste de lancer extrait dans lancer.js) ; 2971 en v180 (coupe de l'eau déplacée dans ligne.js)
+const PLAFOND_SCRIPT = 3039;   // 3039 en v192 (câblage de menus.js : +21) ; 3019 en v189 (physique de l'eau : thermocline, +2 sur v188 ; cliquet resserré) ; 3021 en v188 (cheat « aquarium » : uniforme uClear de l'eau + getter) ; 3013 en v187 (physique de l'eau : +2) ; 3011 en v186 (câblage de physique.js : +5) ; 3006 en v185 (graine du monde variable : +22) ; 2984 en v184 (câblage de esches.js : +4) ; 2980 en v183 (câblage de substrats.js : +9, comme obstacles.js en v174) ; 3030 avant la v173, 2995 en v173 ; 3001 en v174-178 (câblage de obstacles.js) ; 2999 en v179 (geste de lancer extrait dans lancer.js) ; 2971 en v180 (coupe de l'eau déplacée dans ligne.js)
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;
@@ -99,6 +99,7 @@ export function run() {
         'substrats.js': 'export function creerSubstrats(',
         'esches.js': 'export function creerEsches(',
         'physique.js': 'export function creerPhysique(',
+        'menus.js': 'export function creerMenus(',
         'portraits.js': 'export function dessinerPortrait(',
         'demelage.js': 'export function creerJeuDemelage(',
         'quiver.js': 'export function creerModeQuiver(',

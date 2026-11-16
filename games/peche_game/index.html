@@ -20,6 +20,20 @@
                 <button class="tool-toggle carnet-top" id="carnetTopButton"
                     aria-label="Ouvrir le carnet de pêche" title="Carnet de pêche"
                     aria-controls="journal" aria-expanded="false">📖</button>
+                <div class="top-menu">
+                    <button class="tool-toggle carnet-top" id="escheTopButton"
+                        aria-label="Choisir l’esche" title="Esche (illimitées)"
+                        aria-controls="escheTopMenu" aria-haspopup="menu" aria-expanded="false">🪱</button>
+                    <div class="menu-pop" id="escheTopMenu" role="menu"
+                        aria-labelledby="escheTopButton" tabindex="-1" hidden></div>
+                </div>
+                <div class="top-menu">
+                    <button class="tool-toggle carnet-top" id="materielTopButton"
+                        aria-label="Choisir le matériel : bouchons ou scions" title="Matériel (bouchons ou scions)"
+                        aria-controls="materielTopMenu" aria-haspopup="menu" aria-expanded="false">🎈</button>
+                    <div class="menu-pop" id="materielTopMenu" role="menu"
+                        aria-labelledby="materielTopButton" tabindex="-1" hidden></div>
+                </div>
                 <div class="hud-counters">
                     <span>Score : <span id="score">0</span></span>
                     <span id="lignesLabel">🧵 Lignes : 5/5</span>

@@ -28,6 +28,7 @@ import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=189';
 import { creerBoutique } from './boutique.js?v=192';
+import { creerMenus } from './menus.js?v=192';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
@@ -1798,6 +1799,19 @@ const {
     ensureSound, setScion, acheterScion, trouverScion
 });
 
+// Menus déroulants de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel (bouchons ou scions).
+// Un clic ouvre un petit panneau superposé au jeu (pas de modale, pas de fond assombri).
+const menus = creerMenus({
+    boutonEsche: document.getElementById('escheTopButton'), menuEsche: document.getElementById('escheTopMenu'),
+    boutonMateriel: document.getElementById('materielTopButton'), menuMateriel: document.getElementById('materielTopMenu'),
+    ESCHES: etat.ESCHES || [], FLOTTEURS, SCIONS,
+    equiperEsche: (...args) => etat.equiperEsche(...args), escheEquipee: () => etat.escheEquipee(),
+    flotteurEquipe: () => etat.flotteurChoix, scionEquipe: () => etat.scionChoix,
+    bouchonPossede, setFlotteur: setFloatType, acheterBouchon, scionPossede, setScion, acheterScion,
+    techniqueActuelle: () => etat.techniqueCourante, getExperience: () => journal.experience,
+    renderBoutique, ensureSound, sound, statusDisplay, globale: window
+});
+
 let ZONES_CARTE = [
     { nom: 'Bord, près de la surface', min: -1.2, max: 0.1, couleur: '#4aa3c4' },
     { nom: 'Pleine eau', min: -2.4, max: -1.2, couleur: '#2e7f9c' },
@@ -2914,6 +2928,12 @@ window.__game = {
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },
     showJournal: showJournal,
     hideJournal: hideJournal,
+    // Menus de la barre du haut (v192) — exposé pour les tests.
+    isMenuOuvert: function (nom) { return menus.estOuvert(nom); },
+    getMenuHtml: function (nom) {
+        const element = document.getElementById(nom === 'esche' ? 'escheTopMenu' : 'materielTopMenu');
+        return element ? element.innerHTML : '';
+    },
     // Effets visuels (post-traitement maison) — exposé pour les tests.
     setVisualEffects: function (value) {
         post.enabled = !!value;

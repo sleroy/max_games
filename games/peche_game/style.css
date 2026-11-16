@@ -1760,6 +1760,160 @@ body.calm .struggle-marker {
     flex-shrink: 0;
 }
 
+/* --- Menus déroulants de la barre du haut : 🪱 Esche / 🎈 Matériel (v192) ---
+   Pas de modale et pas de fond assombri : un panneau compact ancré sous son
+   bouton, SUPERPOSÉ au jeu (z-index au-dessus du HUD). */
+.top-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.menu-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 30;
+    display: grid;
+    gap: 2px;
+    width: min(322px, calc(100vw - 24px));
+    max-height: min(60vh, 380px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid #7896a0;
+    background: #0d2330f7;
+    color: #fff;
+    font-size: 0.85rem;
+    box-shadow: 0 10px 28px #04121a99;
+    pointer-events: auto;
+}
+
+.menu-pop[hidden] {
+    display: none;
+}
+
+.menu-pop:focus-visible {
+    outline: 2px solid #7fd0ff;
+    outline-offset: 2px;
+}
+
+.menu-pop-titre {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding: 2px 4px 6px;
+    border-bottom: 1px solid #ffffff26;
+    color: #9fe6ff;
+    font-weight: bold;
+}
+
+.menu-pop-titre span {
+    color: #aab8c8;
+    font-size: 0.75rem;
+    font-weight: normal;
+}
+
+/* Gris biseauté façon inventaire, comme les boutons du HUD. */
+.menu-pop-item {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #16333f;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: normal;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-pop-item:hover {
+    background: #1f4453;
+    border-color: #7896a0;
+}
+
+.menu-pop-item.actif,
+.menu-pop-item:focus-visible {
+    background: #24596c;
+    border-color: #7fd0ff;
+    outline: none;
+}
+
+.menu-pop-item.equipe {
+    border-color: #7ed957;
+}
+
+.menu-pop-item.a-vendre {
+    background: #122530;
+}
+
+.menu-pop-item[aria-disabled='true'] {
+    opacity: 0.55;
+}
+
+.menu-pop-icone {
+    font-size: 1.05rem;
+    text-align: center;
+}
+
+.menu-pop-texte {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.menu-pop-texte b {
+    font-weight: bold;
+}
+
+.menu-pop-texte small {
+    color: #aab8c8;
+    font-size: 0.74rem;
+    line-height: 1.15;
+}
+
+.menu-pop-marque {
+    color: #9fe6ff;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.menu-pop-aide {
+    margin-top: 4px;
+    padding: 6px 4px 0;
+    border-top: 1px solid #ffffff1a;
+    color: #8fa6b3;
+    font-size: 0.72rem;
+    line-height: 1.3;
+}
+
+/* Petit écran : le panneau occupe la largeur utile SOUS la barre du haut, pour
+   rester lisible sans masquer les compteurs (score, lignes, XP, heure). */
+@media (max-width: 600px) {
+    .menu-pop {
+        position: fixed;
+        left: calc(8px + env(safe-area-inset-left, 0px));
+        right: calc(8px + env(safe-area-inset-right, 0px));
+        top: calc(56px + env(safe-area-inset-top, 0px));
+        width: auto;
+        max-height: min(56vh, 340px);
+    }
+
+    .menu-pop-texte small {
+        font-size: 0.7rem;
+    }
+}
+
 .hud-counters {
     display: flex;
     flex-wrap: wrap;
