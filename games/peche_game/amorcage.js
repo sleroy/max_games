@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=240';
+import { etat } from './etat.js?v=241';
 
 export function creerAmorcage(deps) {
     const {

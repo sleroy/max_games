@@ -28,9 +28,9 @@
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerVegetation } from './vegetation.js?v=240';
-import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu, formeDe } from './milieux.js?v=240';
-import { FORME_DEFAUT, angleParBord, angleParSurface, pointAuBord } from './dimensions.js?v=240';
+import { creerVegetation } from './vegetation.js?v=241';
+import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu, formeDe } from './milieux.js?v=241';
+import { FORME_DEFAUT, angleParBord, angleParSurface, pointAuBord } from './dimensions.js?v=241';
 
 export function creerDecor(deps) {
     const scene = deps.scene;
