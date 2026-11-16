@@ -409,6 +409,24 @@ const MOTIFS = {
         }
     },
 
+    // Peau lisse sans écailles (anguille) : nuages sombres très allongés le long du corps (ombres
+    // du flanc), léger voile jaune clair sous la ligne latérale.
+    peauLisse: function (g, W, H, c, aleatoire) {
+        const sombre = melanger(c.dos, 0x000000, 0.35);
+        for (let i = 0; i < 46; i++) {
+            const cx = W * (0.12 + aleatoire() * 0.88);
+            const cy = H * (0.06 + aleatoire() * 0.5);
+            g.fillStyle = css(sombre, 0.05 + aleatoire() * 0.07);
+            tache(g, cx, cy, W * (0.025 + aleatoire() * 0.06), H * (0.03 + aleatoire() * 0.07), (aleatoire() - 0.5) * 0.2);
+        }
+        const jaune = melanger(c.ventre, 0xd8c860, 0.15);
+        const voile = g.createLinearGradient(0, H * 0.5, 0, H * 0.85);
+        voile.addColorStop(0, css(jaune, 0));
+        voile.addColorStop(1, css(jaune, 0.16));
+        g.fillStyle = voile;
+        g.fillRect(W * 0.1, H * 0.5, W * 0.9, H * 0.35);
+    },
+
     // Marbrures (silure) : grandes plages sombres + semis serré de taches pâles,
     // plus dense sur l'arrière du corps (comme sur la photo).
     marbrures: function (g, W, H, c, aleatoire) {
@@ -684,6 +702,30 @@ export function textureNageoire(variante) {
             g.beginPath();
             g.moveTo(x, H);
             g.lineTo(x, 5);
+            g.stroke();
+        }
+        const t = new THREE.CanvasTexture(canvas);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = THREE.RepeatWrapping;
+        _texturesNageoire[cle] = t;
+        return t;
+    }
+    if (cle === 'anguille') {
+        // Membrane lisse et translucide, rayons à peine visibles, base plus sombre (le liseré
+        // de la dorsale et de l'anale prolonge la queue).
+        const membrane = g.createLinearGradient(0, 0, 0, H);
+        membrane.addColorStop(0, '#f2f2f2');
+        membrane.addColorStop(0.5, '#d2d2d2');
+        membrane.addColorStop(1, '#9a9a9a');
+        g.fillStyle = membrane;
+        g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(20,16,8,0.12)';
+        g.lineWidth = 1;
+        for (let i = 0; i < 16; i++) {
+            const x = (i + 0.5) * (W / 16);
+            g.beginPath();
+            g.moveTo(x, H);
+            g.lineTo(x, 4);
             g.stroke();
         }
         const t = new THREE.CanvasTexture(canvas);

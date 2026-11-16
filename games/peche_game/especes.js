@@ -102,7 +102,15 @@ export const SPECIES = [
       motif: 'pointsRouges', pointsNoirs: 150, pointsRouges: 50, ombreDos: 0.7, ventreClair: 0.85, fonduTete: 0.2, joueClaire: 0,
       profil: 'truite', anatomie: 'truite' },
     { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [30, 130], k: 0.2, abondance: 2,
-      profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], style: 'glisseur', couleur: 0x3f4a30, motif: 'aucun' },
+      profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], style: 'glisseur',
+      // Couleurs de assets/references/anguille.jpg (phase jaune) : dos olive très sombre, flanc
+      // olive jaunâtre, ventre jaune pâle (80e centile, l'ombre de la photo l'assombrit), gorge verdâtre.
+      // Nageoires dorsale/anale/caudale olive translucide, pectorale pâle. Peau lisse, sans écailles.
+      couleur: 0x585a38, dos: 0x2f3020, ventre: 0xa4a67e, tete: 0x5a5e40, nageoires: 0x4a4727, oeil: 0x6a5a26,
+      nageoiresMotif: 'anguille',
+      nageoiresCouleurs: { dorsale: 0x4a4727, anale: 0x58542f, pectorale: 0xa5a276, caudale: [0x4a4727, 0x4a4727] },
+      motif: 'peauLisse', ombreDos: 0.6, ventreClair: 0.7, fonduTete: 0.1, joueClaire: 0.1, rondeur: 0.02,
+      profil: 'anguille', anatomie: 'anguille' },
     { id: 'silure', nom: 'Silure', form: 'barbu', cm: [60, 220], k: 1.0, abondance: 1,
       profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd',
       // Couleurs de assets/references/silure.jpg : dos presque noir, flanc gris-olive
@@ -267,11 +275,16 @@ export const PROFILS = {
         { t: 0.45, h: 0.158, w: 0.08, y: 0.03 }, { t: 0.6, h: 0.13, w: 0.066, y: 0.016 },
         { t: 0.76, h: 0.09, w: 0.045, y: 0.006 }, { t: 0.9, h: 0.062, w: 0.028, y: 0.002 },
         { t: 1, h: 0.055, w: 0.022, y: 0 }],
+    // Anguille jaune : anguille.jpg (poisson enroulé, tête relevée, donc mesures prises sur le
+    // corps visible : diamètre max ≈ 4 % de la longueur, tête ≈ moitié du diamètre maximal à
+    // l'œil, queue effilée). Section quasi ronde, un peu comprimée vers la queue.
     anguille: [
-        { t: 0, h: 0.012, w: 0.01, y: -0.002 }, { t: 0.03, h: 0.022, w: 0.02, y: 0 },
-        { t: 0.1, h: 0.032, w: 0.028, y: 0.002 }, { t: 0.3, h: 0.04, w: 0.034, y: 0.002 },
-        { t: 0.55, h: 0.04, w: 0.03, y: 0.001 }, { t: 0.8, h: 0.034, w: 0.018, y: 0 },
-        { t: 1, h: 0.016, w: 0.007, y: 0 }],
+        { t: 0, h: 0.0035, w: 0.0035, y: -0.0015 }, { t: 0.012, h: 0.0075, w: 0.0085, y: -0.0008 },
+        { t: 0.03, h: 0.0108, w: 0.0115, y: 0 }, { t: 0.055, h: 0.0132, w: 0.0135, y: 0.0005 },
+        { t: 0.09, h: 0.0158, w: 0.0158, y: 0.001 }, { t: 0.14, h: 0.0182, w: 0.0178, y: 0.001 },
+        { t: 0.25, h: 0.02, w: 0.019, y: 0.0008 }, { t: 0.45, h: 0.021, w: 0.019, y: 0 },
+        { t: 0.65, h: 0.02, w: 0.0175, y: 0 }, { t: 0.82, h: 0.017, w: 0.0135, y: 0 },
+        { t: 0.93, h: 0.0115, w: 0.0082, y: 0 }, { t: 1, h: 0.0055, w: 0.0035, y: 0 }],
     barbu: [
         { t: 0, h: 0.03, w: 0.04, y: -0.008, nb: 3 }, { t: 0.08, h: 0.06, w: 0.075, y: 0, nb: 3 },
         { t: 0.25, h: 0.085, w: 0.08, y: 0.004 }, { t: 0.45, h: 0.085, w: 0.06, y: 0 },
@@ -450,12 +463,16 @@ export const ANATOMIES = {
         pelvienne: { t: 0.32, longueur: 0.12, pente: 0.35 },
         oeil: { t: 0.1, y: 0.035, r: 0.03 }, bouche: { t: 0.08, y0: -0.004, y1: -0.02 }, opercule: 0.28
     },
+    // Anguille : dorsale et anale basses, continues jusqu'à la queue (qui les prolonge en pointe) ;
+    // pas de pelviennes ; petite pectorale pâle juste derrière l'ouïe ; œil minuscule ; bouche terminale.
     anguille: {
-        queue: { type: 'fine', longueur: 0.04, ecart: 0.035 },
-        dorsale: { type: 'continue', t0: 0.32, t1: 0.995, hauteur: 0.035, recul: 0.05 },
-        anale: { type: 'continue', t0: 0.45, t1: 0.995, hauteur: 0.032, recul: 0.05 },
-        pectorale: { t: 0.13, y: -0.004, longueur: 0.035, pente: 0.2, forme: 'ronde' },
-        oeil: { t: 0.035, y: 0.01, r: 0.007 }, bouche: { t: 0.03, y0: -0.002, y1: -0.008 }, opercule: 0.12
+        queue: { type: 'anguille', longueur: 0.07, ecart: 0.0153 },
+        dorsale: { type: 'anguille', t0: 0.27, t1: 1, hauteur: 0.0095, recul: 0 },
+        anale: { type: 'anguille', t0: 0.34, t1: 1, hauteur: 0.0085, recul: 0 },
+        pectorale: { t: 0.105, y: -0.003, longueur: 0.03, pente: 0.25, forme: 'ovale', eventail: 0.6 },
+        oeil: { t: 0.024, y: 0.003, r: 0.0036 },
+        bouche: { t: 0.03, y0: -0.0008, y1: -0.0036, epaisseur: 0.003 },
+        opercule: 0.1, contrasteOpercule: 0.05, ligneCourbe: 0.1
     },
     barbu: {
         queue: { type: 'silure', longueur: 0.1, ecart: 0.06 },

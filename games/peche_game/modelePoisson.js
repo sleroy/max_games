@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=210';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=210';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=210';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=211';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=211';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=211';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -220,6 +220,8 @@ const NAGEOIRES = {
     analeLongue: { h: [[0, 0.05], [0.12, 0.6], [0.3, 0.9], [0.85, 1], [1, 0.85]], recul: 0.22 },
     analeBreme: { h: [[0, 0.72], [0.12, 1], [0.35, 0.55], [0.7, 0.28], [1, 0.12]], recul: 0.6 },
     adipeuse: { h: [[0, 0.3], [0.4, 1], [1, 0.5]], recul: 0.7 },
+    // Anguille : liseré bas qui naît du dos, grandit doucement vers la queue et se fond dans la caudale.
+    anguille: { h: [[0, 0.04], [0.15, 0.3], [0.4, 0.45], [0.7, 0.7], [0.9, 0.9], [1, 1]], recul: 0 },
     // Dorsale de brème : sommet arrondi près de l'avant, bord arrière concave.
     dorsaleBreme: { h: [[0, 0.66], [0.07, 0.94], [0.17, 1], [0.34, 0.86], [0.62, 0.58], [1, 0.3]], recul: 0.4 },
     // Dorsale / anale du brochet : base courte tout à l'arrière, premiers rayons les plus
@@ -277,7 +279,10 @@ const CAUDALES = {
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
-    fine: [[-0.45, 0.7], [-1, 0], [-0.45, -0.7]]
+    fine: [[-0.45, 0.7], [-1, 0], [-0.45, -0.7]],
+    // Anguille : bout de queue en ogive, prolongement direct des nageoires dorsale et anale.
+    anguille: [[-0.04, 1], [-0.3, 0.82], [-0.6, 0.52], [-0.85, 0.22], [-1, 0], [-0.85, -0.22], [-0.6, -0.52],
+        [-0.3, -0.82], [-0.04, -1]]
 };
 
 // Bruit déterministe dans [-0,5 ; 0,5] : irrégularité du bord libre des nageoires
@@ -603,7 +608,7 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     const bodyMat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(0xffffff).lerp(new THREE.Color(0xff7a55), rouge * 0.45),
         map: textureCorps(espece, repere),
-        roughness: motif === 'marbrures' || motif === 'aucun' ? 0.38 : 0.45,
+        roughness: motif === 'marbrures' || motif === 'aucun' ? 0.38 : motif === 'peauLisse' ? 0.36 : 0.45,
         metalness: brillant
     });
     const couleurNageoires = espece && espece.nageoires !== undefined ? espece.nageoires

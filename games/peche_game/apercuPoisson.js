@@ -15,7 +15,7 @@
 // - Aucun accès à `window` ; seul `document.createElement` est utilisé.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=210';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=211';
 
 const LARGEUR_DEFAUT = 1200;   // résolution interne (assez pour la loupe de tailles.html)
 const HAUTEUR_DEFAUT = 800;
