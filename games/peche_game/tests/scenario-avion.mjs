@@ -27,6 +27,15 @@ export async function run() {
     check('la 1re esche conseillée = la meilleure chance de la matrice', conseils.every(c =>
         res.parEsche[c.especeId + '|' + c.meilleures[0]].max >= res.meilleur[c.especeId].chance - 1e-9));
 
+    checkEqual('banderole : taille normale sur un écran d’ordinateur (800 px)', A.echelleBanderole(800), 1);
+    check('… agrandie sur un téléphone à l’horizontale (390 px), sans excès', A.echelleBanderole(390) > 1.5 && A.echelleBanderole(390) <= 1.8,
+        A.echelleBanderole(390).toFixed(2));
+    // Aucun texte n'est tronqué : la police diminue jusqu'à ce que les 2 lignes tiennent (largeur simulée : 20 px par lettre à 40 px).
+    const mesure = (l, t) => [...l].length * t * 0.5;
+    check('la police s’adapte pour que chaque ligne tienne dans la banderole', conseils.every(c =>
+        c.lignes.every(l => mesure(l, A.taillePolice(mesure, c.lignes, 964, 92)) <= 964 || A.taillePolice(mesure, c.lignes, 964, 92) === 20)));
+    check('chaque conseil tient sur 2 lignes courtes (≤ 45 caractères)', conseils.every(c => c.lignes.length === 2
+        && c.lignes.every(l => [...l].length <= 45)), conseils.map(c => c.lignes.map(l => [...l].length).join('/')).join(' '));
     const avion = G().etat.avion;
     check('l’avion existe dans la scène', !!avion && G().scene.children.indexOf(avion.groupe) >= 0);
     // Il attend son tour, passe, puis repart (horloge du jeu).
