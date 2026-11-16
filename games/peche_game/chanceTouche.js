@@ -9,18 +9,19 @@
 //  2. COUCHE       dansCouche : l'hameçon est-il dans la tranche d'eau de l'espèce (fond, thermocline) ;
 //  3. FOND         hameçon pris (vase, herbier, roche) : plus aucune touche (substrats.hameconSurSubstrat) ;
 //  4. ACCEPTATION  efficaciteEsche (esches.js) : espèce × couche × substrat × taille.
-//                  En mode FACILE : acceptationFacile (esches.js), 1 ou 0 sans hasard — 100 % si la
-//                  meilleure chance de l'esche pour l'espèce dépasse 60 % (SEUIL_FACILE), sinon 0 ;
+//                  En mode FACILE : acceptationFacile (esches.js), 1 ou 0 sans hasard — 100 % si le
+//                  plafond de l'esche pour l'espèce (toutes couches d'hameçon) dépasse 60 %
+//                  (SEUIL_FACILE), sinon 0 ;
 //  5. DÉLAI        facteurDelai (physique.js) : heure × pression × température, borné [0,5 ; 3,5].
 //
 // `evaluerTouche(contexte)` combine le tout pour UN poisson et UNE situation et dit pourquoi il ne
 // mord pas (`raison`). C'est ce qu'exploite la matrice de tests (tests/scenario-matrice-touche.mjs).
 // ---------------------------------------------------------------------------
-import { COMPORTEMENTS, SPECIES } from './especes.js?v=230';
-import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=230';
-import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=230';
-import { hameconSurSubstrat } from './substrats.js?v=230';
-import { MARGE_VASE } from './environnement.js?v=230';
+import { COMPORTEMENTS, SPECIES } from './especes.js?v=231';
+import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=231';
+import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=231';
+import { hameconSurSubstrat } from './substrats.js?v=231';
+import { MARGE_VASE } from './environnement.js?v=231';
 
 export const RAYON_VUE_DEFAUT = 7;        // unités : poisson sans fiche de comportement
 export const RAYON_VUE_FACILE = 26;       // mode facile : aimant à poissons

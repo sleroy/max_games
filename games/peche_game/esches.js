@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=230';
+import { etat } from './etat.js?v=231';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -97,9 +97,8 @@ export const IDS_ESCHES = ESCHES.map(function (e) { return e.id; });
 // Les 3 premiers vers sont offerts (comme l'amorce de départ) : on apprend avant d'acheter.
 export const ESCHE_DEPART = { id: 'ver', quantite: 3 };
 
-// Les trois couches d'hameçon que `coucheHamecon` peut renvoyer (vocabulaire unique, aussi lu par la
-// matrice des touches et le mode facile).
-export const COUCHES_HAMEcON = ['surface', 'mi-eau', 'fond'];
+// Les trois couches d'hameçon que `coucheHamecon` peut renvoyer (vocabulaire unique du mode facile).
+export const COUCHES_HAMECON = ['surface', 'mi-eau', 'fond'];
 
 // Couche de l'hameçon : « fond » à moins de 1,2 unité du fond (même seuil que les poissons de fond,
 // comportement.js), « surface » sous 1,6 unité de ligne, « mi-eau » entre les deux. Au quiver,
@@ -140,7 +139,7 @@ export const SEUIL_FACILE = 0.6;
 // `escheId` null ou inconnue = hameçon nu (PROBA_NU).
 export function chanceMaximaleEsche(escheId, especeId, longueurCm) {
     let meilleure = 0;
-    COUCHES_HAMEcON.forEach(function (couche) {
+    COUCHES_HAMECON.forEach(function (couche) {
         meilleure = Math.max(meilleure, efficaciteEsche(escheId, especeId, couche, undefined, longueurCm));
     });
     return meilleure;
@@ -244,9 +243,7 @@ export function creerEsches(deps) {
     // sans l'atteindre (relief, couche d'eau…) s'en lasse pour ce lancer, comme s'il avait refusé.
     // Sans cela, son intérêt bloque l'attente (waitTimer) : le bouchon mordille sans fin, sans touche.
     function patienceEsche(d, dt) {
-        // En facile, un poisson qui a une bonne esche ne se lasse jamais ; une esche sans espoir
-        // (sous le seuil) le fait s'écarter comme en normal.
-        if ((etat.modeFacile && !escheSansEspoir(d)) || !etat.eschesActives) { return; }
+        if (etat.modeFacile || !etat.eschesActives) { return; }
         if (d.patienceLancer !== etat.numeroLancer) { d.patienceLancer = etat.numeroLancer; d.patience = 0; }
         d.patience += dt;
         if (d.patience > PATIENCE_POISSON && d.escheLancer !== etat.numeroLancer) {

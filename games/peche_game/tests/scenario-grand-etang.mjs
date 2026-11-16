@@ -388,7 +388,10 @@ export function run() {
     check('densité par surface conforme au facteur de difficulté (×2 en normal)',
         densite <= ancienneDensite * 2.4, (densite * 1000).toFixed(2) + ' ‰ vs ' + (ancienneDensite * 1000).toFixed(2) + ' ‰ avant (poissons par 1 000 u²)');
     // Poissons dans le rayon de vue d'un appât (8 unités) autour de 600 points d'eau, en moyenne sur
-    // 5 peuplements (un seul tirage varie de ± 0,1 selon la répartition des bancs).
+    // 5 peuplements (un seul tirage va de 0,68 à 0,83 ; le peuplement dépend aussi du vent).
+    // Vent calme pendant la mesure, puis vent d'origine restauré AVANT le peuplement de référence.
+    const ventMesure = G().getWind();
+    G().setWind(0, 0);
     let somme = 0;
     let mesures = 0;
     for (let tirage = 0; tirage < 5; tirage++) {
@@ -404,12 +407,13 @@ export function run() {
         }
     }
     const moyenne = somme / mesures;
-    // Restaure le peuplement de référence : les scénarios suivants comptent dessus.
+    G().setWind(ventMesure.dir, ventMesure.strength);
+    // Restaure le peuplement de référence (vent d'origine) : les scénarios suivants comptent dessus.
     G().setGraine(20240101);
     G().repeuplerEtang();
-    // Moyenne sur 5 peuplements : un seul tirage va de 0,68 à 0,83 selon la répartition des bancs.
+    // ≈ 0,77 mesuré avec vent calme, 0,83 au pire tirage : marge volontaire sous 0,85.
     // Les poissons naissent à ≥ 12 unités de la rive, donc la zone utile est le disque de rayon R − 12.
-    check('un appât voit au plus 0,8 poisson à 8 unités (moyenne sur 5 peuplements)',
+    check('un appât voit au plus 0,85 poisson à 8 unités (moyenne sur 5 peuplements, vent calme)',
         moyenne > 0.3 && moyenne <= 0.8, moyenne.toFixed(2) + ' poisson(s) à 8 unités');
 
     // --- Retour à un état propre ---

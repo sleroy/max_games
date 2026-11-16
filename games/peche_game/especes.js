@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------
 // especes.js — DONNÉES des espèces, styles de combat, silhouettes et touches (extraites de script.js).
 // ---------------------------------------------------------------------------
-import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=230';
-import { PROFIL_CHEVESNE, ANATOMIE_CHEVESNE, ROBE_CHEVESNE } from './chevesne.js?v=230';
-import { PROFIL_ROTENGLE, ANATOMIE_ROTENGLE, ROBE_ROTENGLE } from './rotengle.js?v=230';
-import { PROFIL_ABLETTE, ANATOMIE_ABLETTE, ROBE_ABLETTE } from './ablette.js?v=230';
-import { PROFIL_GOUJON, ANATOMIE_GOUJON, ROBE_GOUJON } from './goujon.js?v=230';
-import { PROFIL_CARASSIN, ANATOMIE_CARASSIN, ROBE_CARASSIN } from './carassin.js?v=230';
+import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=231';
+import { PROFIL_CHEVESNE, ANATOMIE_CHEVESNE, ROBE_CHEVESNE } from './chevesne.js?v=231';
+import { PROFIL_ROTENGLE, ANATOMIE_ROTENGLE, ROBE_ROTENGLE } from './rotengle.js?v=231';
+import { PROFIL_ABLETTE, ANATOMIE_ABLETTE, ROBE_ABLETTE } from './ablette.js?v=231';
+import { PROFIL_GOUJON, ANATOMIE_GOUJON, ROBE_GOUJON } from './goujon.js?v=231';
+import { PROFIL_CARASSIN, ANATOMIE_CARASSIN, ROBE_CARASSIN } from './carassin.js?v=231';
 
 // Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [

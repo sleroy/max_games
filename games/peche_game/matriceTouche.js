@@ -7,9 +7,9 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=230';
-import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche } from './esches.js?v=230';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=230';
+import { SPECIES } from './especes.js?v=231';
+import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche, tropPetitPourEsche } from './esches.js?v=231';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=231';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
@@ -110,10 +110,10 @@ export function verifierRegles() {
             // 1) le jeu doit suivre exactement acceptationFacile (raison « taille » comprise) ;
             divergent = r.possible !== (acceptationFacile(ctx.esche, ctx.especeId, ctx.longueurCm) === 1);
             // 2) plafond du jeu ≥ tableau espèce × esche. Non comparable pour un poisson trop petit
-            //    (le tableau prend le maximum sur toutes les tailles).
+            //    (le tableau prend le maximum sur toutes les tailles) : règle unique tropPetitPourEsche.
             const max = res.parEsche[ctx.especeId + '|' + (ctx.esche || 'nu')].max;
             const plafond = chanceMaximaleEsche(ctx.esche, ctx.especeId, ctx.longueurCm);
-            if (r.raison !== 'taille') { divergent = divergent || max > plafond + 1e-9; }
+            if (!tropPetitPourEsche(ctx.esche, ctx.longueurCm)) { divergent = divergent || max > plafond + 1e-9; }
             if (divergent && faciles.length < 5) {
                 faciles.push(cle + ' (' + r.raison + ', tableau ' + max + ' / plafond ' + plafond + ')');
             }

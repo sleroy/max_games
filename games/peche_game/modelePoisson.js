@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=230';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=230';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=230';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=231';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=231';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=231';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)

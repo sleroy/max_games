@@ -16,8 +16,8 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=230';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=230';
+} from './especes.js?v=231';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=231';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
