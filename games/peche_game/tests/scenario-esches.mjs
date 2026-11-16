@@ -117,7 +117,11 @@ export function run() {
     checkEqual('hameçon nu = null, quelle que soit l’espèce', f(null, 'brochet', 'mi-eau', 'herbier'), PROBA_NU);
 
     check('ver : toujours mieux qu’un hameçon nu, même pour une espèce non visée',
-        ['carpe', 'brochet', 'sandre', 'black-bass', 'ablette'].every(sp => f('ver', sp, 'mi-eau', 'sable') > PROBA_NU && f('ver', sp, 'mi-eau', 'sable') <= 0.3));
+        ['carpe', 'brochet', 'sandre', 'black-bass'].every(sp => f('ver', sp, 'mi-eau', 'sable') > PROBA_NU && f('ver', sp, 'mi-eau', 'sable') <= 0.3));
+    check('ver : l’ablette est une vraie cible (le ver de terre fait office d’asticot / ver de vase)',
+        f('ver', 'ablette', 'mi-eau', 'sable') >= 0.4);
+    check('pain : l’ablette gobe la mie de pain en surface (≥ 0,65)',
+        f('pain', 'ablette', 'surface', 'sable') >= 0.65);
     check('vif / leurre : un herbivore l’ignore (0)', ['carpe', 'gardon', 'tanche', 'breme', 'carassin'].every(sp => f('vif', sp, 'mi-eau', 'herbier') === 0));
     check('bouillette : un carnassier l’ignore (0)', f('bouillette', 'brochet', 'fond', 'vase') === 0);
     check('bouillette : une carpe trop petite (< 25 cm) l’ignore, une grosse la prend',

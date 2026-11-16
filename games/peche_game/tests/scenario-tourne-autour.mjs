@@ -87,15 +87,24 @@ export function run() {
     checkEqual('…et ne vise plus l’hameçon', d.targeting, false);
     retirer(lent);
 
-    // Mode facile : jamais de lassitude ni d'esche ignorée (aimant à poissons).
+    // Mode facile : une bonne esche (> 60 %) attire, une mauvaise est ignorée ; jamais de lassitude.
     G().setDifficulty('facile');
+    e.equiperEsche('mais');
     const facile = poserPres('carpe', 2.0);
-    e.equiperEsche('vif');
-    checkEqual('facile : même la carpe vient sur un vif', e.escheSansEspoir(facile.userData), false);
+    checkEqual('facile : la carpe vient sur du maïs', e.escheSansEspoir(facile.userData), false);
     facile.userData.escheLancer = -1;
     e.patienceEsche(facile.userData, PATIENCE_POISSON * 3);
     checkEqual('facile : pas de lassitude', e.refuseLEsche(facile.userData), false);
     retirer(facile);
+
+    e.equiperEsche('vif');
+    const facileVif = poserPres('carpe', 2.0);
+    checkEqual('facile : la carpe ignore un vif (sans espoir)', e.escheSansEspoir(facileVif.userData), true);
+    let interetFacile = false;
+    for (let i = 0; i < 60; i++) { stepFor(0.05); interetFacile = interetFacile || facileVif.userData.targeting === true; }
+    check('facile : carpe + vif ⇒ elle ne vise pas l’hameçon', !interetFacile);
+    check('facile : carpe + vif ⇒ aucune touche', state() !== 'bite', state());
+    retirer(facileVif);
 
     resetToIdle();
     G().setDifficulty('normal');

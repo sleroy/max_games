@@ -5,8 +5,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=228';
-import { creerAvion } from './avion.js?v=228';
+import { etat } from './etat.js?v=230';
+import { creerAvion } from './avion.js?v=230';
 
 export function creerVie(deps) {
     const {

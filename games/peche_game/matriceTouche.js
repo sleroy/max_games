@@ -7,9 +7,9 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=228';
-import { ESCHES } from './esches.js?v=228';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=228';
+import { SPECIES } from './especes.js?v=230';
+import { ESCHES, SEUIL_FACILE, acceptationFacile, chanceMaximaleEsche } from './esches.js?v=230';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=230';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
@@ -96,16 +96,34 @@ export function verifierRegles() {
             tailleHors.push(ctx.especeId + '/' + ctx.esche);
         }
     });
+    // Mode facile : la chance de touche est 1 ou 0, et vaut 1 si le PLAFOND de l'esche (toutes couches
+    // d'hameçon, règle acceptationFacile) dépasse SEUIL_FACILE. Le tableau espèce × esche applique en
+    // plus la couche d'eau de l'espèce : il est donc ≤ ce plafond (invariant vérifié ci-dessous).
+    const res = calculerResume(15);
     const faciles = [];
     parcourir(function (ctx, r) {
         cas++;
-        if (r.possible === (r.raison === 'accroche') && faciles.length < 5) { faciles.push(ctx.especeId + '/' + ctx.esche); }
+        const fautif = r.possible !== (r.raison === null) || (r.possible && r.chance !== 1) || (!r.possible && r.chance !== 0);
+        let divergent = false;
+        if (r.raison !== 'accroche') {
+            const cle = ctx.especeId + '/' + (ctx.esche || 'nu');
+            // 1) le jeu doit suivre exactement acceptationFacile (raison « taille » comprise) ;
+            divergent = r.possible !== (acceptationFacile(ctx.esche, ctx.especeId, ctx.longueurCm) === 1);
+            // 2) plafond du jeu ≥ tableau espèce × esche. Non comparable pour un poisson trop petit
+            //    (le tableau prend le maximum sur toutes les tailles).
+            const max = res.parEsche[ctx.especeId + '|' + (ctx.esche || 'nu')].max;
+            const plafond = chanceMaximaleEsche(ctx.esche, ctx.especeId, ctx.longueurCm);
+            if (r.raison !== 'taille') { divergent = divergent || max > plafond + 1e-9; }
+            if (divergent && faciles.length < 5) {
+                faciles.push(cle + ' (' + r.raison + ', tableau ' + max + ' / plafond ' + plafond + ')');
+            }
+        }
+        if (fautif && faciles.length < 5) { faciles.push(ctx.especeId + '/' + ctx.esche + ' (' + r.raison + ')'); }
     }, { mode: 'facile', temperatures: [15] });
     regle('coherence', 'chaque cas est cohérent (chance nulle ⇔ une raison connue)', incoherents);
-    regle('facile', 'mode facile : seul un hameçon pris au fond empêche la touche', faciles);
+    regle('facile', 'mode facile : chance 1 ou 0, 100 % si le plafond de l’esche (toutes couches) dépasse 60 %, sinon ignorée (hameçon pris au fond à part)', faciles);
     regle('taille', '« trop petit » n’arrive qu’avec la bouillette ou le vif', tailleHors);
 
-    const res = calculerResume(15);
     regle('pechable', 'chaque espèce a au moins une vraie façon d’être pêchée (chance ≥ ' + SEUIL_PECHABLE * 100 + ' %)',
         SPECIES.filter(function (e) { return !res.meilleur[e.id] || res.meilleur[e.id].chance < SEUIL_PECHABLE; })
             .map(function (e) { return e.id; }));
@@ -163,6 +181,29 @@ export function aSurveiller(resume) {
                 const nom = (SPECIES.find(function (s) { return s.id === id; }) || { nom: id }).nom;
                 liste.push({ espece: id, esche: esche.id, texte: nom + ' : ' + esche.nom.toLowerCase() + ' est son esche, mais elle ne dépasse jamais '
                     + Math.round(pe.max * 100) + ' % (couche d’eau ou fond qui la freinent).' });
+            }
+        });
+    });
+    // Mode facile : une espèce sans aucune esche au-dessus du seuil (plafond du jeu) ne mord jamais en facile.
+    SPECIES.forEach(function (e) {
+        const plafonds = ESCHES.map(function (esche) { return chanceMaximaleEsche(esche.id, e.id, e.cm[1]); });
+        const meilleur = Math.max.apply(null, plafonds);
+        if (meilleur > SEUIL_FACILE + 1e-9) { return; }
+        const i = plafonds.indexOf(meilleur);
+        liste.push({ espece: e.id, esche: ESCHES[i].id, texte: e.nom + ' : en mode facile, aucune esche n’atteint 100 % (au mieux '
+            + Math.round(meilleur * 100) + ' %, le seuil est de ' + Math.round(SEUIL_FACILE * 100) + ' %).' });
+    });
+    // Mode facile : le tableau espèce × esche applique la couche d'eau de l'espèce, le jeu non. Une esche
+    // juste au-dessus du seuil « toutes couches » mais sous 60 % dans le tableau afficherait 100 % en jeu
+    // et moins sur la page : à trancher par un humain, jamais bloquant.
+    ESCHES.forEach(function (esche) {
+        SPECIES.forEach(function (e) {
+            const pe = res.parEsche[e.id + '|' + esche.id];
+            const plafond = chanceMaximaleEsche(esche.id, e.id, e.cm[1]);
+            if (pe && pe.max <= SEUIL_FACILE + 1e-9 && plafond > SEUIL_FACILE + 1e-9) {
+                liste.push({ espece: e.id, esche: esche.id, texte: e.nom + ' : en mode facile, ' + esche.nom.toLowerCase()
+                    + ' donne 100 % (plafond ' + Math.round(plafond * 100) + ' %), mais le tableau espèce × esche affiche '
+                    + Math.round(pe.max * 100) + ' % (couche d’eau de l’espèce).' });
             }
         });
     });

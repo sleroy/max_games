@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=228';
+import { etat } from './etat.js?v=230';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -42,14 +42,17 @@ export const ESCHES = [
       cibles: { gardon: 1, perche: 1, anguille: 1, goujon: 1, rotengle: 0.5, chevesne: 0.5, truite: 0.5, tanche: 0.35, breme: 0.35, carassin: 0.35,
                // Silure : une grosse grappe de vers, très odorante, est l'un de ses meilleurs appâts.
                silure: 0.75,
+               // Ablette : l'asticot et le ver de vase sont SES appâts de référence (pêche au coup).
+               ablette: 0.5,
                // Un ver qui gigote tente parfois même les autres : mieux qu'un hameçon nu, sans être leur esche.
-               ablette: 0.3, carpe: 0.15, brochet: 0.15, sandre: 0.15, 'black-bass': 0.15 },
+               carpe: 0.15, brochet: 0.15, sandre: 0.15, 'black-bass': 0.15 },
       couches: { surface: 0.45, 'mi-eau': 1, fond: 0.9 },
       substrats: { vase: 1, sable: 1, gravier: 1, roche: 0.85, herbier: 0.8 } },
     { id: 'pain', nom: 'Pain / flocons', icone: '🍞', prix: 6,
       desc: 'Léger, il flotte et se délite en petits nuages.',
       exclusif: true,
-      cibles: { gardon: 1, rotengle: 1, chevesne: 1, ablette: 0.5 },
+      // Mie de pain : classique d'été de l'ablette, qui gobe les miettes en surface.
+      cibles: { gardon: 1, rotengle: 1, chevesne: 1, ablette: 0.7 },
       couches: { surface: 1, 'mi-eau': 0.45, fond: 0.1 },
       substrats: { herbier: 0.8 } },
     { id: 'bouillette', nom: 'Bouillette', icone: '🟤', prix: 14,
@@ -94,6 +97,10 @@ export const IDS_ESCHES = ESCHES.map(function (e) { return e.id; });
 // Les 3 premiers vers sont offerts (comme l'amorce de départ) : on apprend avant d'acheter.
 export const ESCHE_DEPART = { id: 'ver', quantite: 3 };
 
+// Les trois couches d'hameçon que `coucheHamecon` peut renvoyer (vocabulaire unique, aussi lu par la
+// matrice des touches et le mode facile).
+export const COUCHES_HAMEcON = ['surface', 'mi-eau', 'fond'];
+
 // Couche de l'hameçon : « fond » à moins de 1,2 unité du fond (même seuil que les poissons de fond,
 // comportement.js), « surface » sous 1,6 unité de ligne, « mi-eau » entre les deux. Au quiver,
 // l'hameçon est posé au fond. C'est aussi ce qu'affiche le widget de profondeur.
@@ -102,17 +109,47 @@ export function coucheHamecon(profondeurLigne, profondeurEau, auFond) {
     return profondeurLigne < 1.6 ? 'surface' : 'mi-eau';
 }
 
+// Le poisson est-il trop petit pour avaler cette esche (bouillette, vif) ? Règle UNIQUE, partagée par
+// `efficaciteEsche`, `evaluerTouche` (raison « taille ») et la matrice des touches.
+export function tropPetitPourEsche(escheId, longueurCm) {
+    const esche = ESCHES.find(function (e) { return e.id === escheId; });
+    return !!(esche && esche.tailleMin && typeof longueurCm === 'number' && longueurCm < esche.tailleMin);
+}
+
 // Probabilité (0 → 1) qu'un poisson de l'espèce prenne l'esche : espèce × couche × fond.
 // `escheId` null = hameçon nu.
 // `longueurCm` (facultatif) : un poisson trop petit pour l'esche (`tailleMin`) l'ignore.
 export function efficaciteEsche(escheId, especeId, couche, substrat, longueurCm) {
     const esche = ESCHES.find(function (e) { return e.id === escheId; });
     if (!esche) { return PROBA_NU; }
-    if (esche.tailleMin && typeof longueurCm === 'number' && longueurCm < esche.tailleMin) { return 0; }
+    if (tropPetitPourEsche(escheId, longueurCm)) { return 0; }
     const inconnue = esche.exclusif ? 0 : PROBA_INADAPTEE;
     const espece = esche.cibles[especeId] === undefined ? inconnue : esche.cibles[especeId];
     const fond = esche.substrats[substrat] === undefined ? 1 : esche.substrats[substrat];
     return Math.max(0, Math.min(1, espece * (esche.couches[couche] === undefined ? 1 : esche.couches[couche]) * fond));
+}
+
+// MODE FACILE : seuil de la « meilleure chance » d'une esche pour une espèce. Strictement au-dessus :
+// la touche est certaine (100 %) ; sinon le poisson ignore l'esche (0 %).
+export const SEUIL_FACILE = 0.6;
+
+// Plafond de chance (0 → 1) de l'esche pour l'espèce : le maximum de efficaciteEsche sur les trois
+// couches d'hameçon, sur le fond neutre (poids 1 : le meilleur fond possible, donc le plafond).
+// ⚠ Ce plafond est ≥ la valeur du tableau « meilleure chance par poisson et par esche » de la matrice :
+// celle-ci applique en plus la couche d'eau de l'espèce (règle `dansCouche`), que le mode facile ignore.
+// `escheId` null ou inconnue = hameçon nu (PROBA_NU).
+export function chanceMaximaleEsche(escheId, especeId, longueurCm) {
+    let meilleure = 0;
+    COUCHES_HAMEcON.forEach(function (couche) {
+        meilleure = Math.max(meilleure, efficaciteEsche(escheId, especeId, couche, undefined, longueurCm));
+    });
+    return meilleure;
+}
+
+// MODE FACILE : décision binaire, sans hasard. 1 si le plafond de l'esche dépasse SEUIL_FACILE, sinon 0
+// (le poisson ignore l'esche, hameçon nu compris). Marge 1e-9 : 0,75 × 0,8 vaut 0,6000000000000001.
+export function acceptationFacile(escheId, especeId, longueurCm) {
+    return chanceMaximaleEsche(escheId, especeId, longueurCm) > SEUIL_FACILE + 1e-9 ? 1 : 0;
 }
 
 export function creerEsches(deps) {
@@ -155,6 +192,8 @@ export function creerEsches(deps) {
 
     function probabilite(especeId, longueurCm) {
         const esche = escheAuBout();
+        // Facile : 1 ou 0 selon la meilleure chance de l'esche (ni couche ni fond, ni hasard).
+        if (etat.modeFacile) { return acceptationFacile(esche ? esche.id : null, especeId, longueurCm); }
         const c = contexte();
         return efficaciteEsche(esche ? esche.id : null, especeId, c.couche, c.substrat, longueurCm);
     }
@@ -162,10 +201,10 @@ export function creerEsches(deps) {
     // Le poisson arrivé sur l'hameçon prend-il l'esche ? Décision UNIQUE par poisson et par lancer :
     // un poisson qui refuse s'en désintéresse (voir comportement.js, `refuseLEsche`).
     function accepterTouche(fish) {
-        // MODE FACILE : tous les poissons acceptent l'esche (aucun refus).
-        if (etat.modeFacile) { return true; }
         if (!etat.eschesActives) { return true; }
         const d = fish.userData;
+        // MODE FACILE : 100 % ou rien (règle unique : acceptationFacile), sans hasard ni message.
+        if (etat.modeFacile) { return probabilite(d.especeId, d.longueurCm) > 0; }
         if (d.escheLancer === etat.numeroLancer) { return d.escheAccepte; }
         const accepte = hasard() < probabilite(d.especeId, d.longueurCm);
         d.escheLancer = etat.numeroLancer;
@@ -195,8 +234,9 @@ export function creerEsches(deps) {
 
     // Ce poisson ne PEUT PAS prendre l'esche (espèce non visée par une esche exclusive, trop petit pour
     // elle) : il l'ignore, il ne vient même pas tourner autour (sinon le bouchon « mordille » pour rien).
+    // En facile, une esche sous le seuil (SEUIL_FACILE) est aussi ignorée.
     function escheSansEspoir(d) {
-        if (etat.modeFacile || !etat.eschesActives) { return false; }
+        if (!etat.eschesActives) { return false; }
         return probabilite(d.especeId, d.longueurCm) <= 0;
     }
 
@@ -204,7 +244,9 @@ export function creerEsches(deps) {
     // sans l'atteindre (relief, couche d'eau…) s'en lasse pour ce lancer, comme s'il avait refusé.
     // Sans cela, son intérêt bloque l'attente (waitTimer) : le bouchon mordille sans fin, sans touche.
     function patienceEsche(d, dt) {
-        if (etat.modeFacile || !etat.eschesActives) { return; }
+        // En facile, un poisson qui a une bonne esche ne se lasse jamais ; une esche sans espoir
+        // (sous le seuil) le fait s'écarter comme en normal.
+        if ((etat.modeFacile && !escheSansEspoir(d)) || !etat.eschesActives) { return; }
         if (d.patienceLancer !== etat.numeroLancer) { d.patienceLancer = etat.numeroLancer; d.patience = 0; }
         d.patience += dt;
         if (d.patience > PATIENCE_POISSON && d.escheLancer !== etat.numeroLancer) {

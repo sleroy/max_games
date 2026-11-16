@@ -5,8 +5,11 @@
 //  - la touche arrive vite, avec UNE seule fausse touche ;
 //  - la fenêtre de ferrage est large ;
 //  - le gros panneau « FERRER ! » s'affiche pendant LA vraie touche ;
+//  - esches : une esche dont la meilleure chance dépasse 60 % donne 100 %, sinon le poisson
+//    l'ignore (hameçon nu compris) ; la taille minimale de l'esche reste appliquée ;
 //  - on revient au mode Normal sans laisser d'état caché.
 // ---------------------------------------------------------------------------
+import { SPECIES } from '../especes.js';
 import {
     group, check, checkEqual, checkClose,
     G, el, fire, state, step, stepFor, stepUntil,
@@ -16,6 +19,63 @@ import {
 function distanceFishToHook(fish) {
     const fl = G().floatGroup.position;
     return Math.hypot(fish.position.x - fl.x, fish.position.z - fl.z);
+}
+
+/** Lance (facile, esche donnée), pose un poisson tout près de l'hameçon et dit s'il y a touche en 5 s. */
+function toucheAvec(especeId, cm, escheId, ligne) {
+    const e = G().etat;
+    resetToIdle();
+    clearLilyPads();
+    G().setWind(0, 0);
+    G().setFloatType('coulisse');
+    G().setProfondeur(ligne);
+    e.equiperEsche(escheId);
+    castTo(0, -25);
+    parkFish();
+    const fish = G().spawnFish(SPECIES.find(sp => sp.id === especeId));
+    const d = fish.userData;
+    d.longueurCm = cm;
+    d.homeX = G().floatGroup.position.x;
+    d.homeZ = G().floatGroup.position.z;
+    d.homeRadius = 20;
+    d.depth = G().getHookDepth();
+    fish.position.set(G().floatGroup.position.x + 0.4, G().getHookDepth() - d.topOffset, G().floatGroup.position.z);
+    d.vx = 0;
+    d.vz = 0;
+    const sansEspoir = e.escheSansEspoir(d);
+    const mord = stepUntil(() => state() === 'bite', 5);
+    resetToIdle();
+    const i = G().fishes.indexOf(fish);
+    if (i >= 0) { G().fishes.splice(i, 1); }
+    return { mord, sansEspoir };
+}
+
+/** Lance (facile, esche donnée), pose un poisson à `distance` de l'hameçon, dit s'il vient le viser. */
+function attireAvec(especeId, cm, escheId, distance) {
+    const e = G().etat;
+    resetToIdle();
+    clearLilyPads();
+    G().setWind(0, 0);
+    G().setFloatType('coulisse');
+    G().setProfondeur(1.0);
+    e.equiperEsche(escheId);
+    castTo(0, -25);
+    parkFish();
+    const fish = G().spawnFish(SPECIES.find(sp => sp.id === especeId));
+    const d = fish.userData;
+    d.longueurCm = cm;
+    d.homeX = G().floatGroup.position.x;
+    d.homeZ = G().floatGroup.position.z;
+    d.homeRadius = 25;
+    d.depth = G().getHookDepth();
+    fish.position.set(G().floatGroup.position.x + distance, G().getHookDepth() - d.topOffset, G().floatGroup.position.z);
+    d.vx = 0;
+    d.vz = 0;
+    const vise = stepUntil(() => d.targeting === true, 6);
+    resetToIdle();
+    const i = G().fishes.indexOf(fish);
+    if (i >= 0) { G().fishes.splice(i, 1); }
+    return vise;
 }
 
 export function run() {
@@ -82,6 +142,32 @@ export function run() {
             state());
         checkEqual('le panneau se cache après le ferrage',
             el('kidCue').classList.contains('active'), false);
+
+        // --- Esches : au-dessus de 60 % (meilleure chance de la matrice) = 100 %, sinon ignorée ---
+        const e = G().etat;
+        const flotteurAvant = G().getFloatType();
+        const profondeurAvant = G().getProfondeur();
+        const ventAvant = G().getWind();
+        e.eschesActives = true;
+        G().setDifficulty('facile');
+        const pain = toucheAvec('gardon', 20, 'pain', 1.0);
+        check('facile : gardon + pain ⇒ touche (100 %)', pain.mord && !pain.sansEspoir, JSON.stringify(pain));
+        const mouche = toucheAvec('gardon', 20, 'mouche', 1.0);
+        check('facile : gardon + mouche (25 %) ⇒ aucune touche', !mouche.mord, JSON.stringify(mouche));
+        check('facile : gardon + mouche ⇒ l’esche est sans espoir', mouche.sansEspoir === true);
+        const nu = toucheAvec('gardon', 20, null, 1.0);
+        check('facile : hameçon nu (4 %) ⇒ aucune touche', !nu.mord, JSON.stringify(nu));
+        const petit = toucheAvec('carassin', 20, 'bouillette', 3.25);
+        check('facile : carassin de 20 cm + bouillette ⇒ aucune touche (tailleMin 25)', !petit.mord && petit.sansEspoir === true,
+            JSON.stringify(petit));
+        check('facile : une bonne esche attire de loin (carpe + maïs à 12 unités)', attireAvec('carpe', 40, 'mais', 12));
+        check('facile : une esche sans espoir n’attire pas (carpe + mouche à 12 unités)',
+            !attireAvec('carpe', 40, 'mouche', 12));
+        e.equiperEsche('ver');
+        e.eschesActives = false;
+        G().setFloatType(flotteurAvant);
+        G().setProfondeur(profondeurAvant);
+        G().setWind(ventAvant.dir, ventAvant.strength);
 
         // --- On rend le jeu au mode Normal (aucun état caché) ---
         resetToIdle();
