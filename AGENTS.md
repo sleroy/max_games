@@ -310,6 +310,7 @@ MATRICE_CSV=docs/matrice-touche.csv node games/peche_game/tests/run.mjs   # rég
 | `vegetation.js` | roseaux et herbe des berges qui ondulent au vent (shader) |
 | `chanceTouche.js` | **règles de touche, source unique** (vue, couche, fond, esche, délai) : `evaluerTouche(contexte)` ; toute règle de touche s'ajoute ici |
 | `matriceTouche.js` | grille de situations, **règles** de la matrice (test bloquant) et points **à surveiller** ; partagé par le test et `matrice.html` |
+| `avion.js` | avion (modèle glTF `assets/avion.glb`) qui traîne une banderole de conseils d'esche, d'après la matrice |
 | `matrice.html` / `matrice.js` / `matrice.css` | page de visualisation de la matrice des touches ([voir en ligne](https://sleroy.github.io/max_games/games/peche_game/matrice.html)) |
 | `portraits.js` | portraits 2D des espèces : **repli** du panneau de combat (sans WebGL) ; le portrait normal est le rendu 3D (`apercuPoisson.js`) |
 | `modelePoisson.js` | poisson 3D paramétrique (corps par sections, nageoires, yeux, barbillons) — voir `docs/modeles-poissons.md` |

@@ -7,9 +7,9 @@
 //  - SURVEILLER : déséquilibres possibles, à décider par un humain (affichés, jamais bloquants).
 // Toutes les chances viennent de evaluerTouche (chanceTouche.js), la règle unique du jeu.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=226';
-import { ESCHES } from './esches.js?v=226';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=226';
+import { SPECIES } from './especes.js?v=227';
+import { ESCHES } from './esches.js?v=227';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=227';
 
 export const SUBSTRATS_MATRICE = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
 export const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités : 2 = 1 m), bord → fosse
@@ -167,4 +167,23 @@ export function aSurveiller(resume) {
         });
     });
     return liste;
+}
+
+/**
+ * Conseils d'esche par espèce (bannière de l'avion, vie.js → avion.js) : les 2 meilleures esches
+ * et la pire, d'après la matrice (même calcul que le test et la page matrice.html).
+ * Renvoie [{ especeId, meilleures: [id, id], pire: id, pireJamais: booléen, texte }].
+ */
+export function conseilsEsches(resume) {
+    const res = resume || calculerResume(15);
+    return SPECIES.map(function (e) {
+        const classees = ESCHES.map(function (x) { return { id: x.id, max: res.parEsche[e.id + '|' + x.id].max }; })
+            .sort(function (a, b) { return b.max - a.max; });
+        const meilleures = classees.slice(0, 2).filter(function (c) { return c.max > 0; }).map(function (c) { return c.id; });
+        const pire = classees[classees.length - 1];
+        const icone = function (id) { return ESCHES.find(function (x) { return x.id === id; }).icone + ' ' + nomEsche(id); };
+        const texte = e.nom + ' : préfère ' + meilleures.map(icone).join(', puis ')
+            + ' — ' + (pire.max <= 0 ? 'jamais ' : 'rarement ') + icone(pire.id);
+        return { especeId: e.id, meilleures: meilleures, pire: pire.id, pireJamais: pire.max <= 0, texte: texte };
+    });
 }

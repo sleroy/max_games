@@ -5,7 +5,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=226';
+import { etat } from './etat.js?v=227';
+import { creerAvion } from './avion.js?v=227';
 
 export function creerVie(deps) {
     const {
@@ -74,7 +75,12 @@ export function creerVie(deps) {
     let sautTimer = 26;
     let oiseauTimer = 14;
 
+    // Un avion traîne une banderole de conseils d'esche (avion.js, d'après la matrice des touches).
+    const avion = creerAvion({ scene, camera: function () { return etat.camera; } });
+    etat.avion = avion;
+
     function updateAmbiante(dt, time) {
+        avion.maj(dt);
         for (let i = 0; i < etat.birds.length; i++) {
             const bird = etat.birds[i];
             const p = bird.userData.phase;

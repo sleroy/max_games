@@ -103,3 +103,9 @@ plouf.mp3 pour la bulle de la vase).
 16 photos de poissons (Wikimedia Commons : domaine public, CC BY-SA 2.0 / 3.0 / 4.0), affichées sur la page
 tailles.html. Auteur, licence et page d'origine de chaque photo : voir assets/references/SOURCES.md
 (et assets/references/photos.json). Retouche : réduction à 900 px de large, JPEG qualité 85, EXIF supprimé.
+
+--- Avion des conseils (v227) ---
+- avion.glb : « Small Airplane », Vojtěch Balák, CC-BY 3.0 (attribution obligatoire), via Poly Pizza.
+  https://poly.pizza/m/7cvx6ex-xfL — fichier .glb d'origine, sans retouche.
+- GLTFLoader.js, BufferGeometryUtils.js : exemples officiels de three.js r160, licence MIT
+  (https://github.com/mrdoob/three.js). Seul changement : chemin d'import de BufferGeometryUtils.js.
