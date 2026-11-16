@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=190';
+import { SoundEngine } from './sound.js?v=192';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -16,8 +16,8 @@ import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
 import { creerSubstrats } from './substrats.js?v=189';
-import { creerEsches } from './esches.js?v=189';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=184';
+import { creerEsches } from './esches.js?v=192';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=192';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
@@ -27,7 +27,7 @@ import { creerComportement } from './comportement.js?v=189';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=189';
-import { creerBoutique } from './boutique.js?v=184';
+import { creerBoutique } from './boutique.js?v=192';
 import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
@@ -40,7 +40,7 @@ import { creerMeteo } from './meteo.js?v=189';
 import { creerPhysique } from './physique.js?v=189';
 import { creerVie } from './vie.js?v=173';
 import { creerSonar } from './sonar.js?v=179';
-import { creerStocks } from './stocks.js?v=189';
+import { creerStocks } from './stocks.js?v=192';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
 import { creerCycleLigne } from './cycleLigne.js?v=184';

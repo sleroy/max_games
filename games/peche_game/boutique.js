@@ -117,20 +117,15 @@ export function creerBoutique(deps) {
                 + (journal.experience < article.prix ? ' disabled' : '')
                 + '>Acheter ×' + TAILLE_LOT + ' · ' + article.prix + ' XP</button></div>';
         }).join('');
-        // Esches (§15.2) : mêmes lots et même achat que les fils (acheterRecharge), plus « Équiper ».
-        html += '</div><div class="shop-section">🪱 Esches</div><div class="shop-grid">';
+        // Esches (§15.2) : ILLIMITÉES (v192) — une simple liste d'équipement, sans prix ni achat.
+        html += '</div><div class="shop-section">🪱 Esches (illimitées)</div><div class="shop-grid">';
         const equipee = etat.escheEquipee();
         etat.ESCHES.forEach(esche => {
-            const stock = etat.stockEsche(esche.id);
             const bouton = equipee && equipee.id === esche.id
                 ? '<button class="shop-btn equipped" disabled>✅ Équipée</button>'
-                : '<button class="shop-btn" data-action="equiper-esche" data-id="' + esche.id + '"'
-                    + (stock > 0 ? '' : ' disabled') + '>Équiper</button>';
-            html += '<div class="shop-item' + (stock > 0 ? ' owned' : '') + '"><div class="shop-name">' + esche.icone + ' '
-                + esche.nom + ' · ' + stock + ' en stock</div><div class="shop-desc">' + esche.desc + '</div>'
-                + '<button class="shop-btn buy" data-action="recharger" data-id="' + esche.id + '"'
-                + (journal.experience < esche.prix ? ' disabled' : '')
-                + '>Acheter ×' + TAILLE_LOT + ' · ' + esche.prix + ' XP</button>' + bouton + '</div>';
+                : '<button class="shop-btn" data-action="equiper-esche" data-id="' + esche.id + '">Équiper</button>';
+            html += '<div class="shop-item owned"><div class="shop-name">' + esche.icone + ' '
+                + esche.nom + '</div><div class="shop-desc">' + esche.desc + '</div>' + bouton + '</div>';
         });
         html += '<div class="shop-item"><div class="shop-name">🪝 Hameçon nu</div><div class="shop-desc">Sans esche, presque rien ne mord.</div>'
             + (equipee ? '<button class="shop-btn" data-action="equiper-esche" data-id="nu">Équiper</button>'

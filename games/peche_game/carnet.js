@@ -47,12 +47,11 @@ export function chargerCarnet(options) {
             data.ligne = Object.hasOwn(data.recharges, saved.ligne) && saved.ligne !== 'amorce'
                 ? saved.ligne : 'nylon';
         }
-        // Esches (§15.2) : stock = recharges[id] (ci-dessus), esche équipée = `esche` (null = hameçon nu).
-        // Un carnet d'avant les esches reçoit les vers de départ (opts.eschesDepart).
+        // Esches (§15.2) : ILLIMITÉES depuis la v192 — seul `esche` (l'esche équipée, null =
+        // hameçon nu) est conservé. Un carnet d'avant les esches reçoit les vers de départ.
         const eschesIds = Array.isArray(opts.eschesIds) ? opts.eschesIds : [];
         if (eschesIds.length) {
-            if (!('esche' in saved) && opts.eschesDepart && data.recharges) {
-                data.recharges[opts.eschesDepart.id] = opts.eschesDepart.quantite;
+            if (!('esche' in saved) && opts.eschesDepart) {
                 data.esche = opts.eschesDepart.id;
             } else {
                 data.esche = eschesIds.indexOf(saved.esche) >= 0 ? saved.esche : null;

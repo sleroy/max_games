@@ -11,6 +11,8 @@
 //
 // Les STOCKS (lots de 3, achat en XP, esche équipée) sont ceux de stocks.js : mêmes lots et même
 // compte `journal.recharges` que les fils et l'amorce (RECHARGES), persistés par carnet.js.
+// ⚠ Depuis la v192 les esches sont ILLIMITÉES : plus de lot, plus d'achat, plus de consommation.
+// Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
 import { etat } from './etat.js?v=145';
@@ -136,12 +138,11 @@ export function creerEsches(deps) {
         return etat.eschesActives && d.escheLancer === etat.numeroLancer && d.escheAccepte === false;
     }
 
-    // Étiquette du widget de profondeur : l'esche équipée et son stock.
+    // Étiquette du widget de profondeur : l'esche équipée (illimitée : pas de compteur).
     function majEtiquette() {
         if (!etiquette) { return; }
         const esche = etat.escheEquipee ? etat.escheEquipee() : null;
-        etiquette.textContent = esche ? esche.icone + ' Esche : ' + esche.nom + ' ×' + etat.stockEsche(esche.id)
-            : '🪝 Hameçon nu';
+        etiquette.textContent = esche ? esche.icone + ' Esche : ' + esche.nom : '🪝 Hameçon nu';
     }
     etat.accepterTouche = accepterTouche;
     etat.refuseLEsche = refuseLEsche;

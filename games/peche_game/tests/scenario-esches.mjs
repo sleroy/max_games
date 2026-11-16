@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------
-// Scénario 77 : LES ESCHES (idées.md §15.2, v184).
+// Scénario 77 : LES ESCHES (idées.md §15.2, v184 ; ILLIMITÉES en v192).
 //
 // Maïs, ver de terre, pain / flocons, bouillette, vif / leurre : l'hameçon n'est plus nu.
 //  - profils de cibles conformes à la demande ;
 //  - l'esche équipée MODIFIE la distribution des touches (adaptée / inadaptée / hameçon nu) ;
 //  - croisement avec la couche (surface, mi-eau, fond) et le substrat (§14.3) ;
-//  - stock : lots de 3 achetés en XP (même système que les fils), 1 consommée par touche ferrée,
-//    stock à 0 = hameçon nu ; persistance dans le carnet ; boutique et widget ;
+//  - esches ILLIMITÉES (v192) : toutes disponibles, équipables librement, AUCUNE consommation,
+//    aucun achat, widget sans compteur ; seule l'esche équipée est persistée par le carnet ;
 //  - message discret après plusieurs refus (jamais d'aide explicite).
 // ---------------------------------------------------------------------------
 import { SPECIES } from '../especes.js';
@@ -32,12 +32,9 @@ const CIBLES = {
 const POINT = { x: 0, z: -25 };    // vase, ≈ 2 m d'eau (3,98 unités)
 const PROFONDEUR = { surface: 1.0, 'mi-eau': 2.0, fond: 3.25 };
 
-/** Stock et esche équipée (sans passer par l'interface). */
-function equiper(id, stock) {
-    const e = G().etat;
-    ESCHES.forEach(esche => { e.journal.recharges[esche.id] = 0; });
-    if (id) { e.journal.recharges[id] = stock === undefined ? 999 : stock; }
-    e.journal.esche = id;
+/** Esche équipée (sans passer par l'interface). Les esches sont illimitées : pas de stock. */
+function equiper(id) {
+    G().etat.journal.esche = id;
 }
 
 /** Un lancer, un poisson de l'espèce arrive sur l'hameçon : mord-il ? */
@@ -143,7 +140,7 @@ export function run() {
     const surfaceOk = touches('gardon', 'pain', 'surface', N);
     const fondKo = touches('gardon', 'pain', 'fond', N);
     check('flocons : en surface ≥ 75 %, au fond presque jamais', surfaceOk >= 0.75 * N && fondKo <= 0.2 * N, surfaceOk + ' contre ' + fondKo);
-    checkEqual('le stock n’est pas touché par les touches non ferrées (999 avant, 999 après)', e.journal.recharges.pain, 999);
+    checkEqual('l’esche équipée ne change pas pendant des touches NON ferrées', e.journal.esche, 'pain');
 
     // --- 4) Décision unique par poisson et par lancer + désintérêt -------------------
     equiper('ver');
@@ -184,64 +181,74 @@ export function run() {
     G().fishes.splice(G().fishes.indexOf(boudeur), 1);
     resetToIdle();
 
-    // --- 6) Stock : achat par lots de 3, consommation à la touche ferrée, nu à 0 -----
+    // --- 6) Esches ILLIMITÉES (v192) : ni achat, ni consommation ---------------------
     e.eschesActives = true;
     equiper(null);
-    e.journal.experience = 100;
     G().recommencerPartie();
     G().setExperience(100);
     const acheter = id => fire('boutique', 'click', { target: { dataset: { action: 'recharger', id } } });
-    const prix = ESCHES.find(x => x.id === 'mais').prix;
+    check('toutes les esches sont disponibles d’emblée (stock illimité)', ESCHES.every(x => e.stockEsche(x.id) > 0),
+        ESCHES.map(x => x.id + '=' + e.stockEsche(x.id)).join(' '));
     acheter('mais');
-    checkEqual('un achat ajoute un lot de 3', e.stockEsche('mais'), 3);
-    checkEqual('…et débite le prix en XP', G().getExperience(), 100 - prix);
-    checkEqual('acheter équipe l’esche quand l’hameçon était nu', e.escheEquipee().id, 'mais');
-    acheter('mais');
-    checkEqual('un second achat : 6', e.stockEsche('mais'), 6);
-    G().setExperience(2);
-    acheter('vif');
-    checkEqual('pas assez d’XP : rien n’est acheté', e.stockEsche('vif'), 0);
-    G().setExperience(100);
-    // Trois touches FERRÉES consomment trois esches (une par touche).
-    equiper('mais', 3);
-    for (let i = 1; i <= 3; i++) {
+    checkEqual('on ne peut plus ACHETER une esche (XP inchangée)', G().getExperience(), 100);
+    checkEqual('…et son stock reste illimité', e.stockEsche('mais'), Infinity);
+    check('équiper une esche ne demande aucun achat', G().etat.equiperEsche('mais'));
+    checkEqual('…elle est bien équipée', e.escheEquipee().id, 'mais');
+    // Dix touches FERRÉES : aucune esche n'est consommée, l'équipement ne bouge pas.
+    for (let i = 1; i <= 10; i++) {
         const carpe = G().spawnFish(SPECIES.find(s => s.id === 'carpe'));
         checkEqual('touche ' + i + ' : mord', essai(carpe, 'fond'), true);
         strike();
         checkEqual('touche ' + i + ' : le poisson est ferré', state(), 'struggle');
-        checkEqual('touche ' + i + ' ferrée : une esche consommée', e.stockEsche('mais'), 3 - i);
         resetToIdle();
     }
-    checkEqual('stock à 0 : plus d’esche équipée (hameçon nu)', e.escheEquipee(), null);
-    checkEqual('le widget annonce l’hameçon nu', el('depthEsche').textContent.indexOf('nu') >= 0, true);
-    equiper('mais', 0);
+    checkEqual('après 10 touches ferrées, le stock reste disponible', e.stockEsche('mais') > 0, true);
+    checkEqual('…et l’esche équipée n’a pas changé', e.journal.esche, 'mais');
+    checkEqual('…escheEquipee la renvoie toujours', e.escheEquipee().id, 'mais');
+    check('le widget n’affiche plus de compteur', el('depthEsche').textContent.indexOf('×') < 0,
+        el('depthEsche').textContent);
+    check('le widget nomme l’esche équipée', el('depthEsche').textContent.indexOf('Esche : Maïs') >= 0,
+        el('depthEsche').textContent);
+    // L'hameçon nu reste possible, et les identifiants inconnus sont refusés.
+    G().etat.equiperEsche(null);
+    checkEqual('l’hameçon nu se choisit toujours', e.escheEquipee(), null);
+    check('…et s’affiche dans le widget', el('depthEsche').textContent.indexOf('Hameçon nu') >= 0,
+        el('depthEsche').textContent);
+    checkEqual('une esche inconnue est refusée', G().etat.equiperEsche('licorne'), false);
+    // La décision de touche reste valable : hameçon nu = presque rien, ver = presque tout.
+    equiper(null);
     let bitesNu = 0;
     const carpe = G().spawnFish(SPECIES.find(s => s.id === 'carpe'));
     for (let i = 0; i < N; i++) { if (essai(carpe, 'fond')) { bitesNu++; } }
-    check('stock à 0, équipée ou non : l’hameçon est nu (presque aucune touche)', bitesNu <= 0.2 * N, bitesNu + ' sur ' + N);
+    check('hameçon nu : presque aucune touche', bitesNu <= 0.2 * N, bitesNu + ' sur ' + N);
     resetToIdle();
     G().fishes.splice(G().fishes.indexOf(carpe), 1);
     e.eschesActives = false;
 
-    // --- 7) Boutique, sélection, widget ----------------------------------------------
-    equiper('ver', 2);
+    // --- 7) Boutique : liste d'équipement (plus aucun achat d'esche) -----------------
+    e.eschesActives = false;
+    G().etat.equiperEsche('ver');
     G().setExperience(100);
     G().showJournal();
     const rendu = el('boutique').innerHTML;
     check('la boutique a une section « Esches »', rendu.indexOf('Esches') >= 0);
-    check('elle liste les cinq esches avec leur stock', ESCHES.every(x => rendu.indexOf(x.nom + ' · ') >= 0));
-    check('chaque esche s’achète par lot de 3', (rendu.match(/Acheter ×3/g) || []).length >= ESCHES.length + 3);
+    check('elle annonce les esches illimitées', rendu.indexOf('illimitées') >= 0);
+    check('elle liste les cinq esches (icône + nom)', ESCHES.every(x => rendu.indexOf(x.icone + ' ' + x.nom) >= 0),
+        ESCHES.map(x => x.icone + ' ' + x.nom).join(' · '));
+    checkEqual('les fils et l’amorce s’achètent toujours par lots de 3',
+        (rendu.match(/Acheter ×3/g) || []).length, 4);
+    check('aucune esche n’a de bouton d’achat',
+        ESCHES.every(x => rendu.indexOf('data-action="recharger" data-id="' + x.id + '"') < 0));
     check('l’esche équipée est marquée', rendu.indexOf('✅ Équipée') >= 0);
-    check('le stock s’affiche', rendu.indexOf('Ver de terre · 2 en stock') >= 0);
+    checkEqual('plus de stock affiché pour les esches', rendu.indexOf('en stock') >= 0
+        && rendu.indexOf('Ver de terre · ') < 0, true);
     fire('boutique', 'click', { target: { dataset: { action: 'equiper-esche', id: 'mais' } } });
-    equiper('ver', 2);
-    e.journal.recharges.mais = 4;
-    fire('boutique', 'click', { target: { dataset: { action: 'equiper-esche', id: 'mais' } } });
-    checkEqual('on choisit l’esche équipée dans la boutique', e.journal.esche, 'mais');
-    check('le widget de profondeur affiche l’esche et son stock', el('depthEsche').textContent.indexOf('Maïs ×4') >= 0,
+    checkEqual('on choisit l’esche équipée dans la boutique (sans stock)', e.journal.esche, 'mais');
+    check('le widget de profondeur affiche l’esche sans compteur',
+        el('depthEsche').textContent.indexOf('Maïs') >= 0 && el('depthEsche').textContent.indexOf('×') < 0,
         el('depthEsche').textContent);
     fire('boutique', 'click', { target: { dataset: { action: 'equiper-esche', id: 'vif' } } });
-    checkEqual('on ne peut pas équiper une esche sans stock', e.journal.esche, 'mais');
+    checkEqual('une autre esche s’équipe aussi librement', e.journal.esche, 'vif');
     fire('boutique', 'click', { target: { dataset: { action: 'equiper-esche', id: 'nu' } } });
     checkEqual('« Hameçon nu » se choisit aussi', e.journal.esche, null);
     check('…et s’affiche dans le widget', el('depthEsche').textContent.indexOf('Hameçon nu') >= 0, el('depthEsche').textContent);
@@ -260,41 +267,44 @@ export function run() {
     G().setFloatType('anglaise');
     G().setProfondeur(2.5);
 
-    // --- 8) Persistance dans le carnet (localStorage), pas dans l'état de partie -----
+    // --- 8) Persistance : seule l'esche ÉQUIPÉE va dans le carnet ---------------------
     const store = { valeur: '', getItem() { return this.valeur; }, setItem(cle, v) { this.valeur = v; } };
     const ids = IDS_ESCHES;
-    const neuf = () => ({ recharges: Object.fromEntries(['amorce', 'nylon', 'fluorocarbone', 'tresse'].concat(ids).map(i => [i, 0])), esche: 'ver' });
-    sauverCarnet({ store, data: Object.assign(neuf(), { esche: 'bouillette', recharges: Object.assign(neuf().recharges, { bouillette: 6, ver: 1 }) }) });
+    const neuf = () => ({ recharges: { amorce: 0, nylon: 0, fluorocarbone: 0, tresse: 0 }, esche: 'ver' });
+    sauverCarnet({ store, data: Object.assign(neuf(), { esche: 'bouillette' }) });
     const recharge = neuf();
     chargerCarnet({ store, data: recharge, eschesIds: ids, eschesDepart: ESCHE_DEPART });
     checkEqual('rechargement : l’esche équipée est restaurée', recharge.esche, 'bouillette');
-    checkEqual('rechargement : le stock est restauré', recharge.recharges.bouillette, 6);
-    checkEqual('rechargement : les autres stocks aussi', recharge.recharges.ver, 1);
+    checkEqual('rechargement : aucune esche n’ajoute de stock au carnet',
+        Object.keys(recharge.recharges).join(), 'amorce,nylon,fluorocarbone,tresse');
     sauverCarnet({ store, data: Object.assign(neuf(), { esche: null }) });
     const nuRecharge = neuf();
     chargerCarnet({ store, data: nuRecharge, eschesIds: ids, eschesDepart: ESCHE_DEPART });
     checkEqual('rechargement : « hameçon nu » est restauré', nuRecharge.esche, null);
-    store.valeur = JSON.stringify({ experience: 12, recharges: { amorce: 2 } });
+    store.valeur = JSON.stringify({ experience: 12, recharges: { amorce: 2 }, esche: 'ver', ver: 9 });
     const ancien = neuf();
     chargerCarnet({ store, data: ancien, eschesIds: ids, eschesDepart: ESCHE_DEPART });
-    checkEqual('un ancien carnet reçoit les 3 vers de départ', ancien.recharges.ver, 3);
-    checkEqual('…et les équipe', ancien.esche, 'ver');
+    checkEqual('un ancien carnet reste équipé de son esche', ancien.esche, 'ver');
+    checkEqual('…et un vieux stock d’esche est ignoré', Object.hasOwn(ancien.recharges, 'ver'), false);
     checkEqual('…sans toucher à son XP', ancien.experience, 12);
+    store.valeur = JSON.stringify({ experience: 12, recharges: { amorce: 2 } });
+    const sansEsche = neuf();
+    chargerCarnet({ store, data: sansEsche, eschesIds: ids, eschesDepart: ESCHE_DEPART });
+    checkEqual('un carnet d’avant les esches est équipé des vers de départ', sansEsche.esche, 'ver');
     store.valeur = JSON.stringify({ esche: 'inconnue', recharges: {} });
     const faux = neuf();
     chargerCarnet({ store, data: faux, eschesIds: ids, eschesDepart: ESCHE_DEPART });
     checkEqual('une esche inconnue est ignorée (hameçon nu)', faux.esche, null);
-    // Le jeu écrit bien l'esche et le stock dans le CARNET (journal), pas dans l'état de partie.
+    // Le jeu écrit bien l'esche ÉQUIPÉE dans le CARNET (journal), pas dans l'état de partie.
     const reel = e.journalStore;
     const boite = { valeur: '', getItem() { return this.valeur; }, setItem(cle, v) { this.valeur = v; } };
     e.journalStore = boite;
-    equiper('ver', 5);
     check('équiper une esche enregistre le carnet', G().etat.equiperEsche('ver') && /"esche":"ver"/.test(boite.valeur));
-    check('le stock est dans le carnet', /"ver":5/.test(boite.valeur), boite.valeur.slice(0, 120));
+    check('le carnet ne contient plus de stock d’esche', !/"ver":\s*[1-9]/.test(boite.valeur), boite.valeur.slice(0, 160));
     G().recommencerPartie();
-    checkEqual('une nouvelle partie ne touche ni l’esche ni le stock', e.journal.esche === 'ver' && e.stockEsche('ver') === 5, true);
+    checkEqual('une nouvelle partie ne touche pas l’esche équipée', e.journal.esche, 'ver');
     e.journalStore = reel;
-    checkEqual('les vers de départ sont offerts aux nouveaux joueurs', ESCHE_DEPART.quantite, 3);
+    checkEqual('le ver de terre reste l’esche de départ (compatibilité carnets)', ESCHE_DEPART.id, 'ver');
     equiper(null);
     e.eschesActives = false;
     G().setExperience(0);

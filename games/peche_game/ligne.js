@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
 import { etat } from './etat.js?v=145';
-import { coucheHamecon } from './esches.js?v=189';
+import { coucheHamecon } from './esches.js?v=192';
 
 export function creerLigne(deps) {
     const {

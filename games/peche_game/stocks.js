@@ -5,12 +5,12 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import { etat } from './etat.js?v=145';
-import { ESCHES, ESCHE_DEPART } from './esches.js?v=189';
+import { ESCHES, ESCHE_DEPART } from './esches.js?v=192';
 
 export function creerStocks(deps) {
     const {
         SCIONS_DE_DEPART, feedButton, quickFeedCount, quickFeedButton, saveJournal, majLignes,
-        renderJournal, lineSelect, statusDisplay
+        renderJournal, lineSelect
     } = deps;
 
     etat.MAX_LIGNES = 5;
@@ -24,8 +24,9 @@ export function creerStocks(deps) {
             desc: 'Supporte mieux les poissons qui tirent et la remontée rapide.' }
     ];
     etat.TYPES_DE_FIL = etat.RECHARGES.slice(1);
-    // Esches (§15.2) : MÊME système que les fils et l'amorce (lots de TAILLE_LOT, achat en XP, stock dans
-    // journal.recharges, persisté par carnet.js). Elles ne sont pas dans RECHARGES (ni fil, ni amorce).
+    // Esches (§15.2) : ILLIMITÉES depuis la v192. Toutes disponibles d'emblée, sans achat et
+    // sans consommation ; seul `journal.esche` (l'esche ÉQUIPÉE) est persisté par carnet.js.
+    // Elles ne sont pas dans RECHARGES (ni fil, ni amorce) et n'ont plus de stock.
     etat.ESCHES = ESCHES;
     etat.ESCHE_DEPART = ESCHE_DEPART;
     etat.TAILLE_LOT = 3;
@@ -34,8 +35,7 @@ export function creerStocks(deps) {
     etat.journal = { total: 0, totalWeight: 0, best: 0, last: [], especes: {}, experience: 0, sonar: false, bateau: false,
         technique: 'bouchon', bouchons: etat.BOUCHONS_DE_DEPART.slice(), scions: SCIONS_DE_DEPART.slice(), scion: SCIONS_DE_DEPART[0], ligne: 'nylon',
         esche: ESCHE_DEPART.id,
-        recharges: Object.fromEntries(etat.RECHARGES.concat(ESCHES).map(article =>
-            [article.id, article.id === ESCHE_DEPART.id ? ESCHE_DEPART.quantite : 0])) };
+        recharges: Object.fromEntries(etat.RECHARGES.map(article => [article.id, 0])) };
 
     function stockAmorce() {
         return etat.amorceDepartRestante + etat.journal.recharges.amorce;
@@ -82,44 +82,36 @@ export function creerStocks(deps) {
         etat.renderBoutique();
     }
 
-    // --- Esches : stock, esche équipée (null = hameçon nu), consommation à chaque touche ferrée ---
+    // --- Esches : ILLIMITÉES (v192) — toutes disponibles, équipables, jamais consommées ---
+    // `stockEsche` ne sert plus qu'à savoir si l'identifiant est valide (Infinity = illimité).
     function stockEsche(id) {
-        return etat.journal.recharges[id] || 0;
+        return ESCHES.some(e => e.id === id) ? Infinity : 0;
     }
 
+    // Esche équipée (null = hameçon nu). Plus aucune condition de stock.
     function escheEquipee() {
-        const esche = ESCHES.find(e => e.id === etat.journal.esche);
-        return esche && stockEsche(esche.id) > 0 ? esche : null;   // stock à 0 : hameçon nu
+        return ESCHES.find(e => e.id === etat.journal.esche) || null;
     }
 
     function equiperEsche(id) {
         if (etat.floatState !== 'idle' && etat.floatState !== 'inWater') { return false; }
-        if (id && !(ESCHES.some(e => e.id === id) && stockEsche(id) > 0)) { return false; }
+        if (id && !ESCHES.some(e => e.id === id)) { return false; }
         etat.journal.esche = id || null;
         saveJournal();
         etat.majEsche();
         return true;
     }
 
-    // Une touche FERRÉE consomme une esche. À zéro, l'hameçon est nu (le stock vide reste équipé).
+    // Conservée pour l'API (combat.js l'appelle au ferrage) : plus aucune consommation.
     function consommerEsche() {
-        const esche = etat.eschesActives ? escheEquipee() : null;
-        if (!esche) { return false; }
-        etat.journal.recharges[esche.id] -= 1;
-        saveJournal();
-        if (stockEsche(esche.id) === 0) { statusDisplay.textContent = 'Plus de ' + esche.nom.toLowerCase() + ' : l’hameçon est nu.'; }
-        etat.majEsche();
-        etat.renderBoutique();
-        return true;
+        return false;
     }
 
     function acheterRecharge(id) {
-        const article = etat.RECHARGES.concat(ESCHES).find(recharge => recharge.id === id);
+        const article = etat.RECHARGES.find(recharge => recharge.id === id);
         if (!article || etat.journal.experience < article.prix) { return false; }
         etat.journal.experience -= article.prix;
         etat.journal.recharges[id] += etat.TAILLE_LOT;
-        // Hameçon nu (ou stock vidé) : l'esche qu'on vient d'acheter est équipée.
-        if (ESCHES.includes(article) && !escheEquipee()) { etat.journal.esche = id; }
         selectionnerFilDisponible();
         saveJournal();
         renderJournal();
