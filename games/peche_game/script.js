@@ -574,9 +574,9 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 // `poissons` = facteur de DENSITE (demande du joueur 2026-11-16) : facile ×3,
 // normale ×2, difficile ×1,5. Il multiplie la population calculee par la surface.
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0, poissons: 3 },
-    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08, poissons: 2 },
-    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15, poissons: 1.5 }
+    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0, poissons: 3, xp: 0.75 },
+    normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08, poissons: 2, xp: 1 },
+    dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15, poissons: 1.5, xp: 1.5 }
 };
 let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
 let tangleChance = DIFFICULTY_MODES.normal.tangleChance;
@@ -1869,6 +1869,7 @@ function setDifficulty(mode) {
     const preset = DIFFICULTY_MODES[mode] || DIFFICULTY_MODES.normal;
     DIFFICULTY = preset.difficulty;
     etat.facteurDensite = preset.poissons || 2;
+    etat.facteurXp = preset.xp || 1;   // plus difficile = plus d'XP par poisson
     BITE_WINDOW = preset.biteWindow;
     tangleChance = preset.tangleChance;
     // MODE FACILE (enfant) : aimant à poissons, touche rapide, gros « FERRER ! ».
