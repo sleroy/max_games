@@ -4,8 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=220';
-import { apercuPartage } from './apercuPoisson.js?v=220';
+import { etat } from './etat.js?v=221';
+import { apercuPartage } from './apercuPoisson.js?v=221';
 
 const URL_PHOTOS = 'assets/references/photos.json';   // photos de référence (voir assets/references/SOURCES.md)
 
