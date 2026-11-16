@@ -22,3 +22,7 @@ node_modules/
 
 # Sessions navigateur locales (tests manuels)
 .playwright-cli/
+
+# Python (outils de mesure des photos)
+__pycache__/
+*.pyc
