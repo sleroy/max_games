@@ -48,6 +48,7 @@ import scenarioBateau from './scenario-bateau.mjs';
 import scenarioPortraits from './scenario-portraits.mjs';
 import scenarioModules from './scenario-modules.mjs';
 import scenarioCheat from './scenario-cheat.mjs';
+import { run as scenarioRadar } from './scenario-radar.mjs';
 import { run as scenarioSonar } from './scenario-sonar.mjs';
 import scenarioGrandEtang from './scenario-grand-etang.mjs';
 import { run as scenarioObstacles } from './scenario-obstacles.mjs';
@@ -164,6 +165,8 @@ try {
     scenarioPhysiqueEau();      // physique de l'eau (v189) : température, saisons, thermocline
     debutScenario();
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
+    debutScenario();
+    scenarioRadar();            // cheat « radar » (§17.3) : carte 2D des poissons
 } catch (error) {
     crashed = error;
 } finally {

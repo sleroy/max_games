@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=194';
+import { SoundEngine } from './sound.js?v=195';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -48,7 +48,8 @@ import { creerCycleLigne } from './cycleLigne.js?v=194';
 import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
-import { creerCheat } from './cheat.js?v=170';
+import { creerRadar } from './radar.js?v=193';
+import { creerCheat } from './cheat.js?v=193';
 import { creerBoucle } from './boucle.js?v=169';
 import { creerPartie } from './partie.js?v=170';
 import { creerPecheur } from './pecheur.js?v=171';
@@ -2125,10 +2126,18 @@ creerEntrees({
     majCoupeProfondeur, waterUniforms, fishButton
 });
 
+// Cheat « radar » (§17.3) : carte 2D des poissons, pilotée par le mot secret de cheat.js.
+const radar = creerRadar({
+    fishes, angler, floatGroup, substrats, POND_CENTER, rayonEtang, RAYON_CADRE_CARTE, SPECIES, COMPORTEMENTS,
+    panneau: document.getElementById('radarPanel'),
+    fondEl: document.getElementById('radarFond'),
+    vivantEl: document.getElementById('radarVivant')
+});
+
 const {
     cheatTouche
 } = creerCheat({
-    saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
+    radar, saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
     fermerOutils, toolDock, deplacerBateau, ensureSound, tendreLigneAuLancer, releaseCast,
     releaseFishThrow, startFishThrow, hookFish, reelClick, camera, water, startCastCharge
 });
@@ -2232,6 +2241,7 @@ function animate() {
         updateFloatingTexts(dt);
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
+        radar.maj(dt);
     }
     updateCrankVisibility();
     majPadBateau();
@@ -2683,6 +2693,7 @@ window.__game = {
     gagnerExperience: gagnerExperience,
     // Cheat « poisson » — exposé pour les tests.
     cheatTouche: cheatTouche,
+    radar: radar,
     getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
@@ -2999,6 +3010,7 @@ window.__game = {
         updateFloatingTexts(dt);
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
+        radar.maj(dt);
         updateToolDock();
         majPadBateau();
     }

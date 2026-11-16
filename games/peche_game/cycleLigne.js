@@ -157,8 +157,10 @@ export function creerCycleLigne(deps) {
                 continue;
             }
             // Seuls les poissons dont la tranche d'eau contient l'hameçon peuvent mordre.
+            // MODE FACILE : on ignore la tranche — les poissons sont venus exprès sur
+            // l'hameçon, quelle que soit leur espèce (pêche ludique pour enfants).
             const zone = data.profondeurZone;
-            if (!etat.hameconDansZone(data, zone)) {
+            if (!etat.modeFacile && !etat.hameconDansZone(data, zone)) {
                 continue;
             }
             const dx = fish.position.x - etat.floatGroup.position.x;
