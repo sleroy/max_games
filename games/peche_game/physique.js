@@ -15,8 +15,8 @@
 // pression image par image, écrit la ligne « heure · pression » du HUD et fournit les
 // crochets de test (`crochets`, repris par script.js dans window.__game).
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=235';
-import { COMPORTEMENTS } from './especes.js?v=235';
+import { etat } from './etat.js?v=236';
+import { COMPORTEMENTS } from './especes.js?v=236';
 
 // ---------------------------------------------------------------------------
 // Heure de jeu. dayPhase : 0 = aube, 0,25 = midi, 0,5 = crépuscule, 0,75 = nuit.

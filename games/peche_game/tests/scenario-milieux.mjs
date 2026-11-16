@@ -66,6 +66,11 @@ export async function run() {
     check('le silure vit en rivière et dans l’étang à carnassiers seulement',
         presente('riviere', 'silure') && presente('carnassiers', 'silure')
         && MILIEUX.every(function (m) { return ['riviere', 'carnassiers'].indexOf(m.id) >= 0 || !presente(m, 'silure'); }));
+    // Un grand prédateur ne se compte pas en dizaines : 8 % de 240 poissons faisaient 19 silures.
+    MILIEUX.filter(function (m) { return presente(m, 'silure'); }).forEach(function (m) {
+        const n = quotasEspeces(m, capacite(m)).quotas.silure;
+        check(m.id + ' : au plus 2 silures (grand prédateur)', n >= 1 && n <= 2, String(n));
+    });
     check('pas de carpe dans le canal', !presente('canal', 'carpe'));
     check('« Où la trouver » : la truite n’est que en montagne', texteOuTrouver('truite') === 'Lac de montagne',
         texteOuTrouver('truite'));

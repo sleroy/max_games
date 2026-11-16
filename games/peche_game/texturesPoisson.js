@@ -14,7 +14,7 @@
 // il marche aussi avec le faux canvas des tests Node.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { dessinerBandeLaterale } from './motifBande.js?v=235';
+import { dessinerBandeLaterale } from './motifBande.js?v=236';
 
 export const LARGEUR_TEXTURE = 256;
 export const HAUTEUR_TEXTURE = 128;

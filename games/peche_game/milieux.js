@@ -15,8 +15,8 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=235';
-import { etat } from './etat.js?v=235';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=236';
+import { etat } from './etat.js?v=236';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -57,7 +57,7 @@ export const MILIEUX = [
     {
         id: 'carnassiers', nom: 'Étang à carnassiers', icone: '🦈',
         resume: 'Herbiers et nénuphars : brochets, sandres et black-bass.',
-        parts: parts([22, 10, 14, 0, 0, 0, 0, 0, 14, 6, 12, 10, 10, 0, 0, 2]),
+        parts: parts([23, 10, 14, 0, 0, 0, 0, 0, 14, 6, 12, 10, 10, 0, 0, 1]),
         decor: { arbres: 20, nenuphars: 60, roseaux: 90, rochers: 15 },
         fonds: { vase: 0.30, herbier: 0.35, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x35584f, deep: 0x081a18, sky: 0x8fa8a0 },
@@ -84,7 +84,9 @@ export const MILIEUX = [
     {
         id: 'riviere', nom: 'Grande rivière (silures)', icone: '🌊',
         resume: 'Eau large et profonde : carpes, sandres et gros silures.',
-        parts: parts([20, 0, 16, 0, 10, 0, 10, 0, 6, 8, 6, 10, 0, 0, 6, 8]),
+        // Silure à 1 % : à 240 poissons, cela fait 2 individus, pas 19 (un grand prédateur ne se
+        // compte pas en dizaines dans un plan d'eau de cette taille).
+        parts: parts([24, 0, 18, 0, 11, 0, 10, 0, 6, 8, 6, 10, 0, 0, 6, 1]),
         decor: { arbres: 25, nenuphars: 10, roseaux: 50, rochers: 20 },
         fonds: { vase: 0.30, herbier: 0.10, sable: 0.25, gravier: 0.20, roche: 0.15 },
         eau: { shallow: 0x3b5f63, deep: 0x061b1d, sky: 0x93a9ab },

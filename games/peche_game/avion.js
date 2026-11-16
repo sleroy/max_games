@@ -14,7 +14,7 @@
 // three.js. Tant qu'il n'est pas chargé (ou sans réseau / dans les tests), un petit avion simple le remplace.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { conseilsEsches, calculerResume } from './matriceTouche.js?v=235';
+import { conseilsEsches, calculerResume } from './matriceTouche.js?v=236';
 
 export const PREMIER_PASSAGE = 30;   // s de jeu avant le premier passage
 export const INTERVALLE = 90;        // s entre deux passages (fin d'un passage → début du suivant)
