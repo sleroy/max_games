@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=225';
+import { etat } from './etat.js?v=226';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -39,7 +39,9 @@ export const ESCHES = [
       substrats: { vase: 1, sable: 1, gravier: 0.95, roche: 0.7, herbier: 0.6 } },
     { id: 'ver', nom: 'Ver de terre', icone: '🪱', prix: 6,
       desc: 'Le classique de tous les pêcheurs : il gigote.',
-      cibles: { gardon: 1, perche: 1, anguille: 1, goujon: 1, rotengle: 0.5, chevesne: 0.5, truite: 0.5, tanche: 0.35, breme: 0.35, carassin: 0.35, silure: 0.2,
+      cibles: { gardon: 1, perche: 1, anguille: 1, goujon: 1, rotengle: 0.5, chevesne: 0.5, truite: 0.5, tanche: 0.35, breme: 0.35, carassin: 0.35,
+               // Silure : une grosse grappe de vers, très odorante, est l'un de ses meilleurs appâts.
+               silure: 0.75,
                // Un ver qui gigote tente parfois même les autres : mieux qu'un hameçon nu, sans être leur esche.
                ablette: 0.3, carpe: 0.15, brochet: 0.15, sandre: 0.15, 'black-bass': 0.15 },
       couches: { surface: 0.45, 'mi-eau': 1, fond: 0.9 },
@@ -53,7 +55,8 @@ export const ESCHES = [
     { id: 'bouillette', nom: 'Bouillette', icone: '🟤', prix: 14,
       desc: 'Une grosse boule dure, lourde, faite pour rester au fond.',
       exclusif: true, tailleMin: 25,   // grosse boule dure : les petits poissons ne peuvent pas l'avaler
-      cibles: { carpe: 1, carassin: 1 },
+      // Silure : les bouillettes carnées (calmar, foie, 24 à 30 mm) le sélectionnent bien.
+      cibles: { carpe: 1, carassin: 1, silure: 0.7 },
       couches: { surface: 0.03, 'mi-eau': 0.25, fond: 1 },
       substrats: { vase: 0.85, roche: 0.7, herbier: 0.6 } },
     { id: 'vif', nom: 'Vif / leurre', icone: '🐟', prix: 16,
