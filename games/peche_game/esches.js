@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=214';
+import { etat } from './etat.js?v=215';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -38,7 +38,9 @@ export const ESCHES = [
       substrats: { vase: 1, sable: 1, gravier: 0.95, roche: 0.7, herbier: 0.6 } },
     { id: 'ver', nom: 'Ver de terre', icone: '🪱', prix: 6,
       desc: 'Le classique de tous les pêcheurs : il gigote.',
-      cibles: { gardon: 1, perche: 1, anguille: 1, goujon: 1, rotengle: 0.5, chevesne: 0.5, truite: 0.5, tanche: 0.35, breme: 0.35, carassin: 0.35, silure: 0.2 },
+      cibles: { gardon: 1, perche: 1, anguille: 1, goujon: 1, rotengle: 0.5, chevesne: 0.5, truite: 0.5, tanche: 0.35, breme: 0.35, carassin: 0.35, silure: 0.2,
+               // Un ver qui gigote tente parfois même les autres : mieux qu'un hameçon nu, sans être leur esche.
+               ablette: 0.3, carpe: 0.15, brochet: 0.15, sandre: 0.15, 'black-bass': 0.15 },
       couches: { surface: 0.45, 'mi-eau': 1, fond: 0.9 },
       substrats: { vase: 1, sable: 1, gravier: 1, roche: 0.85, herbier: 0.8 } },
     { id: 'pain', nom: 'Pain / flocons', icone: '🍞', prix: 6,
