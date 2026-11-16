@@ -5,15 +5,10 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-<<<<<<< Updated upstream
 import { etat } from './etat.js?v=232';
 import { creerAvion } from './avion.js?v=232';
-=======
-import { etat } from './etat.js?v=228';
-import { creerAvion } from './avion.js?v=228';
-import { creerConseilLocal } from './conseilLocal.js?v=228';
-import { heureDeJeu } from './physique.js?v=228';
->>>>>>> Stashed changes
+import { creerConseilLocal } from './conseilLocal.js?v=232';
+import { heureDeJeu } from './physique.js?v=232';
 
 export function creerVie(deps) {
     const {
