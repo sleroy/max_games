@@ -130,6 +130,20 @@ def masque(espece):
             m[:int(dos[x]) - 1, x] = False
             m[int(ventre[x]) + 2:, x] = False
         germe = (500, 350)
+    elif espece == 'rotengle':
+        # Poisson argenté sur fond blanc pur (tourné à gauche) : écart au blanc. Dorsale couchée sur le dos,
+        # pectorale/pelviennes/anale sous le ventre et caudale (x > 700) retranchées par deux lignes
+        # relevées à la main sur la photo ; museau à x = 54, base de la caudale x = 698.
+        e = np.abs(a - 255).max(axis=2) > 20
+        xs = np.arange(e.shape[1])
+        dos = np.interp(xs, [54, 70, 100, 150, 200, 250, 300, 350, 400, 455, 510, 580, 695],
+                        [265, 258, 248, 222, 200, 190, 183, 178, 175, 192, 215, 240, 254])
+        ventre = np.interp(xs, [54, 70, 105, 155, 195, 240, 290, 350, 410, 460, 510, 560, 630, 680, 702],
+                           [300, 312, 320, 347, 360, 375, 387, 397, 397, 392, 379, 362, 342, 327, 322])
+        m = np.zeros_like(e)
+        for x in range(54, 703):
+            m[int(dos[x]):int(ventre[x]) + 1, x] = True   # ventre quasi blanc (surexposé) : on remplit entre les deux lignes
+        germe = (350, 290)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)
