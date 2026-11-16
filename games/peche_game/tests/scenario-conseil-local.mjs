@@ -33,11 +33,42 @@ export async function run() {
         esche: esche, profondeurLigne: ligne }, ici)).chance, 0);
     check('le conseil donne plus de touches que le réglage du joueur', touches(f.esche, f.ligne) > touches('mais', 3.25),
         touches(f.esche, f.ligne).toFixed(2) + ' contre ' + touches('mais', 3.25).toFixed(2));
+    // Profondeur IDÉALE : le milieu de la zone où ça mord, pas son bord (source unique : chanceTouche.ligneIdeale).
+    const lignesTest = [];
+    for (let u = ici.bornes[0]; u <= ici.bornes[1] + 1e-9; u += 0.25) { lignesTest.push(Math.round(u * 100) / 100); }   // la grille du bouchon équipé
+    const idealeDe = (esche) => C.ligneIdeale(lignesTest, l => banc.slice(0, 4).reduce((t, p) => t + C.evaluerTouche(Object.assign({ especeId: p.especeId,
+        longueurCm: p.longueurCm, esche: esche, profondeurLigne: l }, ici)).chance, 0));
+    const ideale = idealeDe(f.esche);
+    check('le conseil donne le MILIEU du plateau (pas son bord)', f.ligne === ideale.ligne && f.ligne > ideale.plateau[0] && f.ligne < ideale.plateau[1],
+        f.ligne + ' dans [' + ideale.plateau.join(' ; ') + ']');
+    check('ligneIdeale : milieu du plateau, null sans touche possible',
+        C.ligneIdeale([1, 2, 3, 4, 5], l => (l >= 2 && l <= 4 ? 1 : 0)).ligne === 3 && C.ligneIdeale([1, 2], () => 0).ligne === null);
+    // Profondeur MOYENNE des poissons proches (dos à -2,0 ; -2,4 ; -2,2 → moyenne 2,2 unités = 1,1 m).
+    const etages = [-2.0, -2.4, -2.2].map(prof => ({ especeId: 'perche', longueurCm: 25, profondeur: prof }));
+    const m = L.recommander(Object.assign({ poissons: etages, mode: 'facile', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
+    check('la profondeur conseillée est la moyenne des poissons (≈ 2,2 unités)', m.source === 'moyenne' && Math.abs(m.ligne - 2.2) <= 0.13,
+        m.source + ' ' + m.ligne);
+    check('… et le message le dit', /vers 1,1 m$/.test(m.lignes[0]) && /à 1,1 m$/.test(m.lignes[1]), m.lignes.join(' | '));
+    const mn = L.recommander(Object.assign({ poissons: etages, mode: 'normal', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
+    checkEqual('normal : « c’est là que nagent les poissons »', mn.lignes[1], 'c’est là que nagent les poissons !');
+    // Poissons trop étagés : la moyenne tomberait où rien ne mord → on retombe sur le milieu de la zone qui mord.
+    const eclates = [{ especeId: 'gardon', longueurCm: 25, profondeur: -0.8 }, { especeId: 'gardon', longueurCm: 25, profondeur: -6 }];
+    const ec = L.recommander(Object.assign({ poissons: eclates, mode: 'normal', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
+    check('poissons très étagés : le conseil reste dans une zone où ça mord', ec.cas === 'changer' && touches2(ec, eclates) > 0, ec.source + ' ' + ec.ligne);
+    function touches2(r, ps) { return ps.reduce((t, p) => t + C.evaluerTouche(Object.assign({ especeId: p.especeId, longueurCm: p.longueurCm, esche: r.esche,
+        profondeurLigne: r.ligne }, ici)).chance, 0); }
+    const dansVase = L.recommander(Object.assign({ poissons: [{ especeId: 'carpe', longueurCm: 60, profondeur: -4.05 }], mode: 'facile', escheActuelle: 'ver',
+        ligneActuelle: 2.1 }, ici, { profondeurEau: 4.5 }));
+    check('une carpe au fond : le conseil reste au-dessus de la vase', dansVase.ligne <= 4.5 - 0.55 + 1e-9, dansVase.ligne);
     const n = L.recommander(Object.assign({ poissons: banc, mode: 'normal', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
     check('normal : c’est Papa qui conseille', n.lignes[0].indexOf('Papa : essaie') === 0, n.lignes[0]);
     check('normal : aucune espèce n’est dévoilée', NOMS.every(nom => n.lignes.join(' ').toLowerCase().indexOf(nom) < 0), n.lignes.join(' | '));
     const bon = L.recommander(Object.assign({ poissons: banc, mode: 'normal', escheActuelle: f.esche, ligneActuelle: f.ligne }, ici));
     checkEqual('déjà le bon réglage : « patience »', bon.cas, 'bon');
+    check('… et le message rappelle l’esche ET la profondeur à garder', /Papa : garde .* à \d+(,\d)? m/.test(bon.lignes[0]) && /patient/.test(bon.lignes[1]),
+        bon.lignes.join(' | '));
+    const bonFacile = L.recommander(Object.assign({ poissons: banc, mode: 'facile', escheActuelle: f.esche, ligneActuelle: f.ligne }, ici));
+    check('facile : « Garde … à … m, patience ! »', /^Garde .* à \d+(,\d)? m, patience !$/.test(bonFacile.lignes[1]), bonFacile.lignes.join(' | '));
     const fond = L.recommander({ poissons: [{ especeId: 'carpe', longueurCm: 60 }], profondeurEau: 6, substrat: 'sable', bornes: [0.6, 2.6],
         mode: 'facile', escheActuelle: 'ver', ligneActuelle: 2.5, temperature: 15, heure: 12 });
     check('carpe au fond hors de portée du bouchon : il faut un bouchon plus long', fond.cas === 'changer' && fond.bouchonPlusLong
@@ -82,6 +113,29 @@ export async function run() {
     checkEqual('le joueur pêchait bien le bouchon à l’eau pendant ce temps', state(), 'inWater');
     stepFor(30, 0.1);
     G().fishes.push(...sauvegarde);
+    // Dans le jeu : les poissons posés près du bouchon, à une profondeur connue → la moyenne est lue sur eux.
+    resetToIdle();
+    clearLilyPads();
+    G().setWind(0, 0);
+    G().setDifficulty('facile');
+    e.equiperEsche('mais');
+    castTo(0, -25);
+    parkFish();
+    const proches = G().fishes.filter(f => f.userData.especeId === 'gardon' || f.userData.especeId === 'perche').slice(0, 3);
+    const profondeurs = [-1.0, -1.4, -1.8];
+    proches.forEach((f, i) => {
+        f.userData.depth = profondeurs[i];
+        f.position.set(G().floatGroup.position.x + 2 + i, profondeurs[i] - f.userData.topOffset, G().floatGroup.position.z);
+        f.userData.hooked = false;
+    });
+    if (proches.length === 3) {
+        const calcul = e.conseilLocal.calculer();
+        const attendu = 1.4;   // moyenne de 1,0 / 1,4 / 1,8
+        check('en jeu : la profondeur est la moyenne des poissons du rayon (≈ 1,4 unités)', calcul.source === 'moyenne'
+            && Math.abs(calcul.profondeurMoyenne - attendu) < 0.01 && Math.abs(calcul.ligne - attendu) <= 0.13, JSON.stringify([calcul.source, calcul.profondeurMoyenne, calcul.ligne]));
+    } else {
+        check('en jeu : 3 poissons disponibles pour le test', false, String(proches.length));
+    }
     resetToIdle();
     G().setDifficulty('normal');
     e.equiperEsche('ver');

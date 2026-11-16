@@ -4,6 +4,9 @@
 // Bouchon à l'eau depuis DELAI[mode] secondes sans aucune touche : on regarde les poissons qui nagent à
 // moins de RAYON unités du bouchon, et on cherche (avec evaluerTouche, la règle unique du jeu) l'esche et la
 // profondeur de ligne qui leur donnent le plus de touches, sous le bouchon réel (profondeur d'eau, fond).
+// La PROFONDEUR conseillée est la MOYENNE de la profondeur réelle des poissons proches (ceux que l'esche choisie
+// attire), arrondie au pas du réglage et gardée au-dessus de la vase ; si cette moyenne tombe entre deux couches où
+// rien ne mord (poissons très étagés), on retombe sur le milieu de la zone où ça mord (chanceTouche.ligneIdeale).
 //  - FACILE : l'avion le dit franchement, espèces comprises : « Ici : 4 gardons, 1 carpe / Essaie 🍞 Pain à 0,5 m ».
 //  - NORMAL : c'est Papa qui conseille, sans dévoiler ce qu'il y a sous l'eau : « Papa : essaie 🍞 Pain à 0,5 m ».
 //  - DUR    : jamais (comme l'esche volée sans prévenir).
@@ -14,13 +17,14 @@
 // ---------------------------------------------------------------------------
 import { SPECIES } from './especes.js?v=236';
 import { ESCHES } from './esches.js?v=236';
-import { evaluerTouche, ligneQuiver } from './chanceTouche.js?v=236';
+import { evaluerTouche, ligneQuiver, ligneIdeale } from './chanceTouche.js?v=236';
 
 export const DELAI = { facile: 30, normal: 60 };   // secondes sans touche (pas d'entrée : jamais, mode Dur)
 export const RAYON = 10;                            // unités (5 m) autour du bouchon
 export const INTERVALLE_MIN = 180;                  // au plus un conseil toutes les 3 minutes
 export const PAS_LIGNE = 0.25;                      // même pas que le réglage de profondeur du jeu
 const BON_REGLAGE = 0.9;                            // le réglage actuel donne déjà 90 % du meilleur : « patience »
+const MOYENNE_MIN = 0.5;                            // la moyenne doit donner au moins 50 % du meilleur score, sinon plateau
 const GAIN_BOUCHON = 1.25;                          // un bouchon plus long ferait nettement mieux (× 1,25)
 
 const metres = u => (Math.round(u / 2 * 10) / 10).toLocaleString('fr-FR') + ' m';   // au décimètre : lisible
@@ -43,7 +47,8 @@ function score(poissons, base, escheId, ligne) {
 
 /**
  * Meilleur réglage pour les poissons proches. Entrée :
- *   poissons [{ especeId, longueurCm }], profondeurEau, substrat, bornes [min, max] (bouchon équipé), quiver,
+ *   poissons [{ especeId, longueurCm, profondeur? }] (profondeur : y du dos du poisson, négatif, unités du jeu),
+ *   profondeurEau, substrat, bornes [min, max] (bouchon équipé), quiver,
  *   escheActuelle (id | null), ligneActuelle, mode ('facile' | 'normal'), temperature, heure.
  * Optionnel : especesIds (les espèces du biotope ; défaut : toutes).
  * Sortie : { cas: 'personne' | 'impossible' | 'bon' | 'changer', esche, ligne, bouchonPlusLong, comptes, lignes: [l1, l2] }.
@@ -70,20 +75,18 @@ export function recommander(c) {
         return l;
     };
     const lignes = c.quiver ? [ligneQuiver(c.profondeurEau)] : lignesDe(c.bornes[0], c.bornes[1]);
+    // Pour chaque esche : la ligne IDÉALE (milieu du plateau où ça mord), puis la meilleure esche.
+    const idealeDe = (e, liste) => ligneIdeale(liste, l => score(c.poissons, base, e.id, l));
     let meilleur = { s: 0, esche: null, ligne: null };
     ESCHES.forEach(function (e) {
-        lignes.forEach(function (l) {
-            const s = score(c.poissons, base, e.id, l);
-            if (s > meilleur.s + 1e-9) { meilleur = { s: s, esche: e.id, ligne: l }; }
-        });
+        const r = idealeDe(e, lignes);
+        if (r.score > meilleur.s + 1e-9) { meilleur = { s: r.score, esche: e.id, ligne: r.ligne }; }
     });
     // Rien ne marche avec CE bouchon : un bouchon plus long (jusqu'à 7 unités) permettrait-il d'atteindre les poissons ?
     if (meilleur.s <= 0 && !c.quiver && c.bornes[1] < 7) {
         ESCHES.forEach(function (e) {
-            lignesDe(c.bornes[1] + PAS_LIGNE, 7).forEach(function (l) {
-                const s = score(c.poissons, base, e.id, l);
-                if (s > meilleur.s + 1e-9) { meilleur = { s: s, esche: e.id, ligne: l, plusLong: true }; }
-            });
+            const r = idealeDe(e, lignesDe(c.bornes[1] + PAS_LIGNE, 7));
+            if (r.score > meilleur.s + 1e-9) { meilleur = { s: r.score, esche: e.id, ligne: r.ligne, plusLong: true }; }
         });
     }
     if (meilleur.s <= 0) {
@@ -93,24 +96,54 @@ export function recommander(c) {
     }
     res.esche = meilleur.esche;
     res.ligne = meilleur.ligne;
+    res.source = 'plateau';
     res.bouchonPlusLong = !!meilleur.plusLong;
+    // Profondeur MOYENNE des poissons que cette esche attire (là où ils nagent vraiment).
+    if (!c.quiver && !res.bouchonPlusLong) {
+        const attires = c.poissons.filter(p => typeof p.profondeur === 'number'
+            && score([p], base, meilleur.esche, meilleur.ligne) > 0);
+        if (attires.length) {
+            const moyenne = -attires.reduce((t, p) => t + p.profondeur, 0) / attires.length;
+            const plafond = ligneQuiver(c.profondeurEau);                    // jamais dans la vase
+            const voulue = Math.min(moyenne, plafond);
+            const ligne = lignes.reduce((m, l) => (Math.abs(l - voulue) < Math.abs(m - voulue) ? l : m), lignes[0]);
+            // La profondeur est fixée sur la moyenne : on cherche ensuite la meilleure esche POUR CETTE profondeur
+            // (un ver à 0,7 m flotte en surface, où il ne vaut presque rien : le pain y est bien meilleur).
+            let aLaMoyenne = { s: 0, esche: null };
+            ESCHES.forEach(function (e) {
+                const s = score(c.poissons, base, e.id, ligne);
+                if (s > aLaMoyenne.s + 1e-9) { aLaMoyenne = { s: s, esche: e.id }; }
+            });
+            if (ligne <= plafond + 1e-9 && aLaMoyenne.s >= meilleur.s * MOYENNE_MIN) {
+                res.esche = aLaMoyenne.esche;
+                meilleur = { s: aLaMoyenne.s, esche: aLaMoyenne.esche, ligne: ligne };
+                res.ligne = ligne;
+                res.source = 'moyenne';
+                res.profondeurMoyenne = moyenne;
+            }
+        }
+    }
     // Un bouchon plus long (jusqu'à 7 unités) ferait-il nettement mieux ?
     if (!res.bouchonPlusLong && !c.quiver && c.bornes[1] < 7) {
-        let mieux = 0;
-        lignesDe(c.bornes[1] + PAS_LIGNE, 7).forEach(l => { mieux = Math.max(mieux, score(c.poissons, base, meilleur.esche, l)); });
-        res.bouchonPlusLong = mieux > meilleur.s * GAIN_BOUCHON;
+        res.bouchonPlusLong = idealeDe(esche(meilleur.esche), lignesDe(c.bornes[1] + PAS_LIGNE, 7)).score > meilleur.s * GAIN_BOUCHON;
     }
     const actuel = score(c.poissons, base, c.escheActuelle || null, c.quiver ? lignes[0] : c.ligneActuelle);
     if (actuel >= meilleur.s * BON_REGLAGE && !res.bouchonPlusLong) {
         res.cas = 'bon';
-        res.lignes = facile ? ['Ici : ' + ici, 'Bon réglage, patience !'] : ['Papa : c’est le bon réglage,', 'sois patient !'];
+        // Même dans ce cas, on rappelle le réglage idéal : le joueur sait quoi garder.
+        const garde = court(meilleur.esche) + (c.quiver ? ' au fond' : ' à ' + metres(res.ligne));
+        res.lignes = facile ? ['Ici : ' + ici, 'Garde ' + garde + ', patience !'] : ['Papa : garde ' + garde + ',', 'sois patient !'];
         return res;
     }
     res.cas = 'changer';
-    const reglage = court(meilleur.esche) + (c.quiver ? ' au fond' : ' à ' + metres(meilleur.ligne));
+    const reglage = court(meilleur.esche) + (c.quiver ? ' au fond' : ' à ' + metres(res.ligne));
     const fin = res.bouchonPlusLong ? ' (+ bouchon plus long)' : '';
-    res.lignes = facile ? ['Ici : ' + ici, 'Essaie ' + reglage + fin]
-        : ['Papa : essaie ' + reglage, (res.bouchonPlusLong ? 'avec un bouchon plus long !' : 'ça devrait mordre ici !')];
+    // « Là où ils nagent » : la profondeur vient de la moyenne des poissons proches.
+    const pourquoi = res.bouchonPlusLong ? 'avec un bouchon plus long !'
+        : (res.source === 'moyenne' ? 'c’est là que nagent les poissons !' : 'ça devrait mordre ici !');
+    let tete = 'Ici : ' + ici + (res.source === 'moyenne' ? ' vers ' + metres(res.profondeurMoyenne) : '');
+    if ([...tete].length > 45) { tete = 'Ici : ' + ici.split(', ')[0] + ' vers ' + metres(res.profondeurMoyenne); }
+    res.lignes = facile ? [tete, 'Essaie ' + reglage + fin] : ['Papa : essaie ' + reglage, pourquoi];
     return res;
 }
 
@@ -147,7 +180,7 @@ export function creerConseilLocal(deps) {
         const poissons = deps.fishes().filter(function (f) {
             const d = f.userData;
             return !d.hooked && f !== etat.heldFish && Math.hypot(f.position.x - b.x, f.position.z - b.z) <= RAYON;
-        }).map(function (f) { return { especeId: f.userData.especeId, longueurCm: f.userData.longueurCm }; });
+        }).map(function (f) { return { especeId: f.userData.especeId, longueurCm: f.userData.longueurCm, profondeur: f.userData.depth }; });
         const ici = deps.contexte();
         const e = etat.escheEquipee ? etat.escheEquipee() : null;
         return recommander({ poissons: poissons, profondeurEau: ici.profondeurEau, substrat: ici.substrat, bornes: deps.bornes(),

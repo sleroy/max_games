@@ -78,6 +78,22 @@ export function ligneQuiver(profondeurEau) {
 }
 
 /**
+ * PROFONDEUR IDÉALE (source unique : l'avion, le conseil local, la matrice) : parmi les longueurs de ligne
+ * `lignes`, celles qui donnent le meilleur score forment un PLATEAU (un poisson mord dans toute sa tranche
+ * d'eau, ± 0,5 unité) ; l'idéal est le MILIEU de ce plateau, pas son bord. `score(ligne)` → nombre.
+ * Renvoie { ligne, score, plateau: [min, max] } (ligne null si aucun score > 0).
+ */
+export function ligneIdeale(lignes, score, tolerance) {
+    const tol = tolerance === undefined ? 0.02 : tolerance;
+    const notes = lignes.map(function (l) { return { ligne: l, score: score(l) }; });
+    const meilleur = notes.reduce(function (m, n) { return n.score > m ? n.score : m; }, 0);
+    if (meilleur <= 0) { return { ligne: null, score: 0, plateau: null }; }
+    const plateau = notes.filter(function (n) { return n.score >= meilleur * (1 - tol); });
+    return { ligne: plateau[Math.floor((plateau.length - 1) / 2)].ligne, score: meilleur,
+        plateau: [plateau[0].ligne, plateau[plateau.length - 1].ligne] };
+}
+
+/**
  * Évalue UN poisson dans UNE situation. Contexte (unités du jeu : 2 unités = 1 m) :
  *   especeId, longueurCm, esche (id ou null = hameçon nu), profondeurLigne, profondeurEau, substrat,
  *   heure (0–24), pression (hPa), tendance (-1…1), temperature (°C, surface ET stratification),

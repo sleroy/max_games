@@ -18,6 +18,11 @@ export async function run() {
     check('… le texte le dit', /Gardon : préfère .*Pain.*puis.*Ver/.test(gardon.texte), gardon.texte);
     checkEqual('truite : la mouche d’abord, puis le leurre', conseils.find(c => c.especeId === 'truite').meilleures.join(), 'mouche,vif');
     // 2 esches, ou une seule quand l'espèce n'en mange qu'une (le goujon : le ver).
+    // Profondeur idéale sur la banderole : « À 0,5 m » pour une espèce de pleine eau, « Au fond » pour une espèce de fond.
+    check('chaque banderole donne une profondeur (À x m / Au fond)', conseils.every(c => /^(À \d+(,\d)? m|Au fond) · (jamais|rarement) /.test(c.lignes[1])),
+        conseils.filter(c => !/^(À|Au fond)/.test(c.lignes[1])).map(c => c.especeId + ' : ' + c.lignes[1]).join(' ; '));
+    check('gardon : près de la surface ; carpe et silure : au fond', /^À /.test(gardon.lignes[1]) && /^Au fond/.test(conseils.find(c => c.especeId === 'carpe').lignes[1])
+        && /^Au fond/.test(conseils.find(c => c.especeId === 'silure').lignes[1]), gardon.lignes[1]);
     check('chaque conseil donne 1 ou 2 esches qui marchent, et une pire différente', conseils.every(c => c.meilleures.length >= 1
         && c.meilleures.length <= 2 && c.meilleures.indexOf(c.pire) < 0));
     const goujon = conseils.find(c => c.especeId === 'goujon');

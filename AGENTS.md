@@ -49,6 +49,10 @@ Le dépôt est configuré avec `core.hooksPath = .githooks` : le hook `post-comm
 Sur une nouvelle copie du dépôt : `git config core.hooksPath .githooks`.
 Le hook est silencieux s'il n'y a pas de remote ou pendant un rebase.
 
+Le hook `pre-push` (≈ 5 s, Node seul) **bloque le push** si le dépôt est cassé : marques de conflit de fusion
+(`<<<<<<<`), erreur de syntaxe (`scripts/check-syntax.mjs`) ou test en échec (`games/peche_game/tests/run.mjs`).
+Il s'exécute aussi avant le push automatique du `post-commit`. Contournement (à éviter) : `git push --no-verify`.
+
 ---
 
 ## 🧒 Partie 1 — Créer un jeu vidéo (guide pas à pas)
