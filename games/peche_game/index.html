@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=192">
+    <link rel="stylesheet" href="style.css?v=193">
 </head>
 <body>
     <div class="game-wrap">
@@ -87,6 +87,13 @@
             <div class="sonar-panel" id="sonarPanel" hidden>
                 <canvas id="sonarRadar" width="104" height="104" role="img" aria-label="Radar du sonar"></canvas>
                 <span id="sonarCount">0 poisson</span>
+            </div>
+            <div class="radar-panel" id="radarPanel" hidden>
+                <svg id="radarSvg" viewBox="0 0 200 120" role="img"
+                    aria-label="Radar : position des poissons et du pêcheur">
+                    <g id="radarFond"></g>
+                    <g id="radarVivant"></g>
+                </svg>
             </div>
             <div class="camera-controls" id="cameraControls" hidden role="group" aria-label="Commandes de la caméra">
                 <div class="camera-turn">
@@ -339,6 +346,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=192"></script>
+    <script type="module" src="script.js?v=193"></script>
 </body>
 </html>

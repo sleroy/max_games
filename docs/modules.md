@@ -66,7 +66,8 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `accrochage.js` | Accrochage dans les nénuphars, la vase et les obstacles : détection, accroc, dégagement du fil (état via `etat`) | 226 | Combat / accroc |
 | `ambiance.js` | Ambiance : vent, faune sonore, nuages, ondulation de la queue des poissons (état via `etat`) | 95 | Ambiance / effets |
 | `entrees.js` | Entrées : pointeur, clavier et boutons de l’écran de jeu (état via `etat`) | 225 | Entrées / UI |
-| `cheat.js` | Cheats : mots secrets « poisson » (+50 XP) et « aquarium » (eau transparente `uClear` + poissons visibles via `scene.onBeforeRender`) (état via `etat`) | 179 | Cheat / tests |
+| `cheat.js` | Cheats : mots secrets « poisson » (+50 XP) et « aquarium » (eau transparente `uClear` + poissons visibles via `scene.onBeforeRender`) et « radar » (bascule `radar.js` ; Échap le ferme en premier) (état via `etat`) | 179 | Cheat / tests |
+| `radar.js` | Cheat « radar » (§17.3) : carte 2D superposée avec **tous les poissons** (couleur par espèce, rayon ∝ longueur, trait de cap, cercle de zone de vie), le pêcheur (triangle orienté), le bouchon et la barque. Fond = contour de `rayonEtang` + `substrats.rectsCarte()` dans des éléments SVG séparés de la carte du carnet. Rafraîchi à ~10 Hz, **aucune mise à jour du DOM** quand il est fermé. API : `basculer()`, `estActif()`, `maj(dt)`, `fermer()` (+ lecture seule pour les tests : `points()`, `pecheur()`, `misesAJour()`) | ~235 | Cheat / UI |
 | `boucle.js` | Boucle d’animation : une image du jeu, ragondin, pause, horloge (état via `etat`) | 212 | Boucle / rendu |
 | `partie.js` | Partie : lignes (vies), remontée trop rapide, classement, fin de partie, accueil (état via `etat`) | 465 | Partie / règles |
 | `pecheur.js` | Pêcheur, canne et geste de lancer : modèle 3D, poses, charge et fouetté (état via `etat`) | 252 | Pêcheur / canne |

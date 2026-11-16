@@ -3,6 +3,7 @@
 //
 //   « poisson »  → +50 XP
 //   « aquarium » → bascule l'eau transparente (on voit les poissons)
+//   « radar »    → bascule la carte 2D des poissons (radar.js ; Échap la ferme)
 //
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
@@ -11,7 +12,7 @@ import { etat } from './etat.js?v=145';
 
 export function creerCheat(deps) {
     const {
-        saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
+        radar, saveJournal, renderJournal, statusDisplay, catchMessage, setCameraView, toolToggle,
         fermerOutils, toolDock, deplacerBateau, ensureSound, tendreLigneAuLancer, releaseCast,
         releaseFishThrow, startFishThrow, hookFish, reelClick, camera, water, startCastCharge
     } = deps;
@@ -81,7 +82,8 @@ export function creerCheat(deps) {
 
     const CHEATS = [
         { mot: 'poisson', action: cheatExperience },
-        { mot: 'aquarium', action: cheatAquarium }
+        { mot: 'aquarium', action: cheatAquarium },
+        { mot: 'radar', action: function () { radar.basculer(); } }
     ];
     const CHEAT_LONGUEUR = CHEATS.reduce(function (max, cheat) {
         return Math.max(max, cheat.mot.length);
@@ -102,6 +104,7 @@ export function creerCheat(deps) {
 
     window.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
+            if (radar.estActif()) { radar.fermer(); return; }   // le radar se ferme en premier
             if (etat.cameraViewActive) { setCameraView(false); toolToggle.focus?.(); }
             else if (!etat.paused) { fermerOutils(); }
             return;
