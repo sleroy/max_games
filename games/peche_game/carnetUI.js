@@ -4,13 +4,13 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=239';
+import { etat } from './etat.js?v=240';
 
 export function creerCarnetUI(deps) {
     const {
         tabPages, journalTabs, pondMap, monde, POND_CENTER, cheminContourEtang, FOND_BORD,
         FOND_CENTRE, FOSSES, lilyPads, BOURRICHE_POS, angler, floatGroup, SPECIES,
-        profondeurLocale, substrats
+        profondeurLocale, substrats, rayonEtang
     } = deps;
 
     // Les zones de fond (§14.3) viennent de la MÊME grille que la texture du fond et que
@@ -119,7 +119,10 @@ export function creerCarnetUI(deps) {
             if (frac <= 0.02 || frac >= 0.99) {
                 return;
             }
-            const rr = R * Math.sqrt(1 - frac) * ech;
+            // Étang : l'étiquette est à 70 % du rayon nominal en haut à droite (monde d'origine). Autre forme (canal,
+            // rivière : le rayon nominal sort de l'eau) : à 70 % du contour réel dans la même direction (-45°).
+            const aEtiquette = -Math.PI / 4;
+            const rr = monde.forme === 'etang' ? R * Math.sqrt(1 - frac) * ech : rayonEtang(aEtiquette) * Math.sqrt(1 - frac) * ech;
             svg += '<path d="' + cheminContour(Math.sqrt(1 - frac))
                 + '" fill="none" stroke="#eaf6ff" stroke-width="0.7" stroke-dasharray="2.5 1.5" opacity="0.9"/>';
             svg += '<text x="' + (cx + rr * 0.7).toFixed(1) + '" y="' + (cy - rr * 0.7 + 2).toFixed(1)

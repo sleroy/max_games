@@ -14,11 +14,12 @@
 // ---------------------------------------------------------------------------
 import {
     MILIEUX, IDS_MILIEUX, milieuParId, surfaceHaDe, capacite, quotasEspeces, densitesDecor, styleDecor,
-    echelleMilieu, facteurTaille
+    echelleMilieu, facteurTaille, formeDe
 } from '../milieux.js';
 import {
     RAYON_REFERENCE, surfaceHectares, surfaceUnites, porteeLancer, porteeAmorce, echelleDeRayon,
-    BRUME_REFERENCE, CIEL_REFERENCE, CAMERA_FAR_REFERENCE, rayonContour, VARIATION_CONTOUR
+    BRUME_REFERENCE, CIEL_REFERENCE, CAMERA_FAR_REFERENCE, rayonContour, VARIATION_CONTOUR,
+    extents, echelleExtent, echelleAmbiance
 } from '../dimensions.js';
 import { group, check, checkEqual, checkClose, G, el, fire, resetToIdle } from './harness.mjs';
 
@@ -109,6 +110,13 @@ export async function run() {
     IDS_MILIEUX.filter(function (id) { return id !== 'plaine'; }).concat(['plaine']).forEach(function (id) {
         const m = milieuParId(id);
         const f = echelleMilieu(m);
+        // Forme du plan d'eau (formes d'eau) : l'étang est le contour d'origine ; canal, lac et rivière ont leur profil.
+        // Les attendus qui supposaient « un étang partout » (rayon max, contour, ambiance, portées, carte) suivent le
+        // profil : ils se mesurent sur le plus grand EXTENT (echelleExtent) au lieu du rayon nominal.
+        const forme = formeDe(m);
+        const etang = forme === 'etang';
+        const fx = echelleExtent(m.rayon, forme);          // = f pour l'étang
+        const ambiance = echelleAmbiance(m.rayon, forme);  // = max(1, f) pour l'étang
         choisirSurAccueil(id);
         const monde = G().getMonde();
         const info = G().getEtangInfo();
@@ -117,14 +125,16 @@ export async function run() {
         // Géométrie
         checkEqual(id + ' : rayon du monde = rayon du biotope', monde.rayon, m.rayon);
         checkEqual(id + ' : getPondRadius suit le biotope', G().getPondRadius(), m.rayon);
-        checkClose(id + ' : rayon max ≈ rayon × 1,22', monde.rayonMax / m.rayon, 1.22, 1e-9);
-        check(id + ' : le contour reste dans [0,78 ; 1,22] × rayon (même forme)',
+        // ATTENDU MODIFIÉ (formes d'eau) : « rayon max ≈ rayon × 1,22 » vaut pour l'étang ; un autre profil a son plus grand extent.
+        const plusGrand = Math.max(extents(m.rayon, forme).maxX, extents(m.rayon, forme).maxZ);
+        checkClose(id + ' : rayon max ≈ rayon × ' + (etang ? '1,22' : 'le plus grand extent du profil'), monde.rayonMax / m.rayon, plusGrand / m.rayon, 1e-9);
+        check(id + ' : le contour reste dans [0,78 ; 1,22] × rayon (même forme)' + (etang ? '' : ' [0 ; rayon max] pour ce profil'),
             [0, 1, 2, 3, 4, 5, 6].every(function (a) {
                 const r = G().getRayonEtang(a) / m.rayon;
-                return r >= 0.78 - 1e-9 && r <= 1.22 + 1e-9;
+                return etang ? (r >= 0.78 - 1e-9 && r <= 1.22 + 1e-9) : (r > 0 && r <= plusGrand / m.rayon + 1e-9);
             }));
-        checkClose(id + ' : contour = rayon × le contour de la plaine (mêmes harmoniques)',
-            [0, 1.3, 2.6, 4.1, 5.5].reduce(function (e, a) { return Math.max(e, Math.abs(G().getRayonEtang(a) / m.rayon - rayonContour(1, a))); }, 0), 0, 1e-9);
+        checkClose(id + ' : contour = rayon × le contour ' + (etang ? 'de la plaine (mêmes harmoniques)' : 'du profil ' + forme),
+            [0, 1.3, 2.6, 4.1, 5.5].reduce(function (e, a) { return Math.max(e, Math.abs(G().getRayonEtang(a) / m.rayon - rayonContour(1, a, forme))); }, 0), 0, 1e-9);
 
         // Une seule vérité pour la surface
         checkClose(id + ' : surface géométrique = surface du biotope (une seule vérité)', info.surfaceHa, surfaceHaDe(m), 1e-12);
@@ -151,7 +161,9 @@ export async function run() {
         check(id + ' : rayons des fosses × f', info.fosses.every(function (fosse, i) { return Math.abs(fosse.rayon - [22, 18, 16][i] * f) < 1e-9; }));
         check(id + ' : profondeur supplémentaire des fosses inchangée', info.fosses.every(function (fosse, i) { return fosse.plus === [3.6, 3.3, 3.8][i]; }));
         check(id + ' : profondeur max ≤ 8,2 (la ligne descend à 7)', info.profondeurMax <= 8.2 && info.profondeurMax > 7.5, String(info.profondeurMax));
-        checkClose(id + ' : même profondeur max à toutes les tailles', info.profondeurMax, origine.info.profondeurMax, 0.02);
+        // ATTENDU MODIFIÉ (formes d'eau) : ±0,02 pour l'étang ; ±0,08 pour un autre profil (la cuvette y est anisotrope : la fosse
+        // garde sa fraction d / rayon local, mais pas la pente exacte autour d'elle).
+        checkClose(id + ' : même profondeur max à toutes les tailles', info.profondeurMax, origine.info.profondeurMax, etang ? 0.02 : 0.08);
         checkClose(id + ' : cadre de la carte = rayon max + 8', info.rayonCadre, monde.rayonMax + 8, 1e-9);
         // La profondeur normalisée : au centre, même cuvette qu'ailleurs.
         checkClose(id + ' : profondeur au centre de l’étang (cuvette) = 5', G().profondeurLocale(centre.x, centre.z), 5, 1e-9);
@@ -161,17 +173,20 @@ export async function run() {
         check(id + ' : ciel ≥ 3 × rayon max', monde.ciel >= 3 * monde.rayonMax, monde.ciel + ' ≥ ' + (3 * monde.rayonMax).toFixed(0));
         check(id + ' : ciel ≥ brume (il englobe la brume)', monde.ciel >= monde.brume.loin);
         check(id + ' : brume ≥ celle de la plaine (150 / 480)', monde.brume.proche >= BRUME_REFERENCE.proche && monde.brume.loin >= BRUME_REFERENCE.loin);
-        checkClose(id + ' : brume ×f au-delà de la plaine', monde.brume.loin, BRUME_REFERENCE.loin * Math.max(1, f), 1e-9);
-        checkClose(id + ' : ciel × f au-delà de la plaine', monde.ciel, CIEL_REFERENCE * Math.max(1, f), 1e-9);
-        checkClose(id + ' : plan lointain × f au-delà de la plaine', monde.cameraFar, CAMERA_FAR_REFERENCE * Math.max(1, f), 1e-9);
+        // ATTENDU MODIFIÉ (formes d'eau) : l'ambiance suit le plus grand extent (= f pour l'étang).
+        checkClose(id + ' : brume ×f au-delà de la plaine', monde.brume.loin, BRUME_REFERENCE.loin * ambiance, 1e-9);
+        checkClose(id + ' : ciel × f au-delà de la plaine', monde.ciel, CIEL_REFERENCE * ambiance, 1e-9);
+        checkClose(id + ' : plan lointain × f au-delà de la plaine', monde.cameraFar, CAMERA_FAR_REFERENCE * ambiance, 1e-9);
         check(id + ' : la brume ne commence pas après la fin du lancer', monde.brume.proche > monde.porteeLancer);
 
         // Portées
-        checkEqual(id + ' : portée du lancer = formule ×f bornée [20 ; 140]', monde.porteeLancer, borner(52 * f, 20, 140));
+        // ATTENDU MODIFIÉ (formes d'eau) : la portée suit le plus grand extent (= f pour l'étang).
+        checkEqual(id + ' : portée du lancer = formule ×f bornée [20 ; 140]', monde.porteeLancer, borner(52 * fx, 20, 140));
         check(id + ' : portée du lancer dans [20 ; 140]', monde.porteeLancer >= 20 && monde.porteeLancer <= 140);
         checkClose(id + ' : portée de l’amorce dans la même proportion', G().getFeedRange().max, 46 * monde.porteeLancer / 52, 1e-9);
         checkClose(id + ' : pas de la barque × f borné [0,5 ; 3]', monde.pasBateauMarge, 2.4 * borner(f, 0.5, 3), 1e-9);
-        checkClose(id + ' : carte 3D à l’échelle (260 × f borné [0,25 ; 3,2])', monde.monde3D, 260 * borner(f, 0.25, 3.2), 1e-9);
+        // ATTENDU MODIFIÉ (formes d'eau) : la carte suit le plus grand extent ; plafond 3,2 pour l'étang, 6 pour un autre profil.
+        checkClose(id + ' : carte 3D à l’échelle (260 × f borné [0,25 ; 3,2])', monde.monde3D, 260 * borner(fx, 0.25, etang ? 3.2 : 6), 1e-9);
 
         // Le pêcheur reste au poste de départ, sur la berge, et rien ne l'a laissé en l'air
         const a = G().angler.position;
@@ -267,7 +282,7 @@ export async function run() {
             check(id + ' : poste ' + G().getPoste().id + ' : à 2,2 unités de la berge locale', Math.abs(p.distance - p.contour - 2.2) < 1e-6,
                 (p.distance - p.contour).toFixed(3));
         });
-        const portee = porteeLancer(m.rayon);
+        const portee = porteeLancer(m.rayon, formeDe(m));
         // Lancer à 95 % de la jauge vers le centre : 7 + 0,95 × (portée − 7) unités (dans l'étang assez large pour cela).
         G().startCastCharge({ x: centre.x, y: 0, z: centre.z });
         G().setCastPower(0.95);

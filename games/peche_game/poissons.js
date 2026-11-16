@@ -16,12 +16,13 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=239';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=239';
+} from './especes.js?v=240';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=240';
+import { angleParSurface } from './dimensions.js?v=240';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=239';
+} from './milieux.js?v=240';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -145,7 +146,9 @@ export function creerPoissons(deps) {
     }
 
     function randomFishPosition() {
-        const angle = rand() * Math.PI * 2;
+        // Étang : angle uniforme (monde d'origine). Canal, lac, rivière : angle réparti selon l'aire, sinon tout
+        // s'entasserait au milieu d'un plan d'eau allongé (angleParSurface rend `u × 2π` pour l'étang).
+        const angle = angleParSurface(rand(), monde.forme);
         // Le poisson naît DANS l'eau, à distance du bord local (contour irrégulier).
         // Racine carrée : répartition uniforme sur la SURFACE (un tirage linéaire du
         // rayon entassait les poissons au centre, ce qui se voit dans un grand étang).

@@ -5,11 +5,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=239';
+import { etat } from './etat.js?v=240';
 
 export function creerMeteo(deps) {
     const {
-        POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound, monde
+        POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound, monde, rayonEtang
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -99,8 +99,11 @@ export function creerMeteo(deps) {
             if (rainRippleTimer <= 0) {
                 rainRippleTimer = 0.35;
                 const a = rainRippleTimer * 37 + etat.weatherPluie * 11;
+                // 54 × f du centre ; sur un plan d'eau allongé (canal) la goutte reste dans l'eau, à 60 % du rivage local.
+                const d = monde.forme !== 'etang' && rayonEtang
+                    ? Math.min(18 * 3 * monde.echelle, rayonEtang(a) * 0.6) : 18 * 3 * monde.echelle;
                 etat.spawnRipple(new THREE.Vector3(
-                    POND_CENTER.x + Math.cos(a) * 18 * 3 * monde.echelle, 0.06, POND_CENTER.z + Math.sin(a) * 18 * 3 * monde.echelle));
+                    POND_CENTER.x + Math.cos(a) * d, 0.06, POND_CENTER.z + Math.sin(a) * d));
             }
         }
         sound.setRain(etat.weatherPluie);

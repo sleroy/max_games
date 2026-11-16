@@ -4,9 +4,10 @@
 // Un biotope change la FAUNE (parts de population), la FLORE et le DÉCOR (arbres, nénuphars,
 // roseaux, rochers), les FONDS (vase, herbier, sable, gravier, roche), la TEINTE de l'eau, la
 // TAILLE MAXIMALE des poissons et, depuis les tailles d'étang, la TAILLE du plan d'eau : `rayon`
-// (12 à 280 unités, 2 unités ≈ 1 m). Il ne change JAMAIS la FORME du plan d'eau : mêmes harmoniques
-// de contour, même relief normalisé, même profondeur. Seule l'ÉCHELLE change (f = rayon / 90 ; la
-// plaine, f = 1, est le monde de référence, inchangé).
+// (12 à 280 unités, 2 unités ≈ 1 m) et sa FORME : `forme` choisit un profil de contour de dimensions.js
+// (`etang` pour la plaine, les carnassiers et la forêt ; `canal` ; `lac` en montagne ; `riviere`). Le relief
+// reste normalisé (même profondeur). L'échelle est f = rayon / 90 ; la plaine (f = 1, étang) est le monde de
+// référence, inchangé. À rayon égal, tous les profils ont la même surface.
 //
 // La SURFACE n'est plus une donnée écologique en dur : elle se déduit de la géométrie réelle
 // (`surfaceHaDe(milieu)` = surface d'un contour de ce rayon, dimensions.js). `capacite`, `facteurTaille`
@@ -16,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=239';
-import { etat } from './etat.js?v=239';
-import { RAYON_REFERENCE, surfaceHectares, echelleDeRayon } from './dimensions.js?v=239';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=240';
+import { etat } from './etat.js?v=240';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=240';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -44,7 +45,7 @@ export const MILIEUX = [
         decor: { arbres: 64, nenuphars: 40, roseaux: 70, rochers: 24 },
         fonds: { vase: 0.28, herbier: 0.20, sable: 0.20, gravier: 0.20, roche: 0.12 },
         eau: { shallow: 0x3d7d92, deep: 0x0a2736, sky: 0x9fc7d6 },
-        rayon: 90, profondeur: 8.2, densite: 1.0
+        rayon: 90, forme: 'etang', profondeur: 8.2, densite: 1.0
     },
     {
         id: 'canal', nom: 'Canal', icone: '🚤',
@@ -54,7 +55,7 @@ export const MILIEUX = [
         decor: { arbres: 20, nenuphars: 10, roseaux: 90, rochers: 10 },
         fonds: { vase: 0.55, herbier: 0.20, sable: 0.15, gravier: 0.08, roche: 0.02 },
         eau: { shallow: 0x4a7a5c, deep: 0x122a20, sky: 0x9fb6a6 },
-        rayon: 45, profondeur: 5.0, densite: 1.0
+        rayon: 45, forme: 'canal', profondeur: 5.0, densite: 1.0
     },
     {
         id: 'carnassiers', nom: 'Étang à carnassiers', icone: '🦈',
@@ -63,7 +64,7 @@ export const MILIEUX = [
         decor: { arbres: 20, nenuphars: 60, roseaux: 90, rochers: 15 },
         fonds: { vase: 0.30, herbier: 0.35, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x35584f, deep: 0x081a18, sky: 0x8fa8a0 },
-        rayon: 70, profondeur: 7.0, densite: 0.9
+        rayon: 70, forme: 'etang', profondeur: 7.0, densite: 0.9
     },
     {
         id: 'montagne', nom: 'Lac de montagne', icone: '🏔️',
@@ -72,7 +73,7 @@ export const MILIEUX = [
         decor: { arbres: 30, nenuphars: 0, roseaux: 10, rochers: 60 },
         fonds: { vase: 0.05, herbier: 0.05, sable: 0.15, gravier: 0.30, roche: 0.45 },
         eau: { shallow: 0x4f93b8, deep: 0x0d3448, sky: 0xb9d7e6 },
-        rayon: 180, profondeur: 9.0, densite: 0.7
+        rayon: 180, forme: 'lac', profondeur: 9.0, densite: 0.7
     },
     {
         id: 'foret', nom: 'Petit étang de forêt', icone: '🌲',
@@ -81,7 +82,7 @@ export const MILIEUX = [
         decor: { arbres: 80, nenuphars: 30, roseaux: 40, rochers: 10 },
         fonds: { vase: 0.40, herbier: 0.25, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x5a6b3f, deep: 0x1a1f0f, sky: 0xa8b48f },
-        rayon: 12, profondeur: 3.2, densite: 0.6
+        rayon: 12, forme: 'etang', profondeur: 3.2, densite: 0.6
     },
     {
         id: 'riviere', nom: 'Grande rivière (silures)', icone: '🌊',
@@ -92,7 +93,7 @@ export const MILIEUX = [
         decor: { arbres: 25, nenuphars: 10, roseaux: 50, rochers: 20 },
         fonds: { vase: 0.30, herbier: 0.10, sable: 0.25, gravier: 0.20, roche: 0.15 },
         eau: { shallow: 0x3b5f63, deep: 0x061b1d, sky: 0x93a9ab },
-        rayon: 280, profondeur: 9.5, densite: 0.85
+        rayon: 280, forme: 'riviere', profondeur: 9.5, densite: 0.85
     }
 ];
 
@@ -145,6 +146,11 @@ export function rayonDe(milieu) {
     return milieuDe(milieu).rayon;
 }
 
+/** Profil de forme du plan d'eau du biotope (`etang`, `lac`, `canal` ou `riviere` : dimensions.js `FORMES`). */
+export function formeDe(milieu) {
+    return milieuDe(milieu).forme || FORME_DEFAUT;
+}
+
 /** Facteur d'échelle du biotope par rapport à la plaine : rayon / 90 (1 pour la plaine). */
 export function echelleMilieu(milieu) {
     return echelleDeRayon(rayonDe(milieu));
@@ -157,7 +163,7 @@ export function echelleMilieu(milieu) {
  */
 export function surfaceHaDe(milieu) {
     const m = milieuDe(milieu);
-    return typeof m.surfaceHa === 'number' ? m.surfaceHa : surfaceHectares(m.rayon);
+    return typeof m.surfaceHa === 'number' ? m.surfaceHa : surfaceHectares(m.rayon, m.forme);
 }
 
 /** Facteur de taille d'un étang : le plus petit de ses deux facteurs (surface réelle, profondeur). */
@@ -305,7 +311,7 @@ export function texteMilieu(milieu) {
 // ---------------------------------------------------------------------------
 // SYSTÈME : applique le biotope choisi au monde et le mémorise dans le carnet.
 //
-// Un choix (accueil) ou un changement RECONSTRUIT d'abord la GÉOMÉTRIE quand le rayon change
+// Un choix (accueil) ou un changement RECONSTRUIT d'abord la GÉOMÉTRIE quand le rayon ou la forme change
 // (`deps.setRayonMonde` : contour, centre, fosses, surface ; puis `deps.surGeometrie` : eau, rive,
 // fond, brume, ciel, caméra), AVANT le décor, les fonds et l'eau. Ordre ensuite : teinte de l'eau,
 // décor (les fonds en dépendent), obstacles (qui évitent le décor, comme dans le monde d'origine),
@@ -340,9 +346,10 @@ export function creerMilieux(deps) {
         if (m.id === courant) { return false; }
         courant = m.id;
         // 1) La TAILLE d'abord : tout le reste (décor, fonds, poissons) se pose dans le nouveau contour.
-        const changeTaille = !!deps.setRayonMonde && !!deps.monde && deps.monde.rayon !== m.rayon;
+        const changeTaille = !!deps.setRayonMonde && !!deps.monde
+            && (deps.monde.rayon !== m.rayon || (deps.monde.forme || FORME_DEFAUT) !== formeDe(m));
         if (changeTaille) {
-            deps.setRayonMonde(m.rayon);
+            deps.setRayonMonde(m.rayon, formeDe(m));
             if (deps.surGeometrie) { deps.surGeometrie(m); }
         }
         appliquerEau(eauDe(m));

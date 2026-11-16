@@ -11,6 +11,7 @@
 // avec son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { FORME_DEFAUT, angleParBord, pointAuBord } from './dimensions.js?v=240';
 
 export const TOUFFES = 4000;          // touffes d'herbe sur les berges
 export const BRINS_PAR_TOUFFE = 7;
@@ -113,15 +114,24 @@ export function creerVegetation(deps) {
     const s = new THREE.Vector3();
     const axeY = new THREE.Vector3(0, 1, 0);
     let echelleHerbe = null;
-    function poser(echelle) {
+    let formeHerbe = FORME_DEFAUT;
+    function poser(echelle, forme) {
         graine = GRAINE_HERBE;
         const bande = 45 * Math.max(0.3, Math.min(3, echelle));
+        const etang = forme === undefined || forme === FORME_DEFAUT;
         for (let i = 0; i < TOUFFES; i++) {
-            const angle = hasard() * Math.PI * 2;
+            // Étang : angle uniforme et décalage radial (monde d'origine). Canal, lac, rivière : touffes réparties le
+            // long de la RIVE et décalées sur la normale du contour (sur une berge droite, un décalage radial se réduirait à presque rien).
+            const angle = etang ? hasard() * Math.PI * 2 : angleParBord(hasard(), forme);
             // Plus dense près de l'eau (là où la caméra regarde), clairsemée vers le sous-bois.
             // Le sable du bord fait 3,4 à 5,8 unités (environnement.js) : l'herbe commence après.
-            const r = rayonEtang(angle) + 5 + hasard() * hasard() * bande;
-            p.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y, POND_CENTER.z + Math.sin(angle) * r);
+            if (etang) {
+                const r = rayonEtang(angle) + 5 + hasard() * hasard() * bande;
+                p.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y, POND_CENTER.z + Math.sin(angle) * r);
+            } else {
+                const o = pointAuBord(rayonEtang, angle, 5 + hasard() * hasard() * bande);
+                p.set(POND_CENTER.x + o.x, RIVE_Y, POND_CENTER.z + o.z);
+            }
             q.setFromAxisAngle(axeY, hasard() * Math.PI * 2);
             const taille = 0.35 + hasard() * 0.4;
             s.set(taille * 1.4, taille, taille * 1.4);
@@ -131,6 +141,7 @@ export function creerVegetation(deps) {
         herbe.instanceMatrix.needsUpdate = true;
         herbe.boundingSphere = null;   // la sphère englobante mise en cache serait celle de l'ancien contour
         echelleHerbe = echelle;
+        formeHerbe = forme === undefined ? FORME_DEFAUT : forme;
     }
     poser(1);
     herbe.receiveShadow = true;
@@ -148,9 +159,10 @@ export function creerVegetation(deps) {
 
     // Densité de l'herbe (0–1) : le biotope (milieux.js) fixe la part des touffes visibles. `echelle` (f = rayon /
     // 90, optionnel) : si elle a changé, l'herbe est reposée le long du contour actuel.
-    function regler(densite, echelle) {
+    function regler(densite, echelle, forme) {
         const f = echelle === undefined ? echelleHerbe : echelle;
-        if (f !== echelleHerbe) { poser(f); }
+        const g = forme === undefined ? formeHerbe : forme;
+        if (f !== echelleHerbe || g !== formeHerbe) { poser(f, g); }
         herbe.count = Math.round(TOUFFES * Math.max(0, Math.min(1, densite === undefined ? 1 : densite)));
     }
 

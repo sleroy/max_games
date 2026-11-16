@@ -28,8 +28,9 @@
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerVegetation } from './vegetation.js?v=239';
-import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu } from './milieux.js?v=239';
+import { creerVegetation } from './vegetation.js?v=240';
+import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu, formeDe } from './milieux.js?v=240';
+import { FORME_DEFAUT, angleParBord, angleParSurface, pointAuBord } from './dimensions.js?v=240';
 
 export function creerDecor(deps) {
     const scene = deps.scene;
@@ -169,6 +170,11 @@ export function creerDecor(deps) {
         const d = densitesDecor(milieu);
         const style = styleDecor(milieu);
         const marge = Math.min(1, echelleMilieu(milieu));   // marges au bord : celles d'origine, réduites dans un petit étang
+        // Étang : angles uniformes et décalages radiaux (le monde d'origine, tirage pour tirage). Autre forme (canal,
+        // lac, rivière) : les points se répartissent le long de la rive (arbres, roseaux, rochers) ou sur la
+        // surface (nénuphars), et les décalages à la rive se mesurent sur la normale du contour.
+        const forme = formeDe(milieu);
+        const etang = forme === FORME_DEFAUT;
         const occupe = function (x, z, r) { return !!evite && evite(x, z, r); };
         // Arbres : derrière la rive LOCALE (le contour n'est pas un cercle), sur une bande propre au biotope.
         arbres.length = 0;
@@ -180,16 +186,27 @@ export function creerDecor(deps) {
         const reessais = echelleMilieu(milieu) < 1 ? 8 : 0;
         for (let i = 0; i < d.arbres; i++) {
             for (let essai = 0; essai <= reessais; essai++) {
-                const angle = essai === 0 ? (i / d.arbres) * Math.PI * 2 + tirage() * 0.1 : tirage() * Math.PI * 2;
-                const radius = rayonEtang(angle) + style.bandeArbres[0] + tirage() * style.bandeArbres[1];
-                const x = POND_CENTER.x + Math.cos(angle) * radius;
-                const z = POND_CENTER.z + Math.sin(angle) * radius;
+                const angle = etang
+                    ? (essai === 0 ? (i / d.arbres) * Math.PI * 2 + tirage() * 0.1 : tirage() * Math.PI * 2)
+                    : angleParBord(essai === 0 ? i / d.arbres + tirage() * 0.1 / (Math.PI * 2) : tirage(), forme);
+                let x;
+                let z;
+                if (etang) {
+                    const radius = rayonEtang(angle) + style.bandeArbres[0] + tirage() * style.bandeArbres[1];
+                    x = POND_CENTER.x + Math.cos(angle) * radius;
+                    z = POND_CENTER.z + Math.sin(angle) * radius;
+                } else {
+                    const o = pointAuBord(rayonEtang, angle, style.bandeArbres[0] + tirage() * style.bandeArbres[1]);
+                    x = POND_CENTER.x + o.x;
+                    z = POND_CENTER.z + o.z;
+                }
                 // Laisse dégagé l'espace devant la caméra et le pêcheur.
                 if (z > 5 && Math.abs(x) < 30) {
                     continue;
                 }
                 // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
-                if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angle) + 4) {
+                const angleReel = etang ? angle : Math.atan2(z - POND_CENTER.z, x - POND_CENTER.x);
+                if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angleReel) + 4) {
                     continue;
                 }
                 const echelle = style.echelleArbres[0] + tirage() * style.echelleArbres[1];
@@ -212,7 +229,7 @@ export function creerDecor(deps) {
         lilyPads.length = 0;
         for (let i = 0; i < d.nenuphars; i++) {
             const radius = 0.25 + tirage() * 0.45;   // 12 à 35 cm de rayon
-            const angle = tirage() * Math.PI * 2;
+            const angle = etang ? tirage() * Math.PI * 2 : angleParSurface(tirage(), forme);
             const r = Math.sqrt(tirage()) * Math.max(1, rayonEtang(angle) - 12 * marge);
             const x = POND_CENTER.x + Math.cos(angle) * r;
             const z = POND_CENTER.z + Math.sin(angle) * r;
@@ -229,7 +246,7 @@ export function creerDecor(deps) {
         roseaux.length = 0;
         let reedCount = 0;
         for (let i = 0; i < d.roseaux; i++) {
-            const angle = tirage() * Math.PI * 2;
+            const angle = etang ? tirage() * Math.PI * 2 : angleParBord(tirage(), forme);
             // Les roseaux poussent DANS l'eau, le long du contour généré.
             const r = rayonEtang(angle) - 1 * marge - tirage() * 5 * marge;
             const x = POND_CENTER.x + Math.cos(angle) * r;
@@ -248,17 +265,23 @@ export function creerDecor(deps) {
         reedInst.instanceMatrix.needsUpdate = true;
         reedInst.boundingSphere = null;
         // L'herbe des berges suit le décor du biotope (arbres et roseaux) et la taille de l'étang.
-        vegetation.regler(d.herbe, echelleMilieu(milieu));
+        vegetation.regler(d.herbe, echelleMilieu(milieu), forme);
 
         // Rochers (instanciés) : sur la berge, derrière le bord local.
         rochers.length = 0;
         let rockCount = 0;
         for (let i = 0; i < d.rochers; i++) {
-            const angle = tirage() * Math.PI * 2;
-            const r = rayonEtang(angle) + 3 * marge + tirage() * 12 * marge;
+            const angle = etang ? tirage() * Math.PI * 2 : angleParBord(tirage(), forme);
+            const decalageRoche = 3 * marge + tirage() * 12 * marge;
             const s = style.echelleRochers[0] + tirage() * style.echelleRochers[1];
-            _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15,
-                POND_CENTER.z + Math.sin(angle) * r);
+            if (etang) {
+                const r = rayonEtang(angle) + decalageRoche;
+                _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15,
+                    POND_CENTER.z + Math.sin(angle) * r);
+            } else {
+                const o = pointAuBord(rayonEtang, angle, decalageRoche);
+                _vec.set(POND_CENTER.x + o.x, RIVE_Y + 0.15, POND_CENTER.z + o.z);
+            }
             _euler.set(tirage(), tirage(), tirage());
             if (occupe(_vec.x, _vec.z, s)) { continue; }
             _quat.setFromEuler(_euler);

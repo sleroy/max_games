@@ -16,6 +16,7 @@
 // Tout est dessiné en code (géométrie + textures canvas) : aucune image, aucune licence.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { FORME_DEFAUT, angleSurForme, angleDepuisForme, pointAuBord } from './dimensions.js?v=240';
 
 export const RAYON_BARQUE = 1.5;     // rayon de la coque pour les collisions
 export const MARGE_ACCROCHE = 0.8;   // l'hameçon se coince à moins de 0,8 d'un obstacle
@@ -484,7 +485,9 @@ export function creerObstacles(deps) {
             if (c.eau && dc > rayonEtang(ang) - 1.5) { return false; }         // centre dans l'eau
             for (let k = 0; k < postesRef.length; k++) {
                 const ref = postesRef[k];
-                if (ecartAngle(ang, ref.angle) < COULOIR_POSTE) { return false; }
+                // Le couloir de ±14° est celui de l'étang : sur un canal ou une rivière il se mesure dans le même repère
+                // (angles ramenés à l'étang), sinon il couvrirait tout le bout du plan d'eau.
+                if (ecartAngle(angleDepuisForme(ang, monde.forme), angleDepuisForme(ref.angle, monde.forme)) < COULOIR_POSTE) { return false; }
                 if (Math.hypot(c.x - ref.pecheur.x, c.z - ref.pecheur.z) < c.r + 10 * Math.min(1, ECH)) { return false; }
                 if (Math.hypot(c.x - ref.bourriche.x, c.z - ref.bourriche.z) < c.r + 8 * Math.min(1, ECH)) { return false; }
             }
@@ -523,11 +526,23 @@ export function creerObstacles(deps) {
         const bords = spec.d === 0 ? [0] : DECALAGES_BORD;
         for (let i = 0; i < DECALAGES_ANGLE.length; i++) {
             for (let j = 0; j < bords.length; j++) {
-                const angle = (spec.angle + DECALAGES_ANGLE[i]) * DEG;
-                const rayon = rayonEtang(angle) - (spec.d + bords[j]) * Math.max(ECH, 0.35);   // distances au bord : × f (≥ 0,35 : un obstacle garde ses 1,5 unité d'eau) ; inchangées dans la plaine
+                // Les angles des emplacements sont ceux de l'étang : sur un canal ou une rivière, ils sont ramenés
+                // sur les axes de la forme (même endroit RELATIF du plan d'eau). Identité pour l'étang.
+                const angle = angleSurForme((spec.angle + DECALAGES_ANGLE[i]) * DEG, monde.forme);
+                const recul = (spec.d + bords[j]) * Math.max(ECH, 0.35);   // distances au bord : × f (≥ 0,35 : un obstacle garde ses 1,5 unité d'eau) ; inchangées dans la plaine
                 // Repère local : x vers la berge (u), z perpendiculaire (v).
-                const pose = { x: CX + Math.cos(angle) * rayon, z: CZ + Math.sin(angle) * rayon,
-                    cos: Math.cos(angle), sin: Math.sin(angle), angle: angle };
+                let pose;
+                if (!monde.forme || monde.forme === FORME_DEFAUT) {
+                    // Étang : l'ouvrage est posé et orienté sur le RAYON (monde d'origine, au bit près).
+                    const rayon = rayonEtang(angle) - recul;
+                    pose = { x: CX + Math.cos(angle) * rayon, z: CZ + Math.sin(angle) * rayon,
+                        cos: Math.cos(angle), sin: Math.sin(angle), angle: angle };
+                } else {
+                    // Canal, lac, rivière : sur une berge presque parallèle au rayon, un ouvrage orienté sur le rayon
+                    // longerait la rive. Il est posé et orienté sur la NORMALE du contour (perpendiculaire à la berge).
+                    const o = pointAuBord(rayonEtang, angle, -recul);
+                    pose = { x: CX + o.x, z: CZ + o.z, cos: o.nx, sin: o.nz, angle: Math.atan2(o.nz, o.nx) };
+                }
                 const mondes = forme.cercles.map(function (c) { return versMonde(c, pose); });
                 if (placeLibre(mondes)) { return { forme: forme, pose: pose, cercles: mondes }; }
             }
@@ -551,15 +566,30 @@ export function creerObstacles(deps) {
         const rayon = eau.reduce(function (m, c) { return Math.max(m, Math.hypot(c.x - x, c.z - z) + c.r); }, 0);   // emprise dans l'eau
         // Centre de la zone de vie : à 10,5 du bord au moins (les poissons évitent la rive).
         const angle = Math.atan2(z - CZ, x - CX);
-        const dBord = rayonEtang(angle) - Math.hypot(x - CX, z - CZ);
+        let dBord = rayonEtang(angle) - Math.hypot(x - CX, z - CZ);
+        let versLeau = { x: -Math.cos(angle), z: -Math.sin(angle) };   // direction qui éloigne de la berge : le long du rayon (étang)
+        if (monde.forme && monde.forme !== FORME_DEFAUT) {
+            // Canal, lac, rivière : la distance à la berge se mesure à la VRAIE rive (le point le plus proche du
+            // contour), et la zone de vie s'en éloigne dans cette direction, pas le long du rayon.
+            let plusProche = Infinity;
+            for (let k = 0; k < 720; k++) {
+                const a = (k / 720) * Math.PI * 2;
+                const r = rayonEtang(a);
+                const dx = CX + Math.cos(a) * r - x;
+                const dz = CZ + Math.sin(a) * r - z;
+                const dist = Math.hypot(dx, dz);
+                if (dist < plusProche) { plusProche = dist; versLeau = { x: -dx / (dist || 1), z: -dz / (dist || 1) }; }
+            }
+            dBord = plusProche;
+        }
         const recul = Math.max(0, 10.5 * Math.min(1, ECH) - dBord);
         liste.push({
             id: spec.type + '-' + index, type: spec.type, nom: type.nom, x: x, z: z, rayon: rayon,
-            angle: angle, axe: place.pose.angle, cercles: place.cercles, groupe: groupe,
+            angle: angle, axe: place.pose.angle, racine: { x: place.pose.x, z: place.pose.z }, cercles: place.cercles, groupe: groupe,
             profil: type.accroche ? ACCROCHAGES[type.accroche] : null,
             barque: type.barque, bloqueLancer: type.bloqueLancer,
             attire: { especes: type.especes.slice(), rayon: ATTIRE_RAYON,
-                centre: { x: x - Math.cos(angle) * recul, z: z - Math.sin(angle) * recul } }
+                centre: { x: x + versLeau.x * recul, z: z + versLeau.z * recul } }
         });
     }
 
@@ -588,6 +618,15 @@ export function creerObstacles(deps) {
         });
         const ponton = liste.find(function (o) { return o.type === 'ponton'; });
         pontonPoste = ponton ? { axe: ponton.axe, demi: 0.05, marge: -10.5, hauteur: 0.67, id: ponton.id } : null;
+        if (ponton && monde.forme && monde.forme !== FORME_DEFAUT) {
+            // Le ponton suit la normale de la berge, pas le rayon : le poste est le point du plancher à 10,5 unités de
+            // la berge, repéré par son angle polaire et sa distance au contour LOCAL (c'est ainsi que se place le pêcheur).
+            const qx = ponton.racine.x - Math.cos(ponton.axe) * 10.5;
+            const qz = ponton.racine.z - Math.sin(ponton.axe) * 10.5;
+            const axePoste = Math.atan2(qz - CZ, qx - CX);
+            pontonPoste.axe = axePoste;
+            pontonPoste.marge = Math.hypot(qx - CX, qz - CZ) - rayonEtang(axePoste);
+        }
     }
     reposer();
 

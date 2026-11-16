@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=239';
+import { etat } from './etat.js?v=240';
 
 export function creerPlacement(deps) {
     const {
@@ -41,8 +41,10 @@ export function creerPlacement(deps) {
     // Le plan d'eau est à y = CARTE_3D_EAU_Y (0).
     // ---------------------------------------------------------------------------
     // Échelle de la carte (largeur du terrain, caméra, repères) : f = rayon / 90 borné [0,25 ; 3,2] ; 1 dans la plaine.
+    // Un plan d'eau allongé (canal, lac, rivière) la mesure sur son plus GRAND EXTENT (sa longueur, pas son rayon
+    // nominal) et peut dépasser 3,2 : une rivière de 1 200 unités doit tenir dans le cadre.
     function echelleCarte() {
-        return Math.max(0.25, Math.min(3.2, monde.echelle));
+        return Math.max(0.25, Math.min(monde.forme === 'etang' ? 3.2 : 6, monde.echelleExtent));
     }
 
     function hauteurCarte(x, z) {

@@ -19,8 +19,8 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=239';
-import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=239';
+import { COMPORTEMENTS } from './especes.js?v=240';
+import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=240';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [
@@ -96,7 +96,7 @@ export function creerSubstrats(deps) {
     const { POND_CENTER, rayonEtang, profondeurLocale, FOSSES, verdictBase, MARGE_VASE } = deps;
     // Le monde ACTUEL (environnement.js `monde` : accesseurs). La GRILLE dépend de la taille de l'étang : elle est
     // reconfigurée (`configurerGeometrie`) quand le biotope change le rayon, jamais calculée une fois pour toutes.
-    const monde = deps.monde || { echelle: 1, rayon: 90, rayonMax: deps.RAYON_ETANG_MAX, demiCoteFond: deps.DEMI_COTE_FOND,
+    const monde = deps.monde || { echelle: 1, rayon: 90, forme: 'etang', rayonMax: deps.RAYON_ETANG_MAX, demiCoteFond: deps.DEMI_COTE_FOND,
         porteeLancer: 52, centreReference: { x: POND_CENTER.x, z: POND_CENTER.z } };
     // Sources d'herbier : COPIE des nénuphars et roseaux du décor au moment de la construction
     // (les tests vident `lilyPads` : la grille, elle, ne bouge plus).
@@ -115,24 +115,29 @@ export function creerSubstrats(deps) {
     lireSources();
 
     // --- Géométrie de la grille : dépend de la TAILLE de l'étang (reconfigurée par configurerGeometrie) ---
-    // Le même carré que les UV du maillage du fond (environnement.js). La taille d'une cellule suit l'échelle f
+    // Le même RECTANGLE que les UV du maillage du fond (environnement.js : 2 × demiCoteX par 2 × demiCoteZ ; un carré
+    // pour l'étang, un rectangle allongé pour un canal ou une rivière). La taille d'une cellule suit l'échelle f
     // (une grille de pas fixe sur un lac de 560 unités serait trop lourde, et trop grossière sur 24 unités).
     let CELLULE = CELLULE_BASE;
     let ECHELLE = 1;                // f = rayon / 90 du monde pour lequel la grille est construite
-    let demi = 0;
-    let N = 0;
+    let demiX = 0;                  // demi-largeur (x) et demi-longueur (z) du rectangle de la grille
+    let demiZ = 0;
+    let N = 0;                      // cellules par ligne (x) : la grille a NZ lignes (z) ; index = j × N + i
+    let NZ = 0;
     let X0 = 0;
     let Z0 = 0;
     let PAS_FETCH = 4;
-    let NF = 0;
+    let NF = 0;                     // grille d'exposition au vent : NF colonnes × NFZ lignes
+    let NFZ = 0;
     let fetchGrille = null;
     let proxGrille = null;
     let grille = null;
     let dedans = null;
     let affinite = null;
     let etiquettes = null;
-    let COTE = 0;
-    let geometrieDe = null;         // rayon du monde pour lequel la grille est construite
+    let COTE = 0;                   // côté en x du rectangle (2 × demiX)
+    let COTE_Z = 0;                 // côté en z (2 × demiZ)
+    let geometrieDe = null;         // rayon et forme du monde pour lesquels la grille est construite
     const ventX = Math.cos(VENT_DOMINANT);
     const ventZ = Math.sin(VENT_DOMINANT);
 
@@ -152,7 +157,7 @@ export function creerSubstrats(deps) {
 
     function fetchEn(x, z) {
         const i = Math.max(0, Math.min(NF - 1, Math.floor((x - X0) / PAS_FETCH)));
-        const j = Math.max(0, Math.min(NF - 1, Math.floor((z - Z0) / PAS_FETCH)));
+        const j = Math.max(0, Math.min(NFZ - 1, Math.floor((z - Z0) / PAS_FETCH)));
         return fetchGrille[j * NF + i];
     }
 
@@ -160,38 +165,44 @@ export function creerSubstrats(deps) {
         ECHELLE = monde.echelle;
         CELLULE = CELLULE_BASE * Math.max(0.35, Math.min(2.5, ECHELLE));
         const rapport = CELLULE / CELLULE_BASE;
-        demi = monde.demiCoteFond || Math.ceil(monde.rayonMax + 4.5);
-        N = Math.ceil(demi * 2 / CELLULE);
-        X0 = POND_CENTER.x - demi;
-        Z0 = POND_CENTER.z - demi;
-        COTE = demi * 2;
+        const demiDefaut = monde.demiCoteFond || Math.ceil(monde.rayonMax + 4.5);
+        demiX = monde.demiCoteX || demiDefaut;
+        demiZ = monde.demiCoteZ || demiDefaut;
+        N = Math.ceil(demiX * 2 / CELLULE);
+        NZ = Math.ceil(demiZ * 2 / CELLULE);
+        X0 = POND_CENTER.x - demiX;
+        Z0 = POND_CENTER.z - demiZ;
+        COTE = demiX * 2;
+        COTE_Z = demiZ * 2;
         // --- Exposition au vent : longueur d'eau traversée en remontant le vent (grille de 4 × rapport) ---
         PAS_FETCH = 4 * rapport;
-        NF = Math.ceil(demi * 2 / PAS_FETCH);
-        fetchGrille = new Float32Array(NF * NF);
-        for (let j = 0; j < NF; j++) {
+        NF = Math.ceil(demiX * 2 / PAS_FETCH);
+        NFZ = Math.ceil(demiZ * 2 / PAS_FETCH);
+        fetchGrille = new Float32Array(NF * NFZ);
+        const longueurMax = 2 * Math.max(demiX, demiZ);
+        for (let j = 0; j < NFZ; j++) {
             for (let i = 0; i < NF; i++) {
                 const x = X0 + (i + 0.5) * PAS_FETCH;
                 const z = Z0 + (j + 0.5) * PAS_FETCH;
                 let longueur = 0;
                 if (dansEtang(x, z, 0)) {
                     // On remonte le vent (direction opposée) tant qu'on est sur l'eau.
-                    while (longueur < 2 * demi && dansEtang(x - ventX * longueur, z - ventZ * longueur, 0)) { longueur += 3 * rapport; }
+                    while (longueur < longueurMax && dansEtang(x - ventX * longueur, z - ventZ * longueur, 0)) { longueur += 3 * rapport; }
                 }
                 fetchGrille[j * NF + i] = longueur;
             }
         }
-        proxGrille = new Float32Array(N * N);
-        grille = new Uint8Array(N * N);
-        dedans = new Uint8Array(N * N);
-        affinite = new Float32Array(N * N * 5);
-        etiquettes = new Int32Array(N * N).fill(-1);
-        for (let j = 0; j < N; j++) {
+        proxGrille = new Float32Array(N * NZ);
+        grille = new Uint8Array(N * NZ);
+        dedans = new Uint8Array(N * NZ);
+        affinite = new Float32Array(N * NZ * 5);
+        etiquettes = new Int32Array(N * NZ).fill(-1);
+        for (let j = 0; j < NZ; j++) {
             for (let i = 0; i < N; i++) {
                 if (dansEtang(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, MARGE_FOND)) { dedans[j * N + i] = 1; }
             }
         }
-        geometrieDe = monde.rayon;
+        geometrieDe = monde.rayon + ':' + (monde.forme || 'etang');
     }
     configurerGeometrie();
 
@@ -202,7 +213,7 @@ export function creerSubstrats(deps) {
             const i0 = Math.max(0, Math.floor((s.x - s.rayon - X0) / CELLULE));
             const i1 = Math.min(N - 1, Math.ceil((s.x + s.rayon - X0) / CELLULE));
             const j0 = Math.max(0, Math.floor((s.z - s.rayon - Z0) / CELLULE));
-            const j1 = Math.min(N - 1, Math.ceil((s.z + s.rayon - Z0) / CELLULE));
+            const j1 = Math.min(NZ - 1, Math.ceil((s.z + s.rayon - Z0) / CELLULE));
             for (let j = j0; j <= j1; j++) {
                 for (let i = i0; i <= i1; i++) {
                     const d = Math.hypot(X0 + (i + 0.5) * CELLULE - s.x, Z0 + (j + 0.5) * CELLULE - s.z);
@@ -238,7 +249,7 @@ export function creerSubstrats(deps) {
     // Remplie EN PLACE (même tableau) : reconstruite quand le biotope change (appliquerMilieu).
     function remplirNaturel() {
         grille.fill(0);
-        for (let j = 0; j < N; j++) {
+        for (let j = 0; j < NZ; j++) {
             for (let i = 0; i < N; i++) {
                 if (dedans[j * N + i]) {
                     grille[j * N + i] = classer(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, proxGrille[j * N + i]);
@@ -250,7 +261,7 @@ export function creerSubstrats(deps) {
     const comptes = new Int32Array(6);
     function lisser() {
         const copie = grille.slice();
-        for (let j = 1; j < N - 1; j++) {
+        for (let j = 1; j < NZ - 1; j++) {
             for (let i = 1; i < N - 1; i++) {
                 const id = copie[j * N + i];
                 if (!id) { continue; }
@@ -292,7 +303,8 @@ export function creerSubstrats(deps) {
         const tmp = [0, 0, 0, 0, 0];
         const nombres = [0, 0, 0, 0, 0];
         let cellules = 0;
-        for (let c = 0; c < N * N; c++) {
+        const total = N * NZ;
+        for (let c = 0; c < total; c++) {
             if (!dedans[c]) { continue; }
             const i = c % N;
             affinites(X0 + (i + 0.5) * CELLULE, Z0 + ((c - i) / N + 0.5) * CELLULE, proxGrille[c], tmp);
@@ -305,7 +317,7 @@ export function creerSubstrats(deps) {
         for (let tour = 0; tour < 60; tour++) {
             nombres.fill(0);
             grille.fill(0);
-            for (let c = 0; c < N * N; c++) {
+            for (let c = 0; c < total; c++) {
                 if (!dedans[c]) { continue; }
                 let gagnant = 0;
                 let score = -Infinity;
@@ -316,7 +328,7 @@ export function creerSubstrats(deps) {
                 grille[c] = gagnant + 1;
             }
             lisser();
-            for (let c = 0; c < N * N; c++) { if (grille[c]) { nombres[grille[c] - 1]++; } }
+            for (let c = 0; c < total; c++) { if (grille[c]) { nombres[grille[c] - 1]++; } }
             let erreur = 0;
             for (let k = 0; k < 5; k++) {
                 const ecart = cibles[k] - nombres[k] / cellules;
@@ -337,7 +349,7 @@ export function creerSubstrats(deps) {
     function indiceEn(x, z) {
         const i = Math.floor((x - X0) / CELLULE);
         const j = Math.floor((z - Z0) / CELLULE);
-        return i < 0 || j < 0 || i >= N || j >= N ? 0 : grille[j * N + i];
+        return i < 0 || j < 0 || i >= N || j >= NZ ? 0 : grille[j * N + i];
     }
     // Substrat du fond en (x, z) : un identifiant de SUBSTRATS, ou null hors de l'étang.
     function substratEn(x, z) {
@@ -397,7 +409,7 @@ export function creerSubstrats(deps) {
     function zoneEn(x, z) {
         const i = Math.floor((x - X0) / CELLULE);
         const j = Math.floor((z - Z0) / CELLULE);
-        if (i < 0 || j < 0 || i >= N || j >= N || etiquettes[j * N + i] < 0) { return null; }
+        if (i < 0 || j < 0 || i >= N || j >= NZ || etiquettes[j * N + i] < 0) { return null; }
         return zones[etiquettes[j * N + i]];
     }
 
@@ -406,7 +418,7 @@ export function creerSubstrats(deps) {
     function rectsCarte() {
         const rects = [];
         let precedents = {};
-        for (let j = 0; j < N; j++) {
+        for (let j = 0; j < NZ; j++) {
             const courants = {};
             let i = 0;
             while (i < N) {
@@ -463,7 +475,7 @@ export function creerSubstrats(deps) {
         if (ancres[cle]) { return ancres[cle]; }
         const k = IDS_SUBSTRATS.indexOf(id) + 1;
         const liste = [];
-        for (let j = 3; j < N - 3; j += 2) {
+        for (let j = 3; j < NZ - 3; j += 2) {
             for (let i = 3; i < N - 3; i += 2) {
                 if (grille[j * N + i] !== k) { continue; }
                 let memes = 0;
@@ -658,14 +670,17 @@ export function creerSubstrats(deps) {
         else if (id === 'vase') { f *= 0.9 + 0.2 * t; }
         return f;
     }
-    // Renvoie les pixels RGBA (Uint8ClampedArray taille × taille × 4) : testable sans canvas.
-    function pixelsFond(taille) {
-        const px = new Uint8ClampedArray(taille * taille * 4);
-        const pas = COTE / taille;
-        for (let py = 0; py < taille; py++) {
-            for (let pxl = 0; pxl < taille; pxl++) {
+    // Renvoie les pixels RGBA (Uint8ClampedArray largeur × hauteur × 4) : testable sans canvas. La grille de la plaine
+    // est un carré (`hauteur` = `largeur`), celle d'un canal est plus haute que large.
+    function pixelsFond(largeur, hauteur) {
+        const h = hauteur || largeur;
+        const px = new Uint8ClampedArray(largeur * h * 4);
+        const pas = COTE / largeur;
+        const pasZ = COTE_Z / h;
+        for (let py = 0; py < h; py++) {
+            for (let pxl = 0; pxl < largeur; pxl++) {
                 const x = X0 + (pxl + 0.5) * pas;
-                const z = Z0 + (py + 0.5) * pas;
+                const z = Z0 + (py + 0.5) * pasZ;
                 // Léger désordre des limites (au plus 1 cellule) : la grille ne se devine pas.
                 const wx = x + 0.9 * Math.sin(x * 0.9 + z * 0.37 + 3) * Math.cos(z * 0.8 - x * 0.21);
                 const wz = z + 0.9 * Math.sin(z * 0.85 - x * 0.33 + 1) * Math.cos(x * 0.77 + z * 0.19);
@@ -674,14 +689,14 @@ export function creerSubstrats(deps) {
                 const i0 = Math.floor(fi);
                 const j0 = Math.floor(fj);
                 const i1 = Math.min(N - 1, Math.max(0, i0 + 1));
-                const j1 = Math.min(N - 1, Math.max(0, j0 + 1));
+                const j1 = Math.min(NZ - 1, Math.max(0, j0 + 1));
                 const ia = Math.min(N - 1, Math.max(0, i0));
-                const ja = Math.min(N - 1, Math.max(0, j0));
+                const ja = Math.min(NZ - 1, Math.max(0, j0));
                 const k00 = grille[ja * N + ia];
                 const k10 = grille[ja * N + i1];
                 const k01 = grille[j1 * N + ia];
                 const k11 = grille[j1 * N + i1];
-                const o = (py * taille + pxl) * 4;
+                const o = (py * largeur + pxl) * 4;
                 let r;
                 let g;
                 let b;
@@ -711,15 +726,20 @@ export function creerSubstrats(deps) {
     }
     // Pose la texture sur le maillage du fond (échelle UV : voir makeFondGeometry).
     // Renvoie la texture, ou null sans canvas (tests) : le fond garde alors sa couleur unie.
+    // La texture a les proportions du rectangle de la grille : `taille` pixels sur le plus petit côté (carré dans la
+    // plaine), jusqu'à 4 fois plus sur le plus grand (un canal 5:1 ne s'étire pas sur un carré).
     function habillerFond(maillage, taille) {
         try {
             const c = document.createElement('canvas');
-            c.width = taille || 384;
-            c.height = taille || 384;
+            const base = taille || 384;
+            const rapport = Math.min(4, Math.max(COTE, COTE_Z) / Math.min(COTE, COTE_Z));
+            const grandeLargeur = COTE >= COTE_Z;
+            c.width = Math.round(grandeLargeur ? base * rapport : base);
+            c.height = Math.round(grandeLargeur ? base : base * rapport);
             const g = c.getContext('2d');
             if (!g || !g.createImageData) { return null; }
             const image = g.createImageData(c.width, c.height);
-            image.data.set(pixelsFond(c.width));
+            image.data.set(pixelsFond(c.width, c.height));
             g.putImageData(image, 0, 0);
             const tex = new THREE.CanvasTexture(c);
             if (maillage.material.map && maillage.material.map.dispose) { maillage.material.map.dispose(); }   // biotope changé : l'ancienne texture part
@@ -740,7 +760,7 @@ export function creerSubstrats(deps) {
     let biotope = deps.milieu ? milieuParId(deps.milieu).id : MILIEU_DEFAUT;
     function appliquerMilieu(milieu) {
         biotope = milieuParId(typeof milieu === 'string' ? milieu : milieu && milieu.id).id;
-        if (geometrieDe !== monde.rayon) { configurerGeometrie(); }   // l'étang a changé de taille : nouvelle grille
+        if (geometrieDe !== monde.rayon + ':' + (monde.forme || 'etang')) { configurerGeometrie(); }   // l'étang a changé de taille ou de forme : nouvelle grille
         lireSources();
         calculerProximite();
         remplirGrille(biotope === MILIEU_DEFAUT ? null : ciblesDe(biotope));
@@ -754,8 +774,9 @@ export function creerSubstrats(deps) {
 
     return {
         SUBSTRATS: SUBSTRATS, ACCROCHAGES_FOND: ACCROCHAGES_FOND, SONS_FOND: SONS_FOND,
-        get grille() { return grille; }, COULEURS: COULEURS, get taille() { return N; }, get cellule() { return CELLULE; },
-        get origine() { return { x: X0, z: Z0 }; }, get cote() { return COTE; },
+        get grille() { return grille; }, COULEURS: COULEURS, get taille() { return N; }, get hauteur() { return NZ; },
+        get cellule() { return CELLULE; },
+        get origine() { return { x: X0, z: Z0 }; }, get cote() { return COTE; }, get coteZ() { return COTE_Z; },
         aires: aires, parts: parts, zones: zones, stats: stats,
         substratEn: substratEn, zoneEn: zoneEn, rectsCarte: rectsCarte, verdictFond: verdictFond,
         accrochageDe: accrochageDe, attirer: attirer, ancresDe: ancresDe, especesDe: especesDe,
@@ -765,7 +786,7 @@ export function creerSubstrats(deps) {
         fetchEn: fetchEn, proximiteHerbier: function (x, z) {
             const i = Math.floor((x - X0) / CELLULE);
             const j = Math.floor((z - Z0) / CELLULE);
-            return i < 0 || j < 0 || i >= N || j >= N ? 0 : proxGrille[j * N + i];
+            return i < 0 || j < 0 || i >= N || j >= NZ ? 0 : proxGrille[j * N + i];
         },
         // Rejoue la construction : deux exécutions doivent donner la même grille et les mêmes zones.
         refaire: function () {
