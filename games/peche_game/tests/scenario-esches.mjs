@@ -26,7 +26,8 @@ const CIBLES = {
     ver: ['gardon', 'perche', 'anguille', 'goujon'],
     pain: ['gardon', 'rotengle', 'chevesne'],
     bouillette: ['carpe', 'carassin'],
-    vif: ['brochet', 'sandre', 'black-bass', 'silure']
+    vif: ['brochet', 'sandre', 'black-bass', 'silure'],
+    mouche: ['truite']
 };
 
 const POINT = { x: 0, z: -25 };    // vase, ≈ 2 m d'eau (3,98 unités)
@@ -77,14 +78,15 @@ export function run() {
     const e = G().etat;
 
     // --- 1) Profils de cibles conformes à la demande ----------------------------------
-    check('cinq esches : maïs, ver, pain, bouillette, vif', IDS_ESCHES.join() === 'mais,ver,pain,bouillette,vif', IDS_ESCHES.join());
+    check('six esches : maïs, ver, pain, bouillette, vif, mouche', IDS_ESCHES.join() === 'mais,ver,pain,bouillette,vif,mouche', IDS_ESCHES.join());
     Object.keys(CIBLES).forEach(function (id) {
         const esche = ESCHES.find(x => x.id === id);
         check(id + ' cible ' + CIBLES[id].join(', '), CIBLES[id].every(sp => esche.cibles[sp] === 1));
         check(id + ' : les espèces visées existent', CIBLES[id].every(sp => SPECIES.some(s => s.id === sp)));
         const autres = SPECIES.map(s => s.id).filter(sp => CIBLES[id].indexOf(sp) < 0);
-        check(id + ' : une espèce non visée ne dépasse jamais 0,5',
-            autres.every(sp => (esche.cibles[sp] === undefined ? PROBA_INADAPTEE : esche.cibles[sp]) <= 0.5));
+        // Une espèce non visée peut en faire son 2e choix (≤ 0,75 : le leurre pour la truite), jamais son esche reine.
+        check(id + ' : une espèce non visée ne dépasse jamais 0,75',
+            autres.every(sp => (esche.cibles[sp] === undefined ? PROBA_INADAPTEE : esche.cibles[sp]) <= 0.75));
     });
     check('maïs → carpe', ESCHES[0].cibles.carpe === 1);
     check('ver → gardon', ESCHES[1].cibles.gardon === 1);
@@ -240,7 +242,7 @@ export function run() {
     const rendu = el('boutique').innerHTML;
     check('la boutique a une section « Esches »', rendu.indexOf('Esches') >= 0);
     check('elle annonce les esches illimitées', rendu.indexOf('illimitées') >= 0);
-    check('elle liste les cinq esches (icône + nom)', ESCHES.every(x => rendu.indexOf(x.icone + ' ' + x.nom) >= 0),
+    check('elle liste les six esches (icône + nom)', ESCHES.every(x => rendu.indexOf(x.icone + ' ' + x.nom) >= 0),
         ESCHES.map(x => x.icone + ' ' + x.nom).join(' · '));
     checkEqual('les fils et l’amorce s’achètent toujours par lots de 3',
         (rendu.match(/Acheter ×3/g) || []).length, 4);

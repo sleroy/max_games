@@ -1,0 +1,49 @@
+/* matrice.css — page de visualisation de la matrice des touches (matrice.html). */
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #e6eef2;
+    background: #0b1a24;
+    line-height: 1.45;
+}
+a { color: #8fd3ff; }
+code { background: #16303f; padding: 0 4px; border-radius: 4px; }
+.entete, main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.entete h1 { margin: 4px 0 6px; }
+.retour { margin: 12px 0 0; }
+.intro, .aide { color: #b8c9d2; margin: 4px 0 10px; }
+.bloc { background: #10242f; border: 1px solid #1d3a4a; border-radius: 12px; padding: 12px 16px; margin: 16px 0; }
+.bloc h2 { margin: 0 0 6px; font-size: 1.25rem; }
+.bloc h3 { margin: 8px 0 6px; font-size: 1rem; color: #cfe3ec; }
+.deux { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.regles, .surveiller { list-style: none; padding: 0; margin: 0; }
+.regles li, .surveiller li { padding: 4px 0; border-bottom: 1px solid #183241; }
+.ok::before { content: "✅ "; }
+.ko::before { content: "❌ "; }
+.ko { color: #ffb4a8; }
+.surveiller li::before { content: "⚠️ "; }
+.detail { color: #ffb4a8; font-size: 0.9em; }
+.defile { overflow-x: auto; }
+table.resume { border-collapse: collapse; font-size: 0.9rem; }
+table.resume th, table.resume td { padding: 4px 8px; text-align: center; border: 1px solid #0b1a24; }
+table.resume th { background: #16303f; position: sticky; top: 0; }
+table.resume th.espece { text-align: left; }
+table.resume td { cursor: pointer; font-weight: 600; color: #fff; min-width: 64px; }
+table.resume td.meilleure { outline: 2px solid #ffe066; outline-offset: -2px; }
+table.resume td.nul { background: #23313a; color: #6f818b; font-weight: 400; }
+.commandes { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 6px 0 10px; }
+.commandes select { background: #16303f; color: #e6eef2; border: 1px solid #2c5367; border-radius: 6px; padding: 4px 6px; font-size: 1rem; }
+.case { display: flex; align-items: center; gap: 6px; }
+.legende { color: #b8c9d2; font-size: 0.9rem; }
+.echantillon { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin: 0 4px 0 8px; }
+.cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.carte { min-width: 0; background: #0d1f29; border: 1px solid #1d3a4a; border-radius: 10px; padding: 8px; }
+.carte.selection { border-color: #ffe066; }
+.carte h4 { margin: 0 0 4px; display: flex; justify-content: space-between; font-size: 0.95rem; }
+.carte h4 small { color: #b8c9d2; font-weight: 400; }
+.grille { display: grid; gap: 1px; font-size: 9px; }
+.grille div { aspect-ratio: 1; min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #e6eef2; border-radius: 2px; }
+.grille .impossible { background: #23313a; color: #8193a0; }
+.grille .axe { background: none; color: #8193a0; font-size: 8px; }
+.axes { display: flex; justify-content: space-between; color: #8193a0; font-size: 0.75rem; margin-top: 2px; }

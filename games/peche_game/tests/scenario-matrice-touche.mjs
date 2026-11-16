@@ -11,117 +11,33 @@
 //  2. DÉLAI : heure × pression × tendance × température × espèce, toujours borné.
 //  3. CONCORDANCE : le VRAI jeu (poisson posé à côté de l'hameçon) suit evaluerTouche.
 //
+// Les règles vivent dans matriceTouche.js (partagé avec la page matrice.html).
 // MATRICE_CSV=chemin node tests/run.mjs : écrit le résumé (espèce × esche) dans un fichier CSV.
 // ---------------------------------------------------------------------------
 import fs from 'node:fs';
 import { SPECIES } from '../especes.js';
-import { ESCHES } from '../esches.js';
 import { group, check, checkEqual, G, moduleCopie, state, stepUntil, resetToIdle, clearLilyPads, castTo, parkFish } from './harness.mjs';
 
-const SUBSTRATS = ['sable', 'gravier', 'vase', 'roche', 'herbier'];
-const EAUX = [1.5, 3, 4.5, 6, 8];              // profondeur d'eau (unités) : bord → fosse
-const LIGNES = [0.75, 1.5, 2.5, 3.5, 5, 7];    // longueur de ligne (unités)
-const TEMPERATURES = [5, 15, 24];              // hiver, eau brassée, été (thermocline)
-const ESCHES_IDS = ESCHES.map(e => e.id).concat([null]);   // null = hameçon nu
-const FOSSE = ['silure', 'anguille', 'sandre'];
-const PORTEE_BORD = 4.5;                       // ≈ eau au plus loin d'un lancer du bord (2,2 m)
-
-function tailles(e) { return [e.cm[0], Math.round((e.cm[0] + e.cm[1]) / 2), e.cm[1]]; }
-
 export async function run() {
-    group('Matrice de la chance de touche (chanceTouche.js)');
+    group('Matrice de la chance de touche (chanceTouche.js + matriceTouche.js)');
     const C = await import(moduleCopie('chanceTouche.js'));
+    const M = await import(moduleCopie('matriceTouche.js'));
     const t0 = Date.now();
 
-    // --- 1. Matrice ---------------------------------------------------------------------
-    let cas = 0;
-    let incoherents = 0;
-    let faciles = 0;
-    let taillesHorsVifBouillette = 0;
-    const meilleur = {};       // espèce → { chance, ctx }
-    const parEsche = {};       // espèce|esche → { max, possibles, total }
-    const meilleurDuBord = {}; // espèce → meilleure chance en eau ≤ PORTEE_BORD, normal, 15 °C
-    function noter(ctx, r) {
-        cas++;
-        if (r.possible !== (r.raison === null) || (r.possible && !(r.chance > 0 && r.chance <= 1))
-            || (!r.possible && r.chance !== 0) || (r.raison && !C.RAISONS[r.raison])) { incoherents++; }
-        if (r.raison === 'taille' && ['bouillette', 'vif'].indexOf(ctx.esche) < 0) { taillesHorsVifBouillette++; }
-        if (ctx.temperature !== 15) { return; }
-        const cle = ctx.especeId + '|' + (ctx.esche || 'nu');
-        const pe = parEsche[cle] || (parEsche[cle] = { max: 0, possibles: 0, total: 0, ctx: null });
-        pe.total++;
-        if (r.possible) { pe.possibles++; }
-        if (r.chance > pe.max) { pe.max = r.chance; pe.ctx = ctx; }
-        const m = meilleur[ctx.especeId];
-        if (!m || r.chance > m.chance) { meilleur[ctx.especeId] = { chance: r.chance, ctx: ctx }; }
-        if (ctx.profondeurEau <= PORTEE_BORD) {
-            meilleurDuBord[ctx.especeId] = Math.max(meilleurDuBord[ctx.especeId] || 0, r.chance);
-        }
-    }
-    SPECIES.forEach(function (e) {
-        tailles(e).forEach(function (cm) {
-            ESCHES_IDS.forEach(function (esche) {
-                EAUX.forEach(function (eau) {
-                    SUBSTRATS.forEach(function (substrat) {
-                        TEMPERATURES.forEach(function (temperature) {
-                            const base = { especeId: e.id, longueurCm: cm, esche: esche, profondeurEau: eau, substrat: substrat, temperature: temperature };
-                            LIGNES.forEach(function (ligne) {
-                                const ctx = Object.assign({ profondeurLigne: ligne }, base);
-                                noter(ctx, C.evaluerTouche(ctx));
-                                // Mode facile : seul l'hameçon pris empêche la touche.
-                                const f = C.evaluerTouche(Object.assign({ mode: 'facile' }, ctx));
-                                if (f.possible === (f.raison === 'accroche')) { faciles++; }
-                            });
-                            const q = Object.assign({ quiver: true, profondeurLigne: 0 }, base);
-                            noter(q, C.evaluerTouche(q));
-                        });
-                    });
-                });
-            });
-        });
-    });
-    checkEqual('matrice : chaque cas est cohérent (chance nulle ⇔ une raison connue)', incoherents, 0);
-    checkEqual('mode facile : seul un hameçon pris au fond empêche la touche', faciles, 0);
-    checkEqual('« trop petit » n’arrive qu’avec la bouillette ou le vif', taillesHorsVifBouillette, 0);
-    const peuPechables = SPECIES.filter(e => !meilleur[e.id] || meilleur[e.id].chance < 0.5).map(e => e.id);
-    check('chaque espèce a au moins une vraie façon d’être pêchée (chance ≥ 50 %)', peuPechables.length === 0, peuPechables.join(', '));
-    const nuPasPire = SPECIES.filter(e => (parEsche[e.id + '|nu'] || { max: 0 }).max >= meilleur[e.id].chance).map(e => e.id);
-    check('l’hameçon nu fait toujours moins bien que la meilleure esche', nuPasPire.length === 0, nuPasPire.join(', '));
-    const escheInutile = ESCHES.filter(function (esche) {
-        return !SPECIES.some(e => (parEsche[e.id + '|' + esche.id] || { max: 0 }).max >= meilleur[e.id].chance - 1e-9);
-    }).map(e => e.id);
-    check('chaque esche est la meilleure pour au moins une espèce', escheInutile.length === 0, escheInutile.join(', '));
-    const fosseKo = FOSSE.filter(id => !meilleur[id] || meilleur[id].chance < 0.5);
-    check('les poissons de fosse se pêchent en eau profonde', fosseKo.length === 0, fosseKo.join(', '));
-    const horsBord = SPECIES.filter(e => FOSSE.indexOf(e.id) < 0 && (meilleurDuBord[e.id] || 0) < 0.3).map(e => e.id);
-    check('hors fosses, chaque espèce se pêche aussi depuis le bord (eau ≤ 2,25 m, chance ≥ 30 %)', horsBord.length === 0, horsBord.join(', '));
-
-    // --- 2. Délai (heure × pression × température × espèce) ---------------------------
-    let horsBornes = 0;
-    [0, 3, 6, 9, 12, 15, 18, 21].forEach(function (heure) {
-        [[1022, 1], [1013, 0], [998, -1]].forEach(function (p) {
-            TEMPERATURES.concat([28]).forEach(function (temperature) {
-                SPECIES.forEach(function (e) {
-                    const r = C.evaluerTouche({ especeId: e.id, longueurCm: e.cm[1], esche: 'ver', profondeurEau: 4, profondeurLigne: 2,
-                        substrat: 'sable', heure: heure, pression: p[0], tendance: p[1], temperature: temperature });
-                    cas++;
-                    if (!(r.facteurDelai >= 0.5 && r.facteurDelai <= 3.5)) { horsBornes++; }
-                });
-            });
-        });
-    });
-    checkEqual('délai de touche toujours borné (× 0,5 à × 3,5)', horsBornes, 0);
-    const neutre = C.evaluerTouche({ especeId: 'gardon', longueurCm: 20, esche: 'ver', profondeurEau: 4, profondeurLigne: 2, substrat: 'sable' });
-    checkEqual('midi, 1013 hPa stable, 15 °C : délai neutre (× 1)', Math.round(neutre.facteurDelai * 1000) / 1000, 1);
+    // --- 1 et 2. Règles de la matrice (les MÊMES que la page matrice.html) ---------------
+    const verif = M.verifierRegles();
+    verif.regles.forEach(function (r) { check(r.nom, r.ok, r.detail); });
     const ms = Date.now() - t0;
-    check(cas + ' cas évalués en moins de 3 s', ms < 3000, ms + ' ms');
+    check(verif.cas + ' cas évalués en moins de 3 s', ms < 3000, ms + ' ms');
+    // Points à surveiller : affichés seulement (décision d'équilibrage, jamais bloquants).
+    M.aSurveiller(verif.resume).forEach(function (a) { console.log('  (à surveiller) ' + a.texte); });
 
     // CSV (sur demande) : meilleure chance par espèce × esche, et le réglage qui la donne.
     if (process.env.MATRICE_CSV) {
         const lignes = ['espece;esche;chance_max;cas_possibles_%;eau_m;ligne_m;fond;quiver'];
         SPECIES.forEach(function (e) {
-            ESCHES_IDS.forEach(function (esche) {
-                const pe = parEsche[e.id + '|' + (esche || 'nu')];
+            M.ESCHES_MATRICE.forEach(function (esche) {
+                const pe = verif.resume.parEsche[e.id + '|' + (esche || 'nu')];
                 const c = pe.ctx;
                 lignes.push([e.id, esche || 'nu', pe.max.toFixed(2), Math.round(100 * pe.possibles / pe.total),
                     c ? (c.profondeurEau / 2).toFixed(2) : '', c && !c.quiver ? (c.profondeurLigne / 2).toFixed(2) : '',
