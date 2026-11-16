@@ -7,15 +7,13 @@
 // Le poisson vient du même module que le jeu (`modelePoisson.js`) et la taille
 // est calculée par la même formule (`echellePourTaille`) : ce que montre la page
 // est exactement le maillage de l'étang. Chaque poisson est rendu une fois hors
-// écran, recadré au pixel près, puis affiché à sa longueur réelle.
+// écran (apercuPoisson.js), recadré au pixel près, puis affiché à sa longueur réelle.
 // ---------------------------------------------------------------------------
-import * as THREE from 'three';
-import { SPECIES, poidsKilos } from './especes.js?v=202';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=202';
+import { SPECIES, poidsKilos } from './especes.js?v=203';
+import { creerApercuPoisson } from './apercuPoisson.js?v=203';
 
 const LARGEUR_RENDU = 1200;   // résolution interne d'un portrait (assez pour la loupe)
 const HAUTEUR_RENDU = 800;
-const MARGE = 1.12;           // 6 % d'air de chaque côté, pour ne pas couper une nageoire
 const PX_CM_DEFAUT = 3;       // échelle d'affichage au chargement (1 cm = 3 px)
 const PX_CM_MIN = 0.8;
 const PX_CM_MAX = 6;
@@ -213,143 +211,6 @@ function creerSpecimen(espece, role, cm) {
 }
 
 // ---------------------------------------------------------------------------
-// Moteur de rendu hors écran : un WebGLRenderer, une scène, deux lumières.
-// Un poisson est ajouté, cadré, rendu, recadré (transparence) puis jeté.
-// ---------------------------------------------------------------------------
-function creerMoteurRendu() {
-    const canvas = document.createElement('canvas');
-    canvas.width = LARGEUR_RENDU;
-    canvas.height = HAUTEUR_RENDU;
-
-    const renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true
-    });
-    renderer.setPixelRatio(1);
-    renderer.setSize(LARGEUR_RENDU, HAUTEUR_RENDU, false);
-    // Même rendu « photo » que le jeu (rendu.js).
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setClearColor(0x000000, 0);
-
-    const scene = new THREE.Scene();
-    scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x3a3322, 1.9));
-    const cle = new THREE.DirectionalLight(0xfff3df, 2.6);
-    cle.position.set(3, 6, 8);
-    scene.add(cle);
-    const remplissage = new THREE.DirectionalLight(0xbcd8ff, 1.1);
-    remplissage.position.set(-5, 2, -4);
-    scene.add(remplissage);
-
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
-
-    // Deux canvas 2D : un pour lire les pixels, un pour le recadrage final.
-    const lecteur = document.createElement('canvas');
-    lecteur.width = LARGEUR_RENDU;
-    lecteur.height = HAUTEUR_RENDU;
-    const contexteLecture = lecteur.getContext('2d', { willReadFrequently: true });
-
-    const sortie = document.createElement('canvas');
-    const contexteSortie = sortie.getContext('2d');
-
-    // Cadre le poisson : vue de profil, très légère plongée pour voir le dos.
-    function cadrer(poisson) {
-        poisson.updateMatrixWorld(true);
-        const boite = new THREE.Box3().setFromObject(poisson);
-        const centre = boite.getCenter(new THREE.Vector3());
-        const taille = boite.getSize(new THREE.Vector3());
-        const aspect = LARGEUR_RENDU / HAUTEUR_RENDU;
-
-        let largeur = Math.max(0.001, taille.x) * MARGE;
-        let hauteur = Math.max(0.001, taille.y) * MARGE;
-        if (largeur / hauteur < aspect) {
-            largeur = hauteur * aspect;
-        } else {
-            hauteur = largeur / aspect;
-        }
-
-        camera.left = -largeur / 2;
-        camera.right = largeur / 2;
-        camera.top = hauteur / 2;
-        camera.bottom = -hauteur / 2;
-        camera.position.set(centre.x, centre.y + hauteur * 0.06,
-            centre.z + Math.max(10, largeur * 2));
-        camera.lookAt(centre.x, centre.y, centre.z);
-        camera.updateProjectionMatrix();
-    }
-
-    // Recadre sur les pixels visibles : la largeur de l'image devient la
-    // longueur exacte du poisson (aucune marge transparente à l'affichage).
-    function recadrer() {
-        contexteLecture.clearRect(0, 0, LARGEUR_RENDU, HAUTEUR_RENDU);
-        contexteLecture.drawImage(canvas, 0, 0);
-        const pixels = contexteLecture.getImageData(0, 0, LARGEUR_RENDU, HAUTEUR_RENDU).data;
-
-        let x0 = LARGEUR_RENDU;
-        let y0 = HAUTEUR_RENDU;
-        let x1 = -1;
-        let y1 = -1;
-        for (let y = 0; y < HAUTEUR_RENDU; y++) {
-            const ligne = y * LARGEUR_RENDU * 4;
-            for (let x = 0; x < LARGEUR_RENDU; x++) {
-                if (pixels[ligne + x * 4 + 3] > 8) {
-                    if (x < x0) { x0 = x; }
-                    if (x > x1) { x1 = x; }
-                    if (y < y0) { y0 = y; }
-                    if (y > y1) { y1 = y; }
-                }
-            }
-        }
-        if (x1 < x0 || y1 < y0) {
-            return canvas.toDataURL('image/png');
-        }
-
-        const largeur = x1 - x0 + 1;
-        const hauteur = y1 - y0 + 1;
-        sortie.width = largeur;
-        sortie.height = hauteur;
-        contexteSortie.clearRect(0, 0, largeur, hauteur);
-        contexteSortie.drawImage(canvas, x0, y0, largeur, hauteur, 0, 0, largeur, hauteur);
-        return sortie.toDataURL('image/png');
-    }
-
-    function rendre(espece, longueurCm) {
-        const size = echellePourTaille(longueurCm, espece.form);
-        // Combativité et agressivité moyennes de l'espèce : seules les tailles
-        // changent entre le MIN et le MAX (la queue ne « pousse » pas).
-        const power = (espece.combativite[0] + espece.combativite[1]) / 2;
-        const aggression = (espece.agressivite[0] + espece.agressivite[1]) / 2;
-        const poisson = creerModelePoisson(size, power, aggression, espece.form, espece);
-
-        scene.add(poisson);
-        cadrer(poisson);
-        renderer.clear();
-        renderer.render(scene, camera);
-        const source = recadrer();
-        scene.remove(poisson);
-
-        // Chaque appel crée ses géométries et matériaux : on les libère. La
-        // texture des motifs est partagée (cache de modelePoisson.js) : on ne
-        // touche pas à material.map.
-        poisson.traverse(function (objet) {
-            if (objet.geometry) { objet.geometry.dispose(); }
-            if (objet.material && objet.material.dispose) { objet.material.dispose(); }
-        });
-        return source;
-    }
-
-    return {
-        rendre: rendre,
-        liberer: function () {
-            renderer.dispose();
-        }
-    };
-}
-
-// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 function initPage() {
@@ -466,17 +327,26 @@ function initPage() {
     });
 
     // --- Fabrication des poissons (progressive, pour garder la page vivante) --
-    const moteur = creerMoteurRendu();
+    const moteur = creerApercuPoisson({ largeur: LARGEUR_RENDU, hauteur: HAUTEUR_RENDU });
     let faits = 0;
+    let echecs = 0;
 
     function uneEspece(index) {
         if (index >= specimens.length) {
             moteur.liberer();
-            compte.textContent = specimens.length + ' poissons affichés';
+            compte.textContent = echecs > 0
+                ? 'Rendu 3D indisponible (WebGL) : ' + echecs + ' poisson(s) non affiché(s)'
+                : specimens.length + ' poissons affichés';
             return;
         }
         const specimen = specimens[index];
-        specimen.image.src = moteur.rendre(specimen.espece, specimen.cm);
+        const rendu = moteur.rendre(specimen.espece, specimen.cm);
+        if (rendu) {
+            specimen.image.src = rendu;
+        } else {
+            specimen.bouton.disabled = true;   // pas de WebGL : rien à agrandir
+            echecs++;
+        }
         faits++;
         compte.textContent = 'Fabrication… ' + faits + ' / ' + specimens.length;
         // Toutes les 2 images, on rend la main au navigateur (barre de chargement).

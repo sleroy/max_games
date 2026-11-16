@@ -1,16 +1,129 @@
 // ---------------------------------------------------------------------------
-// fiches.js — ONGLET ESPÈCES : une fiche par poisson (silhouette, zone de vie, comportement). Extrait de script.js (v151).
+// fiches.js — ONGLET ESPÈCES : une fiche par poisson (aperçu 3D, photo réelle, zone de vie, comportement). Extrait de script.js (v151).
 //
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=202';
+import { etat } from './etat.js?v=203';
+import { creerApercuPoisson } from './apercuPoisson.js?v=203';
+
+const URL_PHOTOS = 'assets/references/photos.json';   // photos de référence (voir assets/references/SOURCES.md)
 
 export function creerFiches(deps) {
     const {
         FORMES, especeFiche, SPECIES, journal, TOUCHES_PAR_ID, fmtPoids, especePage,
         tabBtnEspeces, especePrev, especeNext
     } = deps;
+
+    // ---------------------------------------------------------------------------
+    // Aperçu 3D (rendu hors écran, créé au premier besoin) et photos réelles.
+    // ---------------------------------------------------------------------------
+    let apercu = null;
+    const apercusPrets = new Map();   // id d'espèce -> data URL déjà rendu
+    let promessePhotos = null;        // photos.json, chargé une seule fois
+    let jeton = 0;                    // identifie la fiche affichée (évite les retours tardifs)
+
+    function chargerPhotos() {
+        if (!promessePhotos) {
+            promessePhotos = Promise.resolve().then(function () {
+                if (typeof fetch !== 'function') { return {}; }
+                return fetch(URL_PHOTOS).then(function (reponse) {
+                    if (!reponse.ok) { throw new Error('HTTP ' + reponse.status); }
+                    return reponse.json();
+                });
+            }).then(function (donnees) {
+                return donnees && typeof donnees === 'object' ? donnees : {};
+            }).catch(function () { return {}; });
+        }
+        return promessePhotos;
+    }
+
+    // Chemin relatif au jeu uniquement (pas d'URL externe, pas de remontée de dossier).
+    function cheminSur(chemin) {
+        return typeof chemin === 'string' && chemin !== ''
+            && !/^([a-z][a-z0-9+.-]*:|\/|\\)/i.test(chemin) && chemin.indexOf('..') === -1;
+    }
+
+    // Taille moyenne de l'espèce : celle de l'aperçu.
+    function tailleMoyenne(e) {
+        return (e.cm[0] + e.cm[1]) / 2;
+    }
+
+    function balisesApercu(e, url) {
+        return '<img class="espece-apercu" src="' + url + '" alt="Modèle 3D : ' + e.nom
+            + ' de ' + tailleMoyenne(e) + ' cm" decoding="async">';
+    }
+
+    // Rendu 3D après l'ouverture de la fiche (le carnet n'attend pas le WebGL).
+    function rendreApercu(e, visuel, mien) {
+        if (!apercu) {
+            apercu = creerApercuPoisson({ largeur: 720, hauteur: 480 });
+        }
+        const url = apercu.rendre(e, tailleMoyenne(e));
+        if (!url || mien !== jeton) { return; }   // pas de WebGL : la silhouette reste
+        apercusPrets.set(e.id, url);
+        const silhouette = visuel.querySelector('.espece-silhouette');
+        if (!silhouette) { return; }
+        const image = document.createElement('img');
+        image.className = 'espece-apercu';
+        image.src = url;
+        image.alt = 'Modèle 3D : ' + e.nom + ' de ' + tailleMoyenne(e) + ' cm';
+        image.decoding = 'async';
+        silhouette.replaceWith(image);
+    }
+
+    // Photo réelle + crédit (auteur · licence). Rien n'est ajouté si elle manque.
+    function ajouterPhoto(e, visuel, mien) {
+        chargerPhotos().then(function (photos) {
+            const entree = Object.prototype.hasOwnProperty.call(photos, e.id) ? photos[e.id] : null;
+            if (mien !== jeton || !entree || typeof entree !== 'object' || !cheminSur(entree.fichier)) {
+                return;
+            }
+            const image = document.createElement('img');
+            image.alt = 'Photo de ' + e.nom;
+            image.decoding = 'async';
+            // La figure n'entre dans la fiche qu'une fois l'image chargée : pas de cadre cassé.
+            image.addEventListener('load', function () {
+                if (mien !== jeton) { return; }
+                const figure = document.createElement('figure');
+                figure.className = 'espece-photo';
+                figure.append(image);
+                const auteur = typeof entree.auteur === 'string' ? entree.auteur.trim() : '';
+                const licence = typeof entree.licence === 'string' ? entree.licence.trim() : '';
+                const credit = [auteur, licence].filter(Boolean).join(' · ');
+                if (credit !== '') {
+                    const legende = document.createElement('figcaption');
+                    if (typeof entree.page === 'string' && /^https:\/\//i.test(entree.page)) {
+                        const lien = document.createElement('a');
+                        lien.href = entree.page;
+                        lien.target = '_blank';
+                        lien.rel = 'noopener noreferrer';
+                        lien.textContent = credit;
+                        lien.title = 'Voir la photo et sa licence';
+                        legende.append(lien);
+                    } else {
+                        legende.textContent = credit;
+                    }
+                    figure.append(legende);
+                }
+                visuel.append(figure);
+            });
+            image.src = entree.fichier;
+        });
+    }
+
+    // Complète la fiche (hors chemin critique) : aperçu 3D puis photo.
+    function completerVisuel(e, mien, apercuDejaPret) {
+        if (typeof especeFiche.querySelector !== 'function') { return; }
+        const visuel = especeFiche.querySelector('.espece-visuel');
+        if (!visuel) { return; }
+        if (!apercuDejaPret) {
+            setTimeout(function () {
+                if (mien === jeton) { rendreApercu(e, visuel, mien); }
+            }, 0);
+        }
+        ajouterPhoto(e, visuel, mien);
+    }
 
     // ---------------------------------------------------------------------------
     // Onglet « Espèces » : une fiche par poisson (Précédent / Suivant).
@@ -86,7 +199,11 @@ export function creerFiches(deps) {
             + ligneEspece('Combat', style.nom + ' : ' + style.resume)
             + ligneEspece('Abondance', abondanceLabel(e.abondance))
             + ligneEspece('Silhouette', e.form);
-        especeFiche.innerHTML = silhouetteEspece(e)
+        // Aperçu 3D déjà rendu : affiché tout de suite ; sinon silhouette en attendant.
+        const urlApercu = apercusPrets.get(e.id) || null;
+        const mien = ++jeton;
+        especeFiche.innerHTML = '<div class="espece-visuel">'
+            + (urlApercu ? balisesApercu(e, urlApercu) : silhouetteEspece(e)) + '</div>'
             + '<h3 class="espece-nom">' + e.nom + '</h3>'
             + '<div class="espece-infos">' + infos + '</div>'
             + '<div class="espece-record">' + (fiche.n > 0
@@ -94,6 +211,7 @@ export function creerFiches(deps) {
                     + fmtPoids(fiche.record || 0)
                 : 'Pas encore attrapé — à toi de jouer !')
             + '</div>';
+        completerVisuel(e, mien, !!urlApercu);
         especePage.textContent = (etat.especeIndex + 1) + ' / ' + liste.length;
         // Le nom de l'onglet rappelle combien d'espèces ont été découvertes.
         if (tabBtnEspeces) {

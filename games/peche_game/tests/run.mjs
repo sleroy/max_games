@@ -60,6 +60,7 @@ import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
 import { run as scenarioModeles } from './scenario-modeles.mjs';
+import { run as scenarioApercu } from './scenario-apercu.mjs';
 import { run as scenarioFacile } from './scenario-facile.mjs';
 import { run as scenarioCombatMode } from './scenario-combat-mode.mjs';
 
@@ -172,6 +173,8 @@ try {
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
     debutScenario();
     await scenarioModeles();    // moteur de poisson 3D paramétrique (v197) : longueurs, budget, motifs, nage
+    debutScenario();
+    await scenarioApercu();     // aperçu 3D d'un poisson (v203) : cache, repli sans WebGL, branchements
     debutScenario();
     scenarioRadar();            // cheat « radar » (§17.3) : carte 2D des poissons
     debutScenario();

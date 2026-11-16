@@ -1140,6 +1140,69 @@ button, .crank {
     height: auto;
 }
 
+/* Visuel de la fiche : aperçu 3D (ou silhouette de secours), puis photo réelle. */
+.espece-visuel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.espece-apercu {
+    display: block;
+    width: auto;
+    max-width: min(100%, 360px);
+    max-height: 150px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+
+.espece-photo {
+    margin: 0;
+    width: min(100%, 190px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.espece-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid rgba(127, 208, 255, 0.35);
+    opacity: 0.92;
+}
+
+.espece-photo figcaption {
+    font-size: 0.66rem;
+    line-height: 1.2;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.espece-photo figcaption a {
+    color: inherit;
+}
+
+@media (max-width: 520px) {
+    .espece-apercu {
+        max-height: 130px;
+    }
+
+    .espece-photo {
+        width: min(100%, 180px);
+    }
+
+    .espece-photo img {
+        max-height: 110px;
+    }
+}
+
 .espece-nom {
     margin: 0;
     font-size: 1.1rem;
@@ -1147,8 +1210,8 @@ button, .crank {
 
 .espece-infos {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 6px 16px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 6px 18px;
     width: 100%;
     font-size: 0.84rem;
 }

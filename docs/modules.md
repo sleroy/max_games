@@ -48,7 +48,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `lancerPoisson.js` | Lancer du poisson dans la bourriche : prise en main, lancer, arc de vol (état via `etat`) | 206 | Bourriche / lancer |
 | `carnetUI.js` | Onglets du carnet (Prises / Boutique / Touches / Options) et carte de l’étang à l'échelle du cadre (état via `etat`) | 159 | Carnet / UI |
 | `boutique.js` | Expérience (XP) et boutique de bouchons : gains, achats, rendu (état via `etat`) | 264 | Boutique / progression |
-| `fiches.js` | Onglet Espèces : fiche par poisson (silhouette, zone de vie, comportement) (état via `etat`) | 124 | Carnet / UI |
+| `fiches.js` | Onglet Espèces : fiche par poisson (aperçu 3D via `apercuPoisson.js` avec silhouette SVG de secours, photo réelle + crédit depuis `assets/references/photos.json`, zone de vie, comportement) (état via `etat`) | 124 | Carnet / UI |
 | `lancerCanne.js` | Lancer de la canne au dosage (jauge) et animation du geste de lancer (état via `etat`) | 182 | Lancer |
 | `lancer.js` | **Geste de lancer commun** (amorce et sonar) : visée, jauge de puissance, point d’impact, arc de vol, arrivée. Les objets lançables s’enregistrent dans `etat.projectiles` (`etat.declarerProjectile`) | 243 | Lancer / outils |
 | `amorcage.js` | Amorçage : boule d’amorce (stock, plouf, nuage de miettes qui attire les poissons), bras du pêcheur et barre d’outils (état via `etat`) | 205 | Amorçage / outils |
@@ -80,6 +80,7 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `sound.js` | Moteur audio (samples + synthèse) | 798 | Audio |
 | `portraits.js` | Portraits 2D des espèces (fond transparent) | 282 | Combat / UI |
 | `modelePoisson.js` | **Fabrique 3D paramétrique** d'un poisson, partagée par le jeu (`poissons.js`) et `tailles.html` : corps par sections (60 anneaux × 30 segments, superellipse) le long d'un profil `{t, h, w, y, n}` (`especes.js` → `PROFILS`), nageoires attachées (dorsale(s), anale, adipeuse dans le maillage du corps ; caudale dans `tailPivot` ; pectorales, pelviennes, yeux, bouche, barbillons dans `details`), `echellePourTaille`. Longueur du modèle = `FORMES[form].longueurRef`. Module pur (aucun état du jeu). Plafond 800 | ~610 | Poissons / 3D |
+| `apercuPoisson.js` | **Aperçu 3D d'un poisson en image** (data URL PNG), partagé par `tailles.js` (galerie) et `fiches.js` (fiche « Espèces » du carnet). `creerApercuPoisson({largeur, hauteur})` → `{ rendre(espece, cm), disponible(), liberer() }` : un seul `WebGLRenderer` transparent créé au premier rendu, cadrage sur la boîte englobante, recadrage des pixels visibles, cache `id:cm`, géométries libérées après rendu (textures partagées conservées). Sans WebGL ni `document` : `rendre` renvoie `null`, jamais d'exception. Aucun accès à `window`. Plafond 800 | ~210 | Poissons / 3D |
 | `texturesPoisson.js` | Textures procédurales des poissons : robe 256 × 128 par espèce (dégradé dos → ventre, motif, tête, ouïe, ligne latérale ; cache par `espece.id`), rayons des nageoires. `MOTIFS_GERES` liste les motifs connus (testé par `scenario-modeles.mjs`) | ~375 | Poissons / textures |
 | `demelage.js` | Mini-jeu de démêlage | 281 | Lancer |
 | `especes.js` | **Données** espèces, comportements, styles, touches, silhouettes 3D (`FORMES`, `PROFILS`, `ANATOMIES` lus par `modelePoisson.js`) | ~490 | Contenu (ajout d'espèces) |

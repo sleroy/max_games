@@ -28,6 +28,12 @@ export class WebGLRenderer {
 
     setAnimationLoop() {}
 
+    setClearColor() {}
+
+    clear() {}
+
+    dispose() {}
+
     // Le vrai renderer recalcule les matrices avant de dessiner : on fait pareil
     // pour que le raycaster (clic sur l'eau) travaille sur des matrices à jour.
     render(scene, camera) {
