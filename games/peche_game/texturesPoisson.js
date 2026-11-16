@@ -149,19 +149,65 @@ const MOTIFS = {
         g.fillRect(W * 0.18, H * 0.3, W * 0.82, H * 0.45);
     },
 
-    // Barres verticales sombres et larges, du dos au milieu du flanc (perche).
-    rayures: function (g, W, H, c, aleatoire) {
-        g.fillStyle = css(melanger(c.dos, 0x0a120a, 0.45), 0.62);
-        for (let i = 0; i < 7; i++) {
-            const x = W * (0.3 + i * 0.095) + (aleatoire() - 0.5) * 4;
-            const l = W * (i === 0 || i === 6 ? 0.03 : 0.042);
-            g.beginPath();
-            g.moveTo(x - l, 0);
-            g.lineTo(x + l, 0);
-            g.quadraticCurveTo(x + l * 0.6, H * 0.4, x + l * 0.15, H * (0.6 + aleatoire() * 0.08));
-            g.quadraticCurveTo(x - l * 0.6, H * 0.4, x - l, 0);
-            g.fill();
+    // Barres verticales sombres (perche). Sans `espece.rayures` : 7 barres du dos au
+    // milieu du flanc. Avec : une liste { t, large, pente, d } par barre (t = place le
+    // long du corps, large = largeur en fraction de LS, pente = décalage vers l'arrière
+    // au bas de la barre, d = profondeur atteinte, en part de la hauteur du corps).
+    // Si l'espèce définit `ecailles`, de fines écailles sont dessinées dessous ; si elle
+    // définit `tachesJoue`, des plages sombres tachent l'opercule.
+    rayures: function (g, W, H, c, aleatoire, espece) {
+        const liste = espece && espece.rayures;
+        if (!liste) {
+            g.fillStyle = css(melanger(c.dos, 0x0a120a, 0.45), 0.62);
+            for (let i = 0; i < 7; i++) {
+                const x = W * (0.3 + i * 0.095) + (aleatoire() - 0.5) * 4;
+                const l = W * (i === 0 || i === 6 ? 0.03 : 0.042);
+                g.beginPath();
+                g.moveTo(x - l, 0);
+                g.lineTo(x + l, 0);
+                g.quadraticCurveTo(x + l * 0.6, H * 0.4, x + l * 0.15, H * (0.6 + aleatoire() * 0.08));
+                g.quadraticCurveTo(x - l * 0.6, H * 0.4, x - l, 0);
+                g.fill();
+            }
+            return;
         }
+        if (espece.ecailles) {
+            MOTIFS.ecailles(g, W, H, c, aleatoire, espece);
+        }
+        // Plages sombres sur l'opercule et la joue (taches irrégulières, contraste modéré).
+        const joue = melanger(c.dos, 0x0a0f08, 0.3);
+        for (let i = 0; i < (espece.tachesJoue || 0); i++) {
+            g.fillStyle = css(joue, 0.12 + aleatoire() * 0.14);
+            tache(g, W * (0.15 + aleatoire() * 0.12), H * (0.32 + aleatoire() * 0.36),
+                W * (0.012 + aleatoire() * 0.016), H * (0.04 + aleatoire() * 0.05), aleatoire() * 3);
+        }
+        const encre = melanger(c.dos, 0x050a05, 0.4);
+        liste.forEach(function (b) {
+            const bas = Math.acos(1 - 2 * b.d) / Math.PI;      // y/H du bout de la barre
+            const N = 14;
+            const gauche = [];
+            const droite = [];
+            for (let k = 0; k <= N; k++) {
+                const f = k / N;                                // 0 dos → 1 bout
+                const y = H * bas * f;
+                const d = (1 - Math.cos(Math.PI * y / H)) / 2;   // hauteur parcourue (0 → 1)
+                // pente vers l'arrière, élargie en haut, bout arrondi, bords irréguliers
+                // (ondulation lente : les barres d'une perche ne sont pas des bandes régulières)
+                const centre = W * (b.t + b.pente * d) + (aleatoire() - 0.5) * 1.2
+                    + Math.sin(f * 5 + b.t * 31) * W * 0.006 * f;
+                const demi = W * b.large * 0.5 * (1 - 0.4 * f * f) * Math.sqrt(Math.max(0, 1 - Math.pow(f, 5)));
+                gauche.push([centre - demi - aleatoire() * 1.1, y]);
+                droite.push([centre + demi + aleatoire() * 1.1, y]);
+            }
+            [[1.5, 0.2], [0.9, 0.28], [0, 0.7]].forEach(function (couche) {
+                g.fillStyle = css(encre, couche[1]);
+                g.beginPath();
+                g.moveTo(gauche[0][0] - couche[0], gauche[0][1]);
+                gauche.forEach(p => g.lineTo(p[0] - couche[0], p[1]));
+                for (let k = N; k >= 0; k--) { g.lineTo(droite[k][0] + couche[0], droite[k][1]); }
+                g.fill();
+            });
+        });
     },
 
     // Selles sombres diffuses sur le dos (sandre).
@@ -289,6 +335,25 @@ export function dessinerRobe(g, W, H, espece, repere) {
     g.fillStyle = fond;
     g.fillRect(0, 0, W, H);
 
+    // 1b. Dos plus sombre et ventre plus clair que le dégradé de base (options de l'espèce) :
+    // vu de profil, le dégradé ne dure que sur le haut du flanc, la photo montre un dos net.
+    const ombre = espece && espece.ombreDos || 0;
+    if (ombre) {
+        const d = g.createLinearGradient(0, 0, 0, H * 0.45);
+        d.addColorStop(0, css(melanger(c.dos, 0x000000, 0.25), ombre));
+        d.addColorStop(1, css(c.dos, 0));
+        g.fillStyle = d;
+        g.fillRect(0, 0, W, H * 0.45);
+    }
+    const clair = espece && espece.ventreClair || 0;
+    if (clair) {
+        const d = g.createLinearGradient(0, H * 0.58, 0, H * 0.92);
+        d.addColorStop(0, css(c.ventre, 0));
+        d.addColorStop(1, css(c.ventre, clair));
+        g.fillStyle = d;
+        g.fillRect(0, H * 0.58, W, H * 0.42);
+    }
+
     // 2. Tête : peau sans écailles, de la teinte `tete` de l'espèce (sinon un
     // flanc un peu assombri), fondue vers l'ouïe. Posée AVANT le motif : les
     // taches du brochet ou les marbrures du silure peuvent déborder sur la joue.
@@ -381,6 +446,29 @@ export function textureNageoire(variante) {
     fond.addColorStop(1, '#a8a8a8');
     g.fillStyle = fond;
     g.fillRect(0, 0, W, H);
+    if (cle === 'perche') {
+        // Membrane sombre et translucide, rayons pâles (dorsales de la perche) : la
+        // couleur de la nageoire (sommets) éclaircit les rayons, assombrit la membrane.
+        const membrane = g.createLinearGradient(0, 0, 0, H);
+        membrane.addColorStop(0, '#9c9c9c');
+        membrane.addColorStop(1, '#666666');
+        g.fillStyle = membrane;
+        g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(255,255,255,0.95)';
+        g.lineWidth = 2.4;
+        for (let i = 0; i < 16; i++) {
+            const x = (i + 0.5) * (W / 16);
+            g.beginPath();
+            g.moveTo(x, H);
+            g.lineTo(x, 2);
+            g.stroke();
+        }
+        const t = new THREE.CanvasTexture(canvas);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = THREE.RepeatWrapping;
+        _texturesNageoire[cle] = t;
+        return t;
+    }
     // Variante « doux » : rayons discrets (membrane fine : brème, gardon…).
     g.strokeStyle = cle === 'doux' ? 'rgba(20,16,12,0.2)' : 'rgba(20,16,12,0.45)';
     g.lineWidth = cle === 'doux' ? 1.2 : 1.6;

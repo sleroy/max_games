@@ -1,60 +1,60 @@
 import * as THREE from 'three';
-// Le « ?v=205 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=206 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=205';
-import { creerJeuDemelage } from './demelage.js?v=205';
-import { creerModeQuiver } from './quiver.js?v=205';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=205';
+import { SoundEngine } from './sound.js?v=206';
+import { creerJeuDemelage } from './demelage.js?v=206';
+import { creerModeQuiver } from './quiver.js?v=206';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=206';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=205';
-import { creerPoissons } from './poissons.js?v=205';
+import { dessinerPortrait } from './portraits.js?v=206';
+import { creerPoissons } from './poissons.js?v=206';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=205';
-import { creerDecor } from './decor.js?v=205';
-import { creerObstacles } from './obstacles.js?v=205';
-import { creerSubstrats } from './substrats.js?v=205';
-import { creerEsches } from './esches.js?v=205';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=205';
-import { creerBourriche } from './bourriche.js?v=205';
-import { creerOndulations } from './ondulations.js?v=205';
-import { creerMessages } from './messages.js?v=205';
-import { creerSplashes } from './splashes.js?v=205';
-import { creerCombat } from './combat.js?v=205';
-import { creerComportement } from './comportement.js?v=205';
-import { creerBateau } from './bateau.js?v=205';
-import { creerLancerPoisson } from './lancerPoisson.js?v=205';
-import { creerCarnetUI } from './carnetUI.js?v=205';
-import { creerBoutique } from './boutique.js?v=205';
-import { creerMenus } from './menus.js?v=205';
-import { creerFiches } from './fiches.js?v=205';
-import { creerLancerCanne } from './lancerCanne.js?v=205';
-import { creerLancer } from './lancer.js?v=205';
-import { creerAmorcage } from './amorcage.js?v=205';
-import { creerFrein } from './frein.js?v=205';
-import { creerLigne } from './ligne.js?v=205';
-import { creerBouchons } from './bouchons.js?v=205';
-import { creerPlacement } from './placement.js?v=205';
-import { creerMeteo } from './meteo.js?v=205';
-import { creerPhysique } from './physique.js?v=205';
-import { creerVie } from './vie.js?v=205';
-import { creerSonar } from './sonar.js?v=205';
-import { creerStocks } from './stocks.js?v=205';
-import { creerJournal } from './journal.js?v=205';
-import { creerTouches } from './touches.js?v=205';
-import { creerCycleLigne } from './cycleLigne.js?v=205';
-import { creerAccrochage } from './accrochage.js?v=205';
-import { creerAmbiance } from './ambiance.js?v=205';
-import { creerEntrees } from './entrees.js?v=205';
-import { creerRadar } from './radar.js?v=205';
-import { creerCheat } from './cheat.js?v=205';
-import { creerBoucle } from './boucle.js?v=205';
-import { creerPartie } from './partie.js?v=205';
-import { creerPecheur } from './pecheur.js?v=205';
-import { creerRendu } from './rendu.js?v=205';
-import { etat } from './etat.js?v=205';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=206';
+import { creerDecor } from './decor.js?v=206';
+import { creerObstacles } from './obstacles.js?v=206';
+import { creerSubstrats } from './substrats.js?v=206';
+import { creerEsches } from './esches.js?v=206';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=206';
+import { creerBourriche } from './bourriche.js?v=206';
+import { creerOndulations } from './ondulations.js?v=206';
+import { creerMessages } from './messages.js?v=206';
+import { creerSplashes } from './splashes.js?v=206';
+import { creerCombat } from './combat.js?v=206';
+import { creerComportement } from './comportement.js?v=206';
+import { creerBateau } from './bateau.js?v=206';
+import { creerLancerPoisson } from './lancerPoisson.js?v=206';
+import { creerCarnetUI } from './carnetUI.js?v=206';
+import { creerBoutique } from './boutique.js?v=206';
+import { creerMenus } from './menus.js?v=206';
+import { creerFiches } from './fiches.js?v=206';
+import { creerLancerCanne } from './lancerCanne.js?v=206';
+import { creerLancer } from './lancer.js?v=206';
+import { creerAmorcage } from './amorcage.js?v=206';
+import { creerFrein } from './frein.js?v=206';
+import { creerLigne } from './ligne.js?v=206';
+import { creerBouchons } from './bouchons.js?v=206';
+import { creerPlacement } from './placement.js?v=206';
+import { creerMeteo } from './meteo.js?v=206';
+import { creerPhysique } from './physique.js?v=206';
+import { creerVie } from './vie.js?v=206';
+import { creerSonar } from './sonar.js?v=206';
+import { creerStocks } from './stocks.js?v=206';
+import { creerJournal } from './journal.js?v=206';
+import { creerTouches } from './touches.js?v=206';
+import { creerCycleLigne } from './cycleLigne.js?v=206';
+import { creerAccrochage } from './accrochage.js?v=206';
+import { creerAmbiance } from './ambiance.js?v=206';
+import { creerEntrees } from './entrees.js?v=206';
+import { creerRadar } from './radar.js?v=206';
+import { creerCheat } from './cheat.js?v=206';
+import { creerBoucle } from './boucle.js?v=206';
+import { creerPartie } from './partie.js?v=206';
+import { creerPecheur } from './pecheur.js?v=206';
+import { creerRendu } from './rendu.js?v=206';
+import { etat } from './etat.js?v=206';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce

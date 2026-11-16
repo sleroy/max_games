@@ -21,11 +21,11 @@
 //   pelviennes, yeux (sclère + iris + pupille), bouche, barbillons.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=205';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=205';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=206';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=206';
 
-export const SECTIONS = 60;          // anneaux le long du corps
-export const SEGMENTS = 30;          // sommets par anneau (tour du corps)
+export const SECTIONS = 72;          // anneaux le long du corps
+export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
 
 function formeDe(form) {
     return FORMES[form] || FORMES[FORMES_PAR_TYPE[form]] || FORMES.fusiforme;
@@ -128,11 +128,31 @@ function creerLot() {
     return { pos: [], uv: [], col: [], idx: [], groupes: [] };
 }
 
+// `c` : teinte (nombre) ou couleur [r, v, b] ; `lot.base` (optionnel) : couleur
+// linéaire de la nageoire en cours, multipliée à la teinte (voir nageoiresCouleurs).
 function sommet(lot, x, y, z, u, v, c) {
     lot.pos.push(x, y, z);
     lot.uv.push(u, v);
-    lot.col.push(c, c, c);
+    const b = lot.base || [1, 1, 1];
+    if (Array.isArray(c)) {
+        lot.col.push(c[0] * b[0], c[1] * b[1], c[2] * b[2]);
+    } else {
+        lot.col.push(c * b[0], c * b[1], c * b[2]);
+    }
     return lot.pos.length / 3 - 1;
+}
+
+function rgbLineaire(hex) {
+    const c = new THREE.Color(hex);
+    return [c.r, c.g, c.b];
+}
+
+// Couleur propre à une nageoire (`espece.nageoiresCouleurs[cle]` : un hex, ou
+// [haut, bas] pour la caudale) ; null si l'espèce n'en définit pas.
+function couleurNageoire(espece, cle) {
+    const t = espece && espece.nageoiresCouleurs;
+    if (!t || t[cle] === undefined) { return null; }
+    return Array.isArray(t[cle]) ? t[cle].map(rgbLineaire) : rgbLineaire(t[cle]);
 }
 
 // Grille (S+1) × (R+1) : point(s, r) → [x, y, z, teinte] ; u = s × reps, v = r.
@@ -177,6 +197,13 @@ function geometrieDe(lot, couleurs) {
 // sur deux dépasse de la membrane (perche, sandre, black-bass).
 // ---------------------------------------------------------------------------
 const NAGEOIRES = {
+    // Perche : dorsale épineuse = trapèze haut (premier rayon presque aussi haut
+    // que le milieu), bord arrière qui tombe vite sur les derniers rayons courts.
+    dorsalePerche: { h: [[0, 0.88], [0.1, 0.97], [0.4, 1], [0.62, 0.9], [0.82, 0.55], [0.94, 0.28], [1, 0.12]], recul: 0.18, epines: true, epinesAmp: 0.92 },
+    // Seconde dorsale de la perche : s'élève vite à l'avant, bord arrière en pente douce.
+    dorsale2Perche: { h: [[0, 0.5], [0.15, 0.95], [0.28, 1], [0.55, 0.78], [0.8, 0.45], [1, 0.22]], recul: 0.75 },
+    // Anale de la perche : deux épines puis rayons mous, sommet arrondi à l'avant.
+    analePerche: { h: [[0, 0.55], [0.12, 1], [0.35, 0.85], [0.7, 0.5], [1, 0.22]], recul: 0.55 },
     souple: { h: [[0, 0.72], [0.15, 1], [0.45, 0.72], [0.8, 0.45], [1, 0.2]], recul: 0.45 },
     haute: { h: [[0, 0.88], [0.1, 1], [0.32, 0.62], [0.7, 0.3], [1, 0.12]], recul: 0.75 },
     longue: { h: [[0, 0.6], [0.08, 1], [0.22, 0.55], [0.6, 0.42], [1, 0.3]], recul: 0.3 },
@@ -200,6 +227,8 @@ const PAIRES = {
     pointue: [[0, 0.82], [0.22, 1], [0.6, 0.72], [1, 0.38]],
     ronde: [[0, 0.7], [0.4, 1], [1, 0.62]],
     // Éventail arrondi, rayons du milieu les plus longs (pectorale de brème).
+    // Éventail bien rond, rayons du milieu les plus longs (pectorale de perche).
+    ventail: [[0, 0.5], [0.12, 0.78], [0.3, 0.95], [0.5, 1], [0.72, 0.94], [0.9, 0.76], [1, 0.52]],
     ovale: [[0, 0.5], [0.2, 0.84], [0.45, 1], [0.75, 0.88], [1, 0.52]]
 };
 
@@ -213,11 +242,21 @@ const CAUDALES = {
     // Carpe : lobes arrondis, échancrure moyenne (≈ 50 % de la longueur).
     carpe: [[-0.84, 1], [-0.95, 0.92], [-0.98, 0.76], [-0.9, 0.56], [-0.72, 0.34], [-0.55, 0.14],
         [-0.5, 0], [-0.56, -0.15], [-0.74, -0.36], [-0.92, -0.58], [-1, -0.78], [-0.97, -0.92], [-0.84, -1]],
+    // Perche : légère échancrure, lobes pointus mais pas aiguilleux, lobe du haut un peu plus long.
+    perche: [[-0.84, 1], [-0.98, 0.95], [-1, 0.84], [-0.95, 0.64], [-0.9, 0.42], [-0.87, 0.18],
+        [-0.85, 0], [-0.86, -0.2], [-0.9, -0.5], [-0.95, -0.76], [-0.97, -0.92], [-0.92, -1], [-0.82, -1]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     silure: [[-0.6, 0.85], [-0.9, 0.45], [-1, -0.05], [-0.9, -0.6], [-0.6, -1]],
     fine: [[-0.45, 0.7], [-1, 0], [-0.45, -0.7]]
 };
+
+// Bruit déterministe dans [-0,5 ; 0,5] : irrégularité du bord libre des nageoires
+// (un poisson réel n'a pas de bord rectiligne), identique à chaque partie.
+function bruitFin(k, graine) {
+    const v = Math.sin(k * 12.9898 + graine * 78.233) * 43758.5453;
+    return v - Math.floor(v) - 0.5;
+}
 
 function lirePolyligne(table, s) {
     if (s <= table[0][0]) { return table[0][1]; }
@@ -289,9 +328,17 @@ function construireCorps(lot, profil, LS, xNez) {
             lot.idx.push(a, b, c, b, d, c);
         }
     }
+    // Capuchon du pédoncule : anneau DUPLIQUÉ (normales à part), sinon l'arête lisse
+    // du dernier anneau reflète un liseré clair derrière la caudale.
     const dernier = anneaux[anneaux.length - 1];
+    const copie = lot.pos.length / 3;
     for (let j = 0; j < M; j++) {
-        lot.idx.push(dernier + j, dernier + (j + 1) % M, fin);
+        const o = (dernier + j) * 3;
+        sommet(lot, lot.pos[o], lot.pos[o + 1], lot.pos[o + 2], lot.uv[(dernier + j) * 2],
+            lot.uv[(dernier + j) * 2 + 1], 1);
+    }
+    for (let j = 0; j < M; j++) {
+        lot.idx.push(copie + j, copie + (j + 1) % M, fin);
     }
 }
 
@@ -307,8 +354,8 @@ function nageoireImpaire(lot, profil, LS, xNez, def, sens, echelleHauteur) {
     grille(lot, S, R, function (s, r, i) {
         const t = def.t0 + (def.t1 - def.t0) * s;
         const bord = profil.y(t) + sens * profil.h(t) * 0.94;
-        let haut = H * lirePolyligne(type.h, s);
-        if (type.epines && i % 2 === 1) { haut *= 0.78; }
+        let haut = H * lirePolyligne(type.h, s) * (1 + 0.05 * bruitFin(i, def.t0 + def.t1));
+        if (type.epines && i % 2 === 1) { haut *= type.epinesAmp || 0.78; }
         const bombe = Math.sin(Math.PI * r) * 0.04 * haut;      // membrane légèrement courbe
         return [xNez - t * LS - recul * haut * r - bombe,
             bord * LS + sens * haut * r, 0, 1 - 0.25 * r];
@@ -321,8 +368,8 @@ function nageoiresPaires(lot, profil, LS, xNez, def, pelvienne, echelleHauteur) 
     const L = def.longueur * echelleHauteur * LS;
     const pente = def.pente !== undefined ? def.pente : 0.4;
     const ecart = def.ecart !== undefined ? def.ecart : (pelvienne ? 0.45 : 0.55);
-    const S = 8;
-    const R = 4;
+    const S = 12;
+    const R = 5;
     for (const cote of [1, -1]) {
         grille(lot, S, R, function (s, r) {
             let t;
@@ -352,21 +399,28 @@ function nageoiresPaires(lot, profil, LS, xNez, def, pelvienne, echelleHauteur) 
 }
 
 // Caudale, dans le repère du pivot (origine au centre du pédoncule).
-function caudale(lot, def, hPed, LS, echelleHauteur) {
+function caudale(lot, def, hPed, LS, echelleHauteur, couleurs) {
     const contour = CAUDALES[def.type] || CAUDALES.fourche;
     const longueur = def.longueur * LS;
     const ecart = Math.max(def.ecart * echelleHauteur, hPed * 1.2) * LS;
-    const S = 16;
+    const S = 24;
     const R = 6;
     grille(lot, S, R, function (s, r) {
         const bord = bordCaudale(contour, s);
         const baseY = (1 - 2 * s) * hPed * LS * 1.02;
-        const ex = bord[0] * longueur;
+        // bord libre légèrement irrégulier (rayons plus ou moins longs)
+        const irr = 1 + 0.035 * bruitFin(Math.round(s * S), 3.7);
+        const ex = bord[0] * longueur * (1 + (irr - 1) * r * r);
         const ey = bord[1] * ecart;
         // Le rayon se courbe un peu (le lobe s'évase après le pédoncule).
         const x = 0.004 * LS + (ex - 0.004 * LS) * r;
         const y = baseY + (ey - baseY) * (r + 0.25 * r * (1 - r) * Math.abs(1 - 2 * s));
-        return [x, y, 0.012 * longueur * Math.sin(Math.PI * s) * r, 1 - 0.2 * r];
+        let teinte = 1 - 0.2 * r;
+        if (couleurs) {   // dégradé du lobe du haut vers celui du bas
+            const [a, b] = couleurs;
+            teinte = [0, 1, 2].map(k => (a[k] + (b[k] - a[k]) * s) * (1 - 0.2 * r));
+        }
+        return [x, y, 0.012 * longueur * Math.sin(Math.PI * s) * r, teinte];
     }, 1.2);
 }
 
@@ -502,8 +556,12 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     });
     const couleurNageoires = espece && espece.nageoires !== undefined ? espece.nageoires
         : melanger(couleurs.flanc, couleurs.dos, 0.5);
+    // Couleurs propres à chaque nageoire (perche) : le matériau reste blanc et la
+    // couleur passe par les sommets ; sinon une seule couleur pour toutes.
+    const parNageoire = !!(espece && espece.nageoiresCouleurs);
+    const fondNageoire = rgbLineaire(couleurNageoires);
     const finMat = new THREE.MeshStandardMaterial({
-        color: couleurNageoires,
+        color: parNageoire ? 0xffffff : couleurNageoires,
         map: textureNageoire(espece && espece.nageoiresMotif),
         roughness: 0.6,
         side: THREE.DoubleSide,
@@ -516,12 +574,15 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     fermerGroupe(lot, 0);
     ['dorsale', 'dorsale2', 'adipeuse'].forEach(function (cle) {
         if (anatomie[cle]) {
+            lot.base = parNageoire ? (couleurNageoire(espece, cle) || fondNageoire) : null;
             nageoireImpaire(lot, profil, LS, xNez, anatomie[cle], 1, echelleNageoires);
         }
     });
     if (anatomie.anale) {
+        lot.base = parNageoire ? (couleurNageoire(espece, 'anale') || fondNageoire) : null;
         nageoireImpaire(lot, profil, LS, xNez, anatomie.anale, -1, echelleNageoires);
     }
+    lot.base = null;
     fermerGroupe(lot, 1);
     const bodyGeometry = geometrieDe(lot, true);
     const fishBody = new THREE.Mesh(bodyGeometry, [bodyMat, finMat]);
@@ -532,7 +593,12 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     const tailPivot = new THREE.Group();
     tailPivot.position.set(xPed, profil.y(1) * LS, 0);
     const lotQueue = creerLot();
-    caudale(lotQueue, queue, profil.h(1), LS, echelleNageoires);
+    let teinteCaudale = null;
+    if (parNageoire) {
+        const c = couleurNageoire(espece, 'caudale') || fondNageoire;
+        teinteCaudale = Array.isArray(c[0]) ? c : [c, c];
+    }
+    caudale(lotQueue, queue, profil.h(1), LS, echelleNageoires, teinteCaudale);
     tailPivot.add(new THREE.Mesh(geometrieDe(lotQueue, true), finMat));
     group.add(tailPivot);
 
@@ -541,9 +607,11 @@ export function creerModelePoisson(size, power, aggression, form, espece) {
     group.add(details);
     const lotPaires = creerLot();
     if (anatomie.pectorale) {
+        lotPaires.base = parNageoire ? (couleurNageoire(espece, 'pectorale') || fondNageoire) : null;
         nageoiresPaires(lotPaires, profil, LS, xNez, anatomie.pectorale, false, echelleNageoires);
     }
     if (anatomie.pelvienne) {
+        lotPaires.base = parNageoire ? (couleurNageoire(espece, 'pelvienne') || fondNageoire) : null;
         nageoiresPaires(lotPaires, profil, LS, xNez, anatomie.pelvienne, true, echelleNageoires);
     }
     if (lotPaires.idx.length) {

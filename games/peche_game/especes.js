@@ -38,7 +38,24 @@ export const SPECIES = [
     { id: 'carassin', nom: 'Carassin', form: 'profond', cm: [10, 50], k: 2.2, abondance: 5,
       profondeur: [-2.8, -1.9], combativite: [0.6, 0.9], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0xb08b3a, motif: 'ecailles' },
     { id: 'perche', nom: 'Perche', form: 'bossu', cm: [10, 45], k: 1.4, abondance: 7,
-      profondeur: [-2.6, -1.5], combativite: [0.7, 1.05], agressivite: [0.9, 1.25], style: 'teigneux', couleur: 0x6f7a45, nageoires: 0xc0522a, motif: 'rayures' },
+      profondeur: [-2.6, -1.5], combativite: [0.7, 1.05], agressivite: [0.9, 1.25], style: 'teigneux',
+      // Couleurs : médianes PIL sur assets/references/perche.jpg (dos et flanc), ventre au 80e
+      // centile ; dos olive sombre, flanc vert-gris, ventre blanc verdâtre, tête jaune-olive.
+      couleur: 0x728660, dos: 0x38442d, ventre: 0xc0c4a4, tete: 0x9aa65f, oeil: 0x8c7a34,
+      ombreDos: 0.55, ventreClair: 0.7,
+      // Nageoires : pelviennes et anale orange-rouge, pectorales ambrées, dorsales vert très
+      // sombre aux rayons pâles, caudale verdâtre en haut, rougeâtre en bas.
+      nageoires: 0x6a7058, nageoiresMotif: 'perche',
+      nageoiresCouleurs: { dorsale: 0x5c7a66, dorsale2: 0x4f6e5c, anale: 0x9c5a3c, pectorale: 0x9c9468,
+          pelvienne: 0xb8562e, caudale: [0x58806a, 0x8a5636] },
+      // Robe : fines écailles peu contrastées, 5 barres sombres (t = position le long du corps,
+      // largeur en fraction de LS, inclinaison vers l'arrière, profondeur d = part de la hauteur).
+      motif: 'rayures', ecailles: 62, contrasteEcailles: 0.4, irregulariteEcailles: 0.25, ecaillesVentre: 0.5,
+      debutEcailles: 0.2, fonduTete: 0.5, tachesJoue: 5,
+      rayures: [{ t: 0.305, large: 0.05, pente: 0.04, d: 0.8 }, { t: 0.43, large: 0.062, pente: 0.047, d: 0.86 },
+          { t: 0.585, large: 0.09, pente: 0.047, d: 0.93 }, { t: 0.76, large: 0.05, pente: 0.015, d: 0.88 },
+          { t: 0.89, large: 0.042, pente: 0.035, d: 0.86 }],
+      profil: 'perche', anatomie: 'perche' },
     { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [12, 70], k: 1.2, abondance: 5,
       profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], style: 'fonceur', couleur: 0x9aa39c, motif: 'argent' },
     { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [25, 130], k: 0.9, abondance: 3,
@@ -290,7 +307,25 @@ export const PROFILS = {
         { t: 0.4, h: 0.09, w: 0.062, y: 0.002 }, { t: 0.5, h: 0.083, w: 0.05, y: 0 },
         { t: 0.6, h: 0.072, w: 0.04, y: 0 }, { t: 0.7, h: 0.062, w: 0.03, y: 0 },
         { t: 0.8, h: 0.052, w: 0.022, y: 0 }, { t: 0.9, h: 0.042, w: 0.016, y: 0 },
-        { t: 1, h: 0.032, w: 0.011, y: 0 }]
+        { t: 1, h: 0.032, w: 0.011, y: 0 }],
+    // Perche : perche.jpg (900 × 600, tournée à gauche, queue relevée), LS = 561 px
+    // (museau 158,452 → base de la caudale 705,328), contour relevé sur la photo
+    // quadrillée (scripts/trace-silhouette.py perche). Corps haut (0,30 LS à t = 0,3),
+    // front qui monte en pente raide jusqu'à l'origine de la dorsale, ventre presque
+    // droit, pédoncule fin (0,088 LS). Poisson vu de profil : largeur estimée
+    // (≈ 0,5 × hauteur, tête un peu plus étroite).
+    perche: [
+        { t: 0, h: 0.012, w: 0.01, y: -0.0046 }, { t: 0.05, h: 0.053, w: 0.03, y: -0.0109 },
+        { t: 0.1, h: 0.0767, w: 0.043, y: -0.0113 }, { t: 0.15, h: 0.0963, w: 0.053, y: -0.0086 },
+        { t: 0.2, h: 0.1181, w: 0.061, y: 0.0007 }, { t: 0.25, h: 0.1373, w: 0.07, y: 0.011 },
+        { t: 0.3, h: 0.1498, w: 0.076, y: 0.0181 }, { t: 0.35, h: 0.1489, w: 0.078, y: 0.0217 },
+        { t: 0.4, h: 0.1449, w: 0.077, y: 0.0257 }, { t: 0.45, h: 0.1413, w: 0.075, y: 0.0283 },
+        { t: 0.5, h: 0.1359, w: 0.072, y: 0.0283 }, { t: 0.55, h: 0.1328, w: 0.069, y: 0.0261 },
+        { t: 0.6, h: 0.1288, w: 0.066, y: 0.0239 }, { t: 0.65, h: 0.1244, w: 0.062, y: 0.0212 },
+        { t: 0.7, h: 0.1168, w: 0.057, y: 0.0163 }, { t: 0.75, h: 0.1052, w: 0.051, y: 0.0101 },
+        { t: 0.8, h: 0.0918, w: 0.044, y: 0.0047 }, { t: 0.85, h: 0.0767, w: 0.036, y: 0.0003 },
+        { t: 0.9, h: 0.0606, w: 0.029, y: -0.0024 }, { t: 0.95, h: 0.0464, w: 0.023, y: -0.0015 },
+        { t: 1, h: 0.0441, w: 0.019, y: -0.0002 }]
 };
 
 // ANATOMIES : position des nageoires et des détails, en fractions de LS.
@@ -423,6 +458,23 @@ export const ANATOMIES = {
         opercule: 0.215, ligneCourbe: 0.8, contrasteOpercule: 0.05,
         barbillons: [{ t: 0.014, y: -0.022, longueur: 0.032, chute: 0.9, ecart: 0.3, rayon: 0.0032 },
             { t: 0.036, y: -0.034, longueur: 0.058, chute: 1.1, ecart: 0.35, rayon: 0.0038 }]
+    },
+    // Perche : mêmes photo et repère que le profil. Œil t 0,109 (r 0,027) à mi-hauteur de
+    // la tête ; gueule oblique, coin sous l'œil (t 0,10) ; ouïe t 0,29 ; 1re dorsale
+    // épineuse t 0,30 → 0,67 (0,155 LS, trapèze haut) ; 2e dorsale t 0,69 → 0,905
+    // (0,13 LS, couchée vers l'arrière) ; pectorale t 0,31 (0,18 LS, éventail ambré) ;
+    // pelviennes t 0,36 (0,19 LS, rouges) ; anale t 0,72 → 0,865 (0,095 LS) ; caudale
+    // 0,215 LS, légère échancrure, lobes pointus.
+    perche: {
+        queue: { type: 'perche', longueur: 0.215, ecart: 0.13 },
+        dorsale: { type: 'dorsalePerche', t0: 0.3, t1: 0.668, hauteur: 0.155, recul: 0.18 },
+        dorsale2: { type: 'dorsale2Perche', t0: 0.688, t1: 0.905, hauteur: 0.13, recul: 0.5 },
+        anale: { type: 'analePerche', t0: 0.72, t1: 0.865, hauteur: 0.095, recul: 0.7 },
+        pectorale: { t: 0.305, y: -0.04, longueur: 0.17, pente: 0.3, forme: 'ventail', eventail: 0.8 },
+        pelvienne: { t: 0.35, longueur: 0.235, pente: -0.05, ecart: 0.8, forme: 'pointue' },
+        oeil: { t: 0.109, y: 0.005, r: 0.027 },
+        bouche: { t: 0.1, y0: -0.01, y1: -0.06, epaisseur: 0.005 },
+        opercule: 0.29, ligneCourbe: 0.45, contrasteOpercule: 0.1
     },
     tanche: {
         queue: { type: 'echancree', longueur: 0.22, ecart: 0.13 },

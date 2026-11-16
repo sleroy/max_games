@@ -5,8 +5,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=205';
-import { coucheHamecon } from './esches.js?v=205';
+import { etat } from './etat.js?v=206';
+import { coucheHamecon } from './esches.js?v=206';
 
 export function creerLigne(deps) {
     const {

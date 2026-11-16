@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=205';
+import { etat } from './etat.js?v=206';
 
 export function creerCycleLigne(deps) {
     const {
