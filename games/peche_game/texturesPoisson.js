@@ -1,0 +1,378 @@
+// ---------------------------------------------------------------------------
+// texturesPoisson.js — TEXTURES PROCÉDURALES des poissons 3D (corps + nageoires).
+//
+// Corps : une texture 256 × 128 par espèce (cache par `espece.id`), dessinée
+// comme une vue de profil « déroulée » :
+//   - x (u) = le long du corps : 0 = museau (à gauche) → 256 = pédoncule ;
+//   - y (v) = le tour du corps : haut du canvas = DOS, bas = VENTRE ; les deux
+//     flancs lisent la même texture (miroir), donc le motif est visible des
+//     deux côtés et sans couture.
+// Nageoires : une texture 128 × 64 de RAYONS (lignes le long de la nageoire),
+// teintée par la couleur des nageoires ; variante « taches » (brochet).
+//
+// Le dessin n'utilise que fillRect, arc/ellipse, chemins et dégradés linéaires :
+// il marche aussi avec le faux canvas des tests Node.
+// ---------------------------------------------------------------------------
+import * as THREE from 'three';
+
+export const LARGEUR_TEXTURE = 256;
+export const HAUTEUR_TEXTURE = 128;
+
+const _texturesCorps = {};
+const _texturesNageoire = {};
+
+// --- Couleurs ---------------------------------------------------------------
+function rgb(c) {
+    return [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+}
+
+export function melanger(c1, c2, f) {
+    const a = rgb(c1);
+    const b = rgb(c2);
+    const r = Math.round(a[0] + (b[0] - a[0]) * f);
+    const g = Math.round(a[1] + (b[1] - a[1]) * f);
+    const bl = Math.round(a[2] + (b[2] - a[2]) * f);
+    return (r << 16) | (g << 8) | bl;
+}
+
+function css(c, alpha) {
+    const [r, g, b] = rgb(c);
+    return alpha === undefined ? 'rgb(' + r + ',' + g + ',' + b + ')'
+        : 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(3) + ')';
+}
+
+// Couleurs du corps d'une espèce : dos, flanc, ventre (+ teinte du motif).
+// Sans valeurs mesurées, le dos et le ventre sont déduits de `couleur`.
+export function couleursEspece(espece) {
+    const flanc = espece && espece.couleur !== undefined ? espece.couleur : 0xb09a6a;
+    return {
+        dos: espece && espece.dos !== undefined ? espece.dos : melanger(flanc, 0x141a10, 0.42),
+        flanc: flanc,
+        ventre: espece && espece.ventre !== undefined ? espece.ventre : melanger(flanc, 0xf0ead6, 0.55),
+        motif: espece && espece.teinteMotif !== undefined ? espece.teinteMotif : null
+    };
+}
+
+// Hasard déterministe (mulberry32) : même espèce = même motif à chaque partie.
+function hasard(graine) {
+    let a = graine >>> 0;
+    return function () {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function graineDe(texte) {
+    let h = 2166136261;
+    for (let i = 0; i < texte.length; i++) {
+        h = Math.imul(h ^ texte.charCodeAt(i), 16777619);
+    }
+    return h >>> 0;
+}
+
+function tache(g, x, y, rx, ry, angle) {
+    g.beginPath();
+    g.ellipse(x, y, Math.max(0.5, rx), Math.max(0.5, ry), angle || 0, 0, Math.PI * 2);
+    g.fill();
+}
+
+// --- Motifs -----------------------------------------------------------------
+// Chaque motif reçoit (g, W, H, couleurs, aleatoire, espece). Le canvas est
+// une vue de profil : y = 0 dos, y = H ventre, x = 0 museau.
+const MOTIFS = {
+    aucun: function () { /* robe unie (anguille) : le dégradé suffit */ },
+
+    // Écailles en filet (carpe, brème, carassin) : un arc par écaille, ouvert
+    // vers la tête, reflet clair au centre. `espece.ecailles` = écailles sur la
+    // longueur (ligne latérale).
+    ecailles: function (g, W, H, c, aleatoire, espece) {
+        const colonnes = (espece && espece.ecailles) || 40;
+        const pas = W / colonnes;
+        const rangs = Math.round(H / (pas * 1.05));
+        const pasY = H / rangs;
+        const sombre = melanger(c.flanc, 0x000000, 0.6);
+        const clair = melanger(c.flanc, 0xffffff, 0.35);
+        const debut = W * ((espece && espece.debutEcailles) || 0.22);   // la tête n'a pas d'écailles
+        g.lineWidth = Math.max(0.8, pas * 0.24);
+        for (let r = 0; r <= rangs; r++) {
+            for (let k = -1; k <= colonnes; k++) {
+                const x = (k + (r % 2) * 0.5) * pas + pas * 0.9;
+                const y = r * pasY;
+                if (x < debut) { continue; }
+                const fondu = Math.min(1, (x - debut) / (W * 0.05));   // pas de bord net derrière l'ouïe
+                g.fillStyle = css(clair, (0.05 + aleatoire() * 0.08) * fondu);
+                tache(g, x - pas * 0.3, y, pas * 0.36, pasY * 0.38, 0);
+                g.strokeStyle = css(sombre, 0.5 * fondu);
+                g.beginPath();
+                g.arc(x - pas * 0.55, y, pas * 0.62, -1.15, 1.15);
+                g.stroke();
+            }
+        }
+    },
+
+    // Reflet argenté (gardon, ablette, chevesne) : fines écailles + bande brillante.
+    argent: function (g, W, H, c, aleatoire, espece) {
+        MOTIFS.ecailles(g, W, H, c, aleatoire, { ecailles: (espece && espece.ecailles) || 46 });
+        const reflet = g.createLinearGradient(0, H * 0.3, 0, H * 0.75);
+        reflet.addColorStop(0, 'rgba(255,255,255,0)');
+        reflet.addColorStop(0.5, 'rgba(235,242,248,0.38)');
+        reflet.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = reflet;
+        g.fillRect(W * 0.18, H * 0.3, W * 0.82, H * 0.45);
+    },
+
+    // Barres verticales sombres et larges, du dos au milieu du flanc (perche).
+    rayures: function (g, W, H, c, aleatoire) {
+        g.fillStyle = css(melanger(c.dos, 0x0a120a, 0.45), 0.62);
+        for (let i = 0; i < 7; i++) {
+            const x = W * (0.3 + i * 0.095) + (aleatoire() - 0.5) * 4;
+            const l = W * (i === 0 || i === 6 ? 0.03 : 0.042);
+            g.beginPath();
+            g.moveTo(x - l, 0);
+            g.lineTo(x + l, 0);
+            g.quadraticCurveTo(x + l * 0.6, H * 0.4, x + l * 0.15, H * (0.6 + aleatoire() * 0.08));
+            g.quadraticCurveTo(x - l * 0.6, H * 0.4, x - l, 0);
+            g.fill();
+        }
+    },
+
+    // Selles sombres diffuses sur le dos (sandre).
+    barres: function (g, W, H, c, aleatoire) {
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.3), 0.35);
+        for (let i = 0; i < 9; i++) {
+            const x = W * (0.28 + i * 0.08);
+            tache(g, x, H * 0.18, W * 0.022, H * 0.3, (aleatoire() - 0.5) * 0.3);
+        }
+    },
+
+    // Bande latérale de taches soudées (black-bass).
+    bandeLaterale: function (g, W, H, c, aleatoire) {
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.35), 0.5);
+        for (let i = 0; i < 26; i++) {
+            const x = W * (0.24 + i * 0.029);
+            tache(g, x, H * (0.48 + (aleatoire() - 0.5) * 0.06), W * 0.02, H * (0.07 + aleatoire() * 0.05));
+        }
+    },
+
+    // Fines mouchetures (tanche).
+    mouchetures: function (g, W, H, c, aleatoire) {
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.4), 0.45);
+        for (let i = 0; i < 520; i++) {
+            g.fillRect(aleatoire() * W, aleatoire() * H * 0.85, 1.2, 1);
+        }
+    },
+
+    // Rangée de taches rondes le long de la ligne latérale (goujon).
+    taches: function (g, W, H, c, aleatoire) {
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.45), 0.6);
+        for (let i = 0; i < 9; i++) {
+            tache(g, W * (0.26 + i * 0.085), H * 0.5, W * 0.016, H * 0.06);
+        }
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.4), 0.4);
+        for (let i = 0; i < 160; i++) {
+            tache(g, W * (0.15 + aleatoire() * 0.85), H * aleatoire() * 0.4, 1.2, 1);
+        }
+    },
+
+    // Taches claires en grain de haricot sur fond olive (brochet).
+    tachesClaires: function (g, W, H, c, aleatoire) {
+        // Fond un peu marbré (vert-brun), puis taches pâles en grains de haricot,
+        // disposées en chevrons irréguliers, plus grosses au milieu du flanc.
+        const clair = c.motif !== null ? c.motif : melanger(c.flanc, 0xffffff, 0.45);
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.2), 0.18);
+        for (let i = 0; i < 70; i++) {
+            tache(g, W * (0.22 + aleatoire() * 0.78), H * (0.1 + aleatoire() * 0.65),
+                3 + aleatoire() * 5, 2 + aleatoire() * 3, aleatoire() * 3);
+        }
+        // Les taches commencent sur la joue et grossissent derrière l'ouïe.
+        const colonnes = 40;
+        for (let k = 0; k < colonnes; k++) {
+            const x0 = W * (0.24 + 0.75 * k / colonnes);
+            const fondu = Math.min(1, 0.35 + k / 8);
+            for (let rang = 0; rang < 7; rang++) {
+                if (aleatoire() < 0.18) { continue; }
+                const v = 0.12 + rang * 0.1 + (aleatoire() - 0.5) * 0.05;
+                const milieu = 1 - Math.abs(v - 0.45) * 1.4;
+                const x = x0 + (rang % 2) * W * 0.008 + (aleatoire() - 0.5) * 3;
+                g.fillStyle = css(clair, (0.25 + aleatoire() * 0.22) * fondu);
+                tache(g, x, H * v, (1.1 + milieu * 1.1 + aleatoire() * 0.8) * fondu, 0.8 + milieu * 0.6 + aleatoire() * 0.5,
+                    0.9 + (aleatoire() - 0.5) * 0.8);
+            }
+        }
+    },
+
+    // Points noirs + points rouges cerclés de clair (truite).
+    pointsRouges: function (g, W, H, c, aleatoire) {
+        g.fillStyle = css(0x16120e, 0.65);
+        for (let i = 0; i < 80; i++) {
+            tache(g, W * (0.08 + aleatoire() * 0.9), H * aleatoire() * 0.55, 1.4 + aleatoire(), 1.4 + aleatoire());
+        }
+        for (let i = 0; i < 18; i++) {
+            const x = W * (0.25 + aleatoire() * 0.7);
+            const y = H * (0.4 + aleatoire() * 0.22);
+            g.fillStyle = 'rgba(235,225,205,0.7)';
+            tache(g, x, y, 3.2, 3.2);
+            g.fillStyle = 'rgba(190,52,38,0.9)';
+            tache(g, x, y, 2, 2);
+        }
+    },
+
+    // Marbrures (silure) : grandes plages sombres + semis serré de taches pâles,
+    // plus dense sur l'arrière du corps (comme sur la photo).
+    marbrures: function (g, W, H, c, aleatoire) {
+        // Marbrures sombres : amas de petites taches qui se chevauchent (contours
+        // irréguliers), puis un semis serré de points pâles, plus dense vers la queue.
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.3), 0.16);
+        for (let amas = 0; amas < 34; amas++) {
+            const cx = W * (0.14 + aleatoire() * 0.86);
+            const cy = H * (0.08 + aleatoire() * 0.62);
+            for (let i = 0; i < 6; i++) {
+                tache(g, cx + (aleatoire() - 0.5) * 12, cy + (aleatoire() - 0.5) * 8,
+                    2 + aleatoire() * 4, 1.5 + aleatoire() * 3, aleatoire() * 3);
+            }
+        }
+        const pale = c.motif !== null ? c.motif : melanger(c.flanc, 0xd8dccc, 0.55);
+        for (let i = 0; i < 1300; i++) {
+            const u = 0.1 + Math.sqrt(aleatoire()) * 0.9;   // plus dense vers la queue
+            const v = 0.1 + aleatoire() * 0.7;
+            g.fillStyle = css(pale, 0.2 + aleatoire() * 0.35);
+            tache(g, W * u, H * v, 0.5 + aleatoire() * 0.9, 0.4 + aleatoire() * 0.6, aleatoire() * 3);
+        }
+    }
+};
+
+export const MOTIFS_GERES = Object.keys(MOTIFS);
+
+// Dessine la robe complète d'une espèce sur un contexte 2D (W × H).
+//   repere : { opercule (t), oeil: { t, v }, ligneLaterale (bool) }
+// Renvoie true si le motif est connu (sinon robe unie).
+export function dessinerRobe(g, W, H, espece, repere) {
+    const c = couleursEspece(espece);
+    const motif = (espece && espece.motif) || 'aucun';
+    const aleatoire = hasard(graineDe((espece && espece.id) || motif));
+
+    // 1. Dégradé dos → flanc → ventre.
+    const fond = g.createLinearGradient(0, 0, 0, H);
+    fond.addColorStop(0, css(c.dos));
+    fond.addColorStop(0.3, css(melanger(c.dos, c.flanc, 0.6)));
+    fond.addColorStop(0.5, css(c.flanc));
+    fond.addColorStop(0.72, css(melanger(c.flanc, c.ventre, 0.6)));
+    fond.addColorStop(1, css(c.ventre));
+    g.fillStyle = fond;
+    g.fillRect(0, 0, W, H);
+
+    // 2. Tête : peau sans écailles, de la teinte `tete` de l'espèce (sinon un
+    // flanc un peu assombri), fondue vers l'ouïe. Posée AVANT le motif : les
+    // taches du brochet ou les marbrures du silure peuvent déborder sur la joue.
+    const r = repere || {};
+    const xOp = (r.opercule !== undefined ? r.opercule : 0.22) * W;
+    const tete = espece && espece.tete !== undefined ? espece.tete : melanger(c.flanc, c.dos, 0.45);
+    const peau = g.createLinearGradient(0, 0, xOp + W * 0.02, 0);
+    peau.addColorStop(0, css(tete, 0.75));
+    peau.addColorStop(0.8, css(tete, 0.6));
+    peau.addColorStop(1, css(tete, 0));
+    g.fillStyle = peau;
+    g.fillRect(0, 0, xOp + W * 0.02, H);
+
+    // 3. Motif de l'espèce, puis joue un peu plus claire et bord de l'ouïe.
+    const connu = Object.prototype.hasOwnProperty.call(MOTIFS, motif);
+    if (connu) {
+        MOTIFS[motif](g, W, H, c, aleatoire, espece);
+    }
+    const joue = g.createLinearGradient(0, H * 0.4, 0, H);
+    joue.addColorStop(0, css(melanger(c.flanc, 0xffffff, 0.12), 0));
+    joue.addColorStop(1, css(melanger(c.ventre, 0xffffff, 0.1), 0.25));
+    g.fillStyle = joue;
+    g.fillRect(0, H * 0.4, xOp, H * 0.6);
+    const contraste = r.contrasteOpercule !== undefined ? r.contrasteOpercule : 0.4;
+    g.strokeStyle = css(melanger(c.dos, 0x000000, 0.5), contraste);
+    g.lineWidth = 1.6;
+    g.beginPath();
+    g.moveTo(xOp - W * 0.025, H * 0.12);
+    g.quadraticCurveTo(xOp + W * 0.012, H * 0.5, xOp - W * 0.035, H * 0.9);
+    g.stroke();
+    g.strokeStyle = css(melanger(c.flanc, 0xffffff, 0.35), contraste * 0.6);
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(xOp - W * 0.03, H * 0.14);
+    g.quadraticCurveTo(xOp + W * 0.004, H * 0.5, xOp - W * 0.04, H * 0.88);
+    g.stroke();
+
+    // Narine : petit point sombre entre l'œil et le museau.
+    if (r.oeil) {
+        g.fillStyle = css(melanger(c.dos, 0x000000, 0.6), 0.7);
+        tache(g, r.oeil.t * 0.55 * W, (1 - r.oeil.v) * H - 1, 1.3, 1);
+    }
+
+    // 4. Ligne latérale (pointillé discret).
+    if (r.ligneLaterale !== false) {
+        g.fillStyle = css(melanger(c.flanc, 0x000000, 0.45), 0.35);
+        for (let x = xOp + 2; x < W - 3; x += 3) {
+            const f = (x - xOp) / (W - xOp);
+            g.fillRect(x, H * (0.44 + 0.08 * Math.sin(Math.PI * f) * (r.ligneCourbe || 0.6)), 1.6, 1.2);
+        }
+    }
+    return connu;
+}
+
+// Texture 256 × 128 d'une espèce (cache par identifiant).
+export function textureCorps(espece, repere) {
+    const cle = (espece && espece.id) || ('motif-' + ((espece && espece.motif) || 'aucun'));
+    if (_texturesCorps[cle]) {
+        return _texturesCorps[cle];
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = LARGEUR_TEXTURE;
+    canvas.height = HAUTEUR_TEXTURE;
+    dessinerRobe(canvas.getContext('2d'), LARGEUR_TEXTURE, HAUTEUR_TEXTURE, espece, repere);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    _texturesCorps[cle] = texture;
+    return texture;
+}
+
+// Rayons de nageoire : 16 lignes par tour de texture (u répété), membrane plus
+// claire vers le bord libre (v = 1 en haut du canvas).
+export function textureNageoire(variante) {
+    const cle = variante || 'rayons';
+    if (_texturesNageoire[cle]) {
+        return _texturesNageoire[cle];
+    }
+    const W = 128;
+    const H = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const g = canvas.getContext('2d');
+    const fond = g.createLinearGradient(0, 0, 0, H);
+    fond.addColorStop(0, '#f2f2f2');
+    fond.addColorStop(1, '#a8a8a8');
+    g.fillStyle = fond;
+    g.fillRect(0, 0, W, H);
+    g.strokeStyle = 'rgba(20,16,12,0.45)';
+    g.lineWidth = 1.6;
+    for (let i = 0; i < 16; i++) {
+        const x = (i + 0.5) * (W / 16);
+        g.beginPath();
+        g.moveTo(x, H);
+        g.lineTo(x, 2);
+        g.stroke();
+    }
+    if (cle === 'taches') {
+        g.fillStyle = 'rgba(25,18,10,0.6)';
+        const aleatoire = hasard(7);
+        for (let i = 0; i < 70; i++) {
+            tache(g, aleatoire() * W, 6 + aleatoire() * (H - 10), 1.8 + aleatoire() * 1.6, 1.4 + aleatoire());
+        }
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    _texturesNageoire[cle] = texture;
+    return texture;
+}

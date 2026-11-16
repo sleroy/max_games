@@ -515,6 +515,12 @@ export async function loadGame() {
     return game;
 }
 
+/** URL d'un module du jeu tel que copié par loadGame() (avec le stub three). */
+export function moduleCopie(fichier) {
+    if (!tmpDir) throw new Error('loadGame() doit être appelé avant moduleCopie()');
+    return pathToFileURL(path.join(tmpDir, fichier)).href;
+}
+
 export function cleanup() {
     if (tmpDir) {
         fs.rmSync(tmpDir, { recursive: true, force: true });

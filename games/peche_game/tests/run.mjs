@@ -58,6 +58,7 @@ import { run as scenarioEsches } from './scenario-esches.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
+import { run as scenarioModeles } from './scenario-modeles.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
@@ -164,6 +165,8 @@ try {
     scenarioPhysiqueEau();      // physique de l'eau (v189) : température, saisons, thermocline
     debutScenario();
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
+    debutScenario();
+    await scenarioModeles();    // moteur de poisson 3D paramétrique (v197) : longueurs, budget, motifs, nage
 } catch (error) {
     crashed = error;
 } finally {

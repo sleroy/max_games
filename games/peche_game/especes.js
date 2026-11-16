@@ -14,7 +14,11 @@ export const SPECIES = [
     { id: 'goujon', nom: 'Goujon', form: 'petit', cm: [8, 20], k: 1.3, abondance: 7,
       profondeur: [-3.0, -2.0], combativite: [0.4, 0.7], agressivite: [0.5, 0.8], style: 'teigneux', couleur: 0xc2a878, motif: 'taches' },
     { id: 'breme', nom: 'Brème', form: 'plat', cm: [15, 75], k: 1.8, abondance: 6,
-      profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], style: 'aspirateur', couleur: 0x9d8f63, motif: 'ecailles' },
+      profondeur: [-2.8, -1.8], combativite: [0.55, 0.9], agressivite: [0.5, 0.8], style: 'aspirateur',
+      // Couleurs échantillonnées sur assets/references/breme.jpg (médianes PIL, flanc
+      // et ventre au 80e centile pour compenser l'ombre de la photo).
+      couleur: 0x5f4f3b, dos: 0x38251a, ventre: 0x958268, tete: 0x4a3f3a, nageoires: 0x2a1d1c, oeil: 0xc0b292,
+      motif: 'ecailles', ecailles: 52, profil: 'breme', anatomie: 'breme' },
     { id: 'tanche', nom: 'Tanche', form: 'profond', cm: [15, 70], k: 1.7, abondance: 5,
       profondeur: [-3.2, -2.2], combativite: [0.7, 1.05], agressivite: [0.6, 0.95], style: 'aspirateur', couleur: 0x4f6b3c, oeil: 0xc0392b, motif: 'mouchetures' },
     { id: 'carpe', nom: 'Carpe', form: 'profond', cm: [20, 105], k: 2.3, abondance: 6,
@@ -26,7 +30,11 @@ export const SPECIES = [
     { id: 'chevesne', nom: 'Chevesne', form: 'fusiforme', cm: [12, 70], k: 1.2, abondance: 5,
       profondeur: [-1.8, -0.8], combativite: [0.8, 1.15], agressivite: [0.9, 1.25], style: 'fonceur', couleur: 0x9aa39c, motif: 'argent' },
     { id: 'brochet', nom: 'Brochet', form: 'torpille', cm: [25, 130], k: 0.9, abondance: 3,
-      profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], style: 'fonceur', couleur: 0x4c5c33, motif: 'tachesClaires' },
+      profondeur: [-2.2, -1.0], combativite: [0.9, 1.25], agressivite: [1.25, 1.6], style: 'fonceur',
+      // Couleurs de assets/references/brochet.jpg (sujet clair d'aquarium) ; ventre
+      // relevé sous la tête (le reste du ventre est dans l'ombre sur la photo).
+      couleur: 0x9e9478, dos: 0x7d7258, ventre: 0xcfc9b0, tete: 0x9a9474, teinteMotif: 0xd8d2b4, nageoires: 0x6b5236,
+      nageoiresMotif: 'taches', oeil: 0x9a8a5c, motif: 'tachesClaires', profil: 'brochet', anatomie: 'brochet' },
     { id: 'sandre', nom: 'Sandre', form: 'torpille', cm: [20, 110], k: 0.8, abondance: 2,
       profondeur: [-3.4, -2.4], combativite: [0.85, 1.15], agressivite: [1.1, 1.45], style: 'glisseur', couleur: 0x8f9a83, motif: 'barres' },
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [15, 60], k: 1.6, abondance: 2,
@@ -36,7 +44,11 @@ export const SPECIES = [
     { id: 'anguille', nom: 'Anguille', form: 'anguille', cm: [30, 130], k: 0.2, abondance: 2,
       profondeur: [-3.4, -2.6], combativite: [1.0, 1.4], agressivite: [1.1, 1.5], style: 'glisseur', couleur: 0x3f4a30, motif: 'aucun' },
     { id: 'silure', nom: 'Silure', form: 'barbu', cm: [60, 220], k: 1.0, abondance: 1,
-      profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd', couleur: 0x474b42, motif: 'marbrures' }
+      profondeur: [-3.4, -2.6], combativite: [1.1, 1.5], agressivite: [1.2, 1.55], style: 'lourd',
+      // Couleurs de assets/references/silure.jpg : dos presque noir, flanc gris-olive
+      // semé de taches pâles (80e centile du flanc), gorge claire.
+      couleur: 0x50554d, dos: 0x2a2c29, ventre: 0x9c9d8e, tete: 0x3c423c, teinteMotif: 0x8f9587, nageoires: 0x34352f,
+      oeil: 0x9b8f5a, barbillonsCouleur: 0xb9b69c, motif: 'marbrures', profil: 'silure', anatomie: 'silure' }
 ];
 
 // Poids réaliste d'un poisson (kg) : formule du « facteur de condition » des
@@ -136,15 +148,254 @@ export const STYLE_DEFAUT = {
     traction: 1, coups: 1, intervalle: 1, endurance: 7, derive: 0.5
 };
 
+// ---------------------------------------------------------------------------
+// SILHOUETTES du modèle 3D (modelePoisson.js).
+//   longueurRef : longueur du modèle, museau → bout de la caudale (unités du
+//                 modèle) : echellePourTaille() en déduit l'échelle d'une taille en cm.
+//   bodyX/Y/Z   : proportions de l'ancien modèle, gardées pour la mini-silhouette
+//                 des fiches (fiches.js) ; bodyZ règle aussi l'amplitude de nage.
+//   profil      : nom d'une table de PROFILS ; anatomie : nom d'une table d'ANATOMIES.
+// Une espèce peut porter ses propres `profil` / `anatomie` (lus en priorité ;
+// l'anatomie de l'espèce complète celle de sa silhouette).
+// ---------------------------------------------------------------------------
 export const FORMES = {
-    fusiforme: { bodyX: 1.5, bodyY: 0.78, bodyZ: 0.58, queue: 'fourche', dorsale: 0.55, longueurRef: 2.30 },
-    profond: { bodyX: 1.6, bodyY: 1.02, bodyZ: 0.72, queue: 'fourche', dorsale: 0.5, longueurRef: 2.42 },
-    plat: { bodyX: 1.55, bodyY: 1.3, bodyZ: 0.34, queue: 'fourche', dorsale: 0.75, longueurRef: 2.36 },
-    torpille: { bodyX: 2.7, bodyY: 0.62, bodyZ: 0.5, queue: 'arrondie', dorsale: 0.35, dorsaleReculee: true, longueurRef: 3.74 },
-    bossu: { bodyX: 1.45, bodyY: 0.95, bodyZ: 0.62, queue: 'fourche', dorsale: 0.7, epines: true, longueurRef: 2.24 },
-    anguille: { bodyX: 3.4, bodyY: 0.3, bodyZ: 0.3, queue: 'fine', dorsale: 0, longueurRef: 4.58 },
-    barbu: { bodyX: 2.4, bodyY: 0.85, bodyZ: 0.78, queue: 'arrondie', dorsale: 0.4, moustaches: true, longueurRef: 3.38 },
-    petit: { bodyX: 1.35, bodyY: 0.72, bodyZ: 0.52, queue: 'fourche', dorsale: 0.45, longueurRef: 2.12 }
+    fusiforme: { bodyX: 1.5, bodyY: 0.78, bodyZ: 0.58, longueurRef: 2.30, profil: 'fusiforme', anatomie: 'fusiforme' },
+    profond: { bodyX: 1.6, bodyY: 1.02, bodyZ: 0.72, longueurRef: 2.42, profil: 'profond', anatomie: 'profond' },
+    plat: { bodyX: 1.55, bodyY: 1.3, bodyZ: 0.34, longueurRef: 2.36, profil: 'plat', anatomie: 'plat' },
+    torpille: { bodyX: 2.7, bodyY: 0.62, bodyZ: 0.5, longueurRef: 3.74, profil: 'torpille', anatomie: 'torpille' },
+    bossu: { bodyX: 1.45, bodyY: 0.95, bodyZ: 0.62, longueurRef: 2.24, profil: 'bossu', anatomie: 'bossu' },
+    anguille: { bodyX: 3.4, bodyY: 0.3, bodyZ: 0.3, longueurRef: 4.58, profil: 'anguille', anatomie: 'anguille' },
+    barbu: { bodyX: 2.4, bodyY: 0.85, bodyZ: 0.78, longueurRef: 3.38, profil: 'barbu', anatomie: 'barbu' },
+    petit: { bodyX: 1.35, bodyY: 0.72, bodyZ: 0.52, longueurRef: 2.0, profil: 'petit', anatomie: 'petit' }
+};
+
+// PROFILS du corps : points de contrôle { t, h, w, y, n, nb } en FRACTIONS de la
+// longueur standard LS (museau → base de la queue) :
+//   t  : 0 museau → 1 pédoncule ;  h / w : demi-hauteur / demi-largeur ;
+//   y  : décalage du squelette (milieu de la section, + = vers le dos) ;
+//   n / nb : exposant de la superellipse du haut / du bas (2 = ellipse).
+// `breme`, `brochet` et `silure` sont MESURÉS sur les photos de
+// assets/references/ (contour PIL, voir docs/modeles-poissons.md) ; les autres
+// sont des profils types de leur silhouette, à affiner espèce par espèce.
+export const PROFILS = {
+    fusiforme: [
+        { t: 0, h: 0.03, w: 0.022, y: -0.008 }, { t: 0.06, h: 0.07, w: 0.042, y: 0 },
+        { t: 0.14, h: 0.105, w: 0.058, y: 0.006 }, { t: 0.25, h: 0.13, w: 0.066, y: 0.01 },
+        { t: 0.38, h: 0.14, w: 0.068, y: 0.012 }, { t: 0.52, h: 0.132, w: 0.062, y: 0.01 },
+        { t: 0.68, h: 0.105, w: 0.048, y: 0.006 }, { t: 0.82, h: 0.072, w: 0.032, y: 0.003 },
+        { t: 0.93, h: 0.052, w: 0.021, y: 0.001 }, { t: 1, h: 0.048, w: 0.017, y: 0 }],
+    profond: [
+        { t: 0, h: 0.035, w: 0.026, y: -0.012 }, { t: 0.06, h: 0.085, w: 0.055, y: 0 },
+        { t: 0.14, h: 0.135, w: 0.08, y: 0.012 }, { t: 0.27, h: 0.17, w: 0.098, y: 0.022 },
+        { t: 0.42, h: 0.178, w: 0.1, y: 0.024 }, { t: 0.56, h: 0.165, w: 0.09, y: 0.02 },
+        { t: 0.72, h: 0.128, w: 0.068, y: 0.01 }, { t: 0.86, h: 0.088, w: 0.042, y: 0.004 },
+        { t: 1, h: 0.068, w: 0.028, y: 0 }],
+    plat: [
+        { t: 0, h: 0.02, w: 0.012, y: -0.015 }, { t: 0.06, h: 0.065, w: 0.032, y: -0.02 },
+        { t: 0.15, h: 0.11, w: 0.046, y: -0.025 }, { t: 0.3, h: 0.17, w: 0.058, y: -0.025 },
+        { t: 0.45, h: 0.19, w: 0.06, y: -0.03 }, { t: 0.6, h: 0.175, w: 0.052, y: -0.035 },
+        { t: 0.78, h: 0.11, w: 0.034, y: -0.035 }, { t: 0.92, h: 0.062, w: 0.02, y: -0.025 },
+        { t: 1, h: 0.045, w: 0.016, y: -0.013 }],
+    torpille: [   // type sandre : tête pointue, corps rond et long
+        { t: 0, h: 0.02, w: 0.016, y: -0.006 }, { t: 0.06, h: 0.048, w: 0.036, y: 0 },
+        { t: 0.16, h: 0.08, w: 0.058, y: 0.006 }, { t: 0.3, h: 0.1, w: 0.068, y: 0.01 },
+        { t: 0.45, h: 0.104, w: 0.068, y: 0.01 }, { t: 0.62, h: 0.092, w: 0.058, y: 0.006 },
+        { t: 0.8, h: 0.065, w: 0.038, y: 0.002 }, { t: 1, h: 0.04, w: 0.02, y: 0 }],
+    bossu: [      // type perche : bosse derrière la tête
+        { t: 0, h: 0.03, w: 0.02, y: -0.012 }, { t: 0.06, h: 0.075, w: 0.046, y: 0.004 },
+        { t: 0.15, h: 0.125, w: 0.07, y: 0.026 }, { t: 0.3, h: 0.162, w: 0.085, y: 0.036 },
+        { t: 0.45, h: 0.158, w: 0.08, y: 0.03 }, { t: 0.6, h: 0.13, w: 0.066, y: 0.016 },
+        { t: 0.76, h: 0.09, w: 0.045, y: 0.006 }, { t: 0.9, h: 0.062, w: 0.028, y: 0.002 },
+        { t: 1, h: 0.055, w: 0.022, y: 0 }],
+    anguille: [
+        { t: 0, h: 0.012, w: 0.01, y: -0.002 }, { t: 0.03, h: 0.022, w: 0.02, y: 0 },
+        { t: 0.1, h: 0.032, w: 0.028, y: 0.002 }, { t: 0.3, h: 0.04, w: 0.034, y: 0.002 },
+        { t: 0.55, h: 0.04, w: 0.03, y: 0.001 }, { t: 0.8, h: 0.034, w: 0.018, y: 0 },
+        { t: 1, h: 0.016, w: 0.007, y: 0 }],
+    barbu: [
+        { t: 0, h: 0.03, w: 0.04, y: -0.008, nb: 3 }, { t: 0.08, h: 0.06, w: 0.075, y: 0, nb: 3 },
+        { t: 0.25, h: 0.085, w: 0.08, y: 0.004 }, { t: 0.45, h: 0.085, w: 0.06, y: 0 },
+        { t: 0.7, h: 0.06, w: 0.035, y: 0 }, { t: 1, h: 0.03, w: 0.012, y: 0 }],
+    petit: [
+        { t: 0, h: 0.03, w: 0.024, y: -0.006 }, { t: 0.07, h: 0.065, w: 0.045, y: 0 },
+        { t: 0.18, h: 0.098, w: 0.06, y: 0.004 }, { t: 0.36, h: 0.112, w: 0.064, y: 0.006 },
+        { t: 0.55, h: 0.1, w: 0.056, y: 0.004 }, { t: 0.75, h: 0.072, w: 0.036, y: 0.002 },
+        { t: 1, h: 0.044, w: 0.016, y: 0 }],
+
+    // --- Mesurés ---------------------------------------------------------------
+    // Brème : breme.jpg, LS = 720 px (museau x 26 → pédoncule x 745), contour PIL
+    // (fond béton : saturation > 9 ou luminance < 85). Hauteur max 0,39 LS à t = 0,5 ;
+    // ventre très bas (y négatif), pédoncule fin (0,086 LS). Largeur : corps très
+    // comprimé (w ≈ 0,31 h), quille ventrale (nb < 2).
+    breme: [
+        { t: 0, h: 0.012, w: 0.01, y: -0.018 }, { t: 0.05, h: 0.059, w: 0.03, y: -0.026 },
+        { t: 0.1, h: 0.079, w: 0.039, y: -0.027 }, { t: 0.15, h: 0.1, w: 0.045, y: -0.031 },
+        { t: 0.2, h: 0.128, w: 0.05, y: -0.03 }, { t: 0.25, h: 0.152, w: 0.054, y: -0.027 },
+        { t: 0.3, h: 0.17, w: 0.057, y: -0.025, n: 1.8, nb: 1.7 },
+        { t: 0.4, h: 0.187, w: 0.06, y: -0.025, n: 1.8, nb: 1.7 },
+        { t: 0.5, h: 0.196, w: 0.059, y: -0.034, n: 1.8, nb: 1.7 },
+        { t: 0.6, h: 0.18, w: 0.052, y: -0.035, n: 1.8, nb: 1.8 }, { t: 0.7, h: 0.145, w: 0.042, y: -0.035 },
+        { t: 0.8, h: 0.104, w: 0.031, y: -0.042 }, { t: 0.9, h: 0.069, w: 0.021, y: -0.032 },
+        { t: 1, h: 0.043, w: 0.015, y: -0.013 }],
+    // Brochet : brochet.jpg (poisson vu de profil, tête à droite), LS = 797 px
+    // (museau 885,512 → pédoncule 100,375), contour relevé sur la photo quadrillée
+    // puis superposé (gravier trop bariolé pour un seuil automatique). Corps
+    // presque cylindrique (h max 0,0875 LS à t = 0,55), longue tête plate en bec
+    // de canard (w > h jusqu'à t = 0,12).
+    brochet: [
+        { t: 0, h: 0.007, w: 0.012, y: 0.002 }, { t: 0.05, h: 0.031, w: 0.036, y: 0.002, n: 2.4, nb: 2.6 },
+        { t: 0.1, h: 0.044, w: 0.047, y: 0.002, n: 2.3, nb: 2.4 }, { t: 0.15, h: 0.053, w: 0.052, y: 0.002 },
+        { t: 0.2, h: 0.062, w: 0.055, y: 0.002 }, { t: 0.3, h: 0.076, w: 0.06, y: 0.004 },
+        { t: 0.4, h: 0.083, w: 0.062, y: 0.004 }, { t: 0.5, h: 0.087, w: 0.06, y: 0.005 },
+        { t: 0.6, h: 0.087, w: 0.056, y: 0.002 }, { t: 0.7, h: 0.083, w: 0.048, y: 0 },
+        { t: 0.8, h: 0.067, w: 0.036, y: 0.004 }, { t: 0.9, h: 0.045, w: 0.022, y: 0.008 },
+        { t: 1, h: 0.025, w: 0.013, y: 0 }],
+    // Silure : silure.jpg, LS = 691 px (museau 722,440 → pédoncule 150,52). Vue de
+    // trois quarts dessus : la hauteur mesurée mêle hauteur et largeur, et la
+    // perspective grossit la tête. Retenu : tête large et plate (w > h, ventre
+    // plat nb = 3), corps qui s'amincit régulièrement, queue comprimée.
+    silure: [
+        { t: 0, h: 0.022, w: 0.034, y: -0.004, n: 2.4, nb: 3.2 }, { t: 0.05, h: 0.045, w: 0.068, y: 0, n: 2.4, nb: 3.2 },
+        { t: 0.1, h: 0.062, w: 0.082, y: 0.004, n: 2.2, nb: 3 }, { t: 0.15, h: 0.072, w: 0.086, y: 0.006, n: 2.1, nb: 2.6 },
+        { t: 0.2, h: 0.078, w: 0.084, y: 0.006 }, { t: 0.3, h: 0.088, w: 0.074, y: 0.004 },
+        { t: 0.4, h: 0.09, w: 0.062, y: 0.002 }, { t: 0.5, h: 0.083, w: 0.05, y: 0 },
+        { t: 0.6, h: 0.072, w: 0.04, y: 0 }, { t: 0.7, h: 0.062, w: 0.03, y: 0 },
+        { t: 0.8, h: 0.052, w: 0.022, y: 0 }, { t: 0.9, h: 0.042, w: 0.016, y: 0 },
+        { t: 1, h: 0.032, w: 0.011, y: 0 }]
+};
+
+// ANATOMIES : position des nageoires et des détails, en fractions de LS.
+//   queue     : { type: fourche | breme | echancree | arrondie | silure | fine,
+//                 longueur (fraction de LS au-delà du pédoncule), ecart (demi-envergure) }
+//   dorsale, dorsale2, adipeuse, anale : { type, t0, t1 (base), hauteur, recul? }
+//                 types : souple, haute, longue, epineuse, reculee, petite, continue,
+//                 analeLongue, analeBreme, adipeuse (voir NAGEOIRES dans modelePoisson.js)
+//   pectorale : { t, y, longueur, pente (rad, + = vers le bas), forme: pointue | ronde }
+//   pelvienne : { t, longueur, pente }
+//   oeil      : { t, y, r } ; bouche : { t (coin), y0 (museau), y1 (coin) }
+//   opercule  : t du bord de l'ouïe ; barbillons : [{ t, y, longueur, chute, ecart }]
+export const ANATOMIES = {
+    fusiforme: {
+        queue: { type: 'fourche', longueur: 0.24, ecart: 0.15 },
+        dorsale: { type: 'souple', t0: 0.42, t1: 0.57, hauteur: 0.14 },
+        anale: { type: 'souple', t0: 0.68, t1: 0.82, hauteur: 0.09 },
+        pectorale: { t: 0.25, y: -0.075, longueur: 0.15, pente: 0.45 },
+        pelvienne: { t: 0.47, longueur: 0.1, pente: 0.3 },
+        oeil: { t: 0.085, y: 0.022, r: 0.03 }, bouche: { t: 0.045, y0: 0, y1: -0.012 }, opercule: 0.23
+    },
+    profond: {
+        queue: { type: 'fourche', longueur: 0.25, ecart: 0.16 },
+        dorsale: { type: 'longue', t0: 0.38, t1: 0.72, hauteur: 0.12 },
+        anale: { type: 'souple', t0: 0.74, t1: 0.86, hauteur: 0.1 },
+        pectorale: { t: 0.27, y: -0.11, longueur: 0.15, pente: 0.4, forme: 'ronde' },
+        pelvienne: { t: 0.5, longueur: 0.11, pente: 0.3 },
+        oeil: { t: 0.09, y: 0.03, r: 0.026 }, bouche: { t: 0.04, y0: -0.01, y1: -0.025 }, opercule: 0.25
+    },
+    plat: {
+        queue: { type: 'breme', longueur: 0.21, ecart: 0.135 },
+        dorsale: { type: 'haute', t0: 0.56, t1: 0.74, hauteur: 0.16 },
+        anale: { type: 'analeBreme', t0: 0.65, t1: 0.93, hauteur: 0.14 },
+        pectorale: { t: 0.24, y: -0.105, longueur: 0.18, pente: 0.15 },
+        pelvienne: { t: 0.46, longueur: 0.12, pente: 0.12 },
+        oeil: { t: 0.061, y: -0.007, r: 0.016 }, bouche: { t: 0.034, y0: -0.02, y1: -0.038 }, opercule: 0.23
+    },
+    torpille: {   // type sandre : deux dorsales (épineuse puis souple)
+        queue: { type: 'fourche', longueur: 0.2, ecart: 0.11 },
+        dorsale: { type: 'epineuse', t0: 0.33, t1: 0.53, hauteur: 0.11 },
+        dorsale2: { type: 'souple', t0: 0.57, t1: 0.76, hauteur: 0.09 },
+        anale: { type: 'souple', t0: 0.68, t1: 0.8, hauteur: 0.07 },
+        pectorale: { t: 0.27, y: -0.05, longueur: 0.12, pente: 0.45 },
+        pelvienne: { t: 0.32, longueur: 0.1, pente: 0.3 },
+        oeil: { t: 0.1, y: 0.03, r: 0.022 }, bouche: { t: 0.09, y0: -0.004, y1: -0.02 }, opercule: 0.27
+    },
+    bossu: {      // type perche
+        queue: { type: 'echancree', longueur: 0.22, ecart: 0.13 },
+        dorsale: { type: 'epineuse', t0: 0.32, t1: 0.55, hauteur: 0.15 },
+        dorsale2: { type: 'souple', t0: 0.58, t1: 0.75, hauteur: 0.11 },
+        anale: { type: 'souple', t0: 0.68, t1: 0.8, hauteur: 0.1 },
+        pectorale: { t: 0.29, y: -0.05, longueur: 0.14, pente: 0.4 },
+        pelvienne: { t: 0.32, longueur: 0.12, pente: 0.35 },
+        oeil: { t: 0.1, y: 0.035, r: 0.03 }, bouche: { t: 0.08, y0: -0.004, y1: -0.02 }, opercule: 0.28
+    },
+    anguille: {
+        queue: { type: 'fine', longueur: 0.04, ecart: 0.035 },
+        dorsale: { type: 'continue', t0: 0.32, t1: 0.995, hauteur: 0.035, recul: 0.05 },
+        anale: { type: 'continue', t0: 0.45, t1: 0.995, hauteur: 0.032, recul: 0.05 },
+        pectorale: { t: 0.13, y: -0.004, longueur: 0.035, pente: 0.2, forme: 'ronde' },
+        oeil: { t: 0.035, y: 0.01, r: 0.007 }, bouche: { t: 0.03, y0: -0.002, y1: -0.008 }, opercule: 0.12
+    },
+    barbu: {
+        queue: { type: 'silure', longueur: 0.1, ecart: 0.06 },
+        dorsale: { type: 'petite', t0: 0.27, t1: 0.31, hauteur: 0.05 },
+        anale: { type: 'analeLongue', t0: 0.42, t1: 0.985, hauteur: 0.045 },
+        pectorale: { t: 0.2, y: -0.045, longueur: 0.12, pente: 0.5, forme: 'ronde' },
+        pelvienne: { t: 0.42, longueur: 0.06, pente: 0.3, forme: 'ronde' },
+        oeil: { t: 0.09, y: 0.035, r: 0.007 }, bouche: { t: 0.09, y0: -0.004, y1: -0.02, epaisseur: 0.008 },
+        opercule: 0.19, contrasteOpercule: 0.12,
+        barbillons: [{ t: 0.03, y: 0.016, longueur: 0.28, chute: 0.5, ecart: 0.45 },
+            { t: 0.045, y: -0.03, longueur: 0.07, chute: 1.2, ecart: 0.3 },
+            { t: 0.065, y: -0.034, longueur: 0.06, chute: 1.2, ecart: 0.35 }]
+    },
+    petit: {
+        queue: { type: 'fourche', longueur: 0.23, ecart: 0.13 },
+        dorsale: { type: 'souple', t0: 0.4, t1: 0.53, hauteur: 0.13 },
+        anale: { type: 'souple', t0: 0.66, t1: 0.8, hauteur: 0.08 },
+        pectorale: { t: 0.25, y: -0.06, longueur: 0.13, pente: 0.45 },
+        pelvienne: { t: 0.47, longueur: 0.09, pente: 0.3 },
+        oeil: { t: 0.09, y: 0.02, r: 0.034 }, bouche: { t: 0.04, y0: 0.004, y1: -0.008 }, opercule: 0.23
+    },
+
+    // --- Mesurés (mêmes photos que les PROFILS) ------------------------------------
+    // Brème : œil t 0,061 (r 0,016), bouche infère, ouïe t 0,23 ; dorsale haute t 0,56 → 0,74 ;
+    // anale très longue t 0,65 → 0,93 (lobe avant 0,14 LS) ; pectorale t 0,24 basse
+    // (0,19 LS) ; pelviennes t 0,46 ; caudale 0,21 LS, lobe bas plus long.
+    breme: {
+        queue: { type: 'breme', longueur: 0.206, ecart: 0.133 },
+        dorsale: { type: 'haute', t0: 0.564, t1: 0.742, hauteur: 0.11, recul: 0.6 },
+        anale: { type: 'analeBreme', t0: 0.654, t1: 0.932, hauteur: 0.13, recul: 0.35 },
+        pectorale: { t: 0.24, y: -0.105, longueur: 0.19, pente: 0.15 },
+        pelvienne: { t: 0.457, longueur: 0.12, pente: 0.12 },
+        oeil: { t: 0.061, y: -0.007, r: 0.016 }, bouche: { t: 0.026, y0: -0.02, y1: -0.032, epaisseur: 0.004 },
+        opercule: 0.228, ligneCourbe: 1.2
+    },
+    // Brochet : œil t 0,18 (r 0,015), haut sur la tête ; gueule jusqu'à t 0,136 ;
+    // ouïe t 0,354 ; pectorale basse t 0,335 ; pelviennes t 0,613 ; dorsale et anale
+    // tout à l'arrière (t 0,82 → 0,94 et 0,80 → 0,91) ; caudale fourchue.
+    brochet: {
+        queue: { type: 'fourche', longueur: 0.13, ecart: 0.088 },
+        dorsale: { type: 'reculee', t0: 0.821, t1: 0.944, hauteur: 0.078 },
+        dorsale2: null,
+        anale: { type: 'reculee', t0: 0.798, t1: 0.912, hauteur: 0.068 },
+        pectorale: { t: 0.335, y: -0.066, longueur: 0.1, pente: 0.35, forme: 'ronde' },
+        pelvienne: { t: 0.613, longueur: 0.085, pente: 0.35, forme: 'ronde' },
+        oeil: { t: 0.18, y: 0.016, r: 0.015 }, bouche: { t: 0.136, y0: -0.002, y1: -0.022 },
+        opercule: 0.354, ligneCourbe: 0.2, contrasteOpercule: 0.3
+    },
+    // Silure : œil minuscule t 0,09 ; gueule large ; 2 grands barbillons maxillaires
+    // (0,28 LS) + 4 courts sous le menton ; petite dorsale t 0,27 ; anale de t 0,42
+    // jusqu'à la queue ; caudale petite et arrondie.
+    silure: {
+        queue: { type: 'silure', longueur: 0.1, ecart: 0.062 }
+    },
+    // Espèces non calibrées : seulement les différences évidentes avec la silhouette.
+    carpe: {
+        barbillons: [{ t: 0.012, y: -0.016, longueur: 0.035, chute: 0.9, ecart: 0.25, rayon: 0.002 },
+            { t: 0.04, y: -0.024, longueur: 0.05, chute: 1, ecart: 0.3, rayon: 0.0025 }]
+    },
+    tanche: {
+        queue: { type: 'echancree', longueur: 0.22, ecart: 0.13 },
+        dorsale: { type: 'souple', t0: 0.42, t1: 0.58, hauteur: 0.12 },
+        barbillons: [{ t: 0.03, y: -0.02, longueur: 0.03, chute: 0.8, ecart: 0.25, rayon: 0.002 }]
+    },
+    goujon: {
+        barbillons: [{ t: 0.03, y: -0.02, longueur: 0.05, chute: 0.8, ecart: 0.3, rayon: 0.002 }]
+    },
+    truite: {
+        queue: { type: 'echancree', longueur: 0.2, ecart: 0.13 },
+        dorsale: { type: 'souple', t0: 0.38, t1: 0.52, hauteur: 0.13 },
+        adipeuse: { type: 'adipeuse', t0: 0.79, t1: 0.86, hauteur: 0.04 },
+        bouche: { t: 0.1, y0: -0.004, y1: -0.02 }
+    }
 };
 
 export const FORMES_PAR_TYPE = ['profond', 'bossu', 'torpille', 'plat'];

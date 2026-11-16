@@ -74,17 +74,23 @@ export function creerAmbiance(deps) {
 
     // Le mouvement augmente vers la queue et se propage avec un déphasage le
     // long du corps. La caudale suit la même translation que son point d'attache.
+    // Corps par sections (modelePoisson.js) : x va de +swimDemi (museau) à
+    // -swimDemi (pédoncule), l'amplitude est déjà en unités du modèle (swimAmp).
+    // Ancien modèle (sphère) : x de +0,6 à -0,6, amplitude × scale.z.
     function animateFishMesh(data, phase, amplitude) {
         const positions = data.bodyMesh.geometry.getAttribute('position');
         const rest = data.swimRest;
+        const demi = data.swimDemi || 0.6;
+        const ampl = amplitude * (data.swimAmp !== undefined ? data.swimAmp : 1);
+        const tableau = positions.array;
         for (let i = 0; i < positions.count; i++) {
-            const x = rest[i * 3];
-            const rear = Math.max(0, -x / 0.6);
-            positions.setZ(i, rest[i * 3 + 2] + Math.sin(phase - rear) * amplitude * rear ** 2);
+            const rear = Math.max(0, -rest[i * 3] / demi);
+            tableau[i * 3 + 2] = rest[i * 3 + 2] + Math.sin(phase - rear) * ampl * rear * rear;
         }
         positions.needsUpdate = true;
         data.bodyMesh.geometry.computeVertexNormals();
-        data.tailPivot.position.z = Math.sin(phase - 0.98) * amplitude * data.bodyMesh.scale.z;
+        data.tailPivot.position.z = Math.sin(phase - 0.98) * amplitude
+            * (data.swimAmp !== undefined ? data.swimAmp : data.bodyMesh.scale.z);
         data.tailPivot.rotation.y = Math.sin(phase - 1.45) * amplitude * 3.2;
     }
 
