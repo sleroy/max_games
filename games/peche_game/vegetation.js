@@ -134,5 +134,10 @@ export function creerVegetation(deps) {
     }
     maj();
 
-    return { herbe, uniforms, maj };
+    // Densité de l'herbe (0–1) : le biotope (milieux.js) fixe la part des touffes visibles.
+    function regler(densite) {
+        herbe.count = Math.round(TOUFFES * Math.max(0, Math.min(1, densite === undefined ? 1 : densite)));
+    }
+
+    return { herbe, uniforms, maj, regler };
 }

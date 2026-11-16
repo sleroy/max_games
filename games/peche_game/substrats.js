@@ -19,7 +19,8 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=233';
+import { COMPORTEMENTS } from './especes.js?v=234';
+import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=234';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [
@@ -85,15 +86,29 @@ function creerHasard(graine) {
     };
 }
 
+// Parts de fonds d'un biotope dans l'ordre de SUBSTRATS (sable, gravier, vase, roche, herbier).
+function ciblesDe(milieu) {
+    const p = partsSubstrats(milieu);
+    return IDS_SUBSTRATS.map(function (id) { return p[id]; });
+}
+
 export function creerSubstrats(deps) {
     const { POND_CENTER, rayonEtang, profondeurLocale, FOSSES, RAYON_ETANG_MAX, DEMI_COTE_FOND, verdictBase, MARGE_VASE } = deps;
-    // Sources d'herbier : COPIE des nénuphars et roseaux du décor au moment de la création
+    // Sources d'herbier : COPIE des nénuphars et roseaux du décor au moment de la construction
     // (les tests vident `lilyPads` : la grille, elle, ne bouge plus).
-    const padsCopie = (deps.lilyPads || []).map(function (p) { return { x: p.x, z: p.z, radius: p.radius }; });
-    const roseauxCopie = (deps.roseaux || []).map(function (r) { return { x: r.x, z: r.z }; });
+    const padsCopie = [];
+    const roseauxCopie = [];
     const sources = [];
-    padsCopie.forEach(function (p) { sources.push({ x: p.x, z: p.z, rayon: 5.5 + (p.radius || 0.4) * 3 }); });
-    roseauxCopie.forEach(function (r) { sources.push({ x: r.x, z: r.z, rayon: 5 }); });
+    function lireSources() {
+        padsCopie.length = 0;
+        roseauxCopie.length = 0;
+        sources.length = 0;
+        (deps.lilyPads || []).forEach(function (p) { padsCopie.push({ x: p.x, z: p.z, radius: p.radius }); });
+        (deps.roseaux || []).forEach(function (r) { roseauxCopie.push({ x: r.x, z: r.z }); });
+        padsCopie.forEach(function (p) { sources.push({ x: p.x, z: p.z, rayon: 5.5 + (p.radius || 0.4) * 3 }); });
+        roseauxCopie.forEach(function (r) { sources.push({ x: r.x, z: r.z, rayon: 5 }); });
+    }
+    lireSources();
 
     // Le même carré que les UV du maillage du fond (environnement.js).
     const demi = DEMI_COTE_FOND || Math.ceil(RAYON_ETANG_MAX + 4.5);
@@ -133,19 +148,23 @@ export function creerSubstrats(deps) {
 
     // --- Proximité de l'herbier (0 = loin, 1 = sur la plante) : étalée sur les cellules ----
     const proxGrille = new Float32Array(N * N);
-    sources.forEach(function (s) {
-        const i0 = Math.max(0, Math.floor((s.x - s.rayon - X0) / CELLULE));
-        const i1 = Math.min(N - 1, Math.ceil((s.x + s.rayon - X0) / CELLULE));
-        const j0 = Math.max(0, Math.floor((s.z - s.rayon - Z0) / CELLULE));
-        const j1 = Math.min(N - 1, Math.ceil((s.z + s.rayon - Z0) / CELLULE));
-        for (let j = j0; j <= j1; j++) {
-            for (let i = i0; i <= i1; i++) {
-                const d = Math.hypot(X0 + (i + 0.5) * CELLULE - s.x, Z0 + (j + 0.5) * CELLULE - s.z);
-                const p = 1 - d / s.rayon;
-                if (p > proxGrille[j * N + i]) { proxGrille[j * N + i] = p; }
+    function calculerProximite() {
+        proxGrille.fill(0);
+        sources.forEach(function (s) {
+            const i0 = Math.max(0, Math.floor((s.x - s.rayon - X0) / CELLULE));
+            const i1 = Math.min(N - 1, Math.ceil((s.x + s.rayon - X0) / CELLULE));
+            const j0 = Math.max(0, Math.floor((s.z - s.rayon - Z0) / CELLULE));
+            const j1 = Math.min(N - 1, Math.ceil((s.z + s.rayon - Z0) / CELLULE));
+            for (let j = j0; j <= j1; j++) {
+                for (let i = i0; i <= i1; i++) {
+                    const d = Math.hypot(X0 + (i + 0.5) * CELLULE - s.x, Z0 + (j + 0.5) * CELLULE - s.z);
+                    const p = 1 - d / s.rayon;
+                    if (p > proxGrille[j * N + i]) { proxGrille[j * N + i] = p; }
+                }
             }
-        }
-    });
+        });
+    }
+    calculerProximite();
 
     // --- La règle : quel substrat en (x, z) ? (priorité : roche, herbier, vase, gravier, sable) ---
     function classer(x, z, prox) {
@@ -168,22 +187,33 @@ export function creerSubstrats(deps) {
     }
 
     // --- La grille : 0 = hors étang, 1 à 5 = indice dans SUBSTRATS + 1 ---------------------
-    let grille = new Uint8Array(N * N);
+    // Remplie EN PLACE (même tableau) : reconstruite quand le biotope change (appliquerMilieu).
+    const grille = new Uint8Array(N * N);
+    const dedans = new Uint8Array(N * N);
     for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
-            const x = X0 + (i + 0.5) * CELLULE;
-            const z = Z0 + (j + 0.5) * CELLULE;
-            if (dansEtang(x, z, MARGE_FOND)) { grille[j * N + i] = classer(x, z, proxGrille[j * N + i]); }
+            if (dansEtang(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, MARGE_FOND)) { dedans[j * N + i] = 1; }
+        }
+    }
+    function remplirNaturel() {
+        grille.fill(0);
+        for (let j = 0; j < N; j++) {
+            for (let i = 0; i < N; i++) {
+                if (dedans[j * N + i]) {
+                    grille[j * N + i] = classer(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, proxGrille[j * N + i]);
+                }
+            }
         }
     }
     // Un passage « majorité 3 × 3 » retire les cellules isolées (limites nettes et lisibles).
-    (function lisser() {
+    const comptes = new Int32Array(6);
+    function lisser() {
         const copie = grille.slice();
         for (let j = 1; j < N - 1; j++) {
             for (let i = 1; i < N - 1; i++) {
                 const id = copie[j * N + i];
                 if (!id) { continue; }
-                const comptes = [0, 0, 0, 0, 0, 0];
+                comptes.fill(0);
                 for (let dj = -1; dj <= 1; dj++) {
                     for (let di = -1; di <= 1; di++) { comptes[copie[(j + dj) * N + i + di]]++; }
                 }
@@ -192,7 +222,77 @@ export function creerSubstrats(deps) {
                 grille[j * N + i] = meilleur;
             }
         }
-    }());
+    }
+
+    // --- BIOTOPES : biaiser la répartition vers les parts de fonds du biotope (milieux.js) ------
+    // Chaque substrat a une AFFINITÉ lisse (0 → 1) en chaque cellule, tirée de la même géométrie que la
+    // règle naturelle : sable des anses abritées, gravier exposé au vent, vase des grands fonds, roche des
+    // bordures de fosses, herbier près des plantes. Un DÉCALAGE par substrat (ajusté par itérations, sans
+    // hasard) fait ensuite coller les parts du biotope : même graine + même biotope = même grille.
+    function affinites(x, z, prox, sortie) {
+        const prof = profondeurLocale(x, z);
+        const n = bruit(x, z);
+        let anneau = 0;
+        for (let k = 0; k < FOSSES.length; k++) {
+            const q = Math.hypot(x - FOSSES[k].x, z - FOSSES[k].z) / FOSSES[k].rayon;
+            anneau = Math.max(anneau, 1 - Math.abs(q - 0.88 - 0.05 * n) / 0.45);
+        }
+        const abrite = fetchEn(x, z) < FETCH_EXPOSE;
+        sortie[0] = (abrite ? 0.55 : 0.2) * (prof < 3.6 ? 1 : 0.4) - 0.15 * n + 0.1;                    // sable
+        sortie[1] = (abrite ? 0.15 : 0.6) * (prof < 4 ? 1 : 0.4) + 0.15 * n;                            // gravier
+        sortie[2] = Math.min(1.2, Math.max(0, (prof - 2) / 5)) + (abrite ? 0.2 : 0);                     // vase
+        sortie[3] = 0.9 * Math.max(0, anneau) + 0.3 * Math.max(0, n) + (prof >= 3 && prof < 6 ? 0.15 : 0); // roche
+        sortie[4] = 1.3 * Math.min(1, prox * 2) * (prof < 3.8 ? 1 : 0.3) + 0.1 * n;                      // herbier
+        // Un bruit lisse DIFFÉRENT par substrat : des plaques organiques, et surtout des parts qui varient
+        // de façon continue avec le décalage (sans lui, les plateaux de la règle font sauter les parts).
+        for (let k = 0; k < 5; k++) { sortie[k] += 0.45 * bruit(x * 0.9 + 13.7 * k, z * 0.9 - 8.3 * k); }
+    }
+    const affinite = new Float32Array(N * N * 5);
+    function remplirVersCibles(cibles) {
+        const tmp = [0, 0, 0, 0, 0];
+        const nombres = [0, 0, 0, 0, 0];
+        let cellules = 0;
+        for (let c = 0; c < N * N; c++) {
+            if (!dedans[c]) { continue; }
+            const i = c % N;
+            affinites(X0 + (i + 0.5) * CELLULE, Z0 + ((c - i) / N + 0.5) * CELLULE, proxGrille[c], tmp);
+            for (let k = 0; k < 5; k++) { affinite[c * 5 + k] = tmp[k]; }
+            cellules++;
+        }
+        const decalage = [0, 0, 0, 0, 0];
+        let meilleureErreur = Infinity;
+        let meilleure = null;
+        for (let tour = 0; tour < 60; tour++) {
+            nombres.fill(0);
+            grille.fill(0);
+            for (let c = 0; c < N * N; c++) {
+                if (!dedans[c]) { continue; }
+                let gagnant = 0;
+                let score = -Infinity;
+                for (let k = 0; k < 5; k++) {
+                    const v = affinite[c * 5 + k] + decalage[k];
+                    if (v > score) { score = v; gagnant = k; }
+                }
+                grille[c] = gagnant + 1;
+            }
+            lisser();
+            for (let c = 0; c < N * N; c++) { if (grille[c]) { nombres[grille[c] - 1]++; } }
+            let erreur = 0;
+            for (let k = 0; k < 5; k++) {
+                const ecart = cibles[k] - nombres[k] / cellules;
+                erreur = Math.max(erreur, Math.abs(ecart));
+                decalage[k] += (0.9 / (1 + tour * 0.1)) * ecart;
+            }
+            if (erreur < meilleureErreur) { meilleureErreur = erreur; meilleure = grille.slice(); }
+            if (erreur < 0.008) { break; }
+        }
+        grille.set(meilleure);
+    }
+    // Grille d'un biotope : `null` = la règle naturelle d'origine (la plaine, monde de référence).
+    function remplirGrille(cibles) {
+        if (cibles) { remplirVersCibles(cibles); } else { remplirNaturel(); lisser(); }
+    }
+    remplirGrille(deps.milieu && milieuParId(deps.milieu).id !== MILIEU_DEFAUT ? ciblesDe(deps.milieu) : null);
 
     function indiceEn(x, z) {
         const i = Math.floor((x - X0) / CELLULE);
@@ -206,49 +306,55 @@ export function creerSubstrats(deps) {
     }
 
     // --- Aires, zones (composantes connexes), rectangles de la carte ------------------------
+    // Objets remplis EN PLACE par analyser() : les lecteurs (carnet, radar) gardent la même référence.
     const aires = {};
-    IDS_SUBSTRATS.forEach(function (id) { aires[id] = 0; });
-    let total = 0;
-    for (let k = 0; k < grille.length; k++) {
-        if (grille[k]) { aires[IDS_SUBSTRATS[grille[k] - 1]] += CELLULE * CELLULE; total += CELLULE * CELLULE; }
-    }
     const parts = {};
-    IDS_SUBSTRATS.forEach(function (id) { parts[id] = total ? aires[id] / total : 0; });
-
     const etiquettes = new Int32Array(N * N).fill(-1);
     const zones = [];
     const compteurs = {};
-    for (let depart = 0; depart < grille.length; depart++) {
-        if (!grille[depart] || etiquettes[depart] >= 0) { continue; }
-        const k = grille[depart];
-        const pile = [depart];
-        etiquettes[depart] = zones.length;
-        let cellules = 0;
-        let sx = 0;
-        let sz = 0;
-        const cellulesZone = [];
-        while (pile.length) {
-            const c = pile.pop();
-            cellules++;
-            const ci = c % N;
-            const cj = (c - ci) / N;
-            sx += ci;
-            sz += cj;
-            cellulesZone.push(c);
-            [c - 1, c + 1, c - N, c + N].forEach(function (v) {
-                if (v < 0 || v >= grille.length) { return; }
-                if ((v === c - 1 && ci === 0) || (v === c + 1 && ci === N - 1)) { return; }
-                if (grille[v] === k && etiquettes[v] < 0) { etiquettes[v] = zones.length; pile.push(v); }
+    function analyser() {
+        IDS_SUBSTRATS.forEach(function (id) { aires[id] = 0; });
+        let total = 0;
+        for (let k = 0; k < grille.length; k++) {
+            if (grille[k]) { aires[IDS_SUBSTRATS[grille[k] - 1]] += CELLULE * CELLULE; total += CELLULE * CELLULE; }
+        }
+        IDS_SUBSTRATS.forEach(function (id) { parts[id] = total ? aires[id] / total : 0; });
+        etiquettes.fill(-1);
+        zones.length = 0;
+        Object.keys(compteurs).forEach(function (id) { delete compteurs[id]; });
+        for (let depart = 0; depart < grille.length; depart++) {
+            if (!grille[depart] || etiquettes[depart] >= 0) { continue; }
+            const k = grille[depart];
+            const pile = [depart];
+            etiquettes[depart] = zones.length;
+            let cellules = 0;
+            let sx = 0;
+            let sz = 0;
+            const cellulesZone = [];
+            while (pile.length) {
+                const c = pile.pop();
+                cellules++;
+                const ci = c % N;
+                const cj = (c - ci) / N;
+                sx += ci;
+                sz += cj;
+                cellulesZone.push(c);
+                [c - 1, c + 1, c - N, c + N].forEach(function (v) {
+                    if (v < 0 || v >= grille.length) { return; }
+                    if ((v === c - 1 && ci === 0) || (v === c + 1 && ci === N - 1)) { return; }
+                    if (grille[v] === k && etiquettes[v] < 0) { etiquettes[v] = zones.length; pile.push(v); }
+                });
+            }
+            const id = IDS_SUBSTRATS[k - 1];
+            compteurs[id] = (compteurs[id] || 0) + 1;
+            zones.push({
+                id: id + '-' + compteurs[id], substrat: id, aire: cellules * CELLULE * CELLULE,
+                centre: { x: X0 + (sx / cellules + 0.5) * CELLULE, z: Z0 + (sz / cellules + 0.5) * CELLULE },
+                cellules: cellulesZone
             });
         }
-        const id = IDS_SUBSTRATS[k - 1];
-        compteurs[id] = (compteurs[id] || 0) + 1;
-        zones.push({
-            id: id + '-' + compteurs[id], substrat: id, aire: cellules * CELLULE * CELLULE,
-            centre: { x: X0 + (sx / cellules + 0.5) * CELLULE, z: Z0 + (sz / cellules + 0.5) * CELLULE },
-            cellules: cellulesZone
-        });
     }
+    analyser();
     function zoneEn(x, z) {
         const i = Math.floor((x - X0) / CELLULE);
         const j = Math.floor((z - Z0) / CELLULE);
@@ -340,7 +446,7 @@ export function creerSubstrats(deps) {
         return liste;
     }
 
-    const hasard = creerHasard(7919);
+    let hasard = creerHasard(7919);
     const tours = {};
     const stats = { poissons: 0, parSubstrat: {} };
 
@@ -576,6 +682,7 @@ export function creerSubstrats(deps) {
             image.data.set(pixelsFond(c.width));
             g.putImageData(image, 0, 0);
             const tex = new THREE.CanvasTexture(c);
+            if (maillage.material.map && maillage.material.map.dispose) { maillage.material.map.dispose(); }   // biotope changé : l'ancienne texture part
             tex.colorSpace = THREE.SRGBColorSpace;
             tex.anisotropy = 4;
             maillage.material.map = tex;
@@ -587,13 +694,31 @@ export function creerSubstrats(deps) {
         }
     }
 
+    // BIOTOPE : refait la grille pour ce biotope (parts de fonds de milieux.js) d'après le décor ACTUEL
+    // (nénuphars et roseaux du biotope). Mêmes objets, remplis en place ; habitats et hasard remis à zéro,
+    // donc même graine + même biotope = même grille, mêmes zones, mêmes ancres.
+    let biotope = deps.milieu ? milieuParId(deps.milieu).id : MILIEU_DEFAUT;
+    function appliquerMilieu(milieu) {
+        biotope = milieuParId(typeof milieu === 'string' ? milieu : milieu && milieu.id).id;
+        lireSources();
+        calculerProximite();
+        remplirGrille(biotope === MILIEU_DEFAUT ? null : ciblesDe(biotope));
+        analyser();
+        Object.keys(ancres).forEach(function (cle) { delete ancres[cle]; });
+        Object.keys(tours).forEach(function (cle) { delete tours[cle]; });
+        hasard = creerHasard(7919);
+        stats.poissons = 0;
+        stats.parSubstrat = {};
+    }
+
     return {
         SUBSTRATS: SUBSTRATS, ACCROCHAGES_FOND: ACCROCHAGES_FOND, SONS_FOND: SONS_FOND,
         grille: grille, COULEURS: COULEURS, taille: N, cellule: CELLULE, origine: { x: X0, z: Z0 }, cote: COTE,
         aires: aires, parts: parts, zones: zones, stats: stats,
         substratEn: substratEn, zoneEn: zoneEn, rectsCarte: rectsCarte, verdictFond: verdictFond,
         accrochageDe: accrochageDe, attirer: attirer, ancresDe: ancresDe, especesDe: especesDe,
-        garantirPecheDuBord: garantirPecheDuBord,
+        garantirPecheDuBord: garantirPecheDuBord, appliquerMilieu: appliquerMilieu,
+        milieu: function () { return biotope; },
         empreinte: empreinte, pixelsFond: pixelsFond, habillerFond: habillerFond,
         fetchEn: fetchEn, proximiteHerbier: function (x, z) {
             const i = Math.floor((x - X0) / CELLULE);
@@ -602,7 +727,7 @@ export function creerSubstrats(deps) {
         },
         // Rejoue la construction : deux exécutions doivent donner la même grille et les mêmes zones.
         refaire: function () {
-            return creerSubstrats(Object.assign({}, deps, { lilyPads: padsCopie, roseaux: roseauxCopie }));
+            return creerSubstrats(Object.assign({}, deps, { lilyPads: padsCopie, roseaux: roseauxCopie, milieu: biotope }));
         }
     };
 }

@@ -9,13 +9,20 @@
 // Contrat (voir docs/modules.md) : aucun accès aux variables globales de
 // script.js, aucune dépendance à `window`, donc testable sans navigateur.
 //
+// BIOTOPES (milieux.js) : le décor se construit pour un biotope (comptes d'arbres, nénuphars, roseaux et
+// rochers, style de la couronne d'arbres). Le monde naît en « plaine » avec le `rand()` du jeu ; un autre
+// biotope est posé par `appliquerMilieu` avec un générateur LOCAL à graine fixe (graine du monde + biotope) :
+// toujours le même décor pour la même graine, sans toucher au hasard du monde. Les tableaux exposés
+// (lilyPads, arbres, rochers, roseaux) sont remplis EN PLACE : leurs lecteurs gardent la bonne référence.
+//
 // Important : le décor consomme `rand()` dans un ordre PRÉCIS. On l'appelle
 // exactement à la place de l'ancien bloc (même séquence de tirages), sinon tout
 // le reste du monde (poissons, nénuphars, rochers) se décale et les tests de
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerVegetation } from './vegetation.js?v=233';
+import { creerVegetation } from './vegetation.js?v=234';
+import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor } from './milieux.js?v=234';
 
 export function creerDecor(deps) {
     const scene = deps.scene;
@@ -87,15 +94,19 @@ export function creerDecor(deps) {
     const _euler = new THREE.Euler();
     const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
-    // --- Arbres : un appel de dessin pour les troncs, un autre pour le feuillage.
-    // v173 : étang de rayon 90 (périmètre × 1,6, surface × 2,8) → décor étoffé pour que
-    // la berge ne paraisse pas nue : 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars.
-    const TREE_MAX = 64;
+    // --- Arbres, nénuphars, roseaux, rochers : capacités = le maximum de tous les biotopes ; les
+    // comptes réels viennent du biotope (densitesDecor). Un appel de dessin par groupe instancié.
+    // v173 : étang de rayon 90 (périmètre × 1,6, surface × 2,8) → décor étoffé pour que la berge
+    // ne paraisse pas nue : plaine = 64 arbres, 70 roseaux, 24 rochers, 40 nénuphars.
+    const CAPACITE = MILIEUX.reduce(function (m, milieu) {
+        const d = densitesDecor(milieu);
+        return { arbres: Math.max(m.arbres, d.arbres), roseaux: Math.max(m.roseaux, d.roseaux), rochers: Math.max(m.rochers, d.rochers) };
+    }, { arbres: 1, roseaux: 1, rochers: 1 });
     const trunkInst = new THREE.InstancedMesh(
-        new THREE.CylinderGeometry(0.3, 0.45, 3, 6), trunkMat, TREE_MAX
+        new THREE.CylinderGeometry(0.3, 0.45, 3, 6), trunkMat, CAPACITE.arbres
     );
     const foliageInst = new THREE.InstancedMesh(
-        new THREE.ConeGeometry(1, 1, 8), foliageMat, TREE_MAX * 3
+        new THREE.ConeGeometry(1, 1, 8), foliageMat, CAPACITE.arbres * 3
     );
     trunkInst.castShadow = true;
     foliageInst.castShadow = true;
@@ -107,6 +118,7 @@ export function creerDecor(deps) {
     const arbres = [];
     const rochers = [];
     const roseaux = [];
+    const lilyPads = [];     // la SEULE sortie dont dépendent accrochages et carte du carnet
 
     function addTree(x, z, scale) {
         arbres.push({ x: x, z: z, r: 1.2 * scale });
@@ -126,99 +138,155 @@ export function creerDecor(deps) {
         }
     }
 
-    for (let i = 0; i < TREE_MAX; i++) {
-        const angle = (i / TREE_MAX) * Math.PI * 2 + rand() * 0.1;
-        // Les arbres poussent DERRIÈRE la rive LOCALE (le contour n'est pas un cercle),
-        // sur une bande de 8 à 53 unités (35 avant l'agrandissement de l'étang).
-        const radius = rayonEtang(angle) + 8 + rand() * 45;
-        const x = POND_CENTER.x + Math.cos(angle) * radius;
-        const z = POND_CENTER.z + Math.sin(angle) * radius;
-        // Laisse dégagé l'espace devant la caméra et le pêcheur.
-        if (z > 5 && Math.abs(x) < 30) {
-            continue;
-        }
-        // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
-        if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angle) + 4) {
-            continue;
-        }
-        addTree(x, z, 0.8 + rand() * 0.7);
-    }
-    trunkInst.count = trunkCount;
-    foliageInst.count = foliageCount;
-    trunkInst.instanceMatrix.needsUpdate = true;
-    foliageInst.instanceMatrix.needsUpdate = true;
-
-    // --- Nénuphars : la SEULE sortie du module (accrochage + carte du carnet).
-    const lilyPads = [];
-    const NENUPHARS = 40;   // 14 sur 0,23 ha → ≈ 40 sur 0,64 ha (même densité)
     const lilyMat = new THREE.MeshStandardMaterial({
         color: 0x3f7d4a, roughness: 0.8, side: THREE.DoubleSide
     });
-    for (let i = 0; i < NENUPHARS; i++) {
-        const radius = 0.25 + rand() * 0.45;   // 12 à 35 cm de rayon
-        const pad = new THREE.Mesh(new THREE.CircleGeometry(radius, 16), lilyMat);
-        pad.rotation.x = -Math.PI / 2;
-        const angle = rand() * Math.PI * 2;
-        // Les nénuphars restent DANS l'eau, à distance du bord local. La racine carrée
-        // répartit les nénuphars à densité égale sur toute la surface : avec un tirage
-        // linéaire du rayon, ils s'entassaient au milieu du grand étang (v173).
-        const r = Math.sqrt(rand()) * Math.max(1, rayonEtang(angle) - 12);
-        pad.position.set(POND_CENTER.x + Math.cos(angle) * r, 0.06,
-            POND_CENTER.z + Math.sin(angle) * r);
-        scene.add(pad);
-        lilyPads.push({ x: pad.position.x, z: pad.position.z, radius: radius });
-    }
-
-    // --- Roseaux (instanciés : un seul appel de dessin). Pivot à la base pour
-    // qu'ils puissent se balancer au vent (shader de vent : vegetation.js).
+    const padMeshes = [];
     const reedMat = new THREE.MeshStandardMaterial({ color: 0x2f6b3f, roughness: 0.9 });
     const reedGeo = new THREE.CylinderGeometry(0.02, 0.035, 1, 5);
     reedGeo.translate(0, 0.5, 0);
-    const ROSEAUX = 70;   // 40 pour un périmètre de 345 → 70 pour ≈ 570
-    const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, ROSEAUX);
-    let reedCount = 0;
-    for (let i = 0; i < ROSEAUX; i++) {
-        const angle = rand() * Math.PI * 2;
-        // Les roseaux poussent DANS l'eau, le long du contour généré.
-        const r = rayonEtang(angle) - 1 - rand() * 5;
-        const x = POND_CENTER.x + Math.cos(angle) * r;
-        const z = POND_CENTER.z + Math.sin(angle) * r;
-        const h = 2 + rand() * 2.5;
-        const rotZ = (rand() - 0.5) * 0.25;
-        _vec.set(x, 0, z);
-        _quat.setFromAxisAngle(UNIT_Z, rotZ);
-        _scl.set(1, h, 1);
-        _mat4.compose(_vec, _quat, _scl);
-        reedInst.setMatrixAt(reedCount++, _mat4);
-        roseaux.push({ x: x, z: z });
-    }
-    reedInst.count = reedCount;
-    reedInst.instanceMatrix.needsUpdate = true;
+    const reedInst = new THREE.InstancedMesh(reedGeo, reedMat, CAPACITE.roseaux);
     scene.add(reedInst);
     // Roseaux et herbe des berges ondulent au vent (shader, vegetation.js ; aucun tirage de rand()).
     const vegetation = creerVegetation({ scene, wind: deps.wind, roseauxMat: reedMat, rayonEtang, POND_CENTER, RIVE_Y });
-
-    // --- Rochers (instanciés).
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 1 });
-    const ROCHERS = 24;
-    const rockInst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), rockMat, ROCHERS);
+    const rockInst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), rockMat, CAPACITE.rochers);
     rockInst.castShadow = true;
-    for (let i = 0; i < ROCHERS; i++) {
-        const angle = rand() * Math.PI * 2;
-        // Les rochers restent sur la berge, derrière le bord local.
-        const r = rayonEtang(angle) + 3 + rand() * 12;
-        const s = 0.6 + rand() * 1.3;
-        _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15,
-            POND_CENTER.z + Math.sin(angle) * r);
-        _euler.set(rand(), rand(), rand());
-        _quat.setFromEuler(_euler);
-        _scl.set(s, s, s);
-        _mat4.compose(_vec, _quat, _scl);
-        rockInst.setMatrixAt(i, _mat4);
-        rochers.push({ x: _vec.x, z: _vec.z, r: s });
-    }
-    rockInst.instanceMatrix.needsUpdate = true;
     scene.add(rockInst);
 
-    return { lilyPads: lilyPads, arbres: arbres, rochers: rochers, roseaux: roseaux, vegetation: vegetation };
+    // Pose tout le décor d'un biotope. `tirage` : le `rand()` du jeu (monde d'origine) ou un générateur
+    // local. `evite(x, z, r)` : vrai si un obstacle occupe la place (seulement à la reconstruction).
+    // ⚠ L'ORDRE des tirages est celui d'origine (arbres, nénuphars, roseaux, rochers) : en plaine, le
+    // monde reste identique au pixel près.
+    function peupler(milieu, tirage, evite) {
+        const d = densitesDecor(milieu);
+        const style = styleDecor(milieu);
+        const occupe = function (x, z, r) { return !!evite && evite(x, z, r); };
+        // Arbres : derrière la rive LOCALE (le contour n'est pas un cercle), sur une bande propre au biotope.
+        arbres.length = 0;
+        trunkCount = 0;
+        foliageCount = 0;
+        for (let i = 0; i < d.arbres; i++) {
+            const angle = (i / d.arbres) * Math.PI * 2 + tirage() * 0.1;
+            const radius = rayonEtang(angle) + style.bandeArbres[0] + tirage() * style.bandeArbres[1];
+            const x = POND_CENTER.x + Math.cos(angle) * radius;
+            const z = POND_CENTER.z + Math.sin(angle) * radius;
+            // Laisse dégagé l'espace devant la caméra et le pêcheur.
+            if (z > 5 && Math.abs(x) < 30) {
+                continue;
+            }
+            // Ni dans l'eau : un sapin au milieu de l'étang, c'était très moche !
+            if (Math.hypot(x - POND_CENTER.x, z - POND_CENTER.z) < rayonEtang(angle) + 4) {
+                continue;
+            }
+            const echelle = style.echelleArbres[0] + tirage() * style.echelleArbres[1];
+            if (occupe(x, z, 1.2 * echelle)) { continue; }
+            addTree(x, z, echelle);
+        }
+        trunkInst.count = trunkCount;
+        foliageInst.count = foliageCount;
+        trunkInst.instanceMatrix.needsUpdate = true;
+        foliageInst.instanceMatrix.needsUpdate = true;
+
+        // Nénuphars : DANS l'eau, à distance du bord local. La racine carrée répartit les nénuphars à
+        // densité égale sur toute la surface (un tirage linéaire les entassait au milieu, v173).
+        padMeshes.forEach(function (pad) { scene.remove(pad); pad.geometry.dispose(); });
+        padMeshes.length = 0;
+        lilyPads.length = 0;
+        for (let i = 0; i < d.nenuphars; i++) {
+            const radius = 0.25 + tirage() * 0.45;   // 12 à 35 cm de rayon
+            const angle = tirage() * Math.PI * 2;
+            const r = Math.sqrt(tirage()) * Math.max(1, rayonEtang(angle) - 12);
+            const x = POND_CENTER.x + Math.cos(angle) * r;
+            const z = POND_CENTER.z + Math.sin(angle) * r;
+            if (occupe(x, z, radius)) { continue; }
+            const pad = new THREE.Mesh(new THREE.CircleGeometry(radius, 16), lilyMat);
+            pad.rotation.x = -Math.PI / 2;
+            pad.position.set(x, 0.06, z);
+            scene.add(pad);
+            padMeshes.push(pad);
+            lilyPads.push({ x: pad.position.x, z: pad.position.z, radius: radius });
+        }
+
+        // Roseaux (instanciés) : pivot à la base pour qu'ils se balancent au vent (vegetation.js).
+        roseaux.length = 0;
+        let reedCount = 0;
+        for (let i = 0; i < d.roseaux; i++) {
+            const angle = tirage() * Math.PI * 2;
+            // Les roseaux poussent DANS l'eau, le long du contour généré.
+            const r = rayonEtang(angle) - 1 - tirage() * 5;
+            const x = POND_CENTER.x + Math.cos(angle) * r;
+            const z = POND_CENTER.z + Math.sin(angle) * r;
+            const h = 2 + tirage() * 2.5;
+            const rotZ = (tirage() - 0.5) * 0.25;
+            if (occupe(x, z, 0.3)) { continue; }
+            _vec.set(x, 0, z);
+            _quat.setFromAxisAngle(UNIT_Z, rotZ);
+            _scl.set(1, h, 1);
+            _mat4.compose(_vec, _quat, _scl);
+            reedInst.setMatrixAt(reedCount++, _mat4);
+            roseaux.push({ x: x, z: z });
+        }
+        reedInst.count = reedCount;
+        reedInst.instanceMatrix.needsUpdate = true;
+        // L'herbe des berges suit le décor du biotope (arbres et roseaux).
+        vegetation.regler(d.herbe);
+
+        // Rochers (instanciés) : sur la berge, derrière le bord local.
+        rochers.length = 0;
+        let rockCount = 0;
+        for (let i = 0; i < d.rochers; i++) {
+            const angle = tirage() * Math.PI * 2;
+            const r = rayonEtang(angle) + 3 + tirage() * 12;
+            const s = style.echelleRochers[0] + tirage() * style.echelleRochers[1];
+            _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15,
+                POND_CENTER.z + Math.sin(angle) * r);
+            _euler.set(tirage(), tirage(), tirage());
+            if (occupe(_vec.x, _vec.z, s)) { continue; }
+            _quat.setFromEuler(_euler);
+            _scl.set(s, s, s);
+            _mat4.compose(_vec, _quat, _scl);
+            rockInst.setMatrixAt(rockCount++, _mat4);
+            rochers.push({ x: _vec.x, z: _vec.z, r: s });
+        }
+        rockInst.count = rockCount;
+        rockInst.instanceMatrix.needsUpdate = true;
+    }
+
+    // Monde d'origine : la plaine, avec le `rand()` du jeu (ordre des tirages inchangé). Les tirages sont
+    // mémorisés : revenir en plaine REJOUE exactement le décor d'origine (même graine, même plaine).
+    const tiragesPlaine = [];
+    peupler(MILIEU_DEFAUT, function () { const v = rand(); tiragesPlaine.push(v); return v; }, null);
+
+    // Générateur local (mulberry32) : graine du monde + empreinte du biotope.
+    function hasardDe(milieu) {
+        let s = ((deps.graine || 0) >>> 0);
+        for (let i = 0; i < milieu.id.length; i++) { s = (Math.imul(s, 31) + milieu.id.charCodeAt(i)) >>> 0; }
+        return function () {
+            s = (s + 0x6d2b79f5) >>> 0;
+            let t = s;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    // Change de biotope : décor reconstruit (même graine, même biotope → même décor). `obstacles` (liste de
+    // obstacles.js) : on ne pose ni arbre, ni nénuphar, ni roseau, ni rocher sur un obstacle déjà en place.
+    function appliquerMilieu(milieu, obstacles) {
+        if (milieu.id === MILIEU_DEFAUT) {
+            let k = 0;
+            peupler(milieu, function () { return tiragesPlaine[k++]; }, null);
+            return;
+        }
+        const cercles = [];
+        (obstacles || []).forEach(function (o) { (o.cercles || []).forEach(function (c) { cercles.push(c); }); });
+        const evite = cercles.length ? function (x, z, r) {
+            return cercles.some(function (c) { return Math.hypot(c.x - x, c.z - z) < c.r + r + 0.5; });
+        } : null;
+        peupler(milieu, hasardDe(milieu), evite);
+    }
+
+    return { lilyPads: lilyPads, arbres: arbres, rochers: rochers, roseaux: roseaux, vegetation: vegetation,
+        appliquerMilieu: appliquerMilieu };
 }

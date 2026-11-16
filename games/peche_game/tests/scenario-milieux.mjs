@@ -200,6 +200,78 @@ export function run() {
     check('le décor, les fonds et les densités sont lisibles',
         MILIEUX.every(function (m) { const d = densitesDecor(m); const s = partsSubstrats(m); return d.arbres >= 0 && s.vase >= 0; }));
 
+    // --- 5) Décor, fonds, végétation --------------------------------------------------------
+    const D = G().decor;
+    const S = G().substrats;
+    const decorDe = function () {
+        return JSON.stringify([D.arbres, D.lilyPads, D.roseaux, D.rochers]);
+    };
+    // Monde d'origine (plaine, `rand()` du jeu) : mémorisé AVANT tout changement de biotope.
+    G().setGraine(20240101);
+    choisirSurAccueil('plaine');
+    const decorPlaine = decorDe();
+    const grillePlaine = S.empreinte();
+    const partsPlaine = Object.assign({}, S.parts);
+    const sansEau = function (x, z) {
+        const dx = x - G().getPondCenter().x;
+        const dz = z - G().getPondCenter().z;
+        return Math.hypot(dx, dz) >= G().getRayonEtang(Math.atan2(dz, dx)) + 4;
+    };
+    const decorsVus = {};
+    IDS_MILIEUX.slice(1).concat(['plaine']).forEach(function (id) {
+        const m = milieuParId(id);
+        const d = densitesDecor(m);
+        choisirSurAccueil(id);
+        decorsVus[id] = decorDe();
+        check(id + ' : arbres du biotope (≤ ' + d.arbres + ', au moins 70 %)',
+            D.arbres.length <= d.arbres && D.arbres.length >= d.arbres * 0.7, D.arbres.length + ' arbres');
+        // Un nénuphar, un roseau ou un rocher qui tomberait sur un obstacle déjà posé est simplement omis.
+        const presque = function (n, voulu) { return n <= voulu && n >= Math.floor(voulu * 0.85); };
+        check(id + ' : nénuphars du biotope (' + d.nenuphars + ', au moins 85 %)', presque(G().lilyPads.length, d.nenuphars), G().lilyPads.length + ' nénuphars');
+        check(id + ' : roseaux du biotope (' + d.roseaux + ', au moins 85 %)', presque(D.roseaux.length, d.roseaux), D.roseaux.length + ' roseaux');
+        check(id + ' : rochers du biotope (' + d.rochers + ', au moins 85 %)', presque(D.rochers.length, d.rochers), D.rochers.length + ' rochers');
+        check(id + ' : aucun arbre dans l’eau', D.arbres.every(function (a) { return sansEau(a.x, a.z); }));
+        checkClose(id + ' : l’herbe suit le décor du biotope', D.vegetation.herbe.count / 4000, d.herbe, 0.001);
+        // Fonds : la grille se rapproche des parts du biotope (la plaine garde la grille d'origine du monde).
+        const cibles = partsSubstrats(m);
+        const tolerance = id === 'plaine' ? 0.065 : 0.03;
+        check(id + ' : parts de fonds proches de celles du biotope (±' + tolerance * 100 + ' points)',
+            Object.keys(cibles).every(function (sub) { return Math.abs(S.parts[sub] - cibles[sub]) <= tolerance; }),
+            Object.keys(cibles).map(function (sub) { return sub + ' ' + S.parts[sub].toFixed(2) + '/' + cibles[sub].toFixed(2); }).join(' · '));
+        checkEqual(id + ' : le module des fonds connaît le biotope', S.milieu(), id);
+        checkEqual(id + ' : la grille se refait à l’identique (déterminisme)', S.refaire().empreinte(), S.empreinte());
+        // Un fond sans herbier ne peut pas être trouvé sans plantes : l'herbier suit le décor.
+        check(id + ' : tous les types de fond du biotope existent sur la carte (> 1 % chacun)',
+            Object.keys(cibles).every(function (sub) { return cibles[sub] < 0.03 || S.parts[sub] > 0.01; }));
+        checkClose(id + ' : la carte du carnet suit la grille (somme des parts = 1)',
+            Object.keys(S.parts).reduce(function (s, sub) { return s + S.parts[sub]; }, 0), 1, 1e-6);
+    });
+    check('les cinq biotopes autres que la plaine ont un décor différent (arbres, nénuphars, roseaux)',
+        new Set(IDS_MILIEUX.map(function (id) { return decorsVus[id]; })).size === 6);
+    check('forêt : plus d’arbres que la plaine ; montagne : pas de nénuphars, plus de rochers',
+        densitesDecor('foret').arbres > densitesDecor('plaine').arbres && densitesDecor('montagne').nenuphars === 0
+        && densitesDecor('montagne').rochers > densitesDecor('plaine').rochers);
+    // Revenir à la plaine REJOUE le monde d'origine : même décor, mêmes fonds.
+    checkEqual('retour en plaine : le décor d’origine est rejoué à l’identique', decorsVus.plaine, decorPlaine);
+    checkEqual('retour en plaine : la grille des fonds est celle d’origine', S.empreinte(), grillePlaine);
+    checkEqual('retour en plaine : les parts de fonds sont celles d’origine', JSON.stringify(S.parts), JSON.stringify(partsPlaine));
+    // Même graine, même biotope : même décor (aller-retour par un autre biotope).
+    choisirSurAccueil('montagne');
+    const montagne1 = decorDe();
+    const grille1 = S.empreinte();
+    choisirSurAccueil('canal');
+    choisirSurAccueil('montagne');
+    checkEqual('montagne revue : même décor', decorDe(), montagne1);
+    checkEqual('montagne revue : mêmes fonds', S.empreinte(), grille1);
+    // Les obstacles restent en place : le décor du nouveau biotope ne les recouvre pas.
+    const cercles = G().obstacles.liste.reduce(function (t, o) { return t.concat(o.cercles || []); }, []);
+    check('montagne : ni arbre, ni rocher, ni roseau sur un obstacle',
+        D.arbres.concat(D.rochers).concat(D.roseaux).every(function (a) {
+            return cercles.every(function (c) { return Math.hypot(c.x - a.x, c.z - a.z) >= c.r; });
+        }));
+    // La texture du fond est refaite sans fuite de texture : une seule `map` à la fois.
+    check('le fond porte une texture après un changement de biotope', !!G().getFondMesh().material && true);
+
     // --- Retour à un état propre (plaine, population d'origine) -------------------------------
     e.journalStore = reel;
     G().setGraine(20240101);

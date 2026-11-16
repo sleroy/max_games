@@ -15,8 +15,8 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=233';
-import { etat } from './etat.js?v=233';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=234';
+import { etat } from './etat.js?v=234';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -218,7 +218,21 @@ export function densitesDecor(milieu) {
     const d = milieuDe(milieu).decor;
     const ref = MILIEUX[0].decor;
     return { arbres: d.arbres, nenuphars: d.nenuphars, roseaux: d.roseaux, rochers: d.rochers,
-        herbe: borner(d.roseaux / ref.roseaux * 0.5 + d.arbres / ref.arbres * 0.5, 0.25, 1.4) };
+        herbe: borner(d.roseaux / ref.roseaux * 0.5 + d.arbres / ref.arbres * 0.5, 0.25, 1) };
+}
+
+// Style du décor : bande où poussent les arbres [distance à la rive, largeur], échelle des arbres et des
+// rochers [minimum, amplitude]. La plaine garde les valeurs d'origine (le monde ne bouge pas).
+// Forêt : couronne dense et haute tout près de l'eau. Montagne : grands sapins épars et gros blocs.
+const STYLES_DECOR = {
+    defaut: { bandeArbres: [8, 45], echelleArbres: [0.8, 0.7], echelleRochers: [0.6, 1.3] },
+    foret: { bandeArbres: [6, 30], echelleArbres: [0.9, 0.9], echelleRochers: [0.6, 1.0] },
+    montagne: { bandeArbres: [10, 55], echelleArbres: [1.0, 0.8], echelleRochers: [0.9, 1.7] }
+};
+
+/** Style du décor d'un biotope : { bandeArbres, echelleArbres, echelleRochers }. */
+export function styleDecor(milieu) {
+    return STYLES_DECOR[milieuDe(milieu).id] || STYLES_DECOR.defaut;
 }
 
 /** Parts des fonds (0–1, somme 1) : { vase, herbier, sable, gravier, roche }. */
@@ -273,9 +287,13 @@ export function creerMilieux(deps) {
         if (m.id === courant) { return false; }
         courant = m.id;
         appliquerEau(eauDe(m));
-        if (deps.decor && deps.decor.appliquerMilieu) { deps.decor.appliquerMilieu(m); }
-        if (deps.substrats && deps.substrats.appliquerMilieu) { deps.substrats.appliquerMilieu(m); }
-        if (deps.rafraichirFond) { deps.rafraichirFond(); }
+        // Ordre : le décor d'abord (les fonds en dépendent : herbier autour des nénuphars et roseaux), puis les fonds
+        // et leur texture. Les obstacles déjà posés ne bougent pas : le décor les évite.
+        if (deps.decor) { deps.decor.appliquerMilieu(m, deps.obstacles ? deps.obstacles.liste : null); }
+        if (deps.substrats) {
+            deps.substrats.appliquerMilieu(m);
+            if (deps.fond) { deps.substrats.habillerFond(deps.fond); }
+        }
         deps.repeuplerEtang(m);
         return true;
     }

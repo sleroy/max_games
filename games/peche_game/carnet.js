@@ -3,7 +3,7 @@
 // Reçoit l'objet `journal` de l'orchestrateur et le migre ; le rendu et le jeu
 // restent dans script.js. Aucun accès direct au DOM ici.
 // ---------------------------------------------------------------------------
-import { milieuParId } from './milieux.js?v=233';
+import { milieuParId } from './milieux.js?v=234';
 
 export function chargerCarnet(options) {
     const opts = options || {};
