@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
-// especes.js — DONNÉES des espèces, styles de combat, silhouettes et touches.
-// Extraites de script.js pour alléger l'orchestrateur 3D.
+// especes.js — DONNÉES des espèces, styles de combat, silhouettes et touches (extraites de script.js).
 // ---------------------------------------------------------------------------
+import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=215';
 
 // Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [
@@ -105,7 +105,7 @@ export const SPECIES = [
           { t: 0.895, large: 0.032, pente: 0.02, d: 0.5 }],
       profil: 'sandre', anatomie: 'sandre' },
     { id: 'black-bass', nom: 'Black-bass', form: 'bossu', cm: [15, 60], k: 1.6, abondance: 2,
-      profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], style: 'fonceur', couleur: 0x556a3f, motif: 'bandeLaterale' },
+      profondeur: [-2.4, -1.3], combativite: [0.9, 1.2], agressivite: [1.1, 1.5], style: 'fonceur', ...ROBE_BLACK_BASS },
     { id: 'truite', nom: 'Truite', form: 'fusiforme', cm: [15, 80], k: 1.2, abondance: 2,
       profondeur: [-2.2, -1.0], combativite: [0.8, 1.15], agressivite: [1.0, 1.35], style: 'fonceur',
       // Couleurs : médianes PIL sur assets/references/truite.jpg (fario sur fond noir, photo sombre) :
@@ -457,8 +457,8 @@ export const PROFILS = {
         { t: 0.05, h: 0.057, w: 0.034, y: -0.0126 }, { t: 0.1, h: 0.082, w: 0.048, y: -0.008 }, { t: 0.15, h: 0.102, w: 0.06, y: -0.0055 },
         { t: 0.2, h: 0.124, w: 0.073, y: 0 }, { t: 0.3, h: 0.1405, w: 0.085, y: 0.0175 }, { t: 0.4, h: 0.153, w: 0.092, y: 0.023 },
         { t: 0.5, h: 0.1595, w: 0.095, y: 0.0235 }, { t: 0.6, h: 0.148, w: 0.089, y: 0.018 }, { t: 0.7, h: 0.13, w: 0.077, y: 0.005 },
-        { t: 0.8, h: 0.106, w: 0.062, y: 0.001 }, { t: 0.9, h: 0.082, w: 0.047, y: 0.007 }, { t: 1, h: 0.072, w: 0.04, y: 0.008 }]
-};
+        { t: 0.8, h: 0.106, w: 0.062, y: 0.001 }, { t: 0.9, h: 0.082, w: 0.047, y: 0.007 }, { t: 1, h: 0.072, w: 0.04, y: 0.008 }],
+    'black-bass': PROFIL_BLACK_BASS };   // mesuré : blackBass.js
 
 // ANATOMIES : position des nageoires et des détails, en fractions de LS.
 //   queue     : { type: fourche | breme | echancree | arrondie | silure | fine,
@@ -703,8 +703,8 @@ export const ANATOMIES = {
         pelvienne: { t: 0.5, longueur: 0.13, pente: 0.5, forme: 'ronde' },
         oeil: { t: 0.079, y: 0.017, r: 0.0135 }, bouche: { t: 0.028, y0: -0.012, y1: -0.034, epaisseur: 0.004 },
         opercule: 0.22, ligneCourbe: 0.3, contrasteOpercule: 0.08, barbillons: [{ t: 0.028, y: -0.032, longueur: 0.03, chute: 0.9, ecart: 0.25, rayon: 0.0032 }]
-    }
-};
+    },
+    'black-bass': ANATOMIE_BLACK_BASS };   // mesurée : blackBass.js
 
 export const FORMES_PAR_TYPE = ['profond', 'bossu', 'torpille', 'plat'];
 

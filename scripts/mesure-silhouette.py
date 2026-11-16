@@ -95,6 +95,22 @@ def masque(espece):
             if len(ys) and len(yb_sat):
                 m[ys[0]:yb_sat[-1] + 1, x] = True
         germe = (350, 250)
+    elif espece == 'black-bass':
+        # Poisson clair sur fond blanc pur : écart au blanc. Les nageoires (dorsales, anale,
+        # pelviennes) sont retranchées par des droites repérées à la main sur la photo ; la
+        # caudale (x > 735) est ignorée.
+        full = np.abs(a - 255).max(axis=2) > 28
+        full = np.asarray(Image.fromarray((full * 255).astype('uint8')).filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.MinFilter(5))) > 127
+        m = np.zeros_like(full)
+        # base des dorsales : (330,78) -> (470,75) -> (560,95)[encoche] -> (640,120) -> (730,140)
+        haut = lambda x: np.interp(x, [150, 250, 330, 470, 560, 640, 730], [135, 95, 80, 76, 92, 118, 140])
+        bas = lambda x: np.interp(x, [40, 100, 180, 300, 420, 520, 640, 735], [250, 300, 330, 340, 335, 335, 270, 215])
+        for x in range(0, 736):
+            col = full[:, x].copy()
+            col[:int(haut(x)) - 3] = False
+            col[int(bas(x)) + 3:] = False
+            m[:, x] = col
+        germe = (400, 220)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)

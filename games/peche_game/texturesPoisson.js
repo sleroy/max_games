@@ -14,6 +14,7 @@
 // il marche aussi avec le faux canvas des tests Node.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { dessinerBandeLaterale } from './motifBande.js?v=215';
 
 export const LARGEUR_TEXTURE = 256;
 export const HAUTEUR_TEXTURE = 128;
@@ -264,13 +265,9 @@ const MOTIFS = {
         MOTIFS.rayures(g, W, H, c, aleatoire, Object.assign({}, espece, { rayures: bandes, ecailles: 0 }));
     },
 
-    // Bande latérale de taches soudées (black-bass).
-    bandeLaterale: function (g, W, H, c, aleatoire) {
-        g.fillStyle = css(melanger(c.dos, 0x000000, 0.35), 0.5);
-        for (let i = 0; i < 26; i++) {
-            const x = W * (0.24 + i * 0.029);
-            tache(g, x, H * (0.48 + (aleatoire() - 0.5) * 0.06), W * 0.02, H * (0.07 + aleatoire() * 0.05));
-        }
+    // Bande latérale de taches soudées (black-bass) : dessin et options dans motifBande.js.
+    bandeLaterale: function (g, W, H, c, aleatoire, espece) {
+        dessinerBandeLaterale(g, W, H, c, aleatoire, espece, { css: css, melanger: melanger, tache: tache, ecailles: MOTIFS.ecailles });
     },
 
     // Peau muqueuse presque lisse (tanche) : beaucoup de plages claires et sombres très transparentes (pas de

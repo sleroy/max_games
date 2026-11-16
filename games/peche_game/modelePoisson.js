@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=214';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=214';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=214';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=215';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=215';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=215';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -420,7 +420,7 @@ function construireCorps(lot, profil, LS, xNez, bec, fente) {
 // ou le ventre (sens = -1), dans le plan z = 0. Elle fait partie du maillage
 // du corps : l'ondulation de nage la plie avec lui.
 function nageoireImpaire(lot, profil, LS, xNez, def, sens, echelleHauteur) {
-    const type = NAGEOIRES[def.type] || NAGEOIRES.souple;
+    const type = def.forme || NAGEOIRES[def.type] || NAGEOIRES.souple;   // `forme` : forme propre à l'espèce
     const S = Math.max(6, Math.round((def.t1 - def.t0) * 70)) | 1;   // impair : épines alternées
     const R = 4;
     const H = def.hauteur * echelleHauteur * LS;
@@ -476,7 +476,7 @@ function nageoiresPaires(lot, profil, LS, xNez, def, pelvienne, echelleHauteur) 
 
 // Caudale, dans le repère du pivot (origine au centre du pédoncule).
 function caudale(lot, def, hPed, LS, echelleHauteur, couleurs) {
-    const contour = CAUDALES[def.type] || CAUDALES.fourche;
+    const contour = def.contour || CAUDALES[def.type] || CAUDALES.fourche;   // `contour` : propre à l'espèce
     const longueur = def.longueur * LS;
     const ecart = Math.max(def.ecart * echelleHauteur, hPed * 1.2) * LS;
     const S = 24;
