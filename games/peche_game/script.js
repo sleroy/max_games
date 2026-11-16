@@ -16,14 +16,14 @@ import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
 import { creerDecor } from './decor.js?v=178';
 import { creerObstacles } from './obstacles.js?v=178';
 import { creerSubstrats } from './substrats.js?v=189';
-import { creerEsches } from './esches.js?v=192';
+import { creerEsches } from './esches.js?v=195';
 import { chargerCarnet, sauverCarnet } from './carnet.js?v=192';
 import { creerBourriche } from './bourriche.js?v=144';
 import { creerOndulations } from './ondulations.js?v=144';
 import { creerMessages } from './messages.js?v=144';
 import { creerSplashes } from './splashes.js?v=144';
-import { creerCombat } from './combat.js?v=189';
-import { creerComportement } from './comportement.js?v=194';
+import { creerCombat } from './combat.js?v=195';
+import { creerComportement } from './comportement.js?v=195';
 import { creerBateau } from './bateau.js?v=178';
 import { creerLancerPoisson } from './lancerPoisson.js?v=148';
 import { creerCarnetUI } from './carnetUI.js?v=189';
@@ -44,7 +44,7 @@ import { creerSonar } from './sonar.js?v=179';
 import { creerStocks } from './stocks.js?v=192';
 import { creerJournal } from './journal.js?v=184';
 import { creerTouches } from './touches.js?v=163';
-import { creerCycleLigne } from './cycleLigne.js?v=194';
+import { creerCycleLigne } from './cycleLigne.js?v=195';
 import { creerAccrochage } from './accrochage.js?v=183';
 import { creerAmbiance } from './ambiance.js?v=173';
 import { creerEntrees } from './entrees.js?v=179';
@@ -307,6 +307,7 @@ function fermerPanneauCombat() {
     portraitEspeceCourante = null;
 }
 const catchMessage = document.getElementById('catchMessage');
+const kidCue = document.getElementById('kidCue');
 const windFill = document.getElementById('windFill');
 const windArrow = document.getElementById('windArrow');
 const soundToggle = document.getElementById('soundToggle');
@@ -556,7 +557,7 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 //   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
 // ---------------------------------------------------------------------------
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 0.85, tangleChance: 0 },
+    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0 },
     normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08 },
     dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15 }
 };
@@ -1848,10 +1849,18 @@ function setDifficulty(mode) {
     DIFFICULTY = preset.difficulty;
     BITE_WINDOW = preset.biteWindow;
     tangleChance = preset.tangleChance;
+    // MODE FACILE (enfant) : aimant à poissons, touche rapide, gros « FERRER ! ».
+    // Les modules lisent `etat.modeFacile` ; le CSS reçoit aussi la classe.
+    etat.modeFacile = (mode === 'facile');
+    if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.toggle('mode-facile', etat.modeFacile);
+    }
     if (difficultySelect.value !== mode) {
         difficultySelect.value = mode;
     }
 }
+
+setDifficulty(difficultySelect.value);
 
 const {
     startHoldingFish, setFishThrowPower, startFishThrow, releaseFishThrow, storeHeldFish,
@@ -2064,7 +2073,7 @@ const {
     PREDATOR_ATTACK_ADVANTAGE, flotteurCourant, rand, TOUCHES_PAR_ID, choisirTouche, biteOrigine,
     rodTipVisual, setFloatOpacity, modeQuiver, punishFish, dureeTouche, appliquerMouvement,
     mouvementDeTouche, BITE_VIEW_LINGER, majIndiceSnag: (...args) => majIndiceSnag(...args), fermerPanneauCombat, consumeCrankTurns,
-    vitesseMaxTours: (...args) => vitesseMaxTours(...args)
+    vitesseMaxTours: (...args) => vitesseMaxTours(...args), kidCue
 });
 
 const {
@@ -2927,7 +2936,7 @@ window.__game = {
         };
     },
     setDifficulty: setDifficulty,
-    getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW }; },
+    getDifficulty: function () { return { difficulty: DIFFICULTY, biteWindow: BITE_WINDOW, modeFacile: !!etat.modeFacile }; },
     isJournalOpen: function () { return journalPanel.classList.contains('open'); },
     showJournal: showJournal,
     hideJournal: hideJournal,
