@@ -14,7 +14,7 @@
 // il marche aussi avec le faux canvas des tests Node.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { dessinerBandeLaterale } from './motifBande.js?v=215';
+import { dessinerBandeLaterale } from './motifBande.js?v=216';
 
 export const LARGEUR_TEXTURE = 256;
 export const HAUTEUR_TEXTURE = 128;
@@ -148,16 +148,19 @@ const MOTIFS = {
 
     // Reflet argenté (gardon, ablette, chevesne) : fines écailles + bande brillante. L'espèce peut
     // régler le dessin des écailles (mêmes options que `ecailles`) et `refletArgent` (0,38) : opacité
-    // de la bande brillante.
+    // de la bande brillante ; `refletFondu` (0) : largeur du fondu du reflet derrière l'ouïe (sinon bord net à 0,18).
     argent: function (g, W, H, c, aleatoire, espece) {
         MOTIFS.ecailles(g, W, H, c, aleatoire, Object.assign({}, espece, { ecailles: (espece && espece.ecailles) || 46 }));
         const alphaReflet = espece && espece.refletArgent !== undefined ? espece.refletArgent : 0.38;
-        const reflet = g.createLinearGradient(0, H * 0.3, 0, H * 0.75);
-        reflet.addColorStop(0, 'rgba(255,255,255,0)');
-        reflet.addColorStop(0.5, 'rgba(235,242,248,' + alphaReflet + ')');
-        reflet.addColorStop(1, 'rgba(255,255,255,0)');
-        g.fillStyle = reflet;
-        g.fillRect(W * 0.18, H * 0.3, W * 0.82, H * 0.45);
+        const fondu = (espece && espece.refletFondu) || 0;
+        for (let i = fondu ? 0 : 10; i <= 10; i++) {   // i < 10 : bandes du fondu ; i = 10 : reflet plein
+            const x0 = W * (0.18 + fondu * i / 10), x1 = i === 10 ? W : W * (0.18 + fondu * (i + 1) / 10);
+            const reflet = g.createLinearGradient(0, H * 0.3, 0, H * 0.75);
+            reflet.addColorStop(0, 'rgba(255,255,255,0)');
+            reflet.addColorStop(0.5, 'rgba(235,242,248,' + alphaReflet * (i === 10 ? 1 : (i + 0.5) / 10) + ')');
+            reflet.addColorStop(1, 'rgba(255,255,255,0)');
+            g.fillStyle = reflet; g.fillRect(x0, H * 0.3, x1 - x0, H * 0.45);
+        }
     },
 
     // Barres verticales sombres (perche). Sans `espece.rayures` : 7 barres du dos au

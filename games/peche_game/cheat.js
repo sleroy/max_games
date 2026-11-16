@@ -8,7 +8,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=215';
+import { etat } from './etat.js?v=216';
 
 export function creerCheat(deps) {
     const {

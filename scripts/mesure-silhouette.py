@@ -111,6 +111,25 @@ def masque(espece):
             col[int(bas(x)) + 3:] = False
             m[:, x] = col
         germe = (400, 220)
+    elif espece == 'chevesne':
+        # Poisson argenté posé sur un plateau de bois orangé (R - B ≈ 90) ; le poisson est gris
+        # (R - B < 58) ou très sombre (nageoires, dos). Découpé à la main : dorsale (détachée, au-dessus
+        # du dos), anale et pelvienne (étalées sous le ventre), caudale (x < 148) et taches claires du
+        # plateau, par deux lignes (dos, ventre) relevées sur la photo ; museau à x = 835.
+        rb = a[:, :, 0] - a[:, :, 2]
+        m = (rb < 58) | (lum < 95)
+        xs = np.arange(m.shape[1])
+        dos = np.interp(xs, [150, 250, 350, 400, 450, 550, 650, 725, 800, 840],
+                        [270, 271, 263, 258, 251, 251, 265, 285, 320, 350])
+        ventre = np.interp(xs, [150, 200, 250, 275, 300, 350, 400, 450, 500, 550, 650, 700, 740, 800, 840],
+                           [343, 345, 358, 378, 397, 404, 413, 434, 447, 453, 445, 436, 428, 408, 385])
+        for x in range(m.shape[1]):
+            if x < 148 or x > 838:
+                m[:, x] = False
+                continue
+            m[:int(dos[x]) - 1, x] = False
+            m[int(ventre[x]) + 2:, x] = False
+        germe = (500, 350)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)
