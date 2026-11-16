@@ -108,12 +108,14 @@ export function run() {
     check('le fond compte : le maïs se perd dans l’herbier', f('mais', 'carpe', 'fond', 'herbier') < f('mais', 'carpe', 'fond', 'vase'));
     check('le fond compte : le leurre est roi dans l’herbier', f('vif', 'brochet', 'mi-eau', 'herbier') > f('vif', 'brochet', 'mi-eau', 'vase'));
     check('une esche inadaptée ne touche presque jamais (≤ 0,1)',
-        f('ver', 'carpe', 'fond', 'vase') <= 0.1 && f('mais', 'brochet', 'mi-eau', 'vase') <= 0.1
+        f('mais', 'brochet', 'mi-eau', 'vase') <= 0.1
         && f('vif', 'carpe', 'fond', 'vase') <= 0.1 && f('pain', 'carpe', 'surface', 'vase') <= 0.1);
     check('hameçon nu : presque rien (≤ 0,1) et bien moins qu’une esche adaptée',
         PROBA_NU <= 0.1 && f(null, 'carpe', 'fond', 'vase') * 10 <= f('mais', 'carpe', 'fond', 'vase'));
     checkEqual('hameçon nu = null, quelle que soit l’espèce', f(null, 'brochet', 'mi-eau', 'herbier'), PROBA_NU);
 
+    check('ver : toujours mieux qu’un hameçon nu, même pour une espèce non visée',
+        ['carpe', 'brochet', 'sandre', 'black-bass', 'ablette'].every(sp => f('ver', sp, 'mi-eau', 'sable') > PROBA_NU && f('ver', sp, 'mi-eau', 'sable') <= 0.3));
     check('vif / leurre : un herbivore l’ignore (0)', ['carpe', 'gardon', 'tanche', 'breme', 'carassin'].every(sp => f('vif', sp, 'mi-eau', 'herbier') === 0));
     check('bouillette : un carnassier l’ignore (0)', f('bouillette', 'brochet', 'fond', 'vase') === 0);
     check('bouillette : une carpe trop petite (< 25 cm) l’ignore, une grosse la prend',
