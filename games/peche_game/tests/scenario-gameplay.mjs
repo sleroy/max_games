@@ -675,6 +675,16 @@ export function run() {
         G().getTension().toFixed(2));
     G().setDragLoosened(false);
     checkEqual('le frein est resserré', G().isDragLoosened(), false);
+
+    // Clic droit (souris) = lâcher du fil pendant le combat.
+    globalThis.fireWindowEvent('pointerdown', { button: 2 });
+    checkEqual('le clic droit lâche le fil', G().isDragLoosened(), true);
+    globalThis.fireWindowEvent('pointerup', { button: 2 });
+    checkEqual('relâcher le clic droit resserre le frein', G().isDragLoosened(), false);
+    resetToIdle();
+    globalThis.fireWindowEvent('pointerdown', { button: 2 });
+    checkEqual('hors combat, le clic droit ne lâche rien', G().isDragLoosened(), false);
+    globalThis.fireWindowEvent('pointerup', { button: 2 });
     resetToIdle();
 
     group('30) Météo, vie ambiante et LOD');

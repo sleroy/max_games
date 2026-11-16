@@ -149,7 +149,7 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   l'avantage** (le poisson est tout près). Trop tôt (sur une fausse touche) ou trop tard
   (juste après la fenêtre) → **le poisson est quand même ferré, mais avec l'avantage**.
   Si tu laisses vraiment passer, il recrache l'hameçon.
-- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). **Le poisson se défend pour de bon** : même un gardon tire en continu et donne des coups brusques — un combat dure **3 à 15 s** selon le poisson et ta vitesse de manivelle (trop lent = la ligne casse ou le temps file). Il **se fatigue** au bout de quelques secondes (ses tirades faiblissent de 60 %) : c'est le moment d'accélérer. Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens « 🔓 Lâcher du fil »** : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
+- **Épreuve de force** : tourne la manivelle pour ramener le poisson (la barre suit la longueur de fil sortie). **Le poisson se défend pour de bon** : même un gardon tire en continu et donne des coups brusques — un combat dure **3 à 15 s** selon le poisson et ta vitesse de manivelle (trop lent = la ligne casse ou le temps file). Il **se fatigue** au bout de quelques secondes (ses tirades faiblissent de 60 %) : c'est le moment d'accélérer. Quand le poisson tire, la ligne recule : il faut regagner la distance perdue. **Seule la manivelle fait revenir le poisson.** Si la ligne est trop tendue (zone hachurée à droite), **maintiens le clic droit** (souris) ou le bouton **« 🔓 Lâcher du fil »** (tablette) : le frein patine, la ligne ne casse pas, mais le poisson reprend de la distance.
 - **Manivelle** (en bas à droite **dès que la ligne est à l'eau**) : fais glisser la poignée en cercle pour ramener la ligne — pour relancer ailleurs, ou pendant l'épreuve de force et la remontée. Un tour complet ramène environ 1 m de fil : plus le lancer est loin, plus il faut de tours.
 - **🧺 Bourriche** : quand le poisson arrive au bord, tu le gardes **en main** ; il faut
   alors le **lancer dans la bourriche** (même principe que l'amorce : appuie, maintiens,
@@ -296,8 +296,8 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   les **écarts latéraux** — et le carnet les décrit pour chaque poisson.
 - **Lancer au dosage** : le lancer de la canne se fait comme l'amorçage (viser, maintenir,
   relâcher quand la jauge passe sur le repère) — un vrai geste à réussir.
-- **Frein du moulinet** : bouton « 🔓 Lâcher du fil » pendant le combat (le poisson
-  reprend de la ligne mais elle ne casse pas).
+- **Frein du moulinet** : maintiens le **clic droit** (souris) ou le bouton « 🔓 Lâcher du fil »
+  (tablette) pendant le combat (le poisson reprend de la ligne mais elle ne casse pas).
 - **Barre de tension accessible** : zone dangereuse **hachurée** + légende à symboles
   (🟩 🟨 ✖) : lisible même en cas de daltonisme.
 - **Météo** : cycle beau temps → **rafales** (le vent souffle plus fort) → **pluie**

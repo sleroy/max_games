@@ -29,6 +29,7 @@ export function creerFrein(deps) {
     }
 
     dragButton.addEventListener('pointerdown', event => {
+        if (event && event.button !== undefined && event.button !== 0) { return; }
         ensureSound();
         if (dragButton.setPointerCapture && event && event.pointerId !== undefined) {
             dragButton.setPointerCapture(event.pointerId);
@@ -39,6 +40,31 @@ export function creerFrein(deps) {
     dragButton.addEventListener('pointerup', () => setDragLoosened(false));
     dragButton.addEventListener('pointercancel', () => setDragLoosened(false));
     dragButton.addEventListener('pointerleave', () => setDragLoosened(false));
+
+    // SOURIS : maintenir le CLIC DROIT lâche du fil pendant le combat.
+    // (Sur tablette, le bouton « Lâcher du fil » reste le geste tactile.)
+    const CLIC_DROIT = 2;
+    function lacherAuClicDroit(event) {
+        if (!event || event.button !== CLIC_DROIT) { return; }
+        if (etat.floatState !== 'struggle') { return; }
+        if (event.preventDefault) { event.preventDefault(); }
+        ensureSound();
+        if (!etat.dragLoosened) { sound.drag(); }
+        setDragLoosened(true);
+    }
+    function resserrerAuClicDroit(event) {
+        if (!event || event.button !== CLIC_DROIT) { return; }
+        setDragLoosened(false);
+    }
+    window.addEventListener('pointerdown', lacherAuClicDroit);
+    window.addEventListener('pointerup', resserrerAuClicDroit);
+    window.addEventListener('pointercancel', resserrerAuClicDroit);
+    // Si la fenêtre perd le focus (alt-tab), on resserre le frein.
+    window.addEventListener('blur', () => setDragLoosened(false));
+    // Pas de menu contextuel pendant le combat : le clic droit est un geste de jeu.
+    window.addEventListener('contextmenu', event => {
+        if (etat.floatState === 'struggle') { event.preventDefault(); }
+    });
 
     // --- Tutoriel d'accueil (accessible depuis l’écran d’accueil) ----------------------
     function renderTutorial() {

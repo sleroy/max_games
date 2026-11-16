@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=198';
+import { SoundEngine } from './sound.js?v=199';
 import { creerJeuDemelage } from './demelage.js?v=120';
 import { creerModeQuiver } from './quiver.js?v=121';
 import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=189';
@@ -33,7 +33,7 @@ import { creerFiches } from './fiches.js?v=151';
 import { creerLancerCanne } from './lancerCanne.js?v=152';
 import { creerLancer } from './lancer.js?v=179';
 import { creerAmorcage } from './amorcage.js?v=179';
-import { creerFrein } from './frein.js?v=182';
+import { creerFrein } from './frein.js?v=199';
 import { creerLigne } from './ligne.js?v=189';
 import { creerBouchons } from './bouchons.js?v=173';
 import { creerPlacement } from './placement.js?v=178';
@@ -604,7 +604,7 @@ function crankPointerAngle(event) {
 }
 
 crank.addEventListener('pointerdown', event => {
-    if (paused) { return; }
+    if (paused || (event.button !== undefined && event.button !== 0)) { return; }
     ensureSound();
     crankDragging = true;
     crankLastAngle = crankPointerAngle(event);
@@ -1915,7 +1915,7 @@ let dragLoosened = false;
 let TUTORIAL_STEPS = [
     { main: '👆', texte: 'Maintiens sur l’eau pour doser le lancer. Relâche, puis appuie sur « Tendre le fil » pendant qu’il vole : cela évite qu’il s’emmêle. En mode Facile, tu peux simplement laisser le fil se poser.' },
     { main: '✊', texte: 'Quand le bouchon mordille puis s’enfonce, clique vite pour ferrer le poisson : un seul essai !' },
-    { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens « Lâcher du fil ».' },
+    { main: '🔄', texte: 'Tourne la manivelle en cercle pour le ramener. Si la ligne est trop tendue, maintiens le clic droit (ou « Lâcher du fil » sur tablette).' },
     { main: '🐟', texte: 'Garde le poisson en main et lance-le dans la bourriche 🧺 (comme l’amorce) pour le ranger dans ton carnet.' }
 ];
 let tutorialStepIndex = 0;
