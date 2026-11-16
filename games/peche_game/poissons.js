@@ -16,12 +16,12 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=238';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=238';
+} from './especes.js?v=239';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=239';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=238';
+} from './milieux.js?v=239';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -149,7 +149,8 @@ export function creerPoissons(deps) {
         // Le poisson naît DANS l'eau, à distance du bord local (contour irrégulier).
         // Racine carrée : répartition uniforme sur la SURFACE (un tirage linéaire du
         // rayon entassait les poissons au centre, ce qui se voit dans un grand étang).
-        const r = Math.sqrt(rand()) * Math.max(1, rayonEtang(angle) - 12);
+        // La marge au bord (12) suit l'échelle sans dépasser 1 : un petit étang garde des poissons sur toute sa surface.
+        const r = Math.sqrt(rand()) * Math.max(1, rayonEtang(angle) - 12 * Math.min(1, monde.echelle));
         return new THREE.Vector3(
             POND_CENTER.x + Math.cos(angle) * r,
             -2.0,
@@ -323,8 +324,10 @@ export function creerPoissons(deps) {
         // pas tout l'étang). Rayon déduit de la phase, sans tirage aléatoire en plus.
         fish.userData.homeX = groupe ? groupe.centre.x : fish.position.x;
         fish.userData.homeZ = groupe ? groupe.centre.z : fish.position.z;
-        fish.userData.homeRadius = comp ? comp.domaine * (0.85 + tProf * 0.3)
-            : 10 + tProf * 12;                                      // zone de vie propre à l'espèce
+        // Les territoires suivent l'échelle de l'étang (× f : plus larges dans un grand lac, plus serrés dans un étang
+        // minuscule) ; pour la plaine, f = 1.
+        fish.userData.homeRadius = (comp ? comp.domaine * (0.85 + tProf * 0.3)
+            : 10 + tProf * 12) * monde.echelle;                     // zone de vie propre à l'espèce
         fish.userData.power = power;
         fish.userData.aggression = aggression;
         fish.userData.type = espece.form;

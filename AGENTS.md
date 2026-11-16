@@ -311,9 +311,9 @@ MATRICE_CSV=docs/matrice-touche.csv node games/peche_game/tests/run.mjs   # rég
 |---|---|
 | `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI — **en cours de découpage** |
 | `milieux.js` | **biotopes d'étang** (plaine, canal, carnassiers, montagne, forêt, rivière) : parts de population, décor, fonds, eau, taille maximale **et rayon de l'étang** (12 / 45 / 70 / 90 / 180 / 280 unités ; la surface se déduit de la géométrie) ; données et fonctions pures, `creerMilieux` applique le choix de l'accueil (taille d'abord) |
-| `dimensions.js` | **dimensions d'un étang, fonctions pures** : harmoniques du contour, surface (une seule vérité), échelle f = rayon / 90, portées du lancer et de l'amorce, échelles d'ambiance |
-| `tailleEtang.js` | le monde suit la taille de l'étang : maillages de l'eau, du fond et de la rive, carte de placement, **partie redémarrée** et pêcheur remis au poste sud |
-| `decor.js` | décor de l'étang : arbres, roseaux, rochers, nénuphars (rend `lilyPads`), comptes et style selon le biotope |
+| `dimensions.js` | **dimensions d'un étang, fonctions pures** : harmoniques du contour, surface (une seule vérité), échelle f = rayon / 90, portées du lancer et de l'amorce, échelles d'ambiance (brume, ciel, caméra) |
+| `tailleEtang.js` | le monde suit la taille de l'étang : maillages de l'eau, du fond et de la rive, brume, ciel, `camera.far`, carte de placement, **partie redémarrée** et pêcheur remis au poste sud |
+| `decor.js` | décor de l'étang : arbres, roseaux, rochers, nénuphars (rend `lilyPads`), comptes et style selon le biotope et sa taille (× f) |
 | `vegetation.js` | roseaux et herbe des berges qui ondulent au vent (shader) |
 | `chanceTouche.js` | **règles de touche, source unique** (vue, couche, fond, esche, délai) : `evaluerTouche(contexte)` ; toute règle de touche s'ajoute ici |
 | `matriceTouche.js` | grille de situations, **règles** de la matrice (test bloquant), règles **par biotope** (`verifierReglesMilieu`) et points **à surveiller** ; partagé par le test et `matrice.html` |

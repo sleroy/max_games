@@ -579,7 +579,7 @@ export function creerObstacles(deps) {
         liste.length = 0;
         CX = POND_CENTER.x;
         CZ = POND_CENTER.z;
-        ECH = 1;   // distances au bord et zones libres d'origine (la mise à l'échelle × f arrive avec la suite)
+        ECH = monde.echelle;
         calculerPostesRef();
         SPECS.forEach(construire);
         Object.keys(parEspece).forEach(function (id) { delete parEspece[id]; });

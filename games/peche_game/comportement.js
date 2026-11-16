@@ -7,10 +7,10 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=238';
-import { etat } from './etat.js?v=238';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=238';
-import { heureDeJeu } from './physique.js?v=238';
+import { COMPORTEMENTS } from './especes.js?v=239';
+import { etat } from './etat.js?v=239';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=239';
+import { heureDeJeu } from './physique.js?v=239';
 
 export function creerComportement(deps) {
     const {
@@ -22,8 +22,10 @@ export function creerComportement(deps) {
         nibbleRand, MAX_WAIT, consumeCrankTurns, startReel, findBitingFish, showBiteView,
         floatIdle, tenterAttaquePredateur, REEL_PER_TURN, angler,
         startHoldingFish, endCast, updateCrankVisibility, rodTipVisual, LINE_SEGMENTS,
-        linePositions, lineGeometry
+        linePositions, lineGeometry, monde
     } = deps;
+    // Marges au bord (évitement, rebond) : celles d'origine dans la plaine, réduites dans un petit étang (échelle f < 1).
+    function margeBord(unites) { return unites * Math.min(1, monde ? monde.echelle : 1); }
 
     // MODE FACILE (enfant) : les poissons repèrent l'hameçon de très loin et
     // nagent droit dessus, quelle que soit leur zone de vie ou leur couche d'eau.
@@ -216,9 +218,9 @@ export function creerComportement(deps) {
         const ex = fish.position.x - POND_CENTER.x;
         const ez = fish.position.z - POND_CENTER.z;
         const ed = Math.hypot(ex, ez);
-        const bordLocal = rayonEtang(Math.atan2(ez, ex)) - 5;
-        if (ed > bordLocal - 4 && ed > 0.001) {
-            const w = Math.min(3, (ed - (bordLocal - 4)) * 0.8);
+        const bordLocal = rayonEtang(Math.atan2(ez, ex)) - margeBord(5);
+        if (ed > bordLocal - margeBord(4) && ed > 0.001) {
+            const w = Math.min(3, (ed - (bordLocal - margeBord(4))) * 0.8);
             ux -= (ex / ed) * w; uz -= (ez / ed) * w;
         }
         // Virage limité par l'agilité de l'espèce (un brochet ne vire pas sur place).
@@ -436,7 +438,7 @@ export function creerComportement(deps) {
             // Un poisson qui vise l'hameçon peut venir jusqu'au bord : le bouchon
             // peut être posé tout près de la rive. La limite suit le bord LOCAL.
             const rayonLocal = rayonEtang(Math.atan2(dz, dx));
-            const limit = data.targeting ? rayonLocal - 0.5 : rayonLocal - 5;
+            const limit = data.targeting ? rayonLocal - 0.5 : rayonLocal - margeBord(5);
             if (dist > limit) {
                 const nx = dx / dist;
                 const nz = dz / dist;

@@ -4,7 +4,8 @@
 // Le rayon d'un étang est une donnée du biotope (milieux.js : 12 à 280 unités). `environnement.js`
 // (`setRayonMonde`) recalcule la GÉOMÉTRIE pure (contour, centre, fosses, surface, profondeur) ; ce module refait
 // ce que le monde 3D en tire, dans cet ordre (appelé par `creerMilieux`) :
-//   `surGeometrie`    : maillages de l'eau, de la rive et du fond. AVANT le décor et les fonds ;
+//   `surGeometrie`    : maillages de l'eau, de la rive et du fond ; brume, sphère du ciel, plan lointain de la
+//                       caméra ; portées du lancer et de l'amorce, pas de la barque. AVANT le décor et les fonds ;
 //   `apresGeometrie`  : carte de placement, puis la PARTIE REDÉMARRE et le pêcheur retourne au poste de départ.
 //
 // CHANGER DE TAILLE REDÉMARRE PROPREMENT LA PARTIE. Le biotope se choisit sur l'écran d'accueil, avant de jouer :
@@ -12,19 +13,29 @@
 // serait risqué (ligne dans l'eau, poisson ferré, barque au milieu du lac). On ramène donc tout au repos
 // (`recommencerPartie`, comme « Jouer ») puis au poste sud : même geste que le joueur, sans état à moitié refait.
 //
-// Le sol (rive) suit l'échelle d'ambiance : 1 jusqu'à la plaine et f au-delà. Aucun `rand()`.
+// Les échelles d'ambiance (brume, ciel, caméra, sol) valent 1 jusqu'à la plaine et f au-delà (jamais en dessous de
+// la plaine : un petit étang garde l'horizon de la plaine). Aucun `rand()`.
 //
 // Contrat (docs/modules.md) : injection de dépendances ; seule exception, la lecture de la géométrie pure de
 // `environnement.js` (le module du monde lui-même).
 // ---------------------------------------------------------------------------
-import { monde, POND_CENTER, RIVE_Y, makeWaterGeometry, makeShoreGeometry, makeFondGeometry } from './environnement.js?v=238';
-import { echelleAmbiance, RIVE_EXTERIEURE_REFERENCE } from './dimensions.js?v=238';
+import * as THREE from 'three';
+import { etat } from './etat.js?v=239';
+import { monde, POND_CENTER, RIVE_Y, makeWaterGeometry, makeShoreGeometry, makeFondGeometry } from './environnement.js?v=239';
+import {
+    echelleAmbiance, BRUME_REFERENCE, CIEL_REFERENCE, CAMERA_FAR_REFERENCE, RIVE_EXTERIEURE_REFERENCE
+} from './dimensions.js?v=239';
 
 // Résolution du maillage d'eau dans la plaine : un pas de ≈ 2,5 unités entre anneaux et ≈ 5 entre rayons.
 const EAU_ANNEAUX_REFERENCE = 40;
 const EAU_SEGMENTS_REFERENCE = 128;
 // Répétitions de la texture d'herbe de la rive dans la plaine (densité conservée aux autres tailles).
 const RIVE_REPETITIONS_REFERENCE = 350;
+// Décalage du dégradé du ciel dans la plaine (30 × 520 / 300).
+const CIEL_DECALAGE_REFERENCE = 52;
+const PAS_BATEAU_MARGE_REFERENCE = 2.4;
+
+function borner(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
 /** Résolution du maillage de l'eau : celle de la plaine jusqu'à f = 1, puis ∝ √f (plafonnée) : un lac reste lisse. */
 export function resolutionEau(echelle) {
@@ -33,7 +44,7 @@ export function resolutionEau(echelle) {
 }
 
 export function creerTailleEtang(deps) {
-    const { water, shore, fond } = deps;
+    const { camera, sky, skyMat, water, shore, fond, brume } = deps;
     const memoire = { echelleAmbiance: 1 };
 
     function remplacer(maillage, geometrie) {
@@ -64,6 +75,16 @@ export function creerTailleEtang(deps) {
         remplacer(shore, makeShoreGeometry(RIVE_EXTERIEURE_REFERENCE * e, 128));
         shore.position.set(POND_CENTER.x, RIVE_Y, POND_CENTER.z);
         majRive();
+        // Ambiance : la brume, le ciel et le plan lointain grandissent avec le lac (≥ la plaine). Le ciel englobe la
+        // brume et la caméra ; le plan lointain voit toute la sphère du ciel (≥ 4 × le plus grand rayon).
+        if (brume) { brume.near = BRUME_REFERENCE.proche * e; brume.far = BRUME_REFERENCE.loin * e; }
+        remplacer(sky, new THREE.SphereGeometry(CIEL_REFERENCE * e, 32, 16));
+        skyMat.uniforms.offset.value = CIEL_DECALAGE_REFERENCE * e;
+        camera.far = CAMERA_FAR_REFERENCE * e;
+        camera.updateProjectionMatrix();
+        // Gestes : portée de l'amorce et du sonar (la canne lit `monde.porteeLancer`), pas de la barque.
+        etat.FEED_MAX_RANGE = monde.porteeAmorce;
+        etat.BATEAU_PAS_MARGE = PAS_BATEAU_MARGE_REFERENCE * borner(monde.echelle, 0.5, 3);
     }
 
     // Après décor, obstacles et fonds : carte de placement refaite, partie remise au repos, pêcheur au poste sud.

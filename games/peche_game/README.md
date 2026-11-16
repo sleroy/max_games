@@ -335,8 +335,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   même relief normalisé, même profondeur) : seule l’échelle change, autour de la rive sud où se tient le pêcheur. La surface
   se déduit de la géométrie réelle et fixe le nombre de poissons. Le choix est mémorisé dans le carnet (`journal.milieu`) et
   se fait sur l’accueil : **changer de taille redémarre proprement la partie** (eau, rive, fonds, obstacles, postes, barque et
-  caméra sont refaits, le pêcheur retourne au poste sud), puis l’étang est repeuplé.
-  Le carnet affiche « Milieu : … », la
+  caméra sont refaits, le pêcheur retourne au poste sud), puis l’étang est repeuplé. Tout ce qui dépend de la taille suit
+  l’échelle f = rayon / 90 : comptes de décor (arbres, roseaux, rochers × f ; nénuphars × f², bornés [0,3 ; 3]), obstacles
+  (distances au bord × f, tailles inchangées), brume, ciel et plan lointain de la caméra (jamais sous la plaine), portée du
+  lancer (52 × f, bornée [20 ; 140]) et de l’amorce, limites de la barque et territoires des poissons. Le carnet affiche « Milieu : … », la
   fiche d’espèce dit « Où la trouver », les records sont gardés **par biotope**, et l’avion ne conseille que les espèces du
   biotope.
 - **Difficulté réglable dès l’accueil** (menu déroulant à côté de la technique) **et depuis

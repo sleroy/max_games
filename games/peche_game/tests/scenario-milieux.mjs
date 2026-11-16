@@ -260,9 +260,11 @@ export async function run() {
     });
     check('les cinq biotopes autres que la plaine ont un décor différent (arbres, nénuphars, roseaux)',
         new Set(IDS_MILIEUX.map(function (id) { return decorsVus[id]; })).size === 6);
-    check('forêt : plus d’arbres que la plaine ; montagne : pas de nénuphars, plus de rochers',
-        densitesDecor('foret').arbres > densitesDecor('plaine').arbres && densitesDecor('montagne').nenuphars === 0
-        && densitesDecor('montagne').rochers > densitesDecor('plaine').rochers);
+    // ATTENDU MODIFIÉ (tailles d'étang) : les comptes suivent la taille de l'étang (× f), donc la forêt (12) a MOINS d'arbres
+    // que la plaine (90). Ce qui reste vrai : plus d'arbres PAR UNITÉ DE RAYON (densité de la forêt : 80 contre 64 pour 90).
+    check('forêt : plus d’arbres par unité de rayon que la plaine ; montagne : pas de nénuphars, plus de rochers',
+        densitesDecor('foret').arbres / milieuParId('foret').rayon > densitesDecor('plaine').arbres / milieuParId('plaine').rayon
+        && densitesDecor('montagne').nenuphars === 0 && densitesDecor('montagne').rochers > densitesDecor('plaine').rochers);
     // Revenir à la plaine REJOUE le monde d'origine : même décor, mêmes fonds.
     checkEqual('retour en plaine : le décor d’origine est rejoué à l’identique', decorsVus.plaine, decorPlaine);
     checkEqual('retour en plaine : la grille des fonds est celle d’origine', S.empreinte(), grillePlaine);

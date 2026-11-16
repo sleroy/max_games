@@ -5,11 +5,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=238';
+import { etat } from './etat.js?v=239';
 
 export function creerMeteo(deps) {
     const {
-        POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound
+        POND_CENTER, scene, sunLight, ambientLight, skyLight, skyMat, sound, monde
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ export function creerMeteo(deps) {
                 rainRippleTimer = 0.35;
                 const a = rainRippleTimer * 37 + etat.weatherPluie * 11;
                 etat.spawnRipple(new THREE.Vector3(
-                    POND_CENTER.x + Math.cos(a) * 18 * 3, 0.06, POND_CENTER.z + Math.sin(a) * 18 * 3));
+                    POND_CENTER.x + Math.cos(a) * 18 * 3 * monde.echelle, 0.06, POND_CENTER.z + Math.sin(a) * 18 * 3 * monde.echelle));
             }
         }
         sound.setRain(etat.weatherPluie);

@@ -15,8 +15,12 @@
 // toujours le même décor pour la même graine, sans toucher au hasard du monde. Les tableaux exposés
 // (lilyPads, arbres, rochers, roseaux) sont remplis EN PLACE : leurs lecteurs gardent la bonne référence.
 //
-// TAILLE DE L'ÉTANG (milieux.js : rayon 12 à 280) : le contour (`rayonEtang`) est lu à chaque pose, donc le décor
-// se construit APRÈS `setRayonMonde` ; les sphères englobantes des instances sont remises à zéro à chaque pose.
+// TAILLE DE L'ÉTANG (milieux.js : rayon 12 à 280) : les comptes suivent l'échelle f = rayon / 90 (arbres,
+// roseaux, rochers ≈ × f ; nénuphars ≈ × f² borné [0,3 ; 3]) et la bande des arbres aussi. Les marges au bord
+// (nénuphars, roseaux, rochers) suivent f sans dépasser 1 : un petit étang a des marges plus courtes, un grand
+// lac garde celles d'origine. La taille des arbres et des rochers ne change pas. Pour la plaine, f = 1 : le
+// décor est identique à l'origine. Le contour (`rayonEtang`) est lu à chaque pose : le décor se construit APRÈS
+// `setRayonMonde`.
 //
 // Important : le décor consomme `rand()` dans un ordre PRÉCIS. On l'appelle
 // exactement à la place de l'ancien bloc (même séquence de tirages), sinon tout
@@ -24,8 +28,8 @@
 // reproductibilité tombent.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { creerVegetation } from './vegetation.js?v=238';
-import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu } from './milieux.js?v=238';
+import { creerVegetation } from './vegetation.js?v=239';
+import { MILIEUX, MILIEU_DEFAUT, densitesDecor, styleDecor, echelleMilieu } from './milieux.js?v=239';
 
 export function creerDecor(deps) {
     const scene = deps.scene;
@@ -164,6 +168,7 @@ export function creerDecor(deps) {
     function peupler(milieu, tirage, evite) {
         const d = densitesDecor(milieu);
         const style = styleDecor(milieu);
+        const marge = Math.min(1, echelleMilieu(milieu));   // marges au bord : celles d'origine, réduites dans un petit étang
         const occupe = function (x, z, r) { return !!evite && evite(x, z, r); };
         // Arbres : derrière la rive LOCALE (le contour n'est pas un cercle), sur une bande propre au biotope.
         arbres.length = 0;
@@ -208,7 +213,7 @@ export function creerDecor(deps) {
         for (let i = 0; i < d.nenuphars; i++) {
             const radius = 0.25 + tirage() * 0.45;   // 12 à 35 cm de rayon
             const angle = tirage() * Math.PI * 2;
-            const r = Math.sqrt(tirage()) * Math.max(1, rayonEtang(angle) - 12);
+            const r = Math.sqrt(tirage()) * Math.max(1, rayonEtang(angle) - 12 * marge);
             const x = POND_CENTER.x + Math.cos(angle) * r;
             const z = POND_CENTER.z + Math.sin(angle) * r;
             if (occupe(x, z, radius)) { continue; }
@@ -226,7 +231,7 @@ export function creerDecor(deps) {
         for (let i = 0; i < d.roseaux; i++) {
             const angle = tirage() * Math.PI * 2;
             // Les roseaux poussent DANS l'eau, le long du contour généré.
-            const r = rayonEtang(angle) - 1 - tirage() * 5;
+            const r = rayonEtang(angle) - 1 * marge - tirage() * 5 * marge;
             const x = POND_CENTER.x + Math.cos(angle) * r;
             const z = POND_CENTER.z + Math.sin(angle) * r;
             const h = 2 + tirage() * 2.5;
@@ -250,7 +255,7 @@ export function creerDecor(deps) {
         let rockCount = 0;
         for (let i = 0; i < d.rochers; i++) {
             const angle = tirage() * Math.PI * 2;
-            const r = rayonEtang(angle) + 3 + tirage() * 12;
+            const r = rayonEtang(angle) + 3 * marge + tirage() * 12 * marge;
             const s = style.echelleRochers[0] + tirage() * style.echelleRochers[1];
             _vec.set(POND_CENTER.x + Math.cos(angle) * r, RIVE_Y + 0.15,
                 POND_CENTER.z + Math.sin(angle) * r);

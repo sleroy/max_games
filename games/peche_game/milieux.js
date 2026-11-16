@@ -16,9 +16,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=238';
-import { etat } from './etat.js?v=238';
-import { RAYON_REFERENCE, surfaceHectares, echelleDeRayon } from './dimensions.js?v=238';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=239';
+import { etat } from './etat.js?v=239';
+import { RAYON_REFERENCE, surfaceHectares, echelleDeRayon } from './dimensions.js?v=239';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -237,11 +237,21 @@ export function quotasEspeces(milieu, N) {
     return { total: somme, quotas: quotas };
 }
 
-/** Quantités du décor : { arbres, nenuphars, roseaux, rochers, herbe } (herbe = facteur 0–1 de touffes). */
+/**
+ * Quantités du décor : { arbres, nenuphars, roseaux, rochers, herbe } (herbe = facteur 0–1 de touffes).
+ * Les comptes de la table `decor` sont ceux de l'étang de PLAINE ; ils suivent l'échelle f = rayon / 90 :
+ * arbres, roseaux et rochers ≈ × f (le périmètre), nénuphars ≈ × f² borné à [0,3 ; 3] (la surface). Pour la
+ * plaine (f = 1), les comptes d'origine. `herbe` compare les densités de la table (par mètre de rive).
+ */
 export function densitesDecor(milieu) {
-    const d = milieuDe(milieu).decor;
+    const m = milieuDe(milieu);
+    const d = m.decor;
     const ref = MILIEUX[0].decor;
-    return { arbres: d.arbres, nenuphars: d.nenuphars, roseaux: d.roseaux, rochers: d.rochers,
+    const f = echelleDeRayon(m.rayon);
+    const surface = borner(f * f, 0.3, 3);
+    const suivre = function (n, facteur) { return n > 0 ? Math.max(1, Math.round(n * facteur)) : 0; };
+    return { arbres: suivre(d.arbres, f), nenuphars: suivre(d.nenuphars, surface), roseaux: suivre(d.roseaux, f),
+        rochers: suivre(d.rochers, f),
         herbe: borner(d.roseaux / ref.roseaux * 0.5 + d.arbres / ref.arbres * 0.5, 0.25, 1) };
 }
 
@@ -253,10 +263,23 @@ const STYLES_DECOR = {
     foret: { bandeArbres: [6, 30], echelleArbres: [0.9, 0.9], echelleRochers: [0.6, 1.0] },
     montagne: { bandeArbres: [10, 55], echelleArbres: [1.0, 0.8], echelleRochers: [0.9, 1.7] }
 };
+// Un arbre ne pousse pas à moins de 4 unités de l'eau (decor.js) : la bande ne descend jamais sous 5,
+// ni sa largeur sous 15, même dans un très petit étang.
+const BANDE_ARBRES_MIN = [5, 15];
 
-/** Style du décor d'un biotope : { bandeArbres, echelleArbres, echelleRochers }. */
+/**
+ * Style du décor d'un biotope : { bandeArbres, echelleArbres, echelleRochers }. La bande des arbres suit
+ * l'échelle (× f), sans jamais descendre sous [5, 15] ; les échelles des arbres et des rochers sont celles de
+ * la table (les arbres et les rochers ne grandissent pas avec l'étang).
+ */
 export function styleDecor(milieu) {
-    return STYLES_DECOR[milieuDe(milieu).id] || STYLES_DECOR.defaut;
+    const m = milieuDe(milieu);
+    const base = STYLES_DECOR[m.id] || STYLES_DECOR.defaut;
+    const f = echelleDeRayon(m.rayon);
+    return {
+        bandeArbres: [Math.max(BANDE_ARBRES_MIN[0], base.bandeArbres[0] * f), Math.max(BANDE_ARBRES_MIN[1], base.bandeArbres[1] * f)],
+        echelleArbres: base.echelleArbres, echelleRochers: base.echelleRochers
+    };
 }
 
 /** Parts des fonds (0–1, somme 1) : { vase, herbier, sable, gravier, roche }. */

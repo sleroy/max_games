@@ -5,20 +5,23 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=238';
+import { etat } from './etat.js?v=239';
 
 export function creerLancerCanne(deps) {
     const {
         filEquipe, angler, feedGaugeFill, totalLignes, feedGauge, feedGaugeTarget, ensureSound,
         statusDisplay, casserLigne, startCast, floatGroup, angleNormalise, rodLocalTip,
-        CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE
+        CAST_YAW_ANGLER_MAX, CAST_YAW_ROD_MAX, rodPivot, CAST_SWING_CHARGE, CAST_SWING_RELEASE, monde
     } = deps;
 
     // ---------------------------------------------------------------------------
     // Lancer de la canne au dosage (même jauge que l'amorce)
     // ---------------------------------------------------------------------------
     const CAST_MIN_RANGE = 7;      // portée mini (jauge à zéro)
-    const CAST_MAX_RANGE = 52;     // portée maxi (jauge à fond)
+    // Portée maxi (jauge à fond) : 52 dans la plaine ; elle suit la taille de l'étang (× f, bornée [20, 140], voir
+    // dimensions.js) : on ne lance pas 26 m dans un étang de 24 m, et on doit atteindre le large d'un lac.
+    // Lue à CHAQUE usage : le biotope peut changer la taille de l'étang.
+    function castMaxRange() { return monde ? monde.porteeLancer : 52; }
     const CAST_OSC = 1.7;          // vitesse d'oscillation de la jauge
 
             // 'idle' | 'charging'
@@ -27,7 +30,7 @@ export function creerLancerCanne(deps) {
 
     function castPowerForDistance(distance) {
         return Math.max(0, Math.min(1,
-            (distance - CAST_MIN_RANGE) / (CAST_MAX_RANGE - CAST_MIN_RANGE)));
+            (distance - CAST_MIN_RANGE) / (castMaxRange() - CAST_MIN_RANGE)));
     }
 
     function castAimDistance() {
@@ -89,7 +92,7 @@ export function creerLancerCanne(deps) {
         const dx = etat.castAim.x - angler.position.x;
         const dz = etat.castAim.z - angler.position.z;
         const d = Math.hypot(dx, dz) || 1;
-        const range = CAST_MIN_RANGE + etat.castPower * (CAST_MAX_RANGE - CAST_MIN_RANGE);
+        const range = CAST_MIN_RANGE + etat.castPower * (castMaxRange() - CAST_MIN_RANGE);
         startCast(new THREE.Vector3(
             angler.position.x + (dx / d) * range, 0.1, angler.position.z + (dz / d) * range));
     }

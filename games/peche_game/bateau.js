@@ -6,7 +6,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=238';
+import { etat } from './etat.js?v=239';
 
 export function creerBateau(deps) {
     const {
@@ -28,10 +28,12 @@ export function creerBateau(deps) {
     // ---------------------------------------------------------------------------
        // pas de rotation (flèches gauche / droite)
          // pas d'avancée / recul (flèches haut / bas)
-    // Limites de déplacement : au plus près 4 unités DANS l'eau du bord ; jamais à moins de 10 unités du
-    // centre (la visée a besoin d'une direction vers le milieu). Le rayon max est lu à chaque usage.
-    function margeBordBateau() { return 4; }
-    function minCentreBateau() { return 10; }
+    // Limites de déplacement : celles d'origine dans la plaine (f = 1) ; elles suivent la taille de l'étang
+    // (échelle f = rayon / 90), lues à CHAQUE usage puisque le biotope peut changer le rayon.
+    //  - au plus près : 4 unités DANS l'eau du bord (× f borné [0,5 ; 3]) ;
+    //  - jamais à moins de 10 × f unités du centre (la visée a besoin d'une direction vers le milieu).
+    function margeBordBateau() { return 4 * Math.max(0.5, Math.min(3, monde.echelle)); }
+    function minCentreBateau() { return 10 * monde.echelle; }
 
     etat.bateauGroupe.visible = false;
     scene.add(etat.bateauGroupe);
@@ -528,8 +530,9 @@ export function creerBateau(deps) {
         const dx = POND_CENTER.x - angler.position.x;
         const dz = POND_CENTER.z - angler.position.z;
         const d = Math.hypot(dx, dz) || 1;
-        const viseeCanne = 30;
-        const viseeAmorce = 22;
+        // (30 et 22 unités dans la plaine ; dans la même proportion que les portées du lancer et de l'amorce.)
+        const viseeCanne = 30 * monde.porteeLancer / 52;
+        const viseeAmorce = 22 * monde.porteeAmorce / 46;
         etat.castAim.set(angler.position.x + (dx / d) * viseeCanne, 0.1, angler.position.z + (dz / d) * viseeCanne);
         feedAim.set(angler.position.x + (dx / d) * viseeAmorce, 0.1, angler.position.z + (dz / d) * viseeAmorce);
         etat.castTarget.set(etat.castAim.x, 0.1, etat.castAim.z);

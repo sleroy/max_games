@@ -5,15 +5,15 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=238';
-import { creerAvion } from './avion.js?v=238';
-import { creerConseilLocal } from './conseilLocal.js?v=238';
-import { heureDeJeu } from './physique.js?v=238';
-import { especesPresentes } from './milieux.js?v=238';
+import { etat } from './etat.js?v=239';
+import { creerAvion } from './avion.js?v=239';
+import { creerConseilLocal } from './conseilLocal.js?v=239';
+import { heureDeJeu } from './physique.js?v=239';
+import { especesPresentes } from './milieux.js?v=239';
 
 export function creerVie(deps) {
     const {
-        scene, POND_CENTER, sound
+        scene, POND_CENTER, sound, monde
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -96,13 +96,17 @@ export function creerVie(deps) {
     function updateAmbiante(dt, time) {
         avion.maj(dt);
         conseilLocal.maj(dt);
+        // Libellules et poisson qui saute restent au-dessus de l'eau : leurs écarts au centre suivent l'échelle de
+        // l'étang f. Les oiseaux tournent plus large au-dessus d'un grand lac (jamais plus serré que la moitié).
+        const f = monde.echelle;
+        const orbite = Math.max(0.5, f);
         for (let i = 0; i < etat.birds.length; i++) {
             const bird = etat.birds[i];
             const p = bird.userData.phase;
             bird.position.set(
-                Math.cos(time * 0.06 + p) * 110,
+                Math.cos(time * 0.06 + p) * 110 * orbite,
                 24 + Math.sin(time * 0.3 + p) * 2.5,
-                POND_CENTER.z + Math.sin(time * 0.06 + p) * 80);
+                POND_CENTER.z + Math.sin(time * 0.06 + p) * 80 * orbite);
             bird.rotation.y = -time * 0.06 - p + Math.PI / 2;
             const battement = Math.sin(time * 9 + p) * 0.7;
             bird.userData.ailes.forEach(a => { a.mesh.rotation.x = a.cote * (0.2 + battement); });
@@ -111,9 +115,9 @@ export function creerVie(deps) {
             const lib = etat.libellules[i];
             const p = lib.userData.phase;
             lib.position.set(
-                POND_CENTER.x + Math.sin(time * 0.9 + p) * 14 + Math.sin(time * 3.1 + p) * 1.5,
+                POND_CENTER.x + (Math.sin(time * 0.9 + p) * 14 + Math.sin(time * 3.1 + p) * 1.5) * f,
                 1.2 + Math.sin(time * 2.3 + p) * 0.5,
-                POND_CENTER.z + 18 + Math.cos(time * 0.7 + p * 1.3) * 9);
+                POND_CENTER.z + (18 + Math.cos(time * 0.7 + p * 1.3) * 9) * f);
             lib.rotation.y = Math.sin(time * 2 + p) * 0.6;
         }
         if (sautT < 0) {
@@ -121,7 +125,7 @@ export function creerVie(deps) {
             if (sautTimer <= 0) {
                 sautTimer = 24 - etat.weatherPluie * 8;
                 sautT = 0;
-                etat.sauteur.position.set(POND_CENTER.x + 8, 0.1, POND_CENTER.z + 22);
+                etat.sauteur.position.set(POND_CENTER.x + 8 * f, 0.1, POND_CENTER.z + 22 * f);
                 etat.sauteur.visible = true;
                 sound.jump();
                 etat.spawnRipple(etat.sauteur.position);
