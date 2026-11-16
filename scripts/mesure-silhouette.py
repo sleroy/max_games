@@ -61,6 +61,17 @@ def masque(espece):
         m = lum > 48
         m[:60, :] = False   # surface de l'eau (claire) en haut de l'image
         germe = (400, 230)
+    elif espece == 'gardon':
+        # Poisson argenté sur fond blanc-gris uniforme (≈ 236,236,238) : écart au fond. Les nageoires
+        # orange (R - B > 38) du corps sont retranchées pour ne garder que le contour du corps ;
+        # la caudale (x > 690) est conservée (elle sert à mesurer sa taille).
+        ecart = np.abs(a - np.array([236, 236, 238])).max(axis=2)
+        m = ecart > 30
+        orange = (a[:, :, 0] - a[:, :, 2]) > 38
+        orange[:, :150] = False
+        orange[:, 690:] = False
+        m &= ~orange
+        germe = (400, 290)
     m = lisse(m, 9)
     reg = croissance(m, germe)
     reg = lisse(reg, 11)

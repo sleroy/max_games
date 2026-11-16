@@ -91,8 +91,11 @@ const MOTIFS = {
     ecailles: function (g, W, H, c, aleatoire, espece) {
         const colonnes = (espece && espece.ecailles) || 40;
         const pas = W / colonnes;
-        const rangs = Math.round(H / (pas * 1.05));
+        // `rangsEcailles` : nombre de rangées du dos au ventre (sinon écailles un peu plus larges que
+        // hautes) ; l'arc de chaque écaille suit alors la hauteur d'une rangée.
+        const rangs = (espece && espece.rangsEcailles) || Math.round(H / (pas * 1.05));
         const pasY = H / rangs;
+        const etireArc = espece && espece.rangsEcailles ? pasY / (pas * 1.05) : 1;
         const sombre = melanger(c.flanc, 0x000000, 0.6);
         const clair = melanger(c.flanc, 0xffffff, 0.35);
         const debut = W * ((espece && espece.debutEcailles) || 0.22);   // la tête n'a pas d'écailles
@@ -132,18 +135,25 @@ const MOTIFS = {
                 tache(g, x - pas * 0.3, y, pas * 0.36, pasY * 0.38, 0);
                 g.strokeStyle = css(sombre, 0.5 * fondu);
                 g.beginPath();
-                g.arc(x - pas * 0.55, y, pas * 0.62, -1.15, 1.15);
+                if (etireArc === 1) {
+                    g.arc(x - pas * 0.55, y, pas * 0.62, -1.15, 1.15);
+                } else {
+                    g.ellipse(x - pas * 0.55, y, pas * 0.62, pas * 0.62 * etireArc, 0, -1.15, 1.15);
+                }
                 g.stroke();
             }
         }
     },
 
-    // Reflet argenté (gardon, ablette, chevesne) : fines écailles + bande brillante.
+    // Reflet argenté (gardon, ablette, chevesne) : fines écailles + bande brillante. L'espèce peut
+    // régler le dessin des écailles (mêmes options que `ecailles`) et `refletArgent` (0,38) : opacité
+    // de la bande brillante.
     argent: function (g, W, H, c, aleatoire, espece) {
-        MOTIFS.ecailles(g, W, H, c, aleatoire, { ecailles: (espece && espece.ecailles) || 46 });
+        MOTIFS.ecailles(g, W, H, c, aleatoire, Object.assign({}, espece, { ecailles: (espece && espece.ecailles) || 46 }));
+        const alphaReflet = espece && espece.refletArgent !== undefined ? espece.refletArgent : 0.38;
         const reflet = g.createLinearGradient(0, H * 0.3, 0, H * 0.75);
         reflet.addColorStop(0, 'rgba(255,255,255,0)');
-        reflet.addColorStop(0.5, 'rgba(235,242,248,0.38)');
+        reflet.addColorStop(0.5, 'rgba(235,242,248,' + alphaReflet + ')');
         reflet.addColorStop(1, 'rgba(255,255,255,0)');
         g.fillStyle = reflet;
         g.fillRect(W * 0.18, H * 0.3, W * 0.82, H * 0.45);

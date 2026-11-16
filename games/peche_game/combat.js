@@ -6,8 +6,8 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=212';
-import { apercuPartage } from './apercuPoisson.js?v=212';
+import { etat } from './etat.js?v=213';
+import { apercuPartage } from './apercuPoisson.js?v=213';
 
 export function creerCombat(deps) {
     const {

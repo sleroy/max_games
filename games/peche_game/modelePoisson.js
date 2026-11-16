@@ -23,9 +23,9 @@
 // reçoit alors deux matériaux de plus : intérieur sombre et dents, plus un groupe invisible).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=212';
-import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=212';
-import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=212';
+import { FORMES, FORMES_PAR_TYPE, PROFILS, ANATOMIES } from './especes.js?v=213';
+import { textureCorps, textureNageoire, couleursEspece, melanger } from './texturesPoisson.js?v=213';
+import { profilAvecBec, preparerTete, pupilleVerticaleGeometrie } from './teteBec.js?v=213';
 
 export const SECTIONS = 72;          // anneaux le long du corps
 export const SEGMENTS = 36;          // sommets par anneau (tour du corps)
@@ -243,7 +243,12 @@ const NAGEOIRES = {
     // Truite : dorsale courte et haute, bord avant oblique (grand recul) jusqu'à une pointe arrondie,
     // bord arrière qui retombe presque en ligne droite vers le dos ; anale basse en trapèze arrondi.
     dorsaleTruite: { h: [[0, 0.78], [0.07, 0.96], [0.16, 1], [0.3, 0.86], [0.55, 0.58], [0.8, 0.3], [1, 0.1]], recul: 0.95 },
-    analeTruite: { h: [[0, 0.5], [0.15, 0.95], [0.3, 1], [0.6, 0.8], [0.85, 0.5], [1, 0.3]], recul: 0.6 }
+    analeTruite: { h: [[0, 0.5], [0.15, 0.95], [0.3, 1], [0.6, 0.8], [0.85, 0.5], [1, 0.3]], recul: 0.6 },
+    // Gardon : dorsale courte et couchée sur le dos (bord avant qui naît du dos et monte vite,
+    // bord libre presque droit qui descend vers l'arrière, pointe un peu relevée au bout) ;
+    // anale basse, rayons les plus longs à l'avant, bord arrière concave, couchée vers la queue.
+    dorsaleGardon: { h: [[0, 0.4], [0.1, 0.95], [0.22, 1], [0.5, 0.78], [0.8, 0.5], [0.93, 0.36], [1, 0.42]], recul: 0.9 },
+    analeGardon: { h: [[0, 0.7], [0.12, 1], [0.35, 0.72], [0.65, 0.42], [0.9, 0.24], [1, 0.3]], recul: 0.85 }
 };
 
 // Pectorales / pelviennes : longueur relative de chaque rayon (s = 0 rayon
@@ -279,6 +284,10 @@ const CAUDALES = {
     // Truite : caudale tronquée, bord arrière presque droit (légère échancrure ≈ 8 %), coins arrondis.
     truite: [[-0.8, 1], [-0.93, 0.96], [-0.99, 0.84], [-0.98, 0.6], [-0.94, 0.3], [-0.92, 0.05],
         [-0.93, -0.2], [-0.97, -0.5], [-1, -0.78], [-0.98, -0.94], [-0.88, -1], [-0.78, -1]],
+    // Gardon : fourche profonde (échancrure ≈ 40 % de la longueur), lobes en pointe, le lobe du bas
+    // un peu plus long que celui du haut ; bords arrière presque droits.
+    gardon: [[-0.88, 1], [-0.76, 0.78], [-0.62, 0.5], [-0.48, 0.2], [-0.41, 0.04], [-0.42, -0.06],
+        [-0.55, -0.3], [-0.72, -0.5], [-0.9, -0.68], [-1, -0.8]],
     echancree: [[-0.94, 1], [-0.98, 0.55], [-0.86, 0], [-0.97, -0.55], [-1, -1]],
     arrondie: [[-0.55, 1], [-0.85, 0.7], [-1, 0], [-0.85, -0.7], [-0.55, -1]],
     // Silure : palette arrondie sans angle ; le bord du bas démarre à la hauteur où finit l'anale

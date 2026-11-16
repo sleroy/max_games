@@ -6,7 +6,20 @@
 // Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [
     { id: 'gardon', nom: 'Gardon', form: 'fusiforme', cm: [10, 42], k: 1.1, abondance: 12,
-      profondeur: [-1.6, -0.7], combativite: [0.5, 0.8], agressivite: [0.55, 0.85], style: 'nerveux', couleur: 0xbfcbd0, motif: 'argent' },
+      profondeur: [-1.6, -0.7], combativite: [0.5, 0.8], agressivite: [0.55, 0.85], style: 'nerveux',
+      // Couleurs : médianes PIL sur assets/references/gardon.jpg (photo au flash, flanc surexposé) :
+      // dos brun-olive (#7b7663), flanc gris argenté (#c2c1aa), ventre blanc (80e centile #f8f8f1),
+      // tête gris-beige (#b9aa94), iris orange-rouge. Dorsale brun cuivré, caudale orange-brun,
+      // anale et pelviennes orange vif, pectorales jaune pâle.
+      couleur: 0xb2baad, dos: 0x4d4e3d, ventre: 0xeff1e8, tete: 0x95917e, oeil: 0xd8803a,
+      nageoires: 0xb88a58, nageoiresMotif: 'doux',
+      nageoiresCouleurs: { dorsale: 0x9e7448, anale: 0xe6762a, pectorale: 0xb09c6a, pelvienne: 0xee7a2e,
+          caudale: [0xa88a62, 0xb98250] },
+      // Robe argentée : écailles moyennes (≈ 42 sur la ligne latérale, presque aussi hautes que larges),
+      // bords sombres bien nets sur le dos, effacées vers le ventre, reflet argenté discret.
+      motif: 'argent', ecailles: 42, rangsEcailles: 14, contrasteEcailles: 0.85, irregulariteEcailles: 0.35,
+      ecaillesVentre: 0.7, debutEcailles: 0.2, fonduTete: 0.55, refletArgent: 0.26, ombreDos: 0.65,
+      ventreClair: 0.6, profil: 'gardon', anatomie: 'gardon' },
     { id: 'rotengle', nom: 'Rotengle', form: 'fusiforme', cm: [10, 50], k: 1.1, abondance: 8,
       profondeur: [-1.6, -0.7], combativite: [0.5, 0.85], agressivite: [0.6, 0.9], style: 'nerveux', couleur: 0xb9c6c0, nageoires: 0xc0522a, motif: 'argent' },
     { id: 'ablette', nom: 'Ablette', form: 'petit', cm: [8, 25], k: 0.9, abondance: 9,
@@ -411,7 +424,25 @@ export const PROFILS = {
         { t: 0.7, h: 0.1202, w: 0.068, y: -0.0138 }, { t: 0.75, h: 0.1129, w: 0.062, y: -0.0138 },
         { t: 0.8, h: 0.1016, w: 0.055, y: -0.012 }, { t: 0.85, h: 0.0906, w: 0.048, y: -0.0098 },
         { t: 0.9, h: 0.0807, w: 0.042, y: -0.0072 }, { t: 0.95, h: 0.0672, w: 0.036, y: -0.0039 },
-        { t: 1, h: 0.0533, w: 0.03, y: 0.0005 }]
+        { t: 1, h: 0.0533, w: 0.03, y: 0.0005 }],
+    // Gardon : gardon.jpg (900 × 579, fond blanc, tourné à gauche), LS = 633 px (museau 78,266 →
+    // base de la caudale 711,286). Contour relevé par seuil sur le fond (scripts/mesure-silhouette.py
+    // gardon), dorsale et anale repliées retranchées, ventre blanc de l'arrière tracé à la main.
+    // Corps haut et comprimé : hauteur max 0,276 LS à t = 0,4 ; petite tête conique (0,10 LS de
+    // demi-hauteur à t = 0,10) ; dos convexe, ventre qui remonte régulièrement ; pédoncule assez
+    // fin (0,076 LS). Poisson vu de profil : largeur estimée (≈ 0,46 × hauteur, tête plus étroite).
+    gardon: [
+        { t: 0, h: 0.014, w: 0.009, y: -0.006 }, { t: 0.05, h: 0.051, w: 0.026, y: -0.0112 },
+        { t: 0.1, h: 0.073, w: 0.037, y: -0.0143 }, { t: 0.15, h: 0.088, w: 0.044, y: -0.0151 },
+        { t: 0.2, h: 0.103, w: 0.05, y: -0.0143 }, { t: 0.25, h: 0.1157, w: 0.055, y: -0.0159 },
+        { t: 0.3, h: 0.1259, w: 0.06, y: -0.0167 }, { t: 0.35, h: 0.1338, w: 0.063, y: -0.0183 },
+        { t: 0.4, h: 0.1378, w: 0.064, y: -0.0206 }, { t: 0.45, h: 0.137, w: 0.064, y: -0.0214 },
+        { t: 0.5, h: 0.1354, w: 0.063, y: -0.0199 }, { t: 0.55, h: 0.1299, w: 0.06, y: -0.0222 },
+        { t: 0.6, h: 0.122, w: 0.056, y: -0.027 }, { t: 0.65, h: 0.1125, w: 0.051, y: -0.0317 },
+        { t: 0.7, h: 0.1015, w: 0.046, y: -0.0333 }, { t: 0.75, h: 0.0912, w: 0.041, y: -0.0325 },
+        { t: 0.8, h: 0.0809, w: 0.036, y: -0.0285 }, { t: 0.85, h: 0.0707, w: 0.031, y: -0.0214 },
+        { t: 0.9, h: 0.0604, w: 0.026, y: -0.0143 }, { t: 0.95, h: 0.0493, w: 0.021, y: -0.0064 },
+        { t: 1, h: 0.038, w: 0.016, y: 0 }]
 };
 
 // ANATOMIES : position des nageoires et des détails, en fractions de LS.
@@ -631,6 +662,21 @@ export const ANATOMIES = {
         oeil: { t: 0.117, y: 0.003, r: 0.024 },
         bouche: { t: 0.145, y0: -0.004, y1: -0.045, epaisseur: 0.008 },
         opercule: 0.29, ligneCourbe: 0.3, contrasteOpercule: 0.1
+    },
+    // Gardon : mêmes photo et repère que le profil. Œil moyen t 0,076 (r 0,026), orange-rouge ; bouche
+    // terminale, coin sous l'avant de l'œil (t 0,045) ; ouïe t 0,21 ; dorsale courte, couchée sur le
+    // dos, t 0,52 → 0,725 (0,065 LS) ; anale basse t 0,745 → 0,845 (0,062 LS, couchée vers la queue) ;
+    // pectorale t 0,224 (0,16 LS, lancéolée, jaune pâle) ; pelviennes t 0,524 (0,105 LS, orange vif) ;
+    // caudale 0,235 LS, fourche profonde (échancrure ≈ 40 %), lobes pointus, lobe du bas plus long.
+    gardon: {
+        queue: { type: 'gardon', longueur: 0.235, ecart: 0.095 },
+        dorsale: { type: 'dorsaleGardon', t0: 0.52, t1: 0.7, hauteur: 0.05, recul: 0.8 },
+        anale: { type: 'analeGardon', t0: 0.745, t1: 0.82, hauteur: 0.05, recul: 0.8 },
+        pectorale: { t: 0.224, y: -0.09, longueur: 0.13, pente: 0.36, forme: 'ovale', eventail: 0.35 },
+        pelvienne: { t: 0.524, longueur: 0.105, pente: 0.3, ecart: 0.5, forme: 'pointue' },
+        oeil: { t: 0.076, y: -0.004, r: 0.024 },
+        bouche: { t: 0.045, y0: -0.002, y1: -0.027, epaisseur: 0.004 },
+        opercule: 0.21, ligneCourbe: 1.3, contrasteOpercule: 0.08
     }
 };
 
