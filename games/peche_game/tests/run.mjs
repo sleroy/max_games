@@ -60,6 +60,7 @@ import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
 import { run as scenarioFacile } from './scenario-facile.mjs';
+import { run as scenarioCombatMode } from './scenario-combat-mode.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
@@ -170,6 +171,8 @@ try {
     scenarioCheat();            // cheat « poisson » : mot secret = +50 XP
     debutScenario();
     scenarioRadar();            // cheat « radar » (§17.3) : carte 2D des poissons
+    debutScenario();
+    scenarioCombatMode();       // §17.7 : combat identique en mode enfant, aides de détection gardées (en dernier : ses prises modifient le carnet)
 } catch (error) {
     crashed = error;
 } finally {

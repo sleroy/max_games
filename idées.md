@@ -895,7 +895,7 @@ directement depuis le haut de l'écran ».
 - **58** : panneau de combat court + portrait de chaque espèce (16 portraits).
 - **71** : sonar (ping de sous-marin, ondes jaunes, tempo, rangement).
 
-Total de la suite : **3022 vérifications vertes** (v200) (`node games/peche_game/tests/run.mjs`).
+Total de la suite : **3053 vérifications vertes** (v200) (`node games/peche_game/tests/run.mjs`).
 
 ## 15. Réalisme — pistes identifiées (2026-11-15)
 
@@ -1306,7 +1306,7 @@ normale, 1,5 en difficile ». Base 90 poissons/ha → **270 / 180 / 135 par hect
   chaîne d'intérêt → approche → décision d'esche (par poisson) avant de retoucher un
   chiffre.
 
-### 17.7 Mode enfant : la COMBATIVITÉ doit rester intacte — à faire
+### 17.7 Mode enfant : la COMBATIVITÉ doit rester intacte — livré (v200)
 
 Demande du joueur : « en mode enfant c'est un peu trop facile, la difficulté de ramener
 les poissons doit rester intacte (la combativité) ».
@@ -1315,16 +1315,23 @@ Aujourd'hui le mode facile adoucit **aussi le combat** :
 `combat.js:408` — `etat.fightAdvantage = etat.modeFacile ? (1.0 / 1.05) : (1.15 / 1.3)`.
 Un ferrage raté est donc presque sans conséquence en mode enfant.
 
-- [ ] **Le combat ne dépend plus du mode** : `fightAdvantage`, tension, traction du
+- [x] **Le combat ne dépend plus du mode** : `fightAdvantage`, tension, traction du
   poisson, risque de décrochage et vitesse de fatigue doivent être **identiques** dans
   les trois modes. La combativité d'une carpe ou d'un silure reste la même.
-- [ ] **Ce que le mode enfant peut garder** (aide à la *détection*, pas au combat) :
+- [x] **Ce que le mode enfant peut garder** (aide à la *détection*, pas au combat) :
   fenêtre de ferrage plus large (`biteWindow`), pas d'emmêlement (`tangleChance 0`),
   faux signaux réduits, délai de touche plus court, bandeau « FERRER ! »,
   `hameconDansZone` non filtrant, densité ×3, messages encourageants.
-- [ ] **Tests** : `fightAdvantage` identique en facile et en normal après un ferrage
+- [x] **Tests** : `fightAdvantage` identique en facile et en normal après un ferrage
   raté ; même valeur de combativité lue par `startStruggle` ; et le mode enfant garde
   ses aides de détection (fenêtre, densité, bandeau).
+- [x] **Livré (v200)** : `combat.js` n'a plus de branche `modeFacile` dans le calcul de
+  `fightAdvantage` (tôt 1,15 / tard 1,3 dans tous les modes) et `DIFFICULTY_MODES.facile.difficulty`
+  passe de 1,0 à 1,3 (traction, coups, intervalle, temps limite = ceux du mode Normal).
+  Mesure : même poisson, ferrage raté, facile vs normal → traction 3,475, coups 0,915 / 1,194 s,
+  endurance 14, avantage 1,3, identiques. Test : `scenario-combat-mode.mjs`.
+- Remarque : le mode **Dur** garde son combat plus dur (difficulté 1,6) ; seul le mode enfant
+  était adouci. À confirmer si le joueur veut un combat strictement identique dans les 3 modes.
 
 ### 17.9 Une seule ligne au départ (jeu plus tendu) — livré (v200)
 

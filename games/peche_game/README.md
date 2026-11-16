@@ -326,9 +326,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Carnet de pêche** : prises, poids total, record, dernières prises — sauvegardé dans
   le navigateur (`localStorage`).
 - **Difficulté réglable dès l’accueil** (menu déroulant à côté de la technique) **et depuis
-  le carnet** : **Facile / Normal / Dur** (le poisson tire plus ou moins fort, le chrono et
-  la fenêtre de ferrage changent ; les deux sélecteurs restent synchronisés).
-- **Mode Facile enfant** (pêche ludique) : les poissons repèrent l’hameçon de très loin
+  le carnet** : **Facile / Normal / Dur** (Facile et Normal ont le même combat ; Dur ajoute un poisson plus
+  fort et un chrono plus court ; la fenêtre de ferrage change ; les deux sélecteurs restent synchronisés).
+- **Mode Facile enfant** (pêche ludique) : il n'aide qu'à **repérer la touche** ; le **combat
+  reste aussi dur qu'en Normal** (§17.7 : même avantage au ferrage, même traction). Les poissons repèrent l’hameçon de très loin
   et nagent droit dessus, même depuis une autre zone de vie ou une autre couche d’eau ;
   ils mordent vite (une seule fausse touche) avec une **grande fenêtre de ferrage**, et
   un gros panneau **« FERRER ! »** s’affiche pendant la vraie touche. Chaque prise

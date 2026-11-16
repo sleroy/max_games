@@ -566,15 +566,14 @@ const STRUGGLE_SPAN = STRUGGLE_MAX_FACTOR - STRUGGLE_MIN_FACTOR;
 
 // ---------------------------------------------------------------------------
 // Difficulté — réglable depuis le carnet (Facile / Normal / Dur).
-// En augmentant la difficulté :
-//   • le poisson tire plus fort et reprend plus de fil (épreuve de force) ;
-//   • le temps de l'épreuve de force est plus court ;
-//   • la fenêtre de ferrage (BITE_WINDOW) est plus courte.
+// Le combat d'un poisson est aussi dur en Facile qu'en Normal (§17.7, `difficulty` 1,3) : le
+// mode enfant n'aide qu'à DÉTECTER la touche (fenêtre, densité, pas d'emmêlement). Le mode Dur
+// reste plus dur : poisson plus fort, épreuve plus courte, fenêtre de ferrage plus courte.
 // ---------------------------------------------------------------------------
 // `poissons` = facteur de DENSITE (demande du joueur 2026-11-16) : facile ×3,
 // normale ×2, difficile ×1,5. Il multiplie la population calculee par la surface.
 const DIFFICULTY_MODES = {
-    facile: { difficulty: 1.0, biteWindow: 1.6, tangleChance: 0, poissons: 3 },
+    facile: { difficulty: 1.3, biteWindow: 1.6, tangleChance: 0, poissons: 3 },
     normal: { difficulty: 1.3, biteWindow: 0.7, tangleChance: 0.08, poissons: 2 },
     dur: { difficulty: 1.6, biteWindow: 0.55, tangleChance: 0.15, poissons: 1.5 }
 };

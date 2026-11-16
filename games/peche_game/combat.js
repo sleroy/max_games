@@ -403,11 +403,9 @@ export function creerCombat(deps) {
         }
         if (etat.bitePhase === 'fausse' || etat.bitePhase === 'ratee') {
             // Trop tôt (sur une fausse touche) ou trop tard : le poisson a l'avantage.
-            // MODE FACILE : le clic reste gagnant, avec très peu de handicap.
+            // Le COMBAT ne dépend pas du mode (§17.7) : le mode enfant n'aide qu'à DÉTECTER la touche.
             etat.strikeQuality = (etat.bitePhase === 'fausse') ? 'tot' : 'tard';
-            etat.fightAdvantage = etat.modeFacile
-                ? ((etat.bitePhase === 'fausse') ? 1.0 : 1.05)
-                : ((etat.bitePhase === 'fausse') ? 1.15 : 1.3);
+            etat.fightAdvantage = (etat.bitePhase === 'fausse') ? 1.15 : 1.3;
             etat.biteFish = null;
             etat.consommerEsche();
             if (fish) {
