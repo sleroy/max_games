@@ -1305,3 +1305,23 @@ normale, 1,5 en difficile ». Base 90 poissons/ha → **270 / 180 / 135 par hect
   alors que 6 poissons tournent dans les 8 u. Prochaine étape : journaliser toute la
   chaîne d'intérêt → approche → décision d'esche (par poisson) avant de retoucher un
   chiffre.
+
+### 17.7 Mode enfant : la COMBATIVITÉ doit rester intacte — à faire
+
+Demande du joueur : « en mode enfant c'est un peu trop facile, la difficulté de ramener
+les poissons doit rester intacte (la combativité) ».
+
+Aujourd'hui le mode facile adoucit **aussi le combat** :
+`combat.js:408` — `etat.fightAdvantage = etat.modeFacile ? (1.0 / 1.05) : (1.15 / 1.3)`.
+Un ferrage raté est donc presque sans conséquence en mode enfant.
+
+- [ ] **Le combat ne dépend plus du mode** : `fightAdvantage`, tension, traction du
+  poisson, risque de décrochage et vitesse de fatigue doivent être **identiques** dans
+  les trois modes. La combativité d'une carpe ou d'un silure reste la même.
+- [ ] **Ce que le mode enfant peut garder** (aide à la *détection*, pas au combat) :
+  fenêtre de ferrage plus large (`biteWindow`), pas d'emmêlement (`tangleChance 0`),
+  faux signaux réduits, délai de touche plus court, bandeau « FERRER ! »,
+  `hameconDansZone` non filtrant, densité ×3, messages encourageants.
+- [ ] **Tests** : `fightAdvantage` identique en facile et en normal après un ferrage
+  raté ; même valeur de combativité lue par `startStruggle` ; et le mode enfant garde
+  ses aides de détection (fenêtre, densité, bandeau).
