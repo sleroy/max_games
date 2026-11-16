@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=203';
+import { etat } from './etat.js?v=205';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -26,9 +26,13 @@ export const REFUS_MESSAGE = 3;   // un message discret tous les 3 refus
 // cibles   : espèce → poids (1 = esche reine ; absent = PROBA_INADAPTEE) ;
 // couches  : poids par couche de l'hameçon ; une esche de fond posée en surface ne vaut presque rien ;
 // substrats: poids par fond (1 si absent) : le maïs se perd dans l'herbier, le leurre y est roi.
+// exclusif : vrai = les espèces absentes de `cibles` IGNORENT l'esche (probabilité 0, pas PROBA_INADAPTEE) :
+//            un herbivore ne touche pas un vif, un carnassier ne touche pas une bouillette.
+// tailleMin: longueur (cm) en dessous de laquelle un poisson ne peut pas avaler l'esche (il l'ignore).
 export const ESCHES = [
     { id: 'mais', nom: 'Maïs', icone: '🌽', prix: 8,
       desc: 'Doux et sucré, il coule et reste au fond.',
+      exclusif: true,
       cibles: { carpe: 1, tanche: 1, breme: 1, carassin: 0.5 },
       couches: { surface: 0.12, 'mi-eau': 0.5, fond: 1 },
       substrats: { vase: 1, sable: 1, gravier: 0.95, roche: 0.7, herbier: 0.6 } },
@@ -39,16 +43,19 @@ export const ESCHES = [
       substrats: { vase: 1, sable: 1, gravier: 1, roche: 0.85, herbier: 0.8 } },
     { id: 'pain', nom: 'Pain / flocons', icone: '🍞', prix: 6,
       desc: 'Léger, il flotte et se délite en petits nuages.',
+      exclusif: true,
       cibles: { gardon: 1, rotengle: 1, chevesne: 1, ablette: 0.5 },
       couches: { surface: 1, 'mi-eau': 0.45, fond: 0.1 },
       substrats: { herbier: 0.8 } },
     { id: 'bouillette', nom: 'Bouillette', icone: '🟤', prix: 14,
       desc: 'Une grosse boule dure, lourde, faite pour rester au fond.',
+      exclusif: true, tailleMin: 25,   // grosse boule dure : les petits poissons ne peuvent pas l'avaler
       cibles: { carpe: 1, carassin: 1 },
       couches: { surface: 0.03, 'mi-eau': 0.25, fond: 1 },
       substrats: { vase: 0.85, roche: 0.7, herbier: 0.6 } },
     { id: 'vif', nom: 'Vif / leurre', icone: '🐟', prix: 16,
       desc: 'Un petit poisson ou un leurre qui nage : il se montre.',
+      exclusif: true, tailleMin: 15,   // seuls les carnassiers attaquent un vif / leurre
       cibles: { brochet: 1, sandre: 1, 'black-bass': 1, perche: 0.5, truite: 0.5, silure: 0.5, anguille: 0.2 },
       couches: { surface: 0.7, 'mi-eau': 1, fond: 0.65 },
       substrats: { herbier: 1, roche: 1, vase: 0.9, sable: 0.95 } }
@@ -67,10 +74,13 @@ export function coucheHamecon(profondeurLigne, profondeurEau, auFond) {
 
 // Probabilité (0 → 1) qu'un poisson de l'espèce prenne l'esche : espèce × couche × fond.
 // `escheId` null = hameçon nu.
-export function efficaciteEsche(escheId, especeId, couche, substrat) {
+// `longueurCm` (facultatif) : un poisson trop petit pour l'esche (`tailleMin`) l'ignore.
+export function efficaciteEsche(escheId, especeId, couche, substrat, longueurCm) {
     const esche = ESCHES.find(function (e) { return e.id === escheId; });
     if (!esche) { return PROBA_NU; }
-    const espece = esche.cibles[especeId] === undefined ? PROBA_INADAPTEE : esche.cibles[especeId];
+    if (esche.tailleMin && typeof longueurCm === 'number' && longueurCm < esche.tailleMin) { return 0; }
+    const inconnue = esche.exclusif ? 0 : PROBA_INADAPTEE;
+    const espece = esche.cibles[especeId] === undefined ? inconnue : esche.cibles[especeId];
     const fond = esche.substrats[substrat] === undefined ? 1 : esche.substrats[substrat];
     return Math.max(0, Math.min(1, espece * (esche.couches[couche] === undefined ? 1 : esche.couches[couche]) * fond));
 }
@@ -101,10 +111,10 @@ export function creerEsches(deps) {
         return { couche: coucheHamecon(etat.profondeurLigne, etat.profondeurUtile(verdict.profondeurEau), quiver), substrat: verdict.substrat };
     }
 
-    function probabilite(especeId) {
+    function probabilite(especeId, longueurCm) {
         const esche = etat.escheEquipee ? etat.escheEquipee() : null;
         const c = contexte();
-        return efficaciteEsche(esche ? esche.id : null, especeId, c.couche, c.substrat);
+        return efficaciteEsche(esche ? esche.id : null, especeId, c.couche, c.substrat, longueurCm);
     }
 
     // Le poisson arrivé sur l'hameçon prend-il l'esche ? Décision UNIQUE par poisson et par lancer :
@@ -115,7 +125,7 @@ export function creerEsches(deps) {
         if (!etat.eschesActives) { return true; }
         const d = fish.userData;
         if (d.escheLancer === etat.numeroLancer) { return d.escheAccepte; }
-        const accepte = hasard() < probabilite(d.especeId);
+        const accepte = hasard() < probabilite(d.especeId, d.longueurCm);
         d.escheLancer = etat.numeroLancer;
         d.escheAccepte = accepte;
         const stats = etat.escheStats;

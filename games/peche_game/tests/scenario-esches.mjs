@@ -114,6 +114,11 @@ export function run() {
         PROBA_NU <= 0.1 && f(null, 'carpe', 'fond', 'vase') * 10 <= f('mais', 'carpe', 'fond', 'vase'));
     checkEqual('hameçon nu = null, quelle que soit l’espèce', f(null, 'brochet', 'mi-eau', 'herbier'), PROBA_NU);
 
+    check('vif / leurre : un herbivore l’ignore (0)', ['carpe', 'gardon', 'tanche', 'breme', 'carassin'].every(sp => f('vif', sp, 'mi-eau', 'herbier') === 0));
+    check('bouillette : un carnassier l’ignore (0)', f('bouillette', 'brochet', 'fond', 'vase') === 0);
+    check('bouillette : une carpe trop petite (< 25 cm) l’ignore, une grosse la prend',
+        f('bouillette', 'carpe', 'fond', 'vase', 15) === 0 && f('bouillette', 'carpe', 'fond', 'vase', 40) >= 0.8);
+
     // --- 3) L'esche équipée MODIFIE la distribution des touches (simulation) ---------
     e.eschesActives = true;
     const N = 24;
