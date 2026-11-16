@@ -7,12 +7,14 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=222';
-import { etat } from './etat.js?v=222';
+import { COMPORTEMENTS } from './especes.js?v=224';
+import { etat } from './etat.js?v=224';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=224';
+import { heureDeJeu } from './physique.js?v=224';
 
 export function creerComportement(deps) {
     const {
-        BITE_INTEREST_RADIUS, floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang,
+        floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang,
         fishes, animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL,
         ripples, spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
         risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond,
@@ -25,24 +27,16 @@ export function creerComportement(deps) {
 
     // MODE FACILE (enfant) : les poissons repèrent l'hameçon de très loin et
     // nagent droit dessus, quelle que soit leur zone de vie ou leur couche d'eau.
-    const MODE_FACILE_RAYON = 26;      // unités (l'étang fait ~90 de rayon)
+    const MODE_FACILE_RAYON = RAYON_VUE_FACILE;   // unités (l'étang fait ~90 de rayon) — chanceTouche.js
     const MODE_FACILE_VITESSE = 9;     // approche (BITE_APPROACH_ACCEL = 4.5)
 
     // ---------------------------------------------------------------------------
     // COMPORTEMENT DES POISSONS : vue, zone de vie, banc, vitesse et humeur propres
     // à chaque espèce (voir COMPORTEMENTS dans especes.js).
     // ---------------------------------------------------------------------------
-    function lumiereDuJour() {
-        return Math.max(0, Math.sin(etat.dayPhase * Math.PI * 2));
-    }
-
-    // Distance à laquelle le poisson repère l'appât (unités).
+    // Distance à laquelle le poisson repère l'appât (unités) : règle unique de chanceTouche.js.
     function rayonVueEspece(data) {
-        const c = data.comp;
-        const base = c ? c.vue : BITE_INTEREST_RADIUS;
-        const jour = lumiereDuJour();
-        const lumiere = c && c.nocturne ? 1 + 0.4 * (1 - jour) : 0.45 + 0.55 * jour;
-        return base * lumiere * (1 - 0.25 * etat.weatherPluie);
+        return rayonVue(data.comp, heureDeJeu(etat.dayPhase), etat.weatherPluie);
     }
 
     // L'appât est-il devant ou sur le côté du poisson (±120°) ?
@@ -62,21 +56,9 @@ export function creerComportement(deps) {
 
     // L'hameçon est-il dans la couche d'eau de l'espèce ? Une espèce « de fond » mord
     // si l'hameçon est posé près du relief, quelle que soit la profondeur de l'étang.
+    // Règle unique de chanceTouche.js (fond, thermocline) : le jeu et la matrice de tests la partagent.
     function hameconDansZone(data, zone) {
-        if (data.couche === 'fond') {
-            // Sur le sable ou le gravier, l'hameçon trop long REPOSE sur le fond (§14.3) : il ne
-            // passe pas dessous. Ailleurs (vase, herbier, roche) il s'accroche : plus de touche.
-            // §15.1 : en été la thermocline relève ce « fond » (le poisson de fond reste au-dessus d'elle).
-            const fondReel = fondY(floatGroup.position.x, floatGroup.position.z) + 0.45;
-            const fondUtile = plancherPoisson(fondReel);
-            const fond = fondUtile - 0.45;
-            // Thermocline : un hameçon plongé SOUS elle (eau froide) n'attire personne ; sur un vrai fond,
-            // un hameçon « plus bas que le relief » repose dessus (comme avant).
-            const haut = (fondUtile > fondReel ? etat.HOOK_DEPTH : Math.max(etat.HOOK_DEPTH, fond)) - fond;
-            return haut <= 1.2 && haut >= -0.4;
-        }
-        const tranche = etat.zoneUtile ? etat.zoneUtile(zone) : zone;
-        return !tranche || (etat.HOOK_DEPTH >= tranche[0] - 0.5 && etat.HOOK_DEPTH <= tranche[1] + 0.5);
+        return dansCouche(data.couche, zone, etat.HOOK_DEPTH, fondY(floatGroup.position.x, floatGroup.position.z), etat.thermocline);
     }
 
     // §15.1 (physique.js) : la thermocline et la chaleur gardent le poisson au-dessus de l'eau froide ;
@@ -101,12 +83,11 @@ export function creerComportement(deps) {
     // ---------------------------------------------------------------------------
     // PETIT COUP DE MOULINET (§14.9) : un léger mouvement de la manivelle fait bouger
     // l'esche sur place et crée un remous ; les poissons déjà TOUT PROCHES s'y
-    // intéressent. Ce n'est pas un aimant : rayon ≈ 3 unités (BITE_INTEREST_RADIUS = 7),
+    // intéressent. Ce n'est pas un aimant : rayon ≈ 3 unités (vue ≈ 7, chanceTouche.js),
     // effet qui retombe en REMOUS_DUREE secondes, plafonné à 1. Un geste franc
     // (≥ GESTE_RAPPEL_TOURS) ramène la ligne, comme avant. L'intensité vit dans
     // etat.remous (0 → 1) ; elle n'existe que bouchon à l'eau, sans combat ni accrochage.
     // ---------------------------------------------------------------------------
-    const REMOUS_RAYON = 3;           // unités, à pleine intensité et sensibilité 1
     const REMOUS_DUREE = 3;           // secondes pour retomber de 1 à 0
     const REMOUS_GAIN = 10;           // intensité gagnée par tour de manivelle (1 tour = 1 geste franc)
     const GESTE_RAPPEL_TOURS = 0.3;   // au-delà (cumulé sur un même geste), on ramène la ligne
@@ -116,17 +97,9 @@ export function creerComportement(deps) {
     etat.moulinetRepos = 0;
     etat.remousRond = 0;
 
-    // Les carnassiers en embuscade guettent le moindre remous ; un poisson méfiant
-    // (peu agressif) y réagit moins. Jamais plus de 1,3 : le rayon reste < 4 unités.
-    function sensibiliteRemous(data) {
-        const c = data.comp;
-        const ardeur = Math.min(1.2, Math.max(0.5, data.aggression || 0.8));
-        return Math.min(1.3, ardeur * (c && c.humeur === 'embuscade' ? 1.25 : 1));
-    }
-
-    // Distance à laquelle CE poisson sent le remous en ce moment (0 = rien).
+    // Distance à laquelle CE poisson sent le remous en ce moment (0 = rien) : chanceTouche.js.
     function rayonRemous(data) {
-        return etat.remous > 0 ? REMOUS_RAYON * etat.remous * sensibiliteRemous(data) : 0;
+        return rayonRemousPur(etat.remous, data.aggression, data.comp && data.comp.humeur);
     }
 
     // Appelé à chaque image bouchon à l'eau, avec les tours de manivelle de l'image.
@@ -529,9 +502,7 @@ export function creerComportement(deps) {
         // profondeur utile (touche, poissons de fond) est celle du fond, pas celle de la ligne.
         // Au quiver, poserHameconAuFond règle déjà la profondeur : on n'y touche pas.
         if (!modeQuiver.estActif()) {
-            etat.HOOK_DEPTH = verdict.surLeFond && !verdict.dansLaVase
-                ? Math.max(-etat.profondeurLigne, -verdict.profondeurEau + 0.1)
-                : -etat.profondeurLigne;
+            etat.HOOK_DEPTH = profondeurHamecon(etat.profondeurLigne, verdict.profondeurEau, verdict.surLeFond, verdict.dansLaVase);
         }
         const avant = etat.hameconDansLaVase;
         etat.hameconDansLaVase = verdict.dansLaVase;

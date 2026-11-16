@@ -26,7 +26,7 @@ const CIBLES = {
     ver: ['gardon', 'perche', 'anguille', 'goujon'],
     pain: ['gardon', 'rotengle', 'chevesne'],
     bouillette: ['carpe', 'carassin'],
-    vif: ['brochet', 'sandre', 'black-bass']
+    vif: ['brochet', 'sandre', 'black-bass', 'silure']
 };
 
 const POINT = { x: 0, z: -25 };    // vase, ≈ 2 m d'eau (3,98 unités)

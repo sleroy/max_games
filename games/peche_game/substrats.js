@@ -19,7 +19,7 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=222';
+import { COMPORTEMENTS } from './especes.js?v=224';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [
@@ -48,6 +48,13 @@ export const ACCROCHAGES_FOND = {
     roche: { difficulte: 'courte', niveau: 1, message: 'Hameçon coincé entre les pierres du fond !',
         pullRate: 0.16, burstStrength: 0.12, burstInterval: 0.8, clickPower: 0.26, clickCooldown: 0.12, tensionDepart: 0.45 }
 };
+// L'hameçon et le fond (SOURCE UNIQUE, aussi lue par chanceTouche.js) : touche-t-il le fond, y est-il PRIS ?
+// Pris = vase (elle aspire), herbier ou roche ; sur le sable ou le gravier, il repose, rien de plus.
+export function hameconSurSubstrat(profondeurEau, profondeurLigne, auFond, substrat, margeVase) {
+    const surLeFond = !auFond && profondeurLigne > profondeurEau - margeVase;
+    return { surLeFond: surLeFond, pris: surLeFond && (substrat === 'vase' || !!ACCROCHAGES_FOND[substrat]) };
+}
+
 // Bruits déjà crédités (assets/CREDITS.txt) : cailloux = « pas-gravier », vase = bulle « plouf ».
 export const SONS_FOND = { vase: ['plouf', 0.45], roche: ['pas', 0.5], gravier: ['pas', 0.3] };
 
@@ -286,8 +293,7 @@ export function creerSubstrats(deps) {
     function verdictFond(x, z, profondeurLigne, auFond) {
         const base = verdictBase(x, z, profondeurLigne, auFond);
         const substrat = substratEn(x, z) || 'vase';
-        const surLeFond = !auFond && profondeurLigne > base.profondeurEau - MARGE_VASE;
-        const pris = surLeFond && (substrat === 'vase' || !!ACCROCHAGES_FOND[substrat]);
+        const { surLeFond, pris } = hameconSurSubstrat(base.profondeurEau, profondeurLigne, auFond, substrat, MARGE_VASE);
         const fiche = SUBSTRATS[IDS_SUBSTRATS.indexOf(substrat)];
         return { profondeurEau: base.profondeurEau, dansLaVase: pris, surLeFond: surLeFond,
             substrat: substrat, accroche: pris ? substrat : null,

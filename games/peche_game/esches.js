@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=222';
+import { etat } from './etat.js?v=224';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -59,7 +59,7 @@ export const ESCHES = [
     { id: 'vif', nom: 'Vif / leurre', icone: '🐟', prix: 16,
       desc: 'Un petit poisson ou un leurre qui nage : il se montre.',
       exclusif: true, tailleMin: 15,   // seuls les carnassiers attaquent un vif / leurre
-      cibles: { brochet: 1, sandre: 1, 'black-bass': 1, perche: 0.5, truite: 0.5, silure: 0.5, anguille: 0.2 },
+      cibles: { brochet: 1, sandre: 1, 'black-bass': 1, silure: 1, perche: 0.5, truite: 0.5, anguille: 0.2 },
       couches: { surface: 0.7, 'mi-eau': 1, fond: 0.65 },
       substrats: { herbier: 1, roche: 1, vase: 0.9, sable: 0.95 } }
 ];

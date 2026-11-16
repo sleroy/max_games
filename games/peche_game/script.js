@@ -1,60 +1,61 @@
 import * as THREE from 'three';
-// Le « ?v=222 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=224 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=222';
-import { creerJeuDemelage } from './demelage.js?v=222';
-import { creerModeQuiver } from './quiver.js?v=222';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=222';
+import { SoundEngine } from './sound.js?v=224';
+import { creerJeuDemelage } from './demelage.js?v=224';
+import { creerModeQuiver } from './quiver.js?v=224';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=224';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=222';
-import { creerPoissons } from './poissons.js?v=222';
+import { dessinerPortrait } from './portraits.js?v=224';
+import { creerPoissons } from './poissons.js?v=224';
 import { POND_CENTER, POND_RADIUS, RIVE_Y, RAYON_ETANG_MAX, rayonEtang,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE, DEMI_COTE_FOND, PROFONDEUR_MAX, RAYON_CADRE_CARTE, SURFACE_HA,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=222';
-import { creerDecor } from './decor.js?v=222';
-import { creerObstacles } from './obstacles.js?v=222';
-import { creerSubstrats } from './substrats.js?v=222';
-import { creerEsches } from './esches.js?v=222';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=222';
-import { creerBourriche } from './bourriche.js?v=222';
-import { creerOndulations } from './ondulations.js?v=222';
-import { creerMessages } from './messages.js?v=222';
-import { creerSplashes } from './splashes.js?v=222';
-import { creerCombat } from './combat.js?v=222';
-import { creerComportement } from './comportement.js?v=222';
-import { creerBateau } from './bateau.js?v=222';
-import { creerLancerPoisson } from './lancerPoisson.js?v=222';
-import { creerCarnetUI } from './carnetUI.js?v=222';
-import { creerBoutique } from './boutique.js?v=222';
-import { creerMenus } from './menus.js?v=222';
-import { creerFiches } from './fiches.js?v=222';
-import { creerLancerCanne } from './lancerCanne.js?v=222';
-import { creerLancer } from './lancer.js?v=222';
-import { creerAmorcage } from './amorcage.js?v=222';
-import { creerFrein } from './frein.js?v=222';
-import { creerLigne } from './ligne.js?v=222';
-import { creerBouchons } from './bouchons.js?v=222';
-import { creerPlacement } from './placement.js?v=222';
-import { creerMeteo } from './meteo.js?v=222';
-import { creerPhysique } from './physique.js?v=222';
-import { creerVie } from './vie.js?v=222';
-import { creerSonar } from './sonar.js?v=222';
-import { creerStocks } from './stocks.js?v=222';
-import { creerJournal } from './journal.js?v=222';
-import { creerTouches } from './touches.js?v=222';
-import { creerCycleLigne } from './cycleLigne.js?v=222';
-import { creerAccrochage } from './accrochage.js?v=222';
-import { creerAmbiance } from './ambiance.js?v=222';
-import { creerEntrees } from './entrees.js?v=222';
-import { creerRadar } from './radar.js?v=222';
-import { creerCheat } from './cheat.js?v=222';
-import { creerBoucle } from './boucle.js?v=222';
-import { creerPartie } from './partie.js?v=222';
-import { creerPecheur } from './pecheur.js?v=222';
-import { creerRendu } from './rendu.js?v=222';
-import { etat } from './etat.js?v=222';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=224';
+import { creerDecor } from './decor.js?v=224';
+import { creerObstacles } from './obstacles.js?v=224';
+import { creerSubstrats } from './substrats.js?v=224';
+import { creerEsches } from './esches.js?v=224';
+import { ligneQuiver } from './chanceTouche.js?v=224';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=224';
+import { creerBourriche } from './bourriche.js?v=224';
+import { creerOndulations } from './ondulations.js?v=224';
+import { creerMessages } from './messages.js?v=224';
+import { creerSplashes } from './splashes.js?v=224';
+import { creerCombat } from './combat.js?v=224';
+import { creerComportement } from './comportement.js?v=224';
+import { creerBateau } from './bateau.js?v=224';
+import { creerLancerPoisson } from './lancerPoisson.js?v=224';
+import { creerCarnetUI } from './carnetUI.js?v=224';
+import { creerBoutique } from './boutique.js?v=224';
+import { creerMenus } from './menus.js?v=224';
+import { creerFiches } from './fiches.js?v=224';
+import { creerLancerCanne } from './lancerCanne.js?v=224';
+import { creerLancer } from './lancer.js?v=224';
+import { creerAmorcage } from './amorcage.js?v=224';
+import { creerFrein } from './frein.js?v=224';
+import { creerLigne } from './ligne.js?v=224';
+import { creerBouchons } from './bouchons.js?v=224';
+import { creerPlacement } from './placement.js?v=224';
+import { creerMeteo } from './meteo.js?v=224';
+import { creerPhysique } from './physique.js?v=224';
+import { creerVie } from './vie.js?v=224';
+import { creerSonar } from './sonar.js?v=224';
+import { creerStocks } from './stocks.js?v=224';
+import { creerJournal } from './journal.js?v=224';
+import { creerTouches } from './touches.js?v=224';
+import { creerCycleLigne } from './cycleLigne.js?v=224';
+import { creerAccrochage } from './accrochage.js?v=224';
+import { creerAmbiance } from './ambiance.js?v=224';
+import { creerEntrees } from './entrees.js?v=224';
+import { creerRadar } from './radar.js?v=224';
+import { creerCheat } from './cheat.js?v=224';
+import { creerBoucle } from './boucle.js?v=224';
+import { creerPartie } from './partie.js?v=224';
+import { creerPecheur } from './pecheur.js?v=224';
+import { creerRendu } from './rendu.js?v=224';
+import { etat } from './etat.js?v=224';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -1516,7 +1517,7 @@ function poserHameconAuFond() {
     if (profondeurBouchonMemo === null) { profondeurBouchonMemo = profondeurLigne; }
     const enEau = floatState !== 'idle' && floatState !== 'flying';
     const lieu = enEau ? floatGroup.position : castTarget;   // sous le bouchon dès qu'il est à l'eau
-    const fond = Math.max(0.6, profondeurLocale(lieu.x, lieu.z) - 0.55);   // posé juste au-dessus de la vase
+    const fond = ligneQuiver(profondeurLocale(lieu.x, lieu.z));   // posé juste au-dessus de la vase (chanceTouche.js)
     if (Math.abs(fond - profondeurLigne) > 0.001) {
         profondeurLigne = fond;
         HOOK_DEPTH = -fond;
@@ -2064,7 +2065,6 @@ const MAX_WAIT = 20;        // attente de référence (un poisson qui renifle l'
 // Morsure : le poisson doit venir renifler l'hameçon — donc s'approcher visiblement
 // du bouchon ET remonter jusqu'à lui depuis sa profondeur. La morsure se décide
 // sur la distance RÉELLE en 3D à l'hameçon, pas seulement à l'aplomb du bouchon.
-const BITE_INTEREST_RADIUS = 7;    // à cette distance, le poisson s'intéresse au bouchon
 const BITE_RADIUS = 0.9;           // distance 3D en dessous de laquelle il mord
 const BITE_APPROACH_ACCEL = 4.5;   // vitesse d'approche maximale (unités/s)
 
@@ -2137,7 +2137,7 @@ const {
 const {
     hameconDansZone, updateFish, updateFloat, updateLine
 } = creerComportement({
-    BITE_INTEREST_RADIUS, floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang, fishes,
+    floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang, fishes,
     animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL, ripples,
     spawnRipple, CAST_DURATION, fishButton, castTarget, sound, isSnagged, startSnag,
     risqueEmmelement, rand, demarrerEmmElement, modeQuiver, poserHameconAuFond, verdictFond,

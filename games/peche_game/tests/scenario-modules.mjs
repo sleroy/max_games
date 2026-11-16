@@ -19,7 +19,7 @@ const DOCS = path.join(DOSSIER_JEU, '..', '..', 'docs', 'modules.md');
 const MODULES = [
     'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
     'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'substrats.js', 'esches.js',
-    'physique.js', 'menus.js', 'radar.js', 'modelePoisson.js', 'teteBec.js', 'texturesPoisson.js', 'apercuPoisson.js', 'blackBass.js', 'chevesne.js', 'rotengle.js', 'goujon.js', 'motifBande.js', 'vegetation.js',
+    'physique.js', 'menus.js', 'radar.js', 'modelePoisson.js', 'teteBec.js', 'texturesPoisson.js', 'apercuPoisson.js', 'blackBass.js', 'chevesne.js', 'rotengle.js', 'goujon.js', 'motifBande.js', 'vegetation.js',, 'chanceTouche.js',
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
@@ -99,6 +99,7 @@ export function run() {
         'substrats.js': 'export function creerSubstrats(',
         'esches.js': 'export function creerEsches(',
         'vegetation.js': 'export function creerVegetation(',
+        'chanceTouche.js': 'export function evaluerTouche(',
         'physique.js': 'export function creerPhysique(',
         'radar.js': 'export function creerRadar(',
         'apercuPoisson.js': 'export function creerApercuPoisson(',

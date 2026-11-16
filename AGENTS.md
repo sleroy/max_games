@@ -293,6 +293,7 @@ Préfère les ressources **CC0**.
 ```bash
 node games/peche_game/tests/run.mjs   # non-régression du jeu de pêche (~2 s, Node seul)
 node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
+MATRICE_CSV=docs/matrice-touche.csv node games/peche_game/tests/run.mjs   # régénère la matrice des touches
 ```
 
 - Après une modif de `games/peche_game/*.js` : incrémenter `script.js?v=N` dans
@@ -307,6 +308,7 @@ node scripts/check-syntax.mjs         # syntaxe de tous les .js / .mjs de games/
 | `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI — **en cours de découpage** |
 | `decor.js` | décor fixe : arbres, roseaux, rochers, nénuphars (rend `lilyPads`) |
 | `vegetation.js` | roseaux et herbe des berges qui ondulent au vent (shader) |
+| `chanceTouche.js` | **règles de touche, source unique** (vue, couche, fond, esche, délai) : `evaluerTouche(contexte)` ; toute règle de touche s'ajoute ici |
 | `portraits.js` | portraits 2D des espèces : **repli** du panneau de combat (sans WebGL) ; le portrait normal est le rendu 3D (`apercuPoisson.js`) |
 | `modelePoisson.js` | poisson 3D paramétrique (corps par sections, nageoires, yeux, barbillons) — voir `docs/modeles-poissons.md` |
 | `texturesPoisson.js` | robes procédurales 256 × 128 par espèce (motifs) et rayons des nageoires |

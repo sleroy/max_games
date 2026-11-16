@@ -59,6 +59,7 @@ import { run as scenarioEsches } from './scenario-esches.mjs';
 import { run as scenarioPerteEsche } from './scenario-perte-esche.mjs';
 import { run as scenarioTourneAutour } from './scenario-tourne-autour.mjs';
 import { run as scenarioVegetation } from './scenario-vegetation.mjs';
+import { run as scenarioMatriceTouche } from './scenario-matrice-touche.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
@@ -169,6 +170,8 @@ try {
     scenarioPerteEsche();       // esche volée sur un ferrage raté (facile / normal / dur)
     scenarioTourneAutour();     // plus de poissons qui tournent autour sans mordre (vif, vase, lassitude)
     await scenarioVegetation();     // roseaux et herbe ondulent au vent (vegetation.js)
+    debutScenario();
+    await scenarioMatriceTouche();  // matrice de la chance de touche (chanceTouche.js) + concordance avec le jeu
     debutScenario();
     scenarioMenus();            // menus de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel
     debutScenario();
