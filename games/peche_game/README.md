@@ -303,9 +303,10 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
 - **Météo** : cycle beau temps → **rafales** (le vent souffle plus fort) → **pluie**
   (gouttes, ciel grisé, ondulations sur l'eau, bruit de pluie) ; sous la pluie, les
   poissons s'intéressent à l'hameçon **de plus loin**.
-- **Vie ambiante** : **oiseaux** qui tournent dans le ciel en battant des ailes,
-  **libellules** au-dessus de l'eau, **poisson qui saute** de temps en temps ; et le son
-  (pépiements, « plop ») va avec.
+- **Vie ambiante** : **oiseaux** 3D (corneille, mouette, hirondelle) qui tournent
+  dans le ciel en battant des ailes articulées, **libellules** 3D à quatre ailes
+  nervurées au-dessus de l'eau (vol sur place et pointes sèches), **poisson qui
+  saute** de temps en temps ; et le son (pépiements, « plop ») va avec.
 - **Fiche des espèces** dans le carnet : nombre de prises et **record** pour chaque
   espèce attrapée.
 - **Carte de l'étang** dans le carnet : où chercher les poissons (herbiers, roseaux,

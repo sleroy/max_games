@@ -10,6 +10,8 @@ import { creerAvion } from './avion.js?v=243';
 import { creerConseilLocal } from './conseilLocal.js?v=244';
 import { heureDeJeu } from './physique.js?v=243';
 import { especesPresentes } from './milieux.js?v=243';
+import { creerModeleOiseau, animerOiseau } from './modeleOiseau.js?v=244';
+import { creerModeleLibellule, animerLibellule } from './modeleLibellule.js?v=244';
 
 export function creerVie(deps) {
     const {
@@ -19,49 +21,41 @@ export function creerVie(deps) {
     // ---------------------------------------------------------------------------
     // Vie ambiante : oiseaux, libellules et poisson qui saute.
     // ---------------------------------------------------------------------------
+    // Oiseaux (modeleOiseau.js) : trois espèces pour un ciel varié — corneille
+    // sombre, mouette claire, hirondelle rapide. Chacune a son cercle et son
+    // altitude ; le bec suit la trajectoire (le modèle regarde vers +X).
     etat.birds = [];
+    const OISEAUX_CIEL = ['corneille', 'mouette', 'hirondelle'];
     for (let i = 0; i < 3; i++) {
-        const bird = new THREE.Group();
-        const corps = new THREE.Mesh(
-            new THREE.SphereGeometry(0.35, 8, 6),
-            new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.9 })
-        );
-        corps.scale.set(1.8, 0.7, 0.8);
-        bird.add(corps);
-        const ailes = [];
-        for (let c = -1; c <= 1; c += 2) {
-            const aile = new THREE.Mesh(
-                new THREE.PlaneGeometry(2.2, 0.9),
-                new THREE.MeshStandardMaterial({ color: 0x33333d, roughness: 0.9, side: THREE.DoubleSide })
-            );
-            aile.position.set(0, 0.1, c * 1.1);
-            bird.add(aile);
-            ailes.push({ mesh: aile, cote: c });
-        }
-        bird.userData.ailes = ailes;
+        const bird = creerModeleOiseau(OISEAUX_CIEL[i % OISEAUX_CIEL.length]);
         bird.userData.phase = i * 2.1;
+        bird.userData.orbite = 1 - i * 0.16;
+        bird.userData.hauteur = 22 + i * 3.5;
+        bird.rotation.order = 'YXZ';
         scene.add(bird);
         etat.birds.push(bird);
     }
 
+    // Libellules (modeleLibellule.js) : trois robes (bleue, verte, rouge).
+    // Chacune a une ancre au-dessus de l'eau (décalage de référence × f) et
+    // fait des pointes sèches entre deux vols sur place.
     etat.libellules = [];
+    const LIBELLULES_EAU = ['azur', 'verte', 'rouge'];
+    const ANCRES_LIB = [[-20, -4], [14, 6], [4, 12]];
     for (let i = 0; i < 3; i++) {
-        const lib = new THREE.Group();
-        const corps = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5),
-            new THREE.MeshStandardMaterial({ color: 0x2f6f8f, roughness: 0.6 })
-        );
-        corps.rotation.z = Math.PI / 2;
-        lib.add(corps);
-        for (let c = -1; c <= 1; c += 2) {
-            lib.add(new THREE.Mesh(
-                new THREE.PlaneGeometry(0.9, 0.28),
-                new THREE.MeshStandardMaterial({
-                    color: 0xd9f2ff, transparent: true, opacity: 0.65, side: THREE.DoubleSide
-                })
-            ));
-        }
+        const lib = creerModeleLibellule(LIBELLULES_EAU[i % LIBELLULES_EAU.length]);
         lib.userData.phase = i * 1.7;
+        lib.userData.ox = ANCRES_LIB[i][0];
+        lib.userData.oz = ANCRES_LIB[i][1];
+        lib.userData.hauteur = 1.05 + i * 0.22;
+        lib.userData.minuteur = 1.6 + i * 0.9;
+        lib.userData.vol = 0;
+        lib.userData.depart = new THREE.Vector3();
+        lib.userData.cible = new THREE.Vector3();
+        lib.rotation.order = 'YXZ';
+        // Posée tout de suite sur son ancre (sinon elle partirait de l'origine).
+        lib.position.set(POND_CENTER.x + lib.userData.ox * monde.echelle,
+            lib.userData.hauteur, POND_CENTER.z + lib.userData.oz * monde.echelle);
         scene.add(lib);
         etat.libellules.push(lib);
     }
@@ -102,23 +96,70 @@ export function creerVie(deps) {
         const orbite = Math.max(0.5, f);
         for (let i = 0; i < etat.birds.length; i++) {
             const bird = etat.birds[i];
-            const p = bird.userData.phase;
+            const u = bird.userData;
+            const p = u.phase;
+            const t = time * 0.06 + p;
+            const r = u.orbite;
             bird.position.set(
-                Math.cos(time * 0.06 + p) * 110 * orbite,
-                24 + Math.sin(time * 0.3 + p) * 2.5,
-                POND_CENTER.z + Math.sin(time * 0.06 + p) * 80 * orbite);
-            bird.rotation.y = -time * 0.06 - p + Math.PI / 2;
-            const battement = Math.sin(time * 9 + p) * 0.7;
-            bird.userData.ailes.forEach(a => { a.mesh.rotation.x = a.cote * (0.2 + battement); });
+                POND_CENTER.x + Math.cos(t) * 110 * orbite * r,
+                u.hauteur + Math.sin(time * 0.3 + p) * 2.2,
+                POND_CENTER.z + Math.sin(t) * 80 * orbite * r);
+            // Cap du bec (+X) d'après la vitesse, et inclinaison dans le virage.
+            const vx = -Math.sin(t) * 110 * r;
+            const vz = Math.cos(t) * 80 * r;
+            bird.rotation.y = Math.atan2(-vz, vx);
+            bird.rotation.x = 0.28;
+            animerOiseau(bird, time);
         }
         for (let i = 0; i < etat.libellules.length; i++) {
             const lib = etat.libellules[i];
-            const p = lib.userData.phase;
-            lib.position.set(
-                POND_CENTER.x + (Math.sin(time * 0.9 + p) * 14 + Math.sin(time * 3.1 + p) * 1.5) * f,
-                1.2 + Math.sin(time * 2.3 + p) * 0.5,
-                POND_CENTER.z + (18 + Math.cos(time * 0.7 + p * 1.3) * 9) * f);
-            lib.rotation.y = Math.sin(time * 2 + p) * 0.6;
+            const u = lib.userData;
+            const p = u.phase;
+            // Ancre de référence : suit le centre et la taille de l'étang.
+            const ax = POND_CENTER.x + u.ox * f;
+            const az = POND_CENTER.z + u.oz * f;
+            if (u.vol > 0) {
+                // Pointe sèche : interpolation lissée vers la cible.
+                u.vol = Math.max(0, u.vol - dt / 0.45);
+                const k = 1 - u.vol;
+                const lisse = k * k * (3 - 2 * k);
+                lib.position.x = u.depart.x + (u.cible.x - u.depart.x) * lisse;
+                lib.position.z = u.depart.z + (u.cible.z - u.depart.z) * lisse;
+                lib.position.y = u.depart.y + (u.cible.y - u.depart.y) * lisse
+                    + Math.sin(Math.PI * k) * 0.20;
+                const dx = u.cible.x - u.depart.x;
+                const dz = u.cible.z - u.depart.z;
+                if (dx * dx + dz * dz > 1e-6) {
+                    lib.rotation.y = Math.atan2(-dz, dx);
+                }
+                if (u.vol === 0) {
+                    u.ox = (u.cible.x - POND_CENTER.x) / f;
+                    u.oz = (u.cible.z - POND_CENTER.z) / f;
+                    u.hauteur = u.cible.y;
+                }
+            } else {
+                u.minuteur -= dt;
+                if (u.minuteur <= 0) {
+                    u.minuteur = 2.4 + Math.random() * 3.4;
+                    u.depart.copy(lib.position);
+                    u.cible.set(
+                        ax + (Math.random() - 0.5) * 11 * f,
+                        0.70 + Math.random() * 0.95,
+                        az + (Math.random() - 0.5) * 11 * f);
+                    u.vol = 1;
+                } else {
+                    // Sur place : petits écarts et rappel doux vers l'ancre.
+                    const rappel = Math.min(1, dt * 1.2);
+                    lib.position.x += Math.sin(time * 0.9 + p) * 0.45 * dt
+                        + (ax - lib.position.x) * rappel;
+                    lib.position.z += Math.cos(time * 0.7 + p * 1.3) * 0.45 * dt
+                        + (az - lib.position.z) * rappel;
+                    lib.position.y = u.hauteur + Math.sin(time * 2.3 + p) * 0.16;
+                    lib.rotation.y = Math.sin(time * 0.8 + p) * 0.8;
+                }
+            }
+            lib.rotation.x = 0.10 * Math.sin(time * 1.9 + p);   // assiette
+            animerLibellule(lib, time);
         }
         if (sautT < 0) {
             sautTimer -= dt;

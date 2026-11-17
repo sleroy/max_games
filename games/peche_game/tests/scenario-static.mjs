@@ -13,7 +13,7 @@ function read(name) {
 // Certaines règles portent sur « le code du jeu » sans se soucier du module qui
 // le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
 // modules fusionnés : script.js + les modules extraits.
-const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js'];
+const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'modeleOiseau.js', 'modeleLibellule.js', 'texturesVie.js'];
 
 function readModules() {
     return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))

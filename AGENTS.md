@@ -323,6 +323,9 @@ MATRICE_CSV=docs/matrice-touche.csv node games/peche_game/tests/run.mjs   # rég
 | `portraits.js` | portraits 2D des espèces : **repli** du panneau de combat (sans WebGL) ; le portrait normal est le rendu 3D (`apercuPoisson.js`) |
 | `modelePoisson.js` | poisson 3D paramétrique (corps par sections, nageoires, yeux, barbillons) — voir `docs/modeles-poissons.md` |
 | `texturesPoisson.js` | robes procédurales 256 × 128 par espèce (motifs) et rayons des nageoires |
+| `modeleOiseau.js` | oiseau 3D paramétrique (corneille, mouette, hirondelle) : ailes articulées épaule + poignet, queue, bec — voir `docs/modeles-vie.md` |
+| `modeleLibellule.js` | libellule 3D paramétrique (3 robes) : abdomen de 10 segments articulé, 4 ailes nervurées, pattes — voir `docs/modeles-vie.md` |
+| `texturesVie.js` | plumages 128 × 64, ailes de libellule transparentes et abdomen 128 × 32 (procéduraux) |
 | `especes.js` | données : espèces, styles de combat, silhouettes, touches, `substrats` préférés |
 | `esches.js` | esches (maïs, ver, pain, bouillette, vif) : profils, décision de touche, widget |
 | `substrats.js` | types de fond (sable, gravier, vase, roche, herbier) : grille, texture, carte, habitat, accrochages |
