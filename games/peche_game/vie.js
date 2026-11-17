@@ -5,11 +5,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=239';
-import { creerAvion } from './avion.js?v=239';
-import { creerConseilLocal } from './conseilLocal.js?v=239';
-import { heureDeJeu } from './physique.js?v=239';
-import { especesPresentes } from './milieux.js?v=239';
+import { etat } from './etat.js?v=240';
+import { creerAvion } from './avion.js?v=240';
+import { creerConseilLocal } from './conseilLocal.js?v=240';
+import { heureDeJeu } from './physique.js?v=240';
+import { especesPresentes } from './milieux.js?v=240';
 
 export function creerVie(deps) {
     const {

@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=239';
+import { etat } from './etat.js?v=240';
 
 export function creerAmorcage(deps) {
     const {
@@ -24,6 +24,11 @@ export function creerAmorcage(deps) {
     const CHUM_ATTRACT_RADIUS = 18;    // zone où les poissons sentent l'amorce (3 × R)
     const CHUM_DRIFT = 0.25;           // dérive du nuage au vent
     const CHUM_LIFETIME = 60;          // §17.4 : durée de vie du nuage (s)
+    const CHUMS_MAX = 8;               // plafond de sécurité : au-delà, le plus ancien nuage est retiré
+
+    // Source de vérité : TOUS les nuages vivants (le plus ancien en premier). Chaque boule lancée
+    // ajoute son nuage ; aucun n'en efface un autre (sauf le plafond ci-dessus).
+    etat.chums = [];
 
     let armSwing = 0;                  // bras : 0 = repos, 1 = armé (en arrière)
     let armThrow = 0;                  // bras : impulsion de lancer
@@ -43,11 +48,23 @@ export function creerAmorcage(deps) {
         return new THREE.CanvasTexture(c);
     }
 
-    // Crée le nuage de miettes qui attire les poissons.
+    // Retire un nuage de la scène et libère sa texture et son matériau (pas de fuite mémoire).
+    function retirerChum(nuage) {
+        scene.remove(nuage.group);
+        if (nuage.material.map) { nuage.material.map.dispose(); }
+        nuage.material.dispose();
+    }
+
+    // Retire TOUS les nuages (nouvelle partie).
+    etat.viderChums = function () {
+        etat.chums.forEach(retirerChum);
+        etat.chums.length = 0;
+    };
+
+    // Crée un nuage de miettes qui attire les poissons ; les nuages déjà en place restent.
     function spawnChum(position) {
-        if (etat.chum) {
-            scene.remove(etat.chum.group);
-            etat.chum = null;
+        while (etat.chums.length >= CHUMS_MAX) {
+            retirerChum(etat.chums.shift());
         }
         const group = new THREE.Group();
         const material = new THREE.SpriteMaterial({
@@ -66,7 +83,7 @@ export function creerAmorcage(deps) {
         }
         group.position.set(position.x, 0.4, position.z);
         scene.add(group);
-        etat.chum = {
+        etat.chums.push({
             group: group,
             material: material,
             position: new THREE.Vector3(position.x, 0.1, position.z),
@@ -75,7 +92,7 @@ export function creerAmorcage(deps) {
             radius: CHUM_RADIUS,
             detect: CHUM_ATTRACT_RADIUS,
             strength: 0
-        };
+        });
         etat.spawnRipple(position);
     }
 
@@ -113,38 +130,45 @@ export function creerAmorcage(deps) {
         }
     });
 
-    function updateChum(dt) {
-        if (!etat.chum) {
-            return;
-        }
-        etat.chum.age += dt;
-        if (etat.chum.age >= etat.chum.lifetime) {
-            scene.remove(etat.chum.group);
-            etat.chum = null;
-            return;
+    // Fait vivre UN nuage ; renvoie false quand il est éteint (à retirer).
+    function majNuage(nuage, dt) {
+        nuage.age += dt;
+        if (nuage.age >= nuage.lifetime) {
+            return false;
         }
         // Le nuage dérive doucement avec le vent.
-        etat.chum.position.x += Math.cos(wind.dir) * wind.strength * CHUM_DRIFT * dt;
-        etat.chum.position.z += Math.sin(wind.dir) * wind.strength * CHUM_DRIFT * dt;
-        const dx = etat.chum.position.x - POND_CENTER.x;
-        const dz = etat.chum.position.z - POND_CENTER.z;
+        nuage.position.x += Math.cos(wind.dir) * wind.strength * CHUM_DRIFT * dt;
+        nuage.position.z += Math.sin(wind.dir) * wind.strength * CHUM_DRIFT * dt;
+        const dx = nuage.position.x - POND_CENTER.x;
+        const dz = nuage.position.z - POND_CENTER.z;
         const dd = Math.hypot(dx, dz);
         const maxR = rayonEtang(Math.atan2(dz, dx)) - 6;
         if (dd > maxR) {
-            etat.chum.position.x = POND_CENTER.x + (dx / dd) * maxR;
-            etat.chum.position.z = POND_CENTER.z + (dz / dd) * maxR;
+            nuage.position.x = POND_CENTER.x + (dx / dd) * maxR;
+            nuage.position.z = POND_CENTER.z + (dz / dd) * maxR;
         }
         // Apparition en douceur, puis disparition en fondu.
-        const fadeIn = Math.min(1, etat.chum.age / 1.2);
-        const fadeOut = Math.min(1, Math.max(0, (etat.chum.lifetime - etat.chum.age) / 3));
-        etat.chum.strength = Math.min(fadeIn, fadeOut);
+        const fadeIn = Math.min(1, nuage.age / 1.2);
+        const fadeOut = Math.min(1, Math.max(0, (nuage.lifetime - nuage.age) / 3));
+        nuage.strength = Math.min(fadeIn, fadeOut);
         // Le nuage COULE jusqu'à la profondeur de la ligne : on amorce là où on pêche.
-        etat.chum.position.y += (etat.HOOK_DEPTH - etat.chum.position.y) * Math.min(1, dt * 0.7);
-        etat.chum.group.position.set(etat.chum.position.x, etat.chum.position.y + 0.35, etat.chum.position.z);
-        etat.chum.material.opacity = 0.55 * etat.chum.strength;
-        const pulse = 1 + Math.sin(etat.chum.age * 1.5) * 0.06;
-        etat.chum.group.scale.set(pulse, pulse, pulse);
-        etat.chum.group.rotation.y += dt * 0.15;
+        nuage.position.y += (etat.HOOK_DEPTH - nuage.position.y) * Math.min(1, dt * 0.7);
+        nuage.group.position.set(nuage.position.x, nuage.position.y + 0.35, nuage.position.z);
+        nuage.material.opacity = 0.55 * nuage.strength;
+        const pulse = 1 + Math.sin(nuage.age * 1.5) * 0.06;
+        nuage.group.scale.set(pulse, pulse, pulse);
+        nuage.group.rotation.y += dt * 0.15;
+        return true;
+    }
+
+    function updateChum(dt) {
+        // Chaque nuage vieillit seul ; un nuage éteint est retiré de la scène, libéré et ôté du tableau.
+        for (let i = etat.chums.length - 1; i >= 0; i--) {
+            if (!majNuage(etat.chums[i], dt)) {
+                retirerChum(etat.chums[i]);
+                etat.chums.splice(i, 1);
+            }
+        }
     }
 
     // Animation du bras du pêcheur : repos → armé (visée) → lancer.

@@ -171,7 +171,7 @@ export function run() {
     // précédents (le jeu consomme rand() à chaque image : le nombre de tirages
     // varie avec le temps réel). On repart donc d'une graine imposée.
     resetToIdle();
-    if (G().etat.chum) { G().etat.chum.group.parent && G().etat.chum.group.parent.remove(G().etat.chum.group); G().etat.chum = null; }   // amorce restée des scénarios précédents
+    G().etat.viderChums();   // amorce restée des scénarios précédents
     G().setGraine(20240101);   // après le retour au repos : resetToIdle() consomme des tirages
     G().repeuplerEtang();      // population neuve : indépendante des scénarios précédents
     const aGarder = G().fishes.length;

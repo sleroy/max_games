@@ -64,6 +64,7 @@ import { run as scenarioAvion } from './scenario-avion.mjs';
 import { run as scenarioConseilLocal } from './scenario-conseil-local.mjs';
 import { run as scenarioBouchonsTriche } from './scenario-bouchons-triche.mjs';
 import { run as scenarioAmorceCouche } from './scenario-amorce-couche.mjs';
+import { run as scenarioAmorcesMultiples } from './scenario-amorces-multiples.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
 import { run as scenarioPhysique } from './scenario-physique.mjs';
 import { run as scenarioPhysiqueEau } from './scenario-physique-eau.mjs';
@@ -188,6 +189,7 @@ try {
     await scenarioTaillesEtangs();  // tailles d'étang : rayon, géométrie, décor, obstacles, caméra, brume, portées, barque, retour en plaine
     scenarioBouchonsTriche();       // bouchons triches payants : géant, détecteur sonore, balise « FERRER ! »
     scenarioAmorceCouche();         // amorce : un poisson d'une autre couche ne se fige plus ; clochette des scions
+    scenarioAmorcesMultiples();     // amorces : plusieurs nuages simultanés, plus proche attire, plafond 8
     debutScenario();
     scenarioMenus();            // menus de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel
     debutScenario();

@@ -18,7 +18,7 @@ const API = [
     'sound', 'getWind', 'getVaneRotation', 'getTension', 'getStruggleTimeLeft',
     'getLineLength', 'getStruggleTurnsNeeded', 'getUnitsPerTurn', 'turnCrank', 'reelClick', 'setPaused', 'step',
     'setFeedMode', 'isFeedMode', 'getFeedState', 'getFeedPower', 'getFeedTargetPower', 'startFeedCharge',
-    'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChum', 'getPondCenter',
+    'releaseFeed', 'getFeedBall', 'getFeedLanding', 'getFeedRange', 'getChums', 'getPondCenter',
     'water', 'getWaterHeightAt', 'getBaitInterest', 'getHookDepth', 'getFloatOpacity'
 ];
 

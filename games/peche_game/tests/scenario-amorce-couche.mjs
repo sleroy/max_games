@@ -19,21 +19,22 @@ export function run() {
     stepFor(0.3);
     G().releaseFeed();
     stepUntil(() => G().getFeedState() === 'idle', 3);
-    check('un nuage d’amorce est bien là', !!e.chum && e.chum.strength >= 0, String(!!e.chum));
-    e.chum.age = 0;
-    e.chum.position.y = -0.2;                                         // le nuage est en surface
+    check('un nuage d’amorce est bien là', e.chums.length === 1 && e.chums[0].strength >= 0, String(e.chums.length));
+    const nuage = e.chums[0];
+    nuage.age = 0;
+    nuage.position.y = -0.2;                                         // le nuage est en surface
     // Gardon DANS le rayon de détection, mais 3 unités plus bas que le nuage : couche différente.
     const gardon = G().spawnFish(SPECIES.find(s => s.id === 'gardon'));
     const d = gardon.userData;
     d.depth = -3.2;
     d.profNat = undefined;
-    gardon.position.set(e.chum.position.x + 9, d.depth - d.topOffset, e.chum.position.z);
+    gardon.position.set(nuage.position.x + 9, d.depth - d.topOffset, nuage.position.z);
     d.vx = 1.2;
     d.vz = 0;
     d.hooked = false;
     const x0 = gardon.position.x;
     const z0 = gardon.position.z;
-    for (let i = 0; i < 20; i++) { e.chum.position.y = -0.2; step(0.05); }   // le nuage reste en surface pendant le test
+    for (let i = 0; i < 20; i++) { nuage.position.y = -0.2; step(0.05); }   // le nuage reste en surface pendant le test
     const bouge = Math.hypot(gardon.position.x - x0, gardon.position.z - z0);
     check('le poisson d’une autre couche continue de nager (il n’est plus figé)', bouge > 0.5, bouge.toFixed(2) + ' unités en 1 s');
     check('… et ne se laisse pas attirer par le nuage', d.attire === false, String(d.attire));
