@@ -118,8 +118,9 @@ export function run() {
     check('chaque poisson nage dans SA zone de profondeur', horsZone.length === 0,
         horsZone.map(f => f.userData.espece).join(', ') || 'aucun');
 
-    // --- Le bouchon est petit et l'hameçon profond (demandes du joueur) ---
-    check('le bouchon reste petit', G().floatGroup.scale.x <= 1,
+    // --- Le bouchon reste raisonnable et l'hameçon profond (demandes du joueur) ---
+    // ATTENDU MODIFIÉ (2026-11-17) : bouchon agrandi ×1,5 pour se voir dans les vagues ; il ne dépasse pas ×1,5.
+    check('le bouchon reste raisonnable (échelle ≤ 1,5)', G().floatGroup.scale.x <= 1.5,
         'échelle ' + G().floatGroup.scale.x);
     check('l’hameçon est bien bas sous le bouchon', G().getHookDepth() <= -2,
         'hameçon à ' + G().getHookDepth() + ' unité');

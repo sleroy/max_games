@@ -58,10 +58,10 @@ export function run() {
     const seuilTanche = G().getVitesseMaxTours();
     leger.userData.weight = 40;                      // gros silure
     const seuilSilure = G().getVitesseMaxTours();
-    check('un goujon autorise une remontée rapide (≈ 6 tours/s)',
-        seuilGoujon > 5.5 && seuilGoujon < 6.6, seuilGoujon.toFixed(2));
+    check('un goujon autorise une remontée rapide (≈ 5,3 tours/s)',
+        seuilGoujon > 4.9 && seuilGoujon < 5.7, seuilGoujon.toFixed(2));
     check('un poisson de 6 kg demande d’y aller plus doucement',
-        seuilTanche > 3.2 && seuilTanche < 4.2, seuilTanche.toFixed(2));
+        seuilTanche > 2.6 && seuilTanche < 3.2, seuilTanche.toFixed(2));
     check('plus le poisson est lourd, plus le seuil baisse',
         seuilGoujon > seuilPerche && seuilPerche > seuilTanche && seuilTanche > seuilSilure,
         [seuilGoujon, seuilPerche, seuilTanche, seuilSilure]
@@ -104,20 +104,20 @@ export function run() {
     G().setFilEquipe('nylon');
     const petit = startFight(0, -25);
     petit.userData.weight = 0.1;
-    G().avertirVitesse();
+    G().etat.avertissementsVitesse = 1;   // un avertissement, sans tirer la casse (rand)
     check('un goujon ne fait pas casser la ligne',
-        G().getRisqueCasseVitesse() < 0.015,
+        G().getRisqueCasseVitesse() < 0.05,
         G().getRisqueCasseVitesse().toFixed(4));
     const risquePetit = G().getRisqueCasseVitesse();
     resetToIdle();
     const gros = startFight(0, -25);
     gros.userData.weight = 20;
-    G().avertirVitesse();
+    G().etat.avertissementsVitesse = 1;
     const risqueGros = G().getRisqueCasseVitesse();
     check('un gros poisson fait plus risquer la casse',
         risqueGros > risquePetit * 2,
         risquePetit.toFixed(4) + ' vs ' + risqueGros.toFixed(4));
-    check('le risque reste plafonné', risqueGros <= 0.15, risqueGros.toFixed(3));
+    check('le risque reste plafonné', risqueGros <= 0.4, risqueGros.toFixed(3));
 
     resetToIdle();
 }

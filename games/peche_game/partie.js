@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=256';
+import { etat } from './etat.js?v=257';
 
 // Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
 export function majChoixRadio(radios, valeur) {
@@ -34,7 +34,7 @@ export function creerPartie(deps) {
     // trop rapide en coûte une. À zéro : fin de partie, nom du pêcheur et
     // classement local (3 onglets : poissons, poids total, records par espèce).
     // ---------------------------------------------------------------------------
-    etat.VITESSE_MANIVELLE_MAX = 4.0;     // base : tours/s EN MOYENNE sur 0,6 s
+    etat.VITESSE_MANIVELLE_MAX = 3.2;     // base : tours/s EN MOYENNE sur 0,6 s (4,0 avant 2026-11-17 : trop tolérant)
     const RANKING_KEY = 'peche_max_games_classement';
     const NOM_KEY = 'peche_max_games_nom';
     etat.avertissementsVitesse = 0;
@@ -86,7 +86,7 @@ export function creerPartie(deps) {
     function vitesseMaxTours() {
         if (!etat.hookedFish) { return Infinity; }
         const poids = Math.max(0.05, etat.hookedFish.userData.weight || 0);
-        // 0,1 kg ≈ 6,1 · 0,8 kg ≈ 5,4 · 2,8 kg ≈ 4,5 · 6 kg ≈ 3,6 · ≥ 20 kg = 2,5
+        // 0,1 kg ≈ 5,3 · 0,8 kg ≈ 4,6 · 2,8 kg ≈ 3,7 · 6 kg ≈ 2,8 · ≥ 12 kg = 2,5
         const seuil = Math.max(2.5, etat.VITESSE_MANIVELLE_MAX + 2.5 - 1.2 * Math.sqrt(poids));
         return seuil * filEquipe().resistance;
     }
@@ -97,15 +97,15 @@ export function creerPartie(deps) {
         if (!etat.hookedFish) { return 0; }
         const poids = Math.max(0.05, etat.hookedFish.userData.weight || 0);
         const facteur = Math.min(1.6, 0.4 + 0.4 * Math.sqrt(poids));
-        return Math.min(0.15, 0.015 * etat.avertissementsVitesse * facteur);
+        return Math.min(0.4, 0.05 * etat.avertissementsVitesse * facteur);   // 0,015 et 0,15 avant 2026-11-17
     }
 
-    // Remontée trop rapide : un avertissement (toutes les 1,5 s au plus), puis le
+    // Remontée trop rapide : un avertissement (toutes les secondes au plus), puis le
     // risque de casse augmente à chaque avertissement.
     function avertirVitesse() {
         if (etat.partieTerminee) { return; }
         const maintenant = performance.now();
-        if (maintenant - derniereAlerteVitesse < 1500) { return; }  // 1 alerte / 1,5 s
+        if (maintenant - derniereAlerteVitesse < 1000) { return; }  // 1 alerte / s
         derniereAlerteVitesse = maintenant;
         etat.avertissementsVitesse += 1;
         // POPUP 3D près du bouchon, comme « FERRÉ ! » ou « Trop tôt ! » : le joueur

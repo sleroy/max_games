@@ -230,11 +230,12 @@ export function run() {
             .forEach(function (cas) {
                 G().setHeure(cas[1]);
                 const f = G().getFacteurTouche({ nocturne: cas[2] });
-                if (cas[0].premier < 3 * f - 1e-6 || cas[0].premier > 8 * f + 1e-6) { premiersBornes = false; }
+                if (cas[0].premier < 1.5 * f - 1e-6 || cas[0].premier > 4 * f + 1e-6) { premiersBornes = false; }
                 if (cas[0].phase !== 'touche') { touchesAtteintes = false; }
             });
     }
-    check('le délai du 1er signal reste dans [3 ; 8] × facteur (rien de tiré en plus)', premiersBornes);
+    // ATTENDU MODIFIÉ (2026-11-17) : [3 ; 8] → [1,5 ; 4] (« la touche met du temps à venir »).
+    check('le délai du 1er signal reste dans [1,5 ; 4] × facteur (rien de tiré en plus)', premiersBornes);
     check('la vraie touche arrive toujours (aube, midi, nuit, diurne et nocturne)', touchesAtteintes);
     check('diurne : la touche vient plus vite à l’aube qu’à midi (' + SOMME.aube.toFixed(0) + ' s contre '
         + SOMME.midi.toFixed(0) + ' s)', SOMME.aube < SOMME.midi);

@@ -7,7 +7,7 @@
 // L'état partagé passe par etat.js (`etat.crankRotationDelta`, `etat.crankAngle`,
 // `etat.paused`) ; le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=256';
+import { etat } from './etat.js?v=257';
 
 export function creerManivelle(deps) {
     const { crank, crankRotor, sound, ensureSound, vitesseMaxTours, avertirVitesse } = deps;
@@ -64,8 +64,8 @@ export function creerManivelle(deps) {
         crankLastAngle = angle;
         crankRotor.style.transform = 'rotate(' + etat.crankAngle + 'rad)';
         // Remonter TROP VITE fatigue la ligne — mais on mesure une MOYENNE sur une
-        // fenêtre de 0,6 s, et il faut DEUX fenêtres de suite trop rapides : un coup
-        // de poignet ne suffit pas, il faut vraiment enchaîner les tours.
+        // fenêtre de 0,6 s : une fenêtre trop rapide suffit pour un avertissement (le joueur
+        // trouvait la remontée trop tolérante avec deux fenêtres de suite).
         const maintenant = performance.now();
         const ecart = Math.max(8, maintenant - crankLastMoveTime) / 1000;
         crankLastMoveTime = maintenant;
@@ -85,7 +85,7 @@ export function creerManivelle(deps) {
                 const excedent = (toursParSeconde - max) * fenetre * TWO_PI;
                 etat.crankRotationDelta = Math.max(0, etat.crankRotationDelta - excedent);
                 crankSpeedStrikes += 1;
-                if (crankSpeedStrikes >= 2) {
+                if (crankSpeedStrikes >= 1) {   // une seule fenêtre trop rapide suffit (2 avant 2026-11-17)
                     crankSpeedStrikes = 0;
                     avertirVitesse();
                 }

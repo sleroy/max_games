@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=256';
+import { etat } from './etat.js?v=257';
 
 export function creerBouchons(deps) {
     const {
@@ -33,7 +33,8 @@ export function creerBouchons(deps) {
     //   balise    : gros panneau « FERRER ! » pendant la vraie touche (comme le mode facile)
     const CAPACITE_BASE = { fenetre: 1, fausses: 1, avantage: 1, temps: 1, xp: 1, voyant: false, sonnette: false,
         geant: false, detecteur: false, balise: false };
-    const ECHELLE_GEANT = 3;   // le bouchon géant est 3 fois plus gros (corps et tige)
+    const ECHELLE_GEANT = 8;    // bouchon géant : 8 fois plus gros (corps et tige) — 3 avant 2026-11-17
+    const ECHELLE_TRICHE = 5;   // les autres bouchons triches (détecteur, balise) sont énormes aussi : on les voit de loin
 
     // Bouchons offerts au départ (les autres s'ACHÈTENT avec l'expérience).
     etat.BOUCHONS_DE_DEPART = ['anglaise', 'waggler', 'coulisse', 'bolognaise'];
@@ -76,11 +77,11 @@ export function creerBouchons(deps) {
           desc: 'Bouchon géant : énorme, tu vois la touche de très loin. Il est lourd, donc un peu moins sensible. Triche : chaque poisson rapporte moitié moins d’expérience.' },
         { id: 'detecteur', nom: 'Bouchon détecteur (triche)', profondeur: [0.6, 9.0], prix: 90, remontee: 'couche', longueur: 0.45, triche: true,
           couleur: 0x39d353, corps: 0x222222, atout: '🔔 Bip quand ça mord · XP ×0,5',
-          capacite: { detecteur: true, xp: 0.5 }, sensibilite: 1.0,
+          capacite: { detecteur: true, fenetre: 1.6, xp: 0.5 }, sensibilite: 1.0,
           desc: 'Bouchon détecteur : comme le détecteur des carpistes, il fait « bip » quand un poisson approche et « bip-bip-bip » quand il faut ferrer. Triche : chaque poisson rapporte moitié moins d’expérience.' },
         { id: 'balise', nom: 'Bouchon balise (triche)', profondeur: [0.6, 9.0], prix: 130, remontee: 'couche', longueur: 0.45, triche: true,
           couleur: 0xff00aa, corps: 0xffffff, atout: '❗ « FERRER ! » à l’écran · XP ×0,5',
-          capacite: { balise: true, xp: 0.5 }, sensibilite: 1.0,
+          capacite: { balise: true, fenetre: 1.6, xp: 0.5 }, sensibilite: 1.0,
           desc: 'Bouchon balise : un gros « FERRER ! » s’affiche au bon moment, comme en mode Facile. Triche : chaque poisson rapporte moitié moins d’expérience.' }
     ];
     etat.flotteurChoix = 'anglaise';
@@ -111,14 +112,15 @@ export function creerBouchons(deps) {
     }
 
     function appliquerFlotteurVisuel(f) {
-        // Bouchon géant (triche) : corps et tige grossissent ; la tige part du haut du gros corps.
-        const echelle = capaciteBouchon(f).geant ? ECHELLE_GEANT : 1;
+        // Bouchons TRICHES : énormes (le géant plus encore) ; corps et tige grossissent, la tige part du haut du gros corps.
+        const echelle = capaciteBouchon(f).geant ? ECHELLE_GEANT : (f.triche ? ECHELLE_TRICHE : 1);
         etat.floatBody.scale.setScalar(echelle);
         etat.floatStick.scale.x = echelle;
         etat.floatStick.scale.z = echelle;
-        // La tige s'allonge selon le modèle (elle ressort plus ou moins de l'eau).
-        etat.floatStick.scale.y = f.longueur / 0.5;
-        etat.floatStick.position.y = 0.04 * echelle + f.longueur / 2;
+        // La tige s'allonge selon le modèle (elle ressort plus ou moins de l'eau) ; triche : plus haute aussi.
+        const hauteur = f.longueur * Math.sqrt(echelle);
+        etat.floatStick.scale.y = hauteur / 0.5;
+        etat.floatStick.position.y = 0.04 * echelle + hauteur / 2;
         etat.floatStick.material.color.set(f.couleur);
         etat.floatBody.material.color.set(f.corps);
         etat.floatStick.userData.longueur = f.longueur;

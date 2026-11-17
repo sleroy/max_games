@@ -832,7 +832,8 @@ export function run() {
     resetToIdle();
     group('47) Mesures réalistes (1 unité du monde = 50 cm)');
     const mes = G().getEchelles();
-    check('le bouchon mesure 15 à 40 cm', mes.bouchonCm >= 15 && mes.bouchonCm <= 40,
+    // Agrandi exprès (×1,5) pour rester visible dans les vagues : jusqu'à 60 cm.
+    check('le bouchon mesure 15 à 60 cm', mes.bouchonCm >= 15 && mes.bouchonCm <= 60,
         mes.bouchonCm + ' cm (tige ' + mes.bouchonTigeCm + ' cm)');
     check('l’hameçon mesure moins de 4 cm', mes.hameconCm <= 4, mes.hameconCm + ' cm');
     check('un nénuphar fait 10 à 40 cm de rayon', mes.nenupharCm >= 10 && mes.nenupharCm <= 40,

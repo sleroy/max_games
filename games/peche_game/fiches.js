@@ -4,9 +4,9 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=256';
-import { apercuPartage } from './apercuPoisson.js?v=256';
-import { milieuParId, partsEspeces, texteOuTrouver } from './milieux.js?v=256';
+import { etat } from './etat.js?v=257';
+import { apercuPartage } from './apercuPoisson.js?v=257';
+import { milieuParId, partsEspeces, texteOuTrouver } from './milieux.js?v=257';
 
 const URL_PHOTOS = 'assets/references/photos.json';   // photos de référence (voir assets/references/SOURCES.md)
 

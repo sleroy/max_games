@@ -15,7 +15,7 @@
 // Seule l'esche ÉQUIPÉE (`journal.esche`) est gardée par stocks.js / carnet.js.
 // ⚠ Ce module ne consomme JAMAIS `rand()` : il a son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=256';
+import { etat } from './etat.js?v=257';
 
 // Probabilité de touche d'un poisson de la mauvaise espèce (esche inadaptée) et de l'hameçon NU :
 // pêcher sans esche reste possible, mais presque rien ne mord.
@@ -152,7 +152,7 @@ export function acceptationFacile(escheId, especeId, longueurCm) {
 }
 
 export function creerEsches(deps) {
-    const { verdictFond, modeQuiver, statusDisplay, saveJournal, etiquette } = deps;
+    const { verdictFond, modeQuiver, statusDisplay, saveJournal, etiquette, boutonEsche } = deps;
 
     etat.eschesActives = true;   // faux dans les tests historiques : tout poisson mord (voir harness.mjs)
     etat.numeroLancer = 0;       // incrémenté à chaque lancer (cycleLigne.js) : une décision par poisson et par lancer
@@ -289,10 +289,15 @@ export function creerEsches(deps) {
         return true;
     }
 
-    // Étiquette du widget de profondeur : l'esche équipée (illimitée : pas de compteur).
+    // Étiquette du widget de profondeur ET icône du bouton « Esche » du haut : l'esche équipée.
+    // En mode Dur, une esche volée en silence garde son icône (le joueur ne le sait pas encore).
     function majEtiquette() {
-        if (!etiquette) { return; }
         const esche = etat.escheEquipee ? etat.escheEquipee() : null;
+        if (boutonEsche) {
+            boutonEsche.textContent = esche ? esche.icone : '🪝';
+            boutonEsche.title = esche ? 'Esche : ' + esche.nom : 'Hameçon nu';
+        }
+        if (!etiquette) { return; }
         etiquette.textContent = esche ? esche.icone + ' Esche : ' + esche.nom : '🪝 Hameçon nu';
     }
     etat.accepterTouche = accepterTouche;

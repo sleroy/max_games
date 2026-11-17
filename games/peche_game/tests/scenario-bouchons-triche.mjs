@@ -21,7 +21,9 @@ export function run() {
     const taille0 = G().etat.floatBody.scale.x;
     G().setFloatType('geant');
     checkEqual('géant : capacité', G().getCapaciteBouchon().geant, true);
-    check('géant : le corps grossit ×3', G().etat.floatBody.scale.x === taille0 * 3, String(G().etat.floatBody.scale.x));
+    check('géant : le corps grossit ×8', G().etat.floatBody.scale.x === taille0 * 8, String(G().etat.floatBody.scale.x));
+    G().setFloatType('balise');
+    check('balise : énorme aussi (×5)', G().etat.floatBody.scale.x === taille0 * 5, String(G().etat.floatBody.scale.x));
     G().setFloatType('anglaise');
     checkEqual('un bouchon normal retrouve sa taille', G().etat.floatBody.scale.x, taille0);
 

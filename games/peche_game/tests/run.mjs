@@ -71,6 +71,7 @@ import { run as scenarioMatriceTouche } from './scenario-matrice-touche.mjs';
 import { run as scenarioAvion } from './scenario-avion.mjs';
 import { run as scenarioConseilLocal } from './scenario-conseil-local.mjs';
 import { run as scenarioBouchonsTriche } from './scenario-bouchons-triche.mjs';
+import { run as scenarioAutoFerrage } from './scenario-auto-ferrage.mjs';
 import { run as scenarioAmorceCouche } from './scenario-amorce-couche.mjs';
 import { run as scenarioAmorcesMultiples } from './scenario-amorces-multiples.mjs';
 import { run as scenarioMenus } from './scenario-menus.mjs';
@@ -202,6 +203,8 @@ try {
     debutScenario();
     await scenarioFormesEau();      // formes d'eau : profils étang, lac, canal, rivière ; plaine identique à v239, grille rectangulaire, fosses, ponton, barque
     scenarioBouchonsTriche();       // bouchons triches payants : géant, détecteur sonore, balise « FERRER ! »
+    debutScenario();
+    scenarioAutoFerrage();     // bouton esche, auto-ferrage, touche plus rapide
     scenarioAmorceCouche();         // amorce : un poisson d'une autre couche ne se fige plus ; clochette des scions
     scenarioAmorcesMultiples();     // amorces : plusieurs nuages simultanés, plus proche attire, plafond 8
     debutScenario();

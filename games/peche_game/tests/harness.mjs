@@ -514,6 +514,7 @@ export async function loadGame() {
     game.setHorsNormeChance(0);    // monde de test sans spécimen hors norme
     game.setTechnique('bouchon');  // les tests historiques pêchent au bouchon
     game.setRagondinAuto(false);  // le ragondin ne surgit pas dans les tests
+    game.etat.probaAutoFerrage = 0;   // pas d'auto-ferrage dans les tests historiques (scenario-auto-ferrage l'active)
     game.etat.eschesActives = false;   // §15.2 : sans esche, tout poisson mord (les tests historiques) ; scenario-esches l'active
     // Culling (culling.js) : les scénarios de COMPORTEMENT placent des poissons hors de portée
     // du pêcheur (fosse, nuage d'amorce, thermocline) et observent leur nage : on simule donc

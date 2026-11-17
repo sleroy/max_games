@@ -180,9 +180,9 @@ export function run() {
         const poisson = forceBite(false);
         const f = G().getFacteurTouche(poisson.userData.comp);
         const sink = G().etat.biteSinkAt;
-        if (sink < 3 * f - 1e-6 || sink > 8 * f + 1e-6) { premiersBornes = false; }
+        if (sink < 1.5 * f - 1e-6 || sink > 4 * f + 1e-6) { premiersBornes = false; }
     });
-    check('en jeu, le délai du 1er signal reste dans [3 ; 8] × facteur (froid et tempéré)', premiersBornes);
+    check('en jeu, le délai du 1er signal reste dans [1,5 ; 4] × facteur (froid et tempéré)', premiersBornes);
     resetToIdle();
     G().setTemperatureEau(15);
 

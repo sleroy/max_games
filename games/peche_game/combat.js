@@ -6,10 +6,10 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=256';
-import { apercuPartage } from './apercuPoisson.js?v=256';
+import { etat } from './etat.js?v=257';
+import { apercuPartage } from './apercuPoisson.js?v=257';
 
-import { chronoCombat } from './chronoCombat.js?v=256';
+import { chronoCombat } from './chronoCombat.js?v=257';
 
 export function creerCombat(deps) {
     const {
@@ -402,9 +402,10 @@ export function creerCombat(deps) {
         } else {
             etat.biteTouche = choisirTouche(true, fish.userData.size, fish.userData.aggression, etat.biteStyle);
         }
-        // Longue attente possible (3 à 8 s) avant le 1er signal, × facteur d'heure et de pression (physique.js).
+        // Attente avant le 1er signal (1,5 à 4 s ; 3 à 8 s avant la demande du joueur 2026-11-17 : « la touche
+        // met du temps à venir »), × facteur d'heure et de pression (physique.js).
         // MODE FACILE : le poisson se décide tout de suite (0,7 à 1,3 s).
-        etat.biteSinkAt = (etat.modeFacile ? 0.7 + rand() * 0.6 : 3 + rand() * 5)
+        etat.biteSinkAt = (etat.modeFacile ? 0.7 + rand() * 0.6 : 1.5 + rand() * 2.5)
             * etat.facteurTouche(fish.userData.comp);
         etat.biteSignalTimer = 0;
         etat.biteViewHideTimer = -1; // annule toute fermeture en attente d'une ancienne touche
@@ -440,48 +441,36 @@ export function creerCombat(deps) {
         modeQuiver.reset();
     }
 
+    // Ferrage RÉUSSI (bon moment, trop tôt, trop tard ou tout seul) : combat avec cet avantage ; consomme l'esche (§15.2).
+    function ferrer(fish, qualite, avantage, texte, couleur, statut) {
+        etat.strikeQuality = qualite;
+        etat.fightAdvantage = avantage;
+        etat.biteFish = null;
+        etat.consommerEsche();
+        if (fish) {
+            fish.visible = true; sound.reel(); etat.spawnSplash(floatGroup.position); hideBiteView();
+            startStruggle(fish, avantage);
+        }
+        etat.spawnFloatingText(texte, floatGroup.position, couleur);
+        statusDisplay.textContent = statut;
+    }
+
     // Ferrage : le joueur clique. Selon le MOMENT, il obtient un avantage… ou pas !
     function hookFish() {
         if (etat.floatState !== 'bite' || !etat.biteViewActive) {
             return;
         }
         const fish = etat.biteFish;
-        if (etat.bitePhase === 'touche') {
-            // Pile au bon moment : avantage au joueur (le poisson est tout près).
-            etat.strikeQuality = 'parfait';
-            etat.fightAdvantage = 0.85;
-            etat.biteFish = null;
-            etat.consommerEsche();   // une touche ferrée consomme une esche (§15.2)
-            if (fish) {
-                fish.visible = true;
-                sound.reel();
-                etat.spawnSplash(floatGroup.position);
-                hideBiteView();
-                startStruggle(fish, etat.fightAdvantage);
-            }
-            etat.spawnFloatingText('FERRÉ !', floatGroup.position, '#7ed957');
-            statusDisplay.textContent = 'Ferrage parfait ! Tu démarres avec l’avantage.';
+        if (etat.bitePhase === 'touche') {   // pile au bon moment : avantage au joueur (le poisson est tout près)
+            ferrer(fish, 'parfait', 0.85, 'FERRÉ !', '#7ed957', 'Ferrage parfait ! Tu démarres avec l’avantage.');
             return;
         }
         if (etat.bitePhase === 'fausse' || etat.bitePhase === 'ratee') {
             // Trop tôt (sur une fausse touche) ou trop tard : le poisson a l'avantage.
             // Le COMBAT ne dépend pas du mode (§17.7) : le mode enfant n'aide qu'à DÉTECTER la touche.
-            etat.strikeQuality = (etat.bitePhase === 'fausse') ? 'tot' : 'tard';
-            etat.fightAdvantage = (etat.bitePhase === 'fausse') ? 1.15 : 1.3;
-            etat.biteFish = null;
-            etat.consommerEsche();
-            if (fish) {
-                fish.visible = true;
-                sound.reel();
-                etat.spawnSplash(floatGroup.position);
-                hideBiteView();
-                startStruggle(fish, etat.fightAdvantage);
-            }
-            etat.spawnFloatingText(etat.strikeQuality === 'tot' ? 'Trop tôt !' : 'Trop tard !',
-                floatGroup.position, '#ffb347');
-            statusDisplay.textContent = (etat.strikeQuality === 'tot')
-                ? 'Trop tôt ! Le poisson a pris de l’avance…'
-                : 'Trop tard, mais ferré : le poisson a beaucoup d’avance !';
+            const tot = etat.bitePhase === 'fausse';
+            ferrer(fish, tot ? 'tot' : 'tard', tot ? 1.15 : 1.3, tot ? 'Trop tôt !' : 'Trop tard !', '#ffb347',
+                tot ? 'Trop tôt ! Le poisson a pris de l’avance…' : 'Trop tard, mais ferré : le poisson a beaucoup d’avance !');
             return;
         }
         // 'floating' : le bouchon n'a pas bougé → aucun poisson ferré.
@@ -499,13 +488,25 @@ export function creerCombat(deps) {
         hideBiteView();
     }
 
-    // Bouchon DÉTECTEUR (triche) : n bips aigus rapprochés, comme le détecteur des carpistes.
-    // (Ici et pas dans sound.js, qui est à son plafond de lignes.)
+    // Bouchon DÉTECTEUR (triche) : n bips forts et rapprochés (détecteur de carpiste) ; ici car sound.js est plein.
     function bipDetecteur(n) {
         etat.bipsDetecteur = (etat.bipsDetecteur || 0) + n;   // compteur lu par les tests
         for (let i = 0; i < n; i++) {
-            setTimeout(() => sound.tonSecours(2600, 2500, 0.08, 0.2, 'square'), i * 120);
+            setTimeout(() => sound.tonSecours(1800, 1750, 0.14, 0.5, 'square'), i * 170);
         }
+    }
+
+    // AUTO-FERRAGE : à la vraie touche, une petite part des poissons se pique seule (etat.probaAutoFerrage,
+    // posé par script.js ; 0 dans les tests historiques). Générateur LOCAL : rand() n'est pas décalé.
+    let graineFerrage = 0x5eed1e55;
+    function hasardFerrage() {
+        let t = graineFerrage = (graineFerrage + 0x6d2b79f5) >>> 0;
+        t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    function seFerreSeul(fish) {   // etat.autoFerrages : compteur lu par les tests
+        etat.autoFerrages = (etat.autoFerrages || 0) + 1;
+        ferrer(fish, 'seul', 1, 'Il s’est ferré tout seul !', '#7ed957', 'Le poisson s’est piqué tout seul : mouline !');
     }
 
     function updateBiteView(dt) {
@@ -557,6 +558,8 @@ export function creerCombat(deps) {
                     sound.splash();
                     etat.spawnRipple(floatGroup.position);
                     etat.spawnRipple(floatGroup.position);
+                    // Parfois le poisson s'enferre TOUT SEUL en prenant l'esche (demande du joueur 2026-11-17).
+                    if (etat.biteFish && hasardFerrage() < (etat.probaAutoFerrage || 0)) { seFerreSeul(etat.biteFish); }
                 }
             }
         } else if (etat.bitePhase === 'fausse') {
@@ -570,9 +573,9 @@ export function creerCombat(deps) {
             if (etat.biteSignalTimer >= etat.biteSignalDuree) {
                 etat.bitePhase = 'floating';
                 etat.biteViewTimer = 0;
-                // La pause peut être longue (2 à 8 s) avant le signal suivant (même facteur que le premier).
+                // Pause avant le signal suivant : 1 à 3,5 s (2 à 8 s avant 2026-11-17), même facteur que le premier.
                 // MODE FACILE : 0,5 à 1,1 s seulement.
-                etat.biteSinkAt = (etat.modeFacile ? 0.5 + rand() * 0.6 : 2 + rand() * 6)
+                etat.biteSinkAt = (etat.modeFacile ? 0.5 + rand() * 0.6 : 1 + rand() * 2.5)
                     * etat.facteurTouche(etat.biteFish ? etat.biteFish.userData.comp : null);
                 floatGroup.rotation.z = 0;
                 floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
