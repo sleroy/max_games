@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=253';
+import { etat } from './etat.js?v=254';
 
 export function creerMeteo(deps) {
     const {

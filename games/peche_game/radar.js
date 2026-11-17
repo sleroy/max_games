@@ -21,7 +21,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=253';
+import { etat } from './etat.js?v=254';
 
 // 16 couleurs bien distinctes (une par espèce, dans l'ordre de SPECIES).
 const PALETTE = [

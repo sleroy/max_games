@@ -6,7 +6,7 @@
 // et garde les mêmes noms. Ajouter un élément : une ligne ici + le nom dans la
 // déstructuration de script.js.
 // ---------------------------------------------------------------------------
-import { IDS_MILIEUX } from './milieux.js?v=253';
+import { IDS_MILIEUX } from './milieux.js?v=254';
 
 export function lireDom() {
     return {

@@ -7,7 +7,7 @@
 // `etat.isMobileDevice`, `etat.horlogeGelee`) ; le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=253';
+import { etat } from './etat.js?v=254';
 
 export function creerCiel(deps) {
     // `eau()` rend les uniforms de l'eau (créés plus tard dans script.js) ;

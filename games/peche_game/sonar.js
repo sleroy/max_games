@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat, moulinetLibre } from './etat.js?v=253';
+import { etat, moulinetLibre } from './etat.js?v=254';
 
 export function creerSonar(deps) {
     const {

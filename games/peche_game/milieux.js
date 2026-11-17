@@ -17,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=253';
-import { etat } from './etat.js?v=253';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=253';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=254';
+import { etat } from './etat.js?v=254';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=254';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -67,14 +67,16 @@ export const MILIEUX = [
     {
         id: 'carnassiers', nom: 'Étang à carnassiers', icone: '🦈',
         resume: 'Herbiers et nénuphars : brochets, sandres et black-bass, et des bancs de petits poissons blancs à chasser.',
-        // Les carnassiers ont de quoi manger : 70 % de poissons blancs (ablettes, gardons, rotengles,
-        // goujons, carassins), et une densité forte (1,6). Les carnassiers gardent à peu près le même
-        // nombre qu'avant (17 % × 1,6 ≈ 33 % × 0,9) ; les proies sont ≈ 2,4 fois plus nombreuses.
-        parts: parts([24, 10, 24, 8, 0, 0, 0, 4, 10, 3, 7, 5, 4, 0, 0, 1]),
+        // Les carnassiers ont de quoi manger : 80 % de poissons blancs (ablettes, gardons, rotengles,
+        // goujons, carassins, chevesnes) et 20 % de carnassiers, densité 4,37. Demande du joueur
+        // (2026-11-17) : par rapport à l'ancien réglage (73 / 27 %, densité 1,6), ×3 poissons blancs
+        // et ×2 carnassiers : ≈ 305 poissons en Normal au lieu de 112.
+        // Silure à 0,6 % : 2 silures au plus (règle « ≈ 1,6/ha » des gros poissons).
+        parts: parts([26, 11, 27, 9, 0, 0, 0, 4, 7, 3, 5.4, 4, 3, 0, 0, 0.6]),
         decor: { arbres: 20, nenuphars: 60, roseaux: 90, rochers: 15 },
         fonds: { vase: 0.30, herbier: 0.35, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x35584f, deep: 0x081a18, sky: 0x8fa8a0 },
-        rayon: 70, forme: 'etang', profondeur: 7.0, densite: 1.6
+        rayon: 70, forme: 'etang', profondeur: 7.0, densite: 4.37
     },
     {
         id: 'montagne', nom: 'Lac de montagne', icone: '🏔️',
