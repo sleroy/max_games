@@ -428,6 +428,11 @@ export function creerCombat(deps) {
         if (kidCue) { kidCue.classList.remove('active'); }
         setFloatOpacity(1);
         floatGroup.rotation.z = 0;
+        // Le bouchon revient à sa place : le dessin d'une touche (dérive, montée) l'avait
+        // décalé, et un ferrage sans poisson ne doit pas le laisser ailleurs.
+        if (etat.techniqueCourante !== 'quiver') {
+            floatGroup.position.set(biteOrigine.x, 0.1, biteOrigine.z);
+        }
         modeQuiver.reset();
     }
 

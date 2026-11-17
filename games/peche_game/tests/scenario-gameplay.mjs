@@ -529,6 +529,24 @@ export function run() {
     checkEqual('la caméra est bien en mode bouchon', G().getCameraMode(), 'normal');
     resetToIdle();
 
+    // Ferrage SANS poisson (le bouchon n'a pas bougé) : le bouchon revient à sa place.
+    resetToIdle();
+    clearLilyPads();
+    castTo(0, -25);
+    forceBite();
+    stepUntil(() => G().getBitePhase() === 'floating', 5);
+    const reposX = G().floatGroup.position.x;
+    const reposZ = G().floatGroup.position.z;
+    G().floatGroup.position.set(reposX + 0.8, 0.35, reposZ - 0.5);   // dessin de touche : le bouchon a dérivé
+    G().floatGroup.rotation.z = 0.6;
+    fire('gameCanvas', 'pointerdown', { button: 0 });
+    checkEqual('ferrer sans poisson ne ferre rien', state(), 'inWater');
+    checkClose('le bouchon revient à sa place (x)', G().floatGroup.position.x, reposX, 0.01);
+    checkClose('le bouchon revient à sa place (z)', G().floatGroup.position.z, reposZ, 0.01);
+    checkClose('le bouchon revient à sa hauteur de repos', G().floatGroup.position.y, 0.1, 0.01);
+    checkClose('le bouchon ne reste pas incliné', G().floatGroup.rotation.z, 0, 0.01);
+    resetToIdle();
+
     // Si on laisse vraiment passer la touche : le poisson recrache l'hameçon.
     resetToIdle();
     clearLilyPads();
