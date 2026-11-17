@@ -75,6 +75,7 @@ import { run as scenarioCombatMode } from './scenario-combat-mode.mjs';
 import { run as scenarioMilieux } from './scenario-milieux.mjs';
 import { run as scenarioTaillesEtangs } from './scenario-tailles-etangs.mjs';
 import { run as scenarioFormesEau } from './scenario-formes-eau.mjs';
+import { run as scenarioFormesGraine } from './scenario-formes-graine.mjs';
 
 // Avant chaque scénario : graine imposée (voir ci-dessus) ET conditions de pêche neutres.
 // Le délai de touche dépend de l'heure et de la pression (physique.js, §15.1) ; les scénarios
@@ -190,6 +191,8 @@ try {
     await scenarioTaillesEtangs();  // tailles d'étang : rayon, géométrie, décor, obstacles, caméra, brume, portées, barque, retour en plaine
     debutScenario();
     await scenarioFormesEau();      // formes d'eau : profils étang, lac, canal, rivière ; plaine identique à v239, grille rectangulaire, fosses, ponton, barque
+    debutScenario();
+    await scenarioFormesGraine();   // formes tirées d'une graine : générateur, style conservé (20 graines), invariants, rejeu, hasard du monde intact
     scenarioBouchonsTriche();       // bouchons triches payants : géant, détecteur sonore, balise « FERRER ! »
     scenarioAmorceCouche();         // amorce : un poisson d'une autre couche ne se fige plus ; clochette des scions
     scenarioAmorcesMultiples();     // amorces : plusieurs nuages simultanés, plus proche attire, plafond 8

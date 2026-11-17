@@ -30,7 +30,7 @@ import {
     RAYON_REFERENCE, HARMONIQUES, VARIATION_CONTOUR, FORME_DEFAUT, FORMES, formeConnue, rayonContour, surfaceUnites,
     surfaceHectares, echelleDeRayon, echelleExtent, echelleAxes, echelleAmbiance, extents, porteeLancer, porteeAmorce,
     pointAuBord, facteurProfondeur, profilDeGraine, definirProfil, profilCourant, estContourOrigine
-} from './dimensions.js?v=244';
+} from './dimensions.js?v=245';
 
 // Centre de l'étang DE RÉFÉRENCE (la plaine) : le monde entier est bâti autour de ce point.
 // v173 : l'étang passe de 55 à 90 de rayon. Le centre recule de (0, -40) à (0, -71)
