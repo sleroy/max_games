@@ -10,7 +10,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=254';
+import { etat } from './etat.js?v=255';
 
 // Fabrique les modèles (coordonnées locales de l'hameçon : rayon de l'hameçon ≈ 0,016).
 function fabriquer() {

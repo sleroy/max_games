@@ -16,13 +16,13 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=254';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=254';
-import { angleParSurface } from './dimensions.js?v=254';
+} from './especes.js?v=255';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=255';
+import { angleParSurface } from './dimensions.js?v=255';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=254';
+} from './milieux.js?v=255';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -55,17 +55,26 @@ export function creerPoissons(deps) {
         }
         poissons.forEach(rentrerDansLEau);
     }
-    // Un banc posé près de la rive (canal étroit) peut écarter un poisson hors de l'eau : on le
-    // ramène sur le même rayon, à 1 unité de la berge, et il reste au-dessus du fond.
-    function rentrerDansLEau(fish) {
-        const dx = fish.position.x - POND_CENTER.x;
-        const dz = fish.position.z - POND_CENTER.z;
+    // Un banc posé près de la rive (canal étroit, petit étang) peut écarter un poisson hors de l'eau :
+    // on ramène sa position ET sa zone de vie sur le même rayon, à 1 unité de la berge.
+    function ramenerPoint(x, z) {
+        const dx = x - POND_CENTER.x;
+        const dz = z - POND_CENTER.z;
         const r = Math.hypot(dx, dz);
-        const bord = rayonEtang(Math.atan2(dz, dx)) - 1;
-        if (r < bord || r === 0) { return; }
-        fish.position.x = POND_CENTER.x + dx * bord / r;
-        fish.position.z = POND_CENTER.z + dz * bord / r;
+        const bord = Math.max(0, rayonEtang(Math.atan2(dz, dx)) - 1);
+        if (r < bord || r === 0) { return null; }
+        return { x: POND_CENTER.x + dx * bord / r, z: POND_CENTER.z + dz * bord / r };
+    }
+    function rentrerDansLEau(fish) {
         const d = fish.userData;
+        if (Number.isFinite(d.homeX) && Number.isFinite(d.homeZ)) {
+            const maison = ramenerPoint(d.homeX, d.homeZ);
+            if (maison) { d.homeX = maison.x; d.homeZ = maison.z; }
+        }
+        const p = ramenerPoint(fish.position.x, fish.position.z);
+        if (!p) { return; }
+        fish.position.x = p.x;
+        fish.position.z = p.z;
         const fond = fondY(fish.position.x, fish.position.z);
         d.depth = d.couche === 'fond' ? fond + 0.45 : Math.max(d.depth, fond + 0.35);
         fish.position.y = d.depth - d.topOffset;

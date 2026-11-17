@@ -14,8 +14,8 @@
 // Données et frequenceChasse : PURES (testables sans navigateur). creerChasse(deps) : système.
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=254';
-import { heureDeJeu, periodeDeJournee } from './physique.js?v=254';
+import { etat } from './etat.js?v=255';
+import { heureDeJeu, periodeDeJournee } from './physique.js?v=255';
 
 // Proies de chaque carnassier (poissons blancs, à son goût).
 export const CHASSE_PROIES = {

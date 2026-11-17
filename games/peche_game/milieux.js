@@ -17,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=254';
-import { etat } from './etat.js?v=254';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=254';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=255';
+import { etat } from './etat.js?v=255';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=255';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -89,12 +89,15 @@ export const MILIEUX = [
     },
     {
         id: 'foret', nom: 'Petit étang de forêt', icone: '🌲',
-        resume: 'Eau sombre sous les arbres : gardons, tanches et carassins.',
-        parts: parts([28, 16, 0, 0, 0, 16, 0, 14, 12, 0, 8, 0, 0, 0, 6, 0]),
+        resume: 'Eau sombre sous les arbres : plein de gardons, rotengles et carassins, des tanches.',
+        // Demande du joueur (2026-11-17) : « beaucoup beaucoup » de petits poissons blancs, au moins 80.
+        // 74 % de blancs (gardon, rotengle, carassin) et une densité très forte : ≈ 115 poissons en
+        // Normal, dont ≈ 85 blancs, dans un étang minuscule (0,011 ha) : un vrai vivier.
+        parts: parts([40, 22, 0, 0, 0, 10, 0, 12, 8, 0, 4, 0, 0, 0, 4, 0]),
         decor: { arbres: 80, nenuphars: 30, roseaux: 40, rochers: 10 },
         fonds: { vase: 0.40, herbier: 0.25, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x5a6b3f, deep: 0x1a1f0f, sky: 0xa8b48f },
-        rayon: 12, forme: 'etang', profondeur: 3.2, densite: 0.6
+        rayon: 12, forme: 'etang', profondeur: 3.2, densite: 58
     },
     {
         id: 'riviere', nom: 'Grande rivière (silures)', icone: '🌊',
