@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=249';
+import { etat, moulinetLibre } from './etat.js?v=250';
 
 export function creerSonar(deps) {
     const {
@@ -221,7 +221,7 @@ export function creerSonar(deps) {
         } else {
             // Mêmes règles d'accès que l'amorce : ligne au repos ou à l'eau, hors combat, accrochage, emmêlement.
             if (etat.paused || etat.cameraMode !== 'normal' || etat.castState !== 'idle' || etat.feedState !== 'idle') { return; }
-            if (etat.floatState !== 'idle' && etat.floatState !== 'inWater') { return; }
+            if (!moulinetLibre()) { return; }
             setFeedMode(true, 'sonar');
         }
         fermerOutils();

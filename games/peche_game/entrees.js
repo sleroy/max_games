@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=249';
+import { etat, moulinetLibre } from './etat.js?v=250';
 
 export function creerEntrees(deps) {
     const {
@@ -83,7 +83,7 @@ export function creerEntrees(deps) {
             return;
         }
         // Mode amorçage : un appui sur l'eau commence à charger la puissance.
-        if (etat.feedMode && (etat.floatState === 'idle' || etat.floatState === 'inWater') && etat.castState === 'idle') {
+        if (etat.feedMode && moulinetLibre() && etat.castState === 'idle') {
             if (etat.feedState === 'idle') {
                 const p = waterPointFromEvent(event);
                 if (p) {
@@ -189,7 +189,7 @@ export function creerEntrees(deps) {
 
     feedButton.addEventListener('click', toggleAmorcage);
     quickFeedButton.addEventListener('click', () => {
-        if (etat.floatState === 'inWater' && !etat.paused && !etat.cameraViewActive && etat.feedState === 'idle') {
+        if (etat.floatState !== 'idle' && moulinetLibre() && !etat.paused && !etat.cameraViewActive && etat.feedState === 'idle') {
             toggleAmorcage();
         }
     });

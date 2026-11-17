@@ -21,7 +21,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=249';
+import { etat, moulinetLibre } from './etat.js?v=250';
 
 export function creerLancer(deps) {
     const {
@@ -83,11 +83,11 @@ export function creerLancer(deps) {
             statusDisplay.textContent = refus;
             return;
         }
-        if (on && etat.floatState !== 'idle' && etat.floatState !== 'inWater') {
+        if (on && !moulinetLibre()) {
             statusDisplay.textContent = 'Attends la fin de l’action pour pouvoir ' + p.verbe + '.';
             return;
         }
-        etat.feedMode = !!on && (etat.floatState === 'idle' || etat.floatState === 'inWater');
+        etat.feedMode = !!on && moulinetLibre();
         if (etat.feedMode) { etat.feedType = nom; }
         Object.keys(etat.projectiles).forEach(cle => {
             etat.projectiles[cle].majMode(etat.feedMode && etat.feedType === cle);

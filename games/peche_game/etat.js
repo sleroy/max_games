@@ -14,6 +14,14 @@
 // ---------------------------------------------------------------------------
 export const etat = {};
 
+// Le moulinet est-il LIBRE pour un autre geste (amorce, sonar) ? Oui au repos, ligne
+// posée à l'eau, ou ligne qu'on ramène SANS poisson ferré (on s'arrête souvent de
+// mouliner pour pêcher sur place : l'amorce doit rester possible).
+export function moulinetLibre() {
+    return etat.floatState === 'idle' || etat.floatState === 'inWater'
+        || (etat.floatState === 'reeling' && !etat.hookedFish);
+}
+
 // ---------------------------------------------------------------------------
 // CULLING (culling.js) : ne simuler que les poissons à portée du pêcheur.
 // Vrai en jeu (c'est ce qui rend les grands plans d'eau peuplés tenables).

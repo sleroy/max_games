@@ -7,13 +7,14 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=249';
-import { etat } from './etat.js?v=249';
-import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=249';
-import { heureDeJeu } from './physique.js?v=249';
-import { creerCulling } from './culling.js?v=249';
+import { COMPORTEMENTS } from './especes.js?v=250';
+import { etat } from './etat.js?v=250';
+import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=250';
+import { heureDeJeu } from './physique.js?v=250';
+import { creerCulling } from './culling.js?v=250';
 
 export function creerComportement(deps) {
+    etat.ancreBouchon = null;   // centre de la dérive si la ligne a été RAMENÉE (sinon : point du lancer)
     const {
         floatGroup, fondY, comportementRand, POND_CENTER, rayonEtang,
         fishes, animateFishMesh, camera, spawnBubbles, CHUM_ATTRACT_ACCEL, BITE_APPROACH_ACCEL,
@@ -576,6 +577,7 @@ export function creerComportement(deps) {
                     return;
                 } else {
                     etat.floatState = 'inWater';
+                    etat.ancreBouchon = null;
                     etat.waitTimer = 0;
                     etat.depuisLancement = 0;
                     etat.hameconDansLaVase = false;
@@ -602,14 +604,14 @@ export function creerComportement(deps) {
             // de la patience avant qu'un poisson s'intéresse à l'appât.
             floatGroup.position.x += Math.cos(wind.dir) * wind.strength * 0.6 * dt;
             floatGroup.position.z += Math.sin(wind.dir) * wind.strength * 0.6 * dt;
-            // Le vent fait dériver le bouchon… mais la ligne est TENUE : il ne peut
-            // pas s'en aller à l'autre bout de l'étang (2 m maximum autour du posé).
-            const deriveX = floatGroup.position.x - castTarget.x;
-            const deriveZ = floatGroup.position.z - castTarget.z;
+            // Le vent fait dériver le bouchon, mais la ligne est TENUE : 2 m au plus autour du posé.
+            const ancre = etat.ancreBouchon || castTarget;   // là où l'on a ramené la ligne, sinon le posé
+            const deriveX = floatGroup.position.x - ancre.x;
+            const deriveZ = floatGroup.position.z - ancre.z;
             const derive = Math.hypot(deriveX, deriveZ);
             if (derive > 4) {
-                floatGroup.position.x = castTarget.x + (deriveX / derive) * 4;
-                floatGroup.position.z = castTarget.z + (deriveZ / derive) * 4;
+                floatGroup.position.x = ancre.x + (deriveX / derive) * 4;
+                floatGroup.position.z = ancre.z + (deriveZ / derive) * 4;
             }
             const houle = waterWaveHeightAt(floatGroup.position.x, floatGroup.position.z, time);
             // Un petit coup de moulinet fait trembler l'esche (le remous s'éteint en 3 s).
@@ -748,6 +750,8 @@ export function creerComportement(deps) {
                 floatGroup.position.x += (dx / distXZ) * move;
                 floatGroup.position.z += (dz / distXZ) * move;
                 floatGroup.position.y = 0.1 + Math.sin(time * 6) * 0.03;
+                // Ligne posée ICI désormais : après une touche ratée, le bouchon ne saute plus au point du lancer.
+                if (!etat.hookedFish) { (etat.ancreBouchon ||= new THREE.Vector3()).copy(floatGroup.position); }
                 etat.sillage = Math.min(1, etat.sillage + move * SILLAGE_GAIN);
                 if (etat.hookedFish) {
                     etat.hookedFish.position.x = floatGroup.position.x;

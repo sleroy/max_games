@@ -6,10 +6,10 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=249';
-import { apercuPartage } from './apercuPoisson.js?v=249';
+import { etat } from './etat.js?v=250';
+import { apercuPartage } from './apercuPoisson.js?v=250';
 
-import { chronoCombat } from './chronoCombat.js?v=249';
+import { chronoCombat } from './chronoCombat.js?v=250';
 
 export function creerCombat(deps) {
     const {
@@ -708,6 +708,8 @@ export function creerCombat(deps) {
                 etat.hookedFish = null;
             }
             statusDisplay.textContent = timedOut ? 'Temps écoulé ! Le poisson s’est décroché.' : 'Fil trop tendu : le poisson s’est décroché !';
+            // Combat raté : le bouchon reste là où on l'a ramené (pas au point du ferrage).
+            etat.ancreBouchon = floatGroup.position.clone();
         }
         etat.floatState = 'reeling';
     }

@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=249';
+import { etat, moulinetLibre } from './etat.js?v=250';
 
 export function creerAmorcage(deps) {
     const {
@@ -211,12 +211,12 @@ export function creerAmorcage(deps) {
     });
 
     function updateToolDock() {
-        const resting = (etat.floatState === 'idle' || etat.floatState === 'inWater') && etat.cameraMode === 'normal';
+        const resting = moulinetLibre() && etat.cameraMode === 'normal';
         cameraButton.disabled = !resting || etat.paused;
         feedButton.disabled = !resting || etat.paused || stockAmorce() === 0;
         // Au quiver, l'hameçon est posé au fond : le réglage de profondeur ne sert pas.
         depthPanel.hidden = etat.floatState !== 'idle' || etat.techniqueCourante === 'quiver';
-        quickFeedButton.hidden = etat.floatState !== 'inWater' || etat.cameraViewActive;
+        quickFeedButton.hidden = !(etat.floatState === 'inWater' || etat.floatState === 'reeling') || !moulinetLibre() || etat.cameraViewActive;
         quickFeedButton.disabled = feedButton.disabled || etat.feedState !== 'idle';
         lineSelect.disabled = etat.floatState !== 'idle' || etat.castState !== 'idle';
         updateDepthButtons(bornesProfondeur(),
