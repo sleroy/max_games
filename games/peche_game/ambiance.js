@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=247';
+import { etat } from './etat.js?v=249';
 
 export function creerAmbiance(deps) {
     const {

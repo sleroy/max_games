@@ -11,7 +11,7 @@
 // avec son propre générateur à graine fixe.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORME_DEFAUT, angleParBord, pointAuBord } from './dimensions.js?v=247';
+import { FORME_DEFAUT, angleParBord, pointAuBord } from './dimensions.js?v=249';
 
 export const TOUFFES = 4000;          // touffes d'herbe sur les berges
 export const BRINS_PAR_TOUFFE = 7;

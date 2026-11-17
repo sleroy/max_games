@@ -21,7 +21,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=247';
+import { etat } from './etat.js?v=249';
 
 // 16 couleurs bien distinctes (une par espèce, dans l'ordre de SPECIES).
 const PALETTE = [
@@ -42,7 +42,7 @@ export const RADAR_PRIX = 250;   // prix en XP du radar à poissons (boutique)
 export function creerRadar(deps) {
     const {
         fishes, angler, floatGroup, panneau, fondEl, vivantEl, substrats, POND_CENTER, rayonEtang,
-        monde, SPECIES, COMPORTEMENTS, infoEl, bouton, saveJournal, renderJournal, fermerOutils
+        monde, SPECIES, COMPORTEMENTS, infoEl, bouton, saveJournal, renderJournal, fermerOutils, svgEl
     } = deps;
 
     // Échelle : le cadre (demi-hauteur 58) contient le plus grand rayon du contour + la couronne
@@ -168,6 +168,20 @@ export function creerRadar(deps) {
         return d + 'Z';
     }
 
+    // Rectangle englobant le contour de l'étang (+ marge), en unités du viewBox.
+    function cadreEtang() {
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (let i = 0; i < 96; i++) {
+            const a = (i / 96) * Math.PI * 2;
+            const r = rayonEtang(a) * ech;
+            const x = cx + Math.cos(a) * r;
+            const y = cy + Math.sin(a) * r;
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        }
+        const marge = 3;
+        return { x: x0 - marge, y: y0 - marge, w: x1 - x0 + 2 * marge, h: y1 - y0 + 2 * marge };
+    }
+
     // Le fond est dessiné à la première ouverture, puis seulement si la grille ou l'échelle change (biotope).
     function dessinerFond() {
         majEchelle();
@@ -179,7 +193,14 @@ export function creerRadar(deps) {
                 + 'h' + w + 'v' + h + 'h-' + w + 'z';
         });
         const bord = contour();
-        let svg = '<rect x="0" y="0" width="' + LARGEUR + '" height="' + HAUTEUR + '" rx="8" fill="#2f6b3f"/>'
+        // Cadrage serré sur l'étang (le viewBox suit son contour) : sur grand écran, l'étang remplit la carte.
+        const cadre = cadreEtang();
+        if (svgEl && svgEl.setAttribute) {
+            svgEl.setAttribute('viewBox', cadre.x.toFixed(1) + ' ' + cadre.y.toFixed(1) + ' '
+                + cadre.w.toFixed(1) + ' ' + cadre.h.toFixed(1));
+        }
+        let svg = '<rect x="' + cadre.x.toFixed(1) + '" y="' + cadre.y.toFixed(1) + '" width="' + cadre.w.toFixed(1)
+            + '" height="' + cadre.h.toFixed(1) + '" rx="4" fill="#2f6b3f"/>'
             + '<path d="' + bord + '" fill="#3790b3"/>'
             + '<clipPath id="radar-clip-fonds"><path d="' + bord + '"/></clipPath>'
             + '<g clip-path="url(#radar-clip-fonds)" opacity="0.6">';

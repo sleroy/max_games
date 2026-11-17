@@ -7,7 +7,7 @@
 // L'état partagé passe par etat.js (`etat.crankRotationDelta`, `etat.crankAngle`,
 // `etat.paused`) ; le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=247';
+import { etat } from './etat.js?v=249';
 
 export function creerManivelle(deps) {
     const { crank, crankRotor, sound, ensureSound, vitesseMaxTours, avertirVitesse } = deps;

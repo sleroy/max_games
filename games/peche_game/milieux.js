@@ -17,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=247';
-import { etat } from './etat.js?v=247';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=247';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=249';
+import { etat } from './etat.js?v=249';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=249';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)

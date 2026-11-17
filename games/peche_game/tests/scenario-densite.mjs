@@ -59,9 +59,17 @@ export function run() {
 
     // --- A) Les petits poissons de bord vivent près de la rive -----------------------------
     ['plaine', 'riviere'].forEach(function (id) {
-        choisirSurAccueil(id);
-        const bord = distancesAuBord(true);
-        const large = distancesAuBord(false);
+        // Passer par un autre biotope force un monde NEUF (sinon un biotope déjà choisi n'est pas retiré).
+        // Trois mondes tirés à la suite : une seule plaine (≈ 47 poissons du large) dépend trop
+        // du tirage (les poissons du large suivent leurs fonds préférés, parfois près du bord).
+        const bord = [];
+        const large = [];
+        for (let essai = 0; essai < 3; essai++) {
+            choisirSurAccueil(id === 'plaine' ? 'canal' : 'plaine');
+            choisirSurAccueil(id);
+            bord.push(...distancesAuBord(true));
+            large.push(...distancesAuBord(false));
+        }
         check(id + ' : le biotope a bien deux familles de poissons',
             bord.length > 0 && large.length > 0, bord.length + ' de bord / ' + large.length + ' du large');
         // Bande de rive : naissance à 12 (marge) + 15 (bande) du bord ⇒ ≤ 27 unités, et le

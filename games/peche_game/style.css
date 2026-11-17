@@ -1999,7 +1999,7 @@ body.calm .struggle-marker {
     padding: 6px 4px 0;
     border-top: 1px solid #ffffff1a;
     color: #8fa6b3;
-    font-size: 0.72rem;
+    font-size: clamp(0.72rem, 0.9vw, 0.9rem);
     line-height: 1.3;
 }
 
@@ -2203,7 +2203,8 @@ body.calm .struggle-marker {
     position: absolute;
     top: calc(60px + env(safe-area-inset-top, 0px));
     right: calc(8px + env(safe-area-inset-right, 0px));
-    width: min(260px, 46vw);
+    /* Grand sur ordinateur (jusqu'à 520 px), plus petit sur téléphone (règles plus bas). */
+    width: clamp(260px, 32vw, 520px);
     padding: 4px;
     border-radius: 10px;
     background: rgba(16, 42, 54, 0.62);
@@ -2222,7 +2223,7 @@ body.calm .struggle-marker {
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 200 / 120;
+    max-height: 62vh;      /* étang très allongé (canal, rivière) : la carte ne déborde pas */
     border-radius: 7px;
 }
 

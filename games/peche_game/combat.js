@@ -6,8 +6,10 @@
 // le reste est injecté par `deps`. Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=247';
-import { apercuPartage } from './apercuPoisson.js?v=247';
+import { etat } from './etat.js?v=249';
+import { apercuPartage } from './apercuPoisson.js?v=249';
+
+import { chronoCombat } from './chronoCombat.js?v=249';
 
 export function creerCombat(deps) {
     const {
@@ -243,9 +245,11 @@ export function creerCombat(deps) {
             fatigueShown: false
         };
         etat.tension = Math.max(0, Math.min(1, lineLengthToTension(etat.struggle.lineLength)));
-        // Temps limite : il faut VRAIMENT ramener le poisson (et le chrono se
-        // resserre quand la difficulté monte ou quand on a ferré trop tard).
-        etat.struggleTimeLeft = Math.min(20, Math.max(6, (baseLength * 0.65) / etat.DIFFICULTY)) * (2 - avantage) * cap.temps;
+        // Temps limite = MINIMUM fixe + une part proportionnelle à la DISTANCE du lancer.
+        // Le minimum n'est pas réduit par la difficulté ni par un mauvais ferrage : un
+        // poisson pris tout près laisse toujours le temps de le ramener (avant : 4 s à peine).
+        // La part « distance » se resserre quand la difficulté monte ou qu'on a ferré trop tard.
+        etat.struggleTimeLeft = chronoCombat(baseLength, etat.DIFFICULTY, avantage, cap.temps);
         updateStruggleTimer();
         computeStrugglePos();
         floatGroup.position.copy(etat.strugglePos);
