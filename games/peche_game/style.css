@@ -1543,6 +1543,14 @@ body.calm .struggle-marker {
     .hud:has(.quiver-panel.active) .sonar-panel {
         top: calc(112px + env(safe-area-inset-top, 0px));
     }
+
+    .hud:has(.quiver-panel.active) .radar-panel {
+        top: calc(112px + env(safe-area-inset-top, 0px));
+    }
+
+    .hud:has(.quiver-panel.active):has(.sonar-panel:not([hidden])) .radar-panel {
+        top: calc(248px + env(safe-area-inset-top, 0px));
+    }
 }
 
 .technique-row {
@@ -3004,6 +3012,16 @@ body.mode-quiver .row-bouchon { display: none; }
     #quiverCanvas {
         width: 360px;
         height: 120px;
+    }
+
+    /* Le grand scion occupe le coin haut-droit (≈ 145 px) : sonar et radar passent dessous. */
+    .hud:has(.quiver-panel.active) .sonar-panel,
+    .hud:has(.quiver-panel.active) .radar-panel {
+        top: calc(152px + env(safe-area-inset-top, 0px));
+    }
+
+    .hud:has(.quiver-panel.active):has(.sonar-panel:not([hidden])) .radar-panel {
+        top: calc(288px + env(safe-area-inset-top, 0px));
     }
 }
 
