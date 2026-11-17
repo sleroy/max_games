@@ -7,11 +7,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=245';
-import { etat } from './etat.js?v=245';
-import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=245';
-import { heureDeJeu } from './physique.js?v=245';
-import { creerCulling } from './culling.js?v=245';
+import { COMPORTEMENTS } from './especes.js?v=246';
+import { etat } from './etat.js?v=246';
+import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=246';
+import { heureDeJeu } from './physique.js?v=246';
+import { creerCulling } from './culling.js?v=246';
 
 export function creerComportement(deps) {
     const {

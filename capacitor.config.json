@@ -1,0 +1,6 @@
+{
+  "appId": "fr.sleroy.maxgames.peche",
+  "appName": "L'étang du Bois Neuf",
+  "webDir": "dist/peche_game",
+  "server": { "androidScheme": "https" }
+}

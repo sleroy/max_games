@@ -1,0 +1,20 @@
+{
+  "name": "max-games",
+  "private": true,
+  "type": "module",
+  "description": "Jeux de Max. Le site reste statique : Vite sert seulement à vérifier que le jeu de pêche se bundle.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node scripts/check-syntax.mjs && node games/peche_game/tests/run.mjs"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "vite": "^7.0.0",
+    "vite-plugin-pwa": "^2.0.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.6.2"
+  }
+}

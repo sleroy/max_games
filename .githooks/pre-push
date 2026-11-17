@@ -3,7 +3,8 @@
 # Hook pre-push : bloque le push si le dépôt est cassé (≈ 5 s, Node seul, aucune dépendance).
 #   1. aucune marque de conflit de fusion (<<<<<<< / >>>>>>>) dans les fichiers suivis ;
 #   2. syntaxe de tous les .js / .mjs de games/ (scripts/check-syntax.mjs) ;
-#   3. tests de non-régression du jeu de pêche (games/peche_game/tests/run.mjs).
+#   3. tests de non-régression du jeu de pêche (games/peche_game/tests/run.mjs) ;
+#   4. build Vite du jeu de pêche (npm run build) : le bundle doit se construire.
 # Activé via :  git config core.hooksPath .githooks
 # Contourner (à éviter) :  git push --no-verify
 # ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ while read -r _local_ref local_sha _remote_ref _remote_sha; do
     fi
 done
 
-echo "🔎 pre-push : conflits, syntaxe, tests…"
+echo "🔎 pre-push : conflits, syntaxe, tests, build…"
 
 # 1) Marques de conflit (le script lui-même et ce hook n'en contiennent pas en début de ligne).
 if git grep -nE '^(<<<<<<<|>>>>>>>) ' -- . ':!*.md' >/dev/null 2>&1; then
@@ -48,4 +49,21 @@ if ! node games/peche_game/tests/run.mjs >/tmp/pre-push-tests.log 2>&1; then
     exit 1
 fi
 grep -E "TOUT OK" /tmp/pre-push-tests.log | tail -1
+
+# 4) Build Vite (installe les dépendances au premier passage).
+if ! command -v npm >/dev/null 2>&1; then
+    echo "⚠  npm introuvable : build Vite ignoré."
+else
+    if [ ! -d node_modules ] && ! npm ci >/tmp/pre-push-npm.log 2>&1; then
+        tail -15 /tmp/pre-push-npm.log
+        echo "❌ npm ci a échoué : push annulé."
+        exit 1
+    fi
+    if ! npm run build >/tmp/pre-push-build.log 2>&1; then
+        tail -25 /tmp/pre-push-build.log
+        echo "❌ Build Vite en échec : push annulé (détail : /tmp/pre-push-build.log)."
+        exit 1
+    fi
+    echo "📦 build Vite OK (dist/peche_game)"
+fi
 echo "✅ pre-push : tout est vert."

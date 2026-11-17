@@ -79,6 +79,10 @@ Un module du jeu respecte ces règles (vérifiées par `tests/scenario-modules.m
 | `messages.js` | Messages 3D flottants + anneaux de touche ratée | 126 | UI / feedback |
 | `bourriche.js` | Bourriche (panier) : maillage et compte | 66 | Bourriche |
 | `ondulations.js` | Ondulations de surface (`spawnRipple`) | ~60 | Eau / effets |
+| `dom.js` | Éléments de la page lus par script.js : `lireDom()` rend `{ canvas, scoreDisplay, … }` (mêmes noms que les anciennes constantes) | ~150 | UI / page |
+| `camera.js` | Caméra : `creerCamera(deps)` crée la `PerspectiveCamera`, FOV horizontal garanti (`fovPourAspect`), vue réglable (boutons et geste à deux doigts), suivi en douceur (`updateCameraPosition`) et `resize` (état via `etat`) | ~125 | Rendu / caméra |
+| `ciel.js` | Ciel et soleil : `creerCiel(deps)` — dégradé du ciel (`skyMat`, `sky`), soleil à azimut fixe (`SUN_AZIMUT` = 225, `azimutTexte`, `directionAzimut`), lumières (ambiante, ciel/sol, soleil dont l'ombre suit le pêcheur), disque et halo du soleil, cycle jour / nuit (`updateDayNight`, `DAY_LENGTH`) (état via `etat`) | ~190 | Ambiance / lumière |
+| `manivelle.js` | Manivelle du moulinet : `creerManivelle(deps)` → `consumeCrankTurns()` ; glisser du pointeur, cliquet sonore, patinage au-delà de la vitesse maximale, avertissement de remontée trop rapide (état via `etat`) | ~110 | Moulinet / entrées |
 | `splashes.js` | Éclaboussures (ferrage, amorce) | ~50 | Effets |
 | `sound.js` | Moteur audio (samples + synthèse) | 798 | Audio |
 | `portraits.js` | Portraits 2D des espèces (fond transparent). **Repli** du panneau de combat : utilisé seulement quand le rendu 3D (`apercuPoisson.js`) est impossible (pas de WebGL) | 282 | Combat / UI (repli) |

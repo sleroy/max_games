@@ -1,63 +1,67 @@
 import * as THREE from 'three';
-// Le « ?v=245 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=246 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=245';
-import { creerJeuDemelage } from './demelage.js?v=245';
-import { creerModeQuiver } from './quiver.js?v=245';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=245';
+import { SoundEngine } from './sound.js?v=246';
+import { creerJeuDemelage } from './demelage.js?v=246';
+import { creerModeQuiver } from './quiver.js?v=246';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=246';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=245';
-import { creerPoissons } from './poissons.js?v=245';
-import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=245';
+import { dessinerPortrait } from './portraits.js?v=246';
+import { creerPoissons } from './poissons.js?v=246';
+import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=246';
 import { POND_CENTER, RIVE_Y, rayonEtang, monde, setRayonMonde,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=245';
-import { creerTailleEtang } from './tailleEtang.js?v=245';
-import { creerDecor } from './decor.js?v=245';
-import { creerObstacles } from './obstacles.js?v=245';
-import { creerSubstrats } from './substrats.js?v=245';
-import { creerEsches } from './esches.js?v=245';
-import { ligneQuiver } from './chanceTouche.js?v=245';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=245';
-import { creerBourriche } from './bourriche.js?v=245';
-import { creerOndulations } from './ondulations.js?v=245';
-import { creerMessages } from './messages.js?v=245';
-import { creerSplashes } from './splashes.js?v=245';
-import { creerCombat } from './combat.js?v=245';
-import { creerComportement } from './comportement.js?v=245';
-import { creerBateau } from './bateau.js?v=245';
-import { creerLancerPoisson } from './lancerPoisson.js?v=245';
-import { creerCarnetUI } from './carnetUI.js?v=245';
-import { creerBoutique } from './boutique.js?v=245';
-import { creerMenus } from './menus.js?v=245';
-import { creerFiches } from './fiches.js?v=245';
-import { creerLancerCanne } from './lancerCanne.js?v=245';
-import { creerLancer } from './lancer.js?v=245';
-import { creerAmorcage } from './amorcage.js?v=245';
-import { creerFrein } from './frein.js?v=245';
-import { creerLigne } from './ligne.js?v=245';
-import { creerBouchons } from './bouchons.js?v=245';
-import { creerPlacement } from './placement.js?v=245';
-import { creerMeteo } from './meteo.js?v=245';
-import { creerPhysique } from './physique.js?v=245';
-import { creerVie } from './vie.js?v=245';
-import { creerSonar } from './sonar.js?v=245';
-import { creerStocks } from './stocks.js?v=245';
-import { creerJournal } from './journal.js?v=245';
-import { creerTouches } from './touches.js?v=245';
-import { creerCycleLigne } from './cycleLigne.js?v=245';
-import { creerAccrochage } from './accrochage.js?v=245';
-import { creerAmbiance } from './ambiance.js?v=245';
-import { creerEntrees } from './entrees.js?v=245';
-import { creerRadar } from './radar.js?v=245';
-import { creerCheat } from './cheat.js?v=245';
-import { creerBoucle } from './boucle.js?v=245';
-import { creerPartie, majChoixRadio } from './partie.js?v=245';
-import { creerPecheur } from './pecheur.js?v=245';
-import { creerRendu } from './rendu.js?v=245';
-import { etat } from './etat.js?v=245';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=246';
+import { creerTailleEtang } from './tailleEtang.js?v=246';
+import { creerDecor } from './decor.js?v=246';
+import { creerObstacles } from './obstacles.js?v=246';
+import { creerSubstrats } from './substrats.js?v=246';
+import { creerEsches } from './esches.js?v=246';
+import { ligneQuiver } from './chanceTouche.js?v=246';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=246';
+import { creerBourriche } from './bourriche.js?v=246';
+import { creerOndulations } from './ondulations.js?v=246';
+import { creerMessages } from './messages.js?v=246';
+import { creerSplashes } from './splashes.js?v=246';
+import { creerCombat } from './combat.js?v=246';
+import { creerComportement } from './comportement.js?v=246';
+import { creerBateau } from './bateau.js?v=246';
+import { creerLancerPoisson } from './lancerPoisson.js?v=246';
+import { creerCarnetUI } from './carnetUI.js?v=246';
+import { creerBoutique } from './boutique.js?v=246';
+import { creerMenus } from './menus.js?v=246';
+import { creerFiches } from './fiches.js?v=246';
+import { creerLancerCanne } from './lancerCanne.js?v=246';
+import { creerLancer } from './lancer.js?v=246';
+import { creerAmorcage } from './amorcage.js?v=246';
+import { creerFrein } from './frein.js?v=246';
+import { creerLigne } from './ligne.js?v=246';
+import { creerBouchons } from './bouchons.js?v=246';
+import { creerPlacement } from './placement.js?v=246';
+import { creerMeteo } from './meteo.js?v=246';
+import { creerPhysique } from './physique.js?v=246';
+import { creerVie } from './vie.js?v=246';
+import { creerSonar } from './sonar.js?v=246';
+import { creerStocks } from './stocks.js?v=246';
+import { creerJournal } from './journal.js?v=246';
+import { creerTouches } from './touches.js?v=246';
+import { creerCycleLigne } from './cycleLigne.js?v=246';
+import { creerAccrochage } from './accrochage.js?v=246';
+import { creerAmbiance } from './ambiance.js?v=246';
+import { creerEntrees } from './entrees.js?v=246';
+import { creerRadar } from './radar.js?v=246';
+import { creerCheat } from './cheat.js?v=246';
+import { creerBoucle } from './boucle.js?v=246';
+import { creerPartie, majChoixRadio } from './partie.js?v=246';
+import { creerPecheur } from './pecheur.js?v=246';
+import { creerRendu } from './rendu.js?v=246';
+import { etat } from './etat.js?v=246';
+import { lireDom } from './dom.js?v=246';
+import { creerCamera } from './camera.js?v=246';
+import { creerCiel } from './ciel.js?v=246';
+import { creerManivelle } from './manivelle.js?v=246';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -283,16 +287,24 @@ lienEtat('waitTimer', function () { return waitTimer; }, function (v) { waitTime
 lienEtat('weatherPluie', function () { return weatherPluie; }, function (v) { weatherPluie = v; });
 lienEtat('weatherRafales', function () { return weatherRafales; }, function (v) { weatherRafales = v; });
 
-const canvas = document.getElementById('gameCanvas');
-const scoreDisplay = document.getElementById('score');
-const fishButton = document.getElementById('fishButton');
-const statusDisplay = document.getElementById('status');
-const strugglePanel = document.getElementById('struggle');
-const struggleMarker = document.getElementById('struggleMarker');
-const struggleInfo = document.getElementById('struggleInfo');
-const struggleHint = document.getElementById('struggleHint');
-const struggleTimer = document.getElementById('struggleTimer');
-const strugglePortrait = document.getElementById('strugglePortrait');
+// Éléments de la page (voir dom.js).
+const { canvas, scoreDisplay, fishButton, statusDisplay, strugglePanel, struggleMarker, struggleInfo,
+    struggleHint, struggleTimer, strugglePortrait, catchMessage, kidCue, windFill, windArrow, soundToggle,
+    lineSelect, feedButton, depthPanel, quickFeedButton, quickFeedCount, feedGauge, feedGaugeFill,
+    feedGaugeTarget, journalButton, journalPanel, journalStats, journalList, journalClose, difficultySelect,
+    bigTextToggle, calmToggle, effectsToggle, bourricheLabel, xpLabel, xpTop, depthLabel, depthMinus,
+    depthPlus, lignesLabel, gameOver, gameOverScore, gameOverTitle, gameOverText, playerName, saveScore,
+    saveAndMenu, backToMenu, restartGame, showRanking, rankingButton, classement, rankingTabs, rankingList,
+    closeRanking, accueil, playButton, accueilClassement, endGameButton, modalBackdrop, tangleGame,
+    tangleCanvas, tangleTimer, tangleProgress, tangleMessage, tangleGiveUp, ragondinAlert,
+    accueilTechniqueRadios, accueilDifficulteRadios, accueilMilieuRadios, quiverPanel, quiverCanvas,
+    compassDisplay, cartePlacement, cartePlacementAide, cartePlacementRepere, shopXp, boutique, ficheTouches,
+    journalTabs, pondMap, tabPages, especePrev, especeNext, especePage, especeFiche, tabBtnEspeces, toolDock,
+    sonarButton, sonarPanel, boatButton, boatPad, boatLeft, boatRow, boatRight, sonarRadar, sonarCount,
+    cameraButton, cameraControls, toolToggle, dragButton, journalEspeces, reflectionsToggle, tutorial,
+    tutorialText, tutorialHand, tutorialStepDisplay, tutorialNext, tutorialClose, tutorialOpen, floatSelect,
+    scionSelect, floatInfo, cameraLeft, cameraRight, cameraCloser, cameraFarther, cameraReset,
+    cameraDone, crank, crankRotor } = lireDom();
 // Dernier portrait dessiné (id d'espèce) — exposé pour les tests.
 let portraitEspeceCourante = null;
 // Caché par défaut : il n'apparaît que pendant un combat (ou jamais, si
@@ -308,125 +320,8 @@ function fermerPanneauCombat() {
     if (strugglePortrait) { strugglePortrait.hidden = true; }
     portraitEspeceCourante = null;
 }
-const catchMessage = document.getElementById('catchMessage');
-const kidCue = document.getElementById('kidCue');
-const windFill = document.getElementById('windFill');
-const windArrow = document.getElementById('windArrow');
-const soundToggle = document.getElementById('soundToggle');
-const lineSelect = document.getElementById('lineSelect');
-const feedButton = document.getElementById('feedButton');
-const depthPanel = document.getElementById('depthPanel');
-const quickFeedButton = document.getElementById('quickFeedButton');
-const quickFeedCount = document.getElementById('quickFeedCount');
-const feedGauge = document.getElementById('feedGauge');
-const feedGaugeFill = document.getElementById('feedGaugeFill');
-const feedGaugeTarget = document.getElementById('feedGaugeTarget');
-const journalButton = document.getElementById('journalButton');
-const journalPanel = document.getElementById('journal');
-const journalStats = document.getElementById('journalStats');
-const journalList = document.getElementById('journalList');
-const journalClose = document.getElementById('journalClose');
-const difficultySelect = document.getElementById('difficultySelect');
-const bigTextToggle = document.getElementById('bigTextToggle');
-const calmToggle = document.getElementById('calmToggle');
-const effectsToggle = document.getElementById('effectsToggle');
-const bourricheLabel = document.getElementById('bourricheLabel');
-const xpLabel = document.getElementById('xpLabel');
-// XP de la partie, rappelée dans la barre du haut (le menu est souvent fermé).
-const xpTop = document.getElementById('xpTop');
-const depthLabel = document.getElementById('depthLabel');
-const depthMinus = document.getElementById('depthMinus');
-const depthPlus = document.getElementById('depthPlus');
-const lignesLabel = document.getElementById('lignesLabel');
-const gameOver = document.getElementById('gameOver');
-const gameOverScore = document.getElementById('gameOverScore');
-const gameOverTitle = document.getElementById('gameOverTitle');
-const gameOverText = document.getElementById('gameOverText');
-const playerName = document.getElementById('playerName');
-const saveScore = document.getElementById('saveScore');
-const saveAndMenu = document.getElementById('saveAndMenu');
-const backToMenu = document.getElementById('backToMenu');
-const restartGame = document.getElementById('restartGame');
-const showRanking = document.getElementById('showRanking');
-const rankingButton = document.getElementById('rankingButton');
-const classement = document.getElementById('classement');
-const rankingTabs = document.getElementById('rankingTabs');
-const rankingList = document.getElementById('rankingList');
-const closeRanking = document.getElementById('closeRanking');
-const accueil = document.getElementById('accueil');
-const playButton = document.getElementById('playButton');
-const accueilClassement = document.getElementById('accueilClassement');
-const endGameButton = document.getElementById('endGameButton');
-const modalBackdrop = document.getElementById('modalBackdrop');
-const tangleGame = document.getElementById('tangleGame');
-const tangleCanvas = document.getElementById('tangleCanvas');
-const tangleTimer = document.getElementById('tangleTimer');
-const tangleProgress = document.getElementById('tangleProgress');
-const tangleMessage = document.getElementById('tangleMessage');
-const tangleGiveUp = document.getElementById('tangleGiveUp');
-const ragondinAlert = document.getElementById('ragondinAlert');
-const accueilTechniqueRadios = {
-    bouchon: document.getElementById('accueilTechniqueBouchon'),
-    quiver: document.getElementById('accueilTechniqueQuiver')
-};
-const accueilDifficulteRadios = {
-    facile: document.getElementById('accueilDifficulteFacile'),
-    normal: document.getElementById('accueilDifficulteNormal'),
-    dur: document.getElementById('accueilDifficulteDur')
-};
-// Biotopes (milieux.js) : un bouton radio par milieu, identifiants accueilMilieuPlaine, accueilMilieuCanal…
-const accueilMilieuRadios = Object.fromEntries(IDS_MILIEUX.map(id => [id, document.getElementById('accueilMilieu' + id[0].toUpperCase() + id.slice(1))]));
 
-const quiverPanel = document.getElementById('quiverPanel');
-const quiverCanvas = document.getElementById('quiverCanvas');
-const compassDisplay = document.getElementById('compass');
-const cartePlacement = document.getElementById('cartePlacement');
-const cartePlacementAide = document.getElementById('cartePlacementAide');
-const cartePlacementRepere = document.getElementById('cartePlacementRepere');
-const shopXp = document.getElementById('shopXp');
-const boutique = document.getElementById('boutique');
-const ficheTouches = document.getElementById('ficheTouches');
-const journalTabs = document.getElementById('journalTabs');
-const pondMap = document.getElementById('pondMap');
-const tabPages = {
-    prises: document.getElementById('tabPrises'),
-    especes: document.getElementById('tabEspeces'),
-    boutique: document.getElementById('tabBoutique'),
-    touches: document.getElementById('tabTouches'),
-    options: document.getElementById('tabOptions')
-};
-const especePrev = document.getElementById('especePrev');
-const especeNext = document.getElementById('especeNext');
-const especePage = document.getElementById('especePage');
-const especeFiche = document.getElementById('especeFiche');
-const tabBtnEspeces = document.getElementById('tabBtnEspeces');
 let especeIndex = 0;             // poisson affiché dans l'onglet « Espèces »
-const toolDock = document.getElementById('toolDock');
-const sonarButton = document.getElementById('sonarButton');
-const sonarPanel = document.getElementById('sonarPanel');
-const boatButton = document.getElementById('boatButton');
-const boatPad = document.getElementById('boatPad');
-const boatLeft = document.getElementById('boatLeft');
-const boatRow = document.getElementById('boatRow');
-const boatRight = document.getElementById('boatRight');
-const sonarRadar = document.getElementById('sonarRadar');
-const sonarCount = document.getElementById('sonarCount');
-const cameraButton = document.getElementById('cameraButton');
-const cameraControls = document.getElementById('cameraControls');
-const toolToggle = document.getElementById('toolToggle');
-const dragButton = document.getElementById('dragButton');
-const journalEspeces = document.getElementById('journalEspeces');
-const reflectionsToggle = document.getElementById('reflectionsToggle');
-const tutorial = document.getElementById('tutorial');
-const tutorialText = document.getElementById('tutorialText');
-const tutorialHand = document.getElementById('tutorialHand');
-const tutorialStepDisplay = document.getElementById('tutorialStep');
-const tutorialNext = document.getElementById('tutorialNext');
-const tutorialClose = document.getElementById('tutorialClose');
-const tutorialOpen = document.getElementById('tutorialOpen');
-const floatSelect = document.getElementById('floatSelect');
-const scionSelect = document.getElementById('scionSelect');
-const floatInfo = document.getElementById('floatInfo');
 
 const sound = new SoundEngine();
 
@@ -530,18 +425,9 @@ pauseButton.addEventListener('click', () => {
     if (!paused) { fermerOutils(); }
 });
 
-// Manivelle : on la fait tourner pour ramener la ligne.
-const crank = document.getElementById('crank');
-const crankRotor = document.getElementById('crankRotor');
-let crankDragging = false;
+// Manivelle : on la fait tourner pour ramener la ligne (voir manivelle.js).
 let crankAngle = 0;
-let crankLastAngle = 0;
 let crankRotationDelta = 0;
-let crankSoundAccum = 0;
-let crankLastMoveTime = 0;
-let crankSpeedRad = 0;
-let crankSpeedWindow = 0;
-let crankSpeedStrikes = 0;
 
 // ---------------------------------------------------------------------------
 // Moulinet : conversion « tours de manivelle ↔ longueur de fil »
@@ -553,7 +439,6 @@ let crankSpeedStrikes = 0;
 // distance à ramener (un long lancer demande beaucoup plus de tours).
 const REEL_PER_TURN = 2.0;
 const TWO_PI = Math.PI * 2;
-const CRANK_SOUND_PER_TURN = 0.5; // un « cliquet » sonore tous les demi-tours
 
 // Le fil sorti correspond à la barre de tension : 0 = poisson au bord de la
 // canne (barre à gauche), 1 = fil tendu au maximum, juste avant qu'il casse
@@ -581,85 +466,10 @@ let DIFFICULTY = DIFFICULTY_MODES.normal.difficulty;
 let tangleChance = DIFFICULTY_MODES.normal.tangleChance;
 let tangleChanceOverride = null;
 
-// Tours de manivelle effectués depuis le dernier appel (puis remis à zéro).
-function consumeCrankTurns() {
-    const turns = crankRotationDelta / TWO_PI;
-    crankRotationDelta = 0;
-    if (turns > 0) {
-        crankSoundAccum += turns;
-        while (crankSoundAccum >= CRANK_SOUND_PER_TURN) {
-            crankSoundAccum -= CRANK_SOUND_PER_TURN;
-            sound.reel();
-        }
-    }
-    return turns;
-}
-
-function crankPointerAngle(event) {
-    const rect = crank.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    return Math.atan2(event.clientY - cy, event.clientX - cx);
-}
-
-crank.addEventListener('pointerdown', event => {
-    if (paused || (event.button !== undefined && event.button !== 0)) { return; }
-    ensureSound();
-    crankDragging = true;
-    crankLastAngle = crankPointerAngle(event);
-    crank.setPointerCapture(event.pointerId);
-});
-
-crank.addEventListener('pointermove', event => {
-    if (!crankDragging) {
-        return;
-    }
-    const angle = crankPointerAngle(event);
-    let delta = angle - crankLastAngle;
-    while (delta > Math.PI) delta -= Math.PI * 2;
-    while (delta < -Math.PI) delta += Math.PI * 2;
-    crankRotationDelta += Math.abs(delta);
-    crankAngle += delta;
-    crankLastAngle = angle;
-    crankRotor.style.transform = 'rotate(' + crankAngle + 'rad)';
-    // Remonter TROP VITE fatigue la ligne — mais on mesure une MOYENNE sur une
-    // fenêtre de 0,6 s, et il faut DEUX fenêtres de suite trop rapides : un coup
-    // de poignet ne suffit pas, il faut vraiment enchaîner les tours.
-    const maintenant = performance.now();
-    const ecart = Math.max(8, maintenant - crankLastMoveTime) / 1000;
-    crankLastMoveTime = maintenant;
-    crankSpeedRad += Math.abs(delta);
-    crankSpeedWindow += ecart;
-    if (crankSpeedWindow >= 0.6) {
-        const toursParSeconde = (crankSpeedRad / TWO_PI) / crankSpeedWindow;
-        const fenetre = crankSpeedWindow;
-        const max = vitesseMaxTours();
-        crankSpeedRad = 0;
-        crankSpeedWindow = 0;
-        if (toursParSeconde > max) {
-            // PATINAGE : au-delà du maximum, le moulinet n'entraîne plus — les
-            // tours en trop sont PERDUS (l'effort est gaspillé). La ligne ne
-            // casse qu'en cas d'abus SOUTENU (voir avertirVitesse), sinon un
-            // enfant qui « moule » la manivelle perdrait sa ligne sans comprendre.
-            const excedent = (toursParSeconde - max) * fenetre * TWO_PI;
-            crankRotationDelta = Math.max(0, crankRotationDelta - excedent);
-            crankSpeedStrikes += 1;
-            if (crankSpeedStrikes >= 2) {
-                crankSpeedStrikes = 0;
-                avertirVitesse();
-            }
-        } else {
-            crankSpeedStrikes = 0;
-        }
-    }
-});
-
-crank.addEventListener('pointerup', () => {
-    crankDragging = false;
-});
-
-crank.addEventListener('pointercancel', () => {
-    crankDragging = false;
+// Manivelle (moulinet) : tours, son de cliquet, vitesse de remontée (voir manivelle.js).
+const { consumeCrankTurns } = creerManivelle({
+    crank, crankRotor, sound, ensureSound,
+    vitesseMaxTours: () => vitesseMaxTours(), avertirVitesse: () => avertirVitesse()
 });
 
 let isMobileDevice;
@@ -682,281 +492,27 @@ scene.background = new THREE.Color(0x9fd3ea);
 // opposée (≈ 200 unités) reste nette, seuls l'horizon et le bord du terrain se fondent.
 scene.fog = new THREE.Fog(0x9fd3ea, 150, 480);
 
-// Ciel dégradé
-const skyMat = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    uniforms: {
-        topColor: { value: new THREE.Color(0x4a9fd8) },
-        bottomColor: { value: new THREE.Color(0xe6f6fd) },
-        offset: { value: 52 },   // 30 × (520 / 300) : même dégradé avec la sphère agrandie
-        exponent: { value: 0.7 }
-    },
-    vertexShader: 'varying vec3 vWorldPosition; void main() { vec4 wp = modelMatrix * vec4(position, 1.0); vWorldPosition = wp.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize(vWorldPosition + offset).y; gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'
-});
-// Sphère du ciel : 520 (au lieu de 300) pour englober la brume (480) et la caméra, qui
-// peut maintenant s'éloigner de ≈ 190 unités de l'origine (poste à la rive nord).
-const sky = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 16), skyMat);
-scene.add(sky);
-
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 900);
-// Sur un écran étroit, le FOV horizontal devient trop petit : la bourriche et
-// la girouette (à ±12 unités) sortent du cadre. On garantit un FOV horizontal
-// minimum en élargissant le FOV vertical (borné pour éviter la déformation).
-const H_FOV_MIN = 76 * Math.PI / 180;
-
-function fovPourAspect(aspect) {
-    const a = Math.max(0.2, aspect || 1);
-    const vertical = 2 * Math.atan(Math.tan(H_FOV_MIN / 2) / a) * 180 / Math.PI;
-    return Math.min(85, Math.max(50, vertical));
-}
-
-const NORMAL_CAM_POS = new THREE.Vector3(0, 8, 34);
-const NORMAL_CAM_TARGET = new THREE.Vector3(0, 0, -15);
-const cameraTarget = NORMAL_CAM_TARGET.clone();
 // Vue RÉALISTE unique : plus aucun zoom sur le bouchon (le joueur le surveille
 // de loin). On garde la variable pour l'API de test.
 let cameraMode = 'normal';
-camera.position.copy(NORMAL_CAM_POS);
-camera.lookAt(cameraTarget);
-
-const cameraAxis = new THREE.Vector3(0, 1, 0);
-const adjustedCameraPosition = new THREE.Vector3();
-const cameraTouches = new Map();
 let cameraViewActive = false;
-let cameraAngle = 0;
-let cameraDistance = 1;
-let previousCameraGesture = null;
-
-function adjustCamera(angle, distanceFactor) {
-    cameraAngle = THREE.MathUtils.clamp(cameraAngle + angle, -Math.PI / 4, Math.PI / 4);
-    cameraDistance = THREE.MathUtils.clamp(cameraDistance * distanceFactor, 0.72, 1.25);
-}
-
-function resetCameraView() {
-    cameraAngle = 0;
-    cameraDistance = 1;
-}
-
-function setCameraView(active) {
-    cameraViewActive = active;
-    cameraControls.hidden = !active;
-    toolToggle.hidden = active;
-    cameraTouches.clear();
-    previousCameraGesture = null;
-    if (active) {
-        fermerOutils();
-        document.getElementById('cameraDone').focus?.();
-    }
-}
-
-cameraButton.addEventListener('click', () => setCameraView(true));
-document.getElementById('cameraLeft').addEventListener('click', () => adjustCamera(-Math.PI / 12, 1));
-document.getElementById('cameraRight').addEventListener('click', () => adjustCamera(Math.PI / 12, 1));
-document.getElementById('cameraCloser').addEventListener('click', () => adjustCamera(0, 0.88));
-document.getElementById('cameraFarther').addEventListener('click', () => adjustCamera(0, 1.14));
-document.getElementById('cameraReset').addEventListener('click', resetCameraView);
-document.getElementById('cameraDone').addEventListener('click', () => {
-    setCameraView(false);
-    toolToggle.focus?.();
+// Caméra : FOV garanti, vue réglable, redimensionnement (voir camera.js).
+const {
+    camera, fovPourAspect, NORMAL_CAM_POS, NORMAL_CAM_TARGET, cameraTarget, cameraTouches,
+    resetCameraView, setCameraView, updateCameraGesture, updateCameraPosition, resize
+} = creerCamera({
+    cameraControls, toolToggle, cameraButton, cameraLeft, cameraRight, cameraCloser,
+    cameraFarther, cameraReset, cameraDone, fermerOutils: () => fermerOutils(), resizePost
 });
 
-function updateCameraGesture() {
-    if (cameraTouches.size !== 2) {
-        previousCameraGesture = null;
-        return;
-    }
-    const [a, b] = cameraTouches.values();
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const distance = Math.hypot(dx, dy);
-    if (distance < 8) {
-        previousCameraGesture = null;
-        return;
-    }
-    const angle = Math.atan2(dy, dx);
-    if (previousCameraGesture) {
-        const delta = angle - previousCameraGesture.angle;
-        adjustCamera(Math.atan2(Math.sin(delta), Math.cos(delta)), previousCameraGesture.distance / distance);
-    }
-    previousCameraGesture = { angle, distance };
-}
-
-function updateCameraPosition(dt) {
-    adjustedCameraPosition.copy(NORMAL_CAM_POS).sub(NORMAL_CAM_TARGET)
-        .multiplyScalar(cameraDistance).applyAxisAngle(cameraAxis, cameraAngle).add(NORMAL_CAM_TARGET);
-    camera.position.lerp(adjustedCameraPosition, 1 - Math.pow(0.0001, dt));
-}
-
-function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.fov = fovPourAspect(camera.aspect);
-    camera.updateProjectionMatrix();
-    resizePost(w, h);
-}
-window.addEventListener('resize', resize);
-// Le navigateur mobile met parfois un instant à recalculer la taille : on insiste.
-window.addEventListener('orientationchange', () => setTimeout(resize, 250));
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', resize);
-}
-// iOS : le viewport ne suffit pas toujours à empêcher le zoom par pincement.
-document.addEventListener('gesturestart', event => event.preventDefault());
-resize();
-
-// ---------------------------------------------------------------------------
-// SOLEIL : orientation FIXE du monde (idee 2 de idees.md).
-// L'azimut se lit comme sur une boussole : 0° = nord, 90° = est, 180° = sud,
-// 270° = ouest. Le nord correspond à l'axe -z (le haut de l'écran au poste sud).
-// 225° = sud-ouest, exactement ce qu'annonce la boussole du HUD.
-// ---------------------------------------------------------------------------
-const SUN_AZIMUT = 225;
-const NOMS_AZIMUT = {
-    0: 'nord', 45: 'nord-est', 90: 'est', 135: 'sud-est',
-    180: 'sud', 225: 'sud-ouest', 270: 'ouest', 315: 'nord-ouest'
-};
-
-function azimutTexte(valeur) {
-    const normalise = ((valeur % 360) + 360) % 360;
-    return NOMS_AZIMUT[normalise] || (normalise + '°');
-}
-
-// Direction HORIZONTALE (x, z) vers le soleil pour un azimut donné.
-function directionAzimut(azimut) {
-    const a = (azimut * Math.PI) / 180;
-    return { x: Math.sin(a), z: -Math.cos(a) };
-}
-
-// Direction 3D de référence (élévation de « midi ») : sert d'état initial au
-// reflet solaire de l'eau, avant la première image.
-function directionSoleil3D(cible) {
-    const a = (SUN_AZIMUT * Math.PI) / 180;
-    const elevation = (42 * Math.PI) / 180;
-    return cible.set(
-        Math.sin(a) * Math.cos(elevation),
-        Math.sin(elevation),
-        -Math.cos(a) * Math.cos(elevation)
-    );
-}
-
-const SUN_DIRECTION = directionAzimut(SUN_AZIMUT);
-
-// ---------------------------------------------------------------------------
-// Lumières
-// ---------------------------------------------------------------------------
-// Lumière ambiante douce + lumière « ciel/sol » : les volumes sont plus naturels.
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambientLight);
-
-const skyLight = new THREE.HemisphereLight(0xcfe8ff, 0x3a5a3f, 0.5);
-scene.add(skyLight);
-
-const sunLight = new THREE.DirectionalLight(0xfff2cc, 1.15);
-// Position du soleil RELATIVE au centre des ombres (voir suivreOmbres) : c'est ce
-// décalage, et lui seul, qui donne la direction de la lumière.
-const sunDecalage = new THREE.Vector3(SUN_DIRECTION.x * 70, 73, SUN_DIRECTION.z * 70);
-sunLight.position.copy(sunDecalage);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(isMobileDevice ? 512 : 1024, isMobileDevice ? 512 : 1024);
-// La carte d'ombre couvre 180 × 180 unités. Depuis v173 l'étang fait ≈ 210 unités de
-// large : une carte fixe ne couvrirait plus tous les postes. Elle SUIT donc le pêcheur
-// (suivreOmbres) et couvre toujours la rive, le matériel et la moitié proche de l'eau.
-sunLight.shadow.camera.left = -90;
-sunLight.shadow.camera.right = 90;
-sunLight.shadow.camera.top = 90;
-sunLight.shadow.camera.bottom = -90;
-sunLight.shadow.camera.near = 1;
-sunLight.shadow.camera.far = 260;
-// Ombres plus propres (moins d'« acné » sur le sable et l'eau).
-sunLight.shadow.bias = -0.0004;
-sunLight.shadow.normalBias = 0.03;
-scene.add(sunLight);
-scene.add(sunLight.target);
-
-// Centre des ombres : 35 unités devant le pêcheur, vers le milieu de l'étang. La
-// lumière garde la même direction (même décalage) : seul son point de visée bouge.
-const ombreCentre = new THREE.Vector3();
-function suivreOmbres() {
-    if (!angler) { return; }
-    ombreCentre.set(POND_CENTER.x - angler.position.x, 0, POND_CENTER.z - angler.position.z);
-    const d = ombreCentre.length() || 1;
-    ombreCentre.multiplyScalar(Math.min(35, d) / d).add(angler.position);
-    ombreCentre.y = 0;
-    sunLight.target.position.copy(ombreCentre);
-    sunLight.position.copy(ombreCentre).add(sunDecalage);
-}
-
-// Disque du soleil : posé dans le ciel RELATIVEMENT à la caméra (120 unités dans la
-// direction de la lumière). Fixé au monde, il se retrouvait derrière la caméra ou dans
-// un arbre dès que le poste changeait de rive (l'étang fait maintenant 210 unités).
-const sunMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(10, 24, 24),
-    new THREE.MeshBasicMaterial({ color: 0xfff3b0, fog: false })
-);
-sunMesh.position.copy(sunDecalage).multiplyScalar(1.2);
-scene.add(sunMesh);
-
-// Halo du soleil
-function makeGlowTexture() {
-    const c = document.createElement('canvas');
-    c.width = 128;
-    c.height = 128;
-    const g = c.getContext('2d');
-    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    grad.addColorStop(0, 'rgba(255, 250, 200, 1)');
-    grad.addColorStop(0.3, 'rgba(255, 240, 150, 0.6)');
-    grad.addColorStop(1, 'rgba(255, 240, 150, 0)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, 128, 128);
-    return new THREE.CanvasTexture(c);
-}
-const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeGlowTexture(), transparent: true, depthWrite: false }));
-sunGlow.scale.set(140, 140, 1);
-sunGlow.position.copy(sunMesh.position);
-scene.add(sunGlow);
-
-// ---------------------------------------------------------------------------
-// Cycle jour / nuit : le soleil décrit un arc, le ciel et la lumière suivent.
-// ---------------------------------------------------------------------------
-const DAY_LENGTH = 420;   // durée d'un cycle complet (secondes)
 let dayPhase = 0.20;      // 0 = aube, 0,25 = midi, 0,5 = crépuscule, 0,75 = nuit
-const SKY_TOP_DAY = new THREE.Color(0x4a9fd8);
-const SKY_BOTTOM_DAY = new THREE.Color(0xe6f6fd);
-const SKY_TOP_NIGHT = new THREE.Color(0x0b1c33);
-const SKY_BOTTOM_NIGHT = new THREE.Color(0x2b3f57);
-const SUN_WARM = new THREE.Color(0xffb877);
-const SUN_DAY = new THREE.Color(0xfff2cc);
-
-function updateDayNight(dt) {
-    if (!etat.horlogeGelee) { dayPhase = (dayPhase + dt / DAY_LENGTH) % 1; }   // gelée par setHeure (tests)
-    const angle = dayPhase * Math.PI * 2;
-    const daylight = Math.max(0, Math.sin(angle)); // 0 la nuit, 1 en plein jour
-    // LUMINOSITÉ DU POSTE : le soleil est TOUJOURS au sud-ouest ; selon l'endroit
-    // où l'on pêche, on l'a dans le dos, de côté ou en plein contre-jour.
-    const exposition = expositionPoste();
-    // Soleil : azimut FIXE (sud-ouest), seule l'élévation suit le cycle du jour.
-    sunDecalage.set(SUN_DIRECTION.x * 70, 12 + daylight * 65, SUN_DIRECTION.z * 70);
-    suivreOmbres();
-    sunLight.intensity = (0.25 + daylight * 1.05) * exposition;
-    sunLight.color.copy(SUN_WARM).lerp(SUN_DAY, daylight);
-    sunMesh.position.copy(camera.position).addScaledVector(sunDecalage.clone().normalize(), 120);
-    sunGlow.position.copy(sunMesh.position);
-    // La même direction pour le reflet solaire du shader d'eau (plus de valeur
-    // codée en dur : le soleil peut être ailleurs qu'au sud-ouest).
-    waterUniforms.uSunDir.value.copy(sunDecalage).normalize();
-    // Ciel (dégradé), brume et fond.
-    skyMat.uniforms.topColor.value.copy(SKY_TOP_NIGHT).lerp(SKY_TOP_DAY, daylight);
-    skyMat.uniforms.bottomColor.value.copy(SKY_BOTTOM_NIGHT).lerp(SKY_BOTTOM_DAY, daylight);
-    scene.background.copy(skyMat.uniforms.bottomColor.value);
-    scene.fog.color.copy(skyMat.uniforms.bottomColor.value);
-    // Lumières d'ambiance : la nuit reste assez claire pour jouer.
-    ambientLight.intensity = (0.42 + daylight * 0.22) * (0.94 + exposition * 0.06);
-    skyLight.intensity = (0.38 + daylight * 0.30) * (0.96 + exposition * 0.04);
-    waterUniforms.uLight.value = (0.35 + daylight * 0.65) * exposition;
-}
+// Ciel, soleil, lumières et cycle jour / nuit (voir ciel.js).
+const {
+    skyMat, sky, SUN_AZIMUT, azimutTexte, directionAzimut, directionSoleil3D,
+    ambientLight, skyLight, sunLight, sunDecalage, DAY_LENGTH, updateDayNight
+} = creerCiel({
+    scene, camera, POND_CENTER, eau: () => waterUniforms, expositionPoste: () => expositionPoste()
+});
 
 // ---------------------------------------------------------------------------
 // Éclairage d'environnement (IBL) : reflets crédibles sur les matériaux PBR.

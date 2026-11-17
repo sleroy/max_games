@@ -13,7 +13,7 @@ function read(name) {
 // Certaines règles portent sur « le code du jeu » sans se soucier du module qui
 // le contient (textures locales, absence de CDN…). On lit donc l'ensemble des
 // modules fusionnés : script.js + les modules extraits.
-const MODULES = ['decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'modeleOiseau.js', 'modeleLibellule.js', 'texturesVie.js'];
+const MODULES = ['dom.js', 'camera.js', 'ciel.js', 'manivelle.js', 'eau.js', 'rive.js', 'postes.js', 'decor.js', 'environnement.js', 'poissons.js', 'bourriche.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'modeleOiseau.js', 'modeleLibellule.js', 'texturesVie.js'];
 
 function readModules() {
     return MODULES.filter(name => fs.existsSync(path.join(GAME_DIR, name)))
@@ -40,7 +40,7 @@ export function run() {
 
     group('2) Cohérence entre index.html et script.js');
     const demanded = [...new Set(
-        [...script.matchAll(/getElementById\('([^']+)'\)/g)].map(m => m[1])
+        [...(script + '\n' + read('dom.js')).matchAll(/getElementById\('([^']+)'\)/g)].map(m => m[1])
     )];
     check('le script réclame des éléments du DOM', demanded.length >= 10, demanded.length + ' identifiants');
     demanded.forEach(id => {
@@ -150,9 +150,9 @@ export function run() {
 
     group('6) Soleil directionnel (idee 2)');
     check('l’azimut du soleil est une constante (225° = sud-ouest)',
-        script.includes('const SUN_AZIMUT = 225'));
+        code.includes('const SUN_AZIMUT = 225'));
     check('le shader d’eau reçoit la direction du soleil (uniforme uSunDir)',
-        script.includes('uniform vec3 uSunDir') && script.includes('viewDir + uSunDir'));
+        code.includes('uniform vec3 uSunDir') && code.includes('viewDir + uSunDir'));
     check('plus aucune direction solaire codée en dur dans le shader',
         !code.includes('normalize(vec3(0.4, 1.0, -0.6))'));
 
@@ -245,7 +245,7 @@ export function run() {
         && /\.accueil-config\s*\{[^}]*overflow-y:\s*auto/.test(css)
         && /\.accueil-actions\s*\{[^}]*flex:\s*0 0 auto/.test(css));
     check('un FOV horizontal minimum est prévu pour les écrans étroits',
-        script.includes('function fovPourAspect') && script.includes('H_FOV_MIN'));
+        code.includes('function fovPourAspect') && code.includes('H_FOV_MIN'));
     check('l’avertissement de remontée trop rapide est une popup 3D',
         code.includes('Trop vite !') && code.includes('spawnFloatingText'));
     check('le message interdit « Ça bouge » n’est jamais affiché',

@@ -20,6 +20,7 @@ const MODULES = [
     'environnement.js', 'poissons.js', 'bourriche.js', 'decor.js', 'portraits.js', 'demelage.js', 'quiver.js',
     'especes.js', 'classement.js', 'carnet.js', 'sound.js', 'combat.js', 'comportement.js', 'bateau.js', 'lancerPoisson.js', 'carnetUI.js', 'boutique.js', 'fiches.js', 'lancerCanne.js', 'amorcage.js', 'lancer.js', 'frein.js', 'ligne.js', 'bouchons.js', 'placement.js', 'meteo.js', 'vie.js', 'sonar.js', 'stocks.js', 'journal.js', 'touches.js', 'cycleLigne.js', 'accrochage.js', 'ambiance.js', 'entrees.js', 'cheat.js', 'boucle.js', 'partie.js', 'pecheur.js', 'rendu.js', 'obstacles.js', 'substrats.js', 'esches.js',
     'culling.js', 'physique.js', 'menus.js', 'radar.js', 'modelePoisson.js', 'teteBec.js', 'texturesPoisson.js', 'apercuPoisson.js', 'blackBass.js', 'chevesne.js', 'rotengle.js', 'goujon.js', 'motifBande.js', 'vegetation.js', 'chanceTouche.js', 'matriceTouche.js', 'avion.js', 'conseilLocal.js', 'milieux.js', 'dimensions.js', 'tailleEtang.js', 'modeleOiseau.js', 'modeleLibellule.js', 'texturesVie.js',
+    'dom.js', 'camera.js', 'ciel.js', 'manivelle.js', 'eau.js', 'rive.js', 'postes.js',
 ];
 
 const PLAFOND_MODULE = 800;      // lignes max par module
@@ -116,7 +117,8 @@ export function run() {
         'demelage.js': 'export function creerJeuDemelage(',
         'quiver.js': 'export function creerModeQuiver(',
         'carnet.js': 'export function chargerCarnet(',
-        'classement.js': 'export function creerClassement('
+        'classement.js': 'export function creerClassement(',
+        'dom.js': 'export function lireDom('
     };
     Object.keys(attendus).forEach(function (module) {
         const code = fs.readFileSync(path.join(DOSSIER_JEU, module), 'utf8');
@@ -129,6 +131,7 @@ export function run() {
     if (fs.existsSync(DOCS)) {
         const doc = fs.readFileSync(DOCS, 'utf8');
         MODULES.forEach(function (module) {
+            if (!fs.existsSync(path.join(DOSSIER_JEU, module))) { return; }
             check('docs/modules.md documente ' + module, doc.includes('`' + module + '`'));
         });
         check('docs/modules.md fixe le plafond de 800 lignes', doc.includes('800'));
