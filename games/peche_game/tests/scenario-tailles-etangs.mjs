@@ -18,10 +18,11 @@ import {
 } from '../milieux.js';
 import {
     RAYON_REFERENCE, surfaceHectares, surfaceUnites, porteeLancer, porteeAmorce, echelleDeRayon,
-    BRUME_REFERENCE, CIEL_REFERENCE, CAMERA_FAR_REFERENCE, rayonContour, VARIATION_CONTOUR,
+    BRUME_REFERENCE, CIEL_REFERENCE, CAMERA_FAR_REFERENCE, rayonContour, VARIATION_CONTOUR, HARMONIQUES,
     extents, echelleExtent, echelleAmbiance
 } from '../dimensions.js';
 import { group, check, checkEqual, checkClose, G, el, fire, resetToIdle } from './harness.mjs';
+import { suivreProfil, profilParDefaut, GRAINE_TEMOIN } from './profil-monde.mjs';
 
 const cap = function (id) { return id[0].toUpperCase() + id.slice(1); };
 const borner = function (v, min, max) { return Math.max(min, Math.min(max, v)); };
@@ -39,6 +40,7 @@ const ATTENDU = {
 function choisirSurAccueil(id) {
     el('accueilMilieu' + cap(id)).checked = true;
     fire('accueilMilieu' + cap(id), 'change');
+    suivreProfil(G());   // formes tirées d'une graine : dimensions.js (tests) calcule sur le plan d'eau du jeu
 }
 
 /** Distance au centre et angle d'un point, et rayon du contour dans cette direction. */
@@ -51,6 +53,7 @@ function polaire(p, centre) {
 
 export async function run() {
     group('78) Tailles d’étang : le rayon, la géométrie, le décor et les portées suivent le biotope');
+    profilParDefaut();   // les dimensions pures ci-dessous : style par défaut (le profil du jeu est suivi plus bas)
 
     // --- 1) Les dimensions pures ----------------------------------------------------------------
     checkEqual('six biotopes, six rayons : 12, 45, 70, 90, 180 et 280',
@@ -79,6 +82,7 @@ export async function run() {
 
     // --- Monde d'origine, mémorisé AVANT tout changement ------------------------------------------------
     const Z = G();
+    Z.setGraine(GRAINE_TEMOIN);   // plan d'eau de la graine témoin (voir profil-monde.mjs) ; la graine du harnais est remise à la fin
     choisirSurAccueil('plaine');
     const origine = {
         centre: Z.getPondCenter(),
@@ -93,10 +97,33 @@ export async function run() {
         profondeurs: [[0, -40], [-20, -90], [30, -55], [4, -123]].map(function (p) { return Z.profondeurLocale(p[0], p[1]); })
     };
     checkEqual('plaine : rayon 90', origine.monde.rayon, 90);
-    checkEqual('plaine : centre en (0, -71)', origine.centre.x + ',' + origine.centre.z, '0,-71');
-    checkEqual('plaine : fosses d’origine', origine.fosses, JSON.stringify([
-        { x: -28, z: -95, rayon: 22, plus: 3.6 }, { x: 30, z: -53, rayon: 18, plus: 3.3 }, { x: 4, z: -123, rayon: 16, plus: 3.8 }]));
-    checkClose('plaine : rayon max 109,8', origine.monde.rayonMax, 109.8, 1e-9);
+    // ATTENDU MODIFIÉ (formes tirées d'une graine) : le contour de la plaine vient de la graine, donc « centre en (0, -71) »,
+    // « fosses d'origine (-28, -95)… » et « rayon max 109,8 » ne sont plus des constantes. Invariants à la place :
+    // l'ancre sud (le poste de départ) reste sur le contour, le centre reste près de (0, -71), les fosses gardent rayons et
+    // profondeurs d'origine et leur fraction d / rayon local, le rayon max est le plus grand rayon du contour tiré.
+    check('plaine : centre près de (0, -71) (l’ancre sud reste en place, le contour vient de la graine)',
+        Math.hypot(origine.centre.x - 0, origine.centre.z - (-71)) < 20, origine.centre.x.toFixed(2) + ',' + origine.centre.z.toFixed(2));
+    checkEqual('plaine : fosses d’origine (rayons 22, 18, 16 et profondeurs supplémentaires 3,6, 3,3, 3,8)',
+        JSON.stringify(JSON.parse(origine.fosses).map(function (f) { return [f.rayon, f.plus]; })), JSON.stringify([[22, 3.6], [18, 3.3], [16, 3.8]]));
+    // Fraction d / rayon local de chaque fosse d'origine : (-28, -95), (30, -53), (4, -123) autour de (0, -71), contour d'origine.
+    const fractionOrigine = function (x, z) {
+        const dx = x;
+        const dz = z + 71;
+        const a = Math.atan2(dz, dx);
+        return Math.hypot(dx, dz) / (90 * HARMONIQUES.reduce(function (t, h) { return t + h.amplitude * Math.sin(h.frequence * a + h.phase); }, 1));
+    };
+    check('plaine : les fosses gardent leur place RELATIVE (même fraction d / rayon local qu’au contour d’origine)',
+        JSON.parse(origine.fosses).every(function (f, i) {
+            const dx = f.x - origine.centre.x;
+            const dz = f.z - origine.centre.z;
+            return Math.abs(Math.hypot(dx, dz) / G().getRayonEtang(Math.atan2(dz, dx)) - fractionOrigine([-28, 30, 4][i], [-95, -53, -123][i])) < 1e-9;
+        }));
+    check('plaine : rayon max = le plus grand rayon du contour (borne carrée sur x et z)',
+        (function () {
+            let maxi = 0;
+            for (let k = 0; k < 7200; k++) { maxi = Math.max(maxi, G().getRayonEtang((k / 7200) * Math.PI * 2)); }
+            return origine.monde.rayonMax >= maxi - 1e-9 && origine.monde.rayonMax <= maxi * 1.001;
+        })(), String(origine.monde.rayonMax));
     checkEqual('plaine : lancer 52', origine.monde.porteeLancer, 52);
     checkEqual('plaine : amorce 46', origine.monde.porteeAmorce, 46);
     checkEqual('plaine : plan lointain de la caméra 900', origine.monde.cameraFar, 900);
@@ -115,9 +142,11 @@ export async function run() {
         // profil : ils se mesurent sur le plus grand EXTENT (echelleExtent) au lieu du rayon nominal.
         const forme = formeDe(m);
         const etang = forme === 'etang';
+        // Formes tirées d'une graine : on choisit d'abord le biotope (le profil du jeu est alors suivi par dimensions.js),
+        // puis on calcule les échelles sur CE plan d'eau.
+        choisirSurAccueil(id);
         const fx = echelleExtent(m.rayon, forme);          // = f pour l'étang
         const ambiance = echelleAmbiance(m.rayon, forme);  // = max(1, f) pour l'étang
-        choisirSurAccueil(id);
         const monde = G().getMonde();
         const info = G().getEtangInfo();
         const centre = G().getPondCenter();
@@ -125,15 +154,17 @@ export async function run() {
         // Géométrie
         checkEqual(id + ' : rayon du monde = rayon du biotope', monde.rayon, m.rayon);
         checkEqual(id + ' : getPondRadius suit le biotope', G().getPondRadius(), m.rayon);
-        // ATTENDU MODIFIÉ (formes d'eau) : « rayon max ≈ rayon × 1,22 » vaut pour l'étang ; un autre profil a son plus grand extent.
+        // ATTENDU MODIFIÉ (formes d'eau, puis graine) : « rayon max ≈ rayon × 1,22 » valait pour le contour d'origine ; l'étang
+        // tiré d'une graine a son plus grand rayon, comme un autre profil son plus grand extent.
         const plusGrand = Math.max(extents(m.rayon, forme).maxX, extents(m.rayon, forme).maxZ);
-        checkClose(id + ' : rayon max ≈ rayon × ' + (etang ? '1,22' : 'le plus grand extent du profil'), monde.rayonMax / m.rayon, plusGrand / m.rayon, 1e-9);
-        check(id + ' : le contour reste dans [0,78 ; 1,22] × rayon (même forme)' + (etang ? '' : ' [0 ; rayon max] pour ce profil'),
+        checkClose(id + ' : rayon max ≈ rayon × le plus grand ' + (etang ? 'rayon du contour' : 'extent du profil'), monde.rayonMax / m.rayon, plusGrand / m.rayon, 1e-9);
+        // ATTENDU MODIFIÉ (graine) : « [0,78 ; 1,22] × rayon » → [0,5 ; plus grand rayon] pour l'étang (le générateur garde le contour ≥ 55 % de son rayon).
+        check(id + ' : le contour reste dans ' + (etang ? '[0,5 ; plus grand rayon] × rayon' : '[0 ; rayon max] × rayon pour ce profil'),
             [0, 1, 2, 3, 4, 5, 6].every(function (a) {
                 const r = G().getRayonEtang(a) / m.rayon;
-                return etang ? (r >= 0.78 - 1e-9 && r <= 1.22 + 1e-9) : (r > 0 && r <= plusGrand / m.rayon + 1e-9);
+                return etang ? (r >= 0.5 && r <= plusGrand / m.rayon + 1e-9) : (r > 0 && r <= plusGrand / m.rayon + 1e-9);
             }));
-        checkClose(id + ' : contour = rayon × le contour ' + (etang ? 'de la plaine (mêmes harmoniques)' : 'du profil ' + forme),
+        checkClose(id + ' : contour = rayon × le contour ' + (etang ? 'de l’étang tiré de la graine' : 'du profil ' + forme),
             [0, 1.3, 2.6, 4.1, 5.5].reduce(function (e, a) { return Math.max(e, Math.abs(G().getRayonEtang(a) / m.rayon - rayonContour(1, a, forme))); }, 0), 0, 1e-9);
 
         // Une seule vérité pour la surface
@@ -331,7 +362,7 @@ export async function run() {
     });
 
     // --- 3) La plaine est EXACTEMENT le monde d'origine, après un tour par toutes les tailles ----------------------
-    G().setGraine(20240101);
+    G().setGraine(GRAINE_TEMOIN);
     choisirSurAccueil('plaine');
     const retour = {
         centre: G().getPondCenter(), fosses: JSON.stringify(G().getEtangInfo().fosses), monde: G().getMonde(), info: G().getEtangInfo(),
@@ -341,7 +372,8 @@ export async function run() {
         profondeurs: [[0, -40], [-20, -90], [30, -55], [4, -123]].map(function (p) { return G().profondeurLocale(p[0], p[1]); })
     };
     checkEqual('retour en plaine : rayon 90', retour.monde.rayon, 90);
-    checkEqual('retour en plaine : même centre (0, -71), au bit près', retour.centre.x + ',' + retour.centre.z, '0,-71');
+    // ATTENDU MODIFIÉ (graine) : « même centre (0, -71) » → même centre que la plaine de la même graine, au bit près.
+    checkEqual('retour en plaine : même centre, au bit près', JSON.stringify(retour.centre), JSON.stringify(origine.centre));
     checkEqual('retour en plaine : mêmes fosses, au bit près', retour.fosses, origine.fosses);
     checkEqual('retour en plaine : même contour, au bit près', JSON.stringify(retour.contour), JSON.stringify(origine.contour));
     checkEqual('retour en plaine : même relief, au bit près', JSON.stringify(retour.profondeurs), JSON.stringify(origine.profondeurs));

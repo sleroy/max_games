@@ -246,7 +246,8 @@ export async function run() {
         checkClose(id + ' : l’herbe suit le décor du biotope', D.vegetation.herbe.count / 4000, d.herbe, 0.001);
         // Fonds : la grille se rapproche des parts du biotope (la plaine garde la grille d'origine du monde).
         const cibles = partsSubstrats(m);
-        const tolerance = id === 'plaine' ? 0.065 : 0.03;
+        // ATTENDU MODIFIÉ (graine) : la plaine garde la règle naturelle, dont les parts suivent le contour (exposition au vent) : ±8 points (±6,5 pour le contour d'origine).
+        const tolerance = id === 'plaine' ? 0.08 : 0.03;
         check(id + ' : parts de fonds proches de celles du biotope (±' + tolerance * 100 + ' points)',
             Object.keys(cibles).every(function (sub) { return Math.abs(S.parts[sub] - cibles[sub]) <= tolerance; }),
             Object.keys(cibles).map(function (sub) { return sub + ' ' + S.parts[sub].toFixed(2) + '/' + cibles[sub].toFixed(2); }).join(' · '));

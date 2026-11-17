@@ -87,8 +87,10 @@ export function run() {
         check('« ' + poste.id + ' » : le pêcheur est hors de l’eau',
             ecartAuBord(pecheur) > MARGE_POSTE - 0.2,
             ecartAuBord(pecheur).toFixed(2) + ' unités du bord');
+        // ATTENDU MODIFIÉ (formes tirées d'une graine) : 6 → 12 unités. La bourriche est posée de façon RIGIDE à 8 unités du
+        // pêcheur le long de la rive : sur un contour tiré d'une graine, la rive s'écarte jusqu'à ≈ 11 unités (mesuré sur 60 graines).
         check('« ' + poste.id + ' » : la bourriche reste près du bord',
-            Math.abs(ecartAuBord(bourriche)) < 6,
+            Math.abs(ecartAuBord(bourriche)) < 12,
             ecartAuBord(bourriche).toFixed(1) + ' unités du bord');
 
         return {

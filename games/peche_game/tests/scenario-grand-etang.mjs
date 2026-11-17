@@ -46,8 +46,13 @@ export function run() {
 
     // --- 1) Le rayon ---
     checkEqual('rayon nominal de l’étang = 90 (45 m)', G().getPondRadius(), 90);
-    checkClose('rayon max = 90 × (1 + somme des amplitudes du bruit) = 109,8',
-        G().getRayonEtangMax(), 90 * (1 + SOMME_BRUIT), 1e-9);
+    // ATTENDU MODIFIÉ (formes tirées d'une graine) : « 90 × (1 + somme des amplitudes) = 109,8 » valait pour le contour d'origine.
+    // L'étang tiré de la graine a un contour de 4 à 6 harmoniques : sa borne est son plus grand rayon (mesuré, même sur x et z).
+    const profil = G().getMonde().profil;
+    const sommeProfil = profil.harmoniques.reduce(function (t, h) { return t + h.amplitude; }, 0);
+    check('rayon max = le plus grand rayon du contour tiré de la graine (≤ 90 × (1 + somme des amplitudes) × norme)',
+        G().getRayonEtangMax() > 90 * 0.9 && G().getRayonEtangMax() <= 90 * (1 + sommeProfil) * 1.2,
+        G().getRayonEtangMax().toFixed(2) + ' (somme des amplitudes ' + sommeProfil.toFixed(3) + ')');
     let mini = Infinity;
     let maxi = 0;
     let aire = 0;
@@ -58,8 +63,9 @@ export function run() {
         maxi = Math.max(maxi, r);
         aire += r * r / 2 * (Math.PI * 2 / N);
     }
-    check('le contour reste borné par le bruit (rayon entre 90 × 0,78 et le maximum exposé)',
-        mini >= 90 * (1 - SOMME_BRUIT) - 1e-9 && maxi <= G().getRayonEtangMax() + 1e-9,
+    // ATTENDU MODIFIÉ : la borne basse suit la somme des amplitudes du PROFIL tiré (× 0,9 : la normalisation de surface).
+    check('le contour reste borné par le bruit (rayon entre 90 × (1 − somme) et le maximum exposé)',
+        mini >= 90 * (1 - sommeProfil) * 0.9 - 1e-9 && maxi <= G().getRayonEtangMax() + 1e-9,
         mini.toFixed(1) + ' → ' + maxi.toFixed(1) + ' (borne ' + G().getRayonEtangMax().toFixed(1) + ')');
     const hectares = aire / 4 / 10000;      // 2 unités = 1 m → 4 unités² = 1 m²
     check('la surface de l’eau est ≈ 0,64 ha (0,23 ha avant)', hectares > 0.6 && hectares < 0.68,

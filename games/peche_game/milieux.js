@@ -17,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=243';
-import { etat } from './etat.js?v=243';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=243';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=244';
+import { etat } from './etat.js?v=244';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=244';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -311,8 +311,9 @@ export function texteMilieu(milieu) {
 // ---------------------------------------------------------------------------
 // SYSTÈME : applique le biotope choisi au monde et le mémorise dans le carnet.
 //
-// Un choix (accueil) ou un changement RECONSTRUIT d'abord la GÉOMÉTRIE quand le rayon ou la forme change
-// (`deps.setRayonMonde` : contour, centre, fosses, surface ; puis `deps.surGeometrie` : eau, rive,
+// Un choix (accueil) ou un changement RECONSTRUIT d'abord la GÉOMÉTRIE quand le rayon, la forme ou la GRAINE de forme
+// change (`deps.graine()` est lue AU MOMENT de l'application ; `deps.setRayonMonde(rayon, forme, graine)` : contour,
+// centre, fosses, surface ; puis `deps.surGeometrie` : eau, rive,
 // fond, brume, ciel, caméra), AVANT le décor, les fonds et l'eau. Ordre ensuite : teinte de l'eau,
 // décor (les fonds en dépendent), obstacles (qui évitent le décor, comme dans le monde d'origine),
 // fonds et leur texture, `deps.apresGeometrie` (partie redémarrée et poste de départ : ce n'est PAS un
@@ -339,17 +340,26 @@ export function creerMilieux(deps) {
         Object.keys(radios).forEach(function (cle) { if (radios[cle]) { radios[cle].checked = (cle === id); } });
     }
 
-    // Reconstruit le monde pour ce biotope. Sans effet s'il est déjà celui du monde.
+    // Graine de la FORME de l'eau, lue AU MOMENT de l'application (`deps.graine`, une fonction) : même graine = même
+    // plan d'eau, et changer de biotope garde la graine (autre style, même graine). Sans `deps.graine`, style par défaut.
+    function graineDeForme() {
+        const g = deps.graine ? deps.graine() : null;
+        return g === undefined || g === null ? null : g;
+    }
+
+    // Reconstruit le monde pour ce biotope. Sans effet s'il est déjà celui du monde (même biotope, même graine).
     function appliquer(id) {
         const m = milieuParId(id);
         cocherRadios(m.id);
-        if (m.id === courant) { return false; }
+        const graine = graineDeForme();
+        const autreGraine = !!deps.monde && deps.monde.graine !== undefined && deps.monde.graine !== graine;
+        if (m.id === courant && !autreGraine) { return false; }
         courant = m.id;
         // 1) La TAILLE d'abord : tout le reste (décor, fonds, poissons) se pose dans le nouveau contour.
         const changeTaille = !!deps.setRayonMonde && !!deps.monde
-            && (deps.monde.rayon !== m.rayon || (deps.monde.forme || FORME_DEFAUT) !== formeDe(m));
+            && (deps.monde.rayon !== m.rayon || (deps.monde.forme || FORME_DEFAUT) !== formeDe(m) || autreGraine);
         if (changeTaille) {
-            deps.setRayonMonde(m.rayon, formeDe(m));
+            deps.setRayonMonde(m.rayon, formeDe(m), graine === null ? undefined : graine);
             if (deps.surGeometrie) { deps.surGeometrie(m); }
         }
         appliquerEau(eauDe(m));

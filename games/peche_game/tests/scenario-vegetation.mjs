@@ -9,7 +9,10 @@ import { group, check, checkEqual, G, moduleCopie } from './harness.mjs';
 
 export async function run() {
     const { TOUFFES, balancement } = await import(moduleCopie('vegetation.js'));
-    const { POND_CENTER, rayonEtang } = await import(moduleCopie('environnement.js'));
+    // Le contour et le centre du JEU (formes tirées d'une graine) : le module copié par `moduleCopie` est une autre instance,
+    // restée dans son état d'origine (plaine sans graine).
+    const POND_CENTER = G().getPondCenter();
+    const rayonEtang = function (angle) { return G().getRayonEtang(angle); };
     group('Végétation au vent : roseaux et herbe des berges');
     const scene = G().scene;
     const instances = [];

@@ -19,10 +19,11 @@ import { milieuParId, formeDe, IDS_MILIEUX } from '../milieux.js';
 import {
     FORMES, IDS_FORMES, HARMONIQUES, facteurContour, rayonContour, coefficientSurface, COEFFICIENT_SURFACE,
     surfaceUnites, surfaceHectares, extents, echelleExtent, echelleAxes, angleSurForme, angleParSurface, angleParBord,
-    pointAuBord, formeConnue, RAYON_REFERENCE
+    pointAuBord, formeConnue, RAYON_REFERENCE, porteeLancer, porteeAmorce
 } from '../dimensions.js';
-import { instantane } from './instantane-plaine.mjs';
+import { instantane, empreinteNombres } from './instantane-plaine.mjs';
 import { group, check, checkEqual, checkClose, G, el, fire, resetToIdle } from './harness.mjs';
+import { suivreProfil, profilParDefaut, GRAINE_TEMOIN } from './profil-monde.mjs';
 
 const cap = function (id) { return id[0].toUpperCase() + id.slice(1); };
 const DEUX_PI = Math.PI * 2;
@@ -33,6 +34,11 @@ const BIOTOPES = { etang: 'carnassiers', lac: 'montagne', canal: 'canal', rivier
 // ---------------------------------------------------------------------------
 // RÉFÉRENCE v239 : instantané de la plaine tel que le produit origin/main (43cc298), c'est-à-dire AVANT les formes
 // d'eau (tests/instantane-plaine.mjs exécuté sur cette version). Toute différence, même d'un bit, est une régression.
+//
+// ATTENDU MODIFIÉ (formes tirées d'une graine, v244) : le monde de la plaine est maintenant l'étang de la GRAINE, donc ces
+// constantes ne décrivent plus le monde du jeu. Elles restent vraies pour le style PAR DÉFAUT (sans graine) : les valeurs
+// pures (contour, surface, extents, portées) sont vérifiées dessus dans `profilsPurs`. Dans le jeu, la plaine est comparée à
+// elle-même (`REFERENCE_PLAINE` : instantané de la plaine de la graine témoin, pris avant le tour par tous les profils).
 // ---------------------------------------------------------------------------
 const REFERENCE_V239 = {
     contour720: 'f158c7ca',
@@ -69,7 +75,11 @@ const REFERENCE_V239 = {
 function choisirSurAccueil(id) {
     el('accueilMilieu' + cap(id)).checked = true;
     fire('accueilMilieu' + cap(id), 'change');
+    suivreProfil(G());   // formes tirées d'une graine : dimensions.js (tests) calcule sur le plan d'eau du jeu
 }
+
+// Instantané de la plaine de la graine témoin (pris avant le tour par tous les profils).
+let REFERENCE_PLAINE = null;
 
 /** Distance au centre et angle d'un point, et rayon du contour dans cette direction. */
 function polaire(p, centre) {
@@ -121,6 +131,7 @@ function bergesA(points, z, tolerance) {
 
 function profilsPurs() {
     group('79a) Formes d’eau : les profils (dimensions.js)');
+    profilParDefaut();   // style par défaut (sans graine) : le profil du jeu est suivi plus bas, biotope par biotope
     checkEqual('quatre profils : étang, lac, canal, rivière', IDS_FORMES.join(','), 'etang,lac,canal,riviere');
     checkEqual('formeConnue : oui pour les quatre, non pour le reste',
         IDS_FORMES.every(formeConnue) && !formeConnue('mare') && !formeConnue(undefined) && !formeConnue('toString'), true);
@@ -147,6 +158,14 @@ function profilsPurs() {
             Math.abs(rayonContour(90, a, 'etang') - 90 * original(a)), Math.abs(rayonContour(90, a) - 90 * original(a)));
     }
     checkEqual('étang : contour identique à la formule d’origine (720 angles, écart exactement 0)', ecartEtang, 0);
+    // Le contour par défaut est celui de la v239, au bit près (empreinte de 720 angles, rive sud, surface, extents, portées).
+    const angles720 = [];
+    for (let k = 0; k < 720; k++) { angles720.push((k / 720) * DEUX_PI); }
+    checkEqual('étang par défaut : empreinte du contour (720 angles) = celle de la v239', empreinteNombres(angles720.map(function (a) { return rayonContour(90, a); })), REFERENCE_V239.contour720);
+    checkEqual('étang par défaut : rive sud = celle de la v239', rayonContour(90, angles720[180]), REFERENCE_V239.contourSud);
+    checkEqual('étang par défaut : surface = celle de la v239', surfaceHectares(90), REFERENCE_V239.surfaceHa);
+    checkEqual('étang par défaut : rayon max = celui de la v239 (109,8)', extents(90).maxX + ',' + extents(90).maxZ, REFERENCE_V239.rayonMax + ',' + REFERENCE_V239.rayonMax);
+    checkEqual('étang par défaut : portées de la v239', porteeLancer(90) + ',' + porteeAmorce(90), REFERENCE_V239.porteeLancer + ',' + REFERENCE_V239.porteeAmorce);
     checkEqual('étang : harmoniques d’origine inchangées', JSON.stringify(HARMONIQUES.map(function (h) { return [h.amplitude, h.frequence, h.phase]; })),
         JSON.stringify([[0.105, 2, 0.6], [0.06, 3, 2.4], [0.035, 5, 4.1], [0.02, 7, 1.3]]));
 
@@ -303,22 +322,27 @@ function profilsPurs() {
 
 // Orientation du trou d'eau de la plaine après un tour par tous les profils : même instantané que la référence.
 function comparerPlaine(titre, instant) {
-    Object.keys(REFERENCE_V239).forEach(function (cle) {
-        checkEqual(titre + ' : ' + cle, instant[cle], REFERENCE_V239[cle]);
+    Object.keys(REFERENCE_PLAINE).forEach(function (cle) {
+        checkEqual(titre + ' : ' + cle, instant[cle], REFERENCE_PLAINE[cle]);
     });
 }
 
 function plaineIdentique() {
-    group('79b) Formes d’eau : la plaine est le monde v239, au bit près');
+    group('79b) Formes d’eau : la plaine de la graine est reconstruite à l’identique, au bit près');
+    // ATTENDU MODIFIÉ (graine) : la plaine est l'étang de la graine témoin ; sa référence est son propre instantané.
+    G().setGraine(GRAINE_TEMOIN);
+    choisirSurAccueil('plaine');
+    REFERENCE_PLAINE = instantane(G());
     // Un tour par tous les profils d'abord : la plaine doit être reconstruite à l'identique, pas simplement jamais quittée.
     ['canal', 'riviere', 'montagne', 'foret', 'carnassiers'].forEach(choisirSurAccueil);
     choisirSurAccueil('plaine');
     checkEqual('plaine : monde de forme étang', G().getMonde().forme, 'etang');
     comparerPlaine('plaine après un tour par tous les profils', instantane(G()));
-    // Ses extents sont ceux d'origine (carré de 2 × 115) : la grille des fonds est le carré d'origine.
+    // Son extent est la borne de l'étang (son plus grand rayon, la même sur x et z : un carré) ; la grille des fonds est ce carré.
     const m = G().getMonde();
-    checkEqual('plaine : demi-côtés de la grille = 115 sur les deux axes (le carré d’origine)', m.demiCoteX + ',' + m.demiCoteZ, '115,115');
-    checkEqual('plaine : maxX = maxZ = rayon × 1,22', m.maxX + ',' + m.maxZ, (90 * 1.22) + ',' + (90 * 1.22));
+    checkEqual('plaine : demi-côtés de la grille = extent + 4,5 arrondi au-dessus, sur les deux axes (carré)', m.demiCoteX + ',' + m.demiCoteZ,
+        Math.ceil(m.rayonMax + 4.5) + ',' + Math.ceil(m.rayonMax + 4.5));
+    checkEqual('plaine : maxX = maxZ = rayon max (borne carrée de l’étang)', m.maxX + ',' + m.maxZ, m.rayonMax + ',' + m.rayonMax);
     checkEqual('plaine : grille des fonds carrée', G().substrats.taille, G().substrats.hauteur);
 }
 
@@ -589,7 +613,8 @@ function retourEnPlaine() {
     group('79e) Formes d’eau : retour en plaine, bit à bit');
     ['riviere', 'canal', 'montagne', 'foret', 'carnassiers', 'riviere', 'plaine'].forEach(choisirSurAccueil);
     comparerPlaine('retour en plaine', instantane(G()));
-    G().setGraine(20240101);
+    G().setGraine(20240101);   // graine du harnais : le monde en plaine est reconstruit sur son étang
+    choisirSurAccueil('plaine');
     G().repeuplerEtang();
     G().recommencerPartie();
 }

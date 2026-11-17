@@ -19,8 +19,8 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=243';
-import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=243';
+import { COMPORTEMENTS } from './especes.js?v=244';
+import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=244';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [
@@ -137,7 +137,7 @@ export function creerSubstrats(deps) {
     let etiquettes = null;
     let COTE = 0;                   // côté en x du rectangle (2 × demiX)
     let COTE_Z = 0;                 // côté en z (2 × demiZ)
-    let geometrieDe = null;         // rayon et forme du monde pour lesquels la grille est construite
+    let geometrieDe = null;         // rayon, forme et graine de forme du monde pour lesquels la grille est construite
     const ventX = Math.cos(VENT_DOMINANT);
     const ventZ = Math.sin(VENT_DOMINANT);
 
@@ -202,7 +202,7 @@ export function creerSubstrats(deps) {
                 if (dansEtang(X0 + (i + 0.5) * CELLULE, Z0 + (j + 0.5) * CELLULE, MARGE_FOND)) { dedans[j * N + i] = 1; }
             }
         }
-        geometrieDe = monde.rayon + ':' + (monde.forme || 'etang');
+        geometrieDe = monde.rayon + ':' + (monde.forme || 'etang') + ':' + monde.graine;
     }
     configurerGeometrie();
 
@@ -760,7 +760,7 @@ export function creerSubstrats(deps) {
     let biotope = deps.milieu ? milieuParId(deps.milieu).id : MILIEU_DEFAUT;
     function appliquerMilieu(milieu) {
         biotope = milieuParId(typeof milieu === 'string' ? milieu : milieu && milieu.id).id;
-        if (geometrieDe !== monde.rayon + ':' + (monde.forme || 'etang')) { configurerGeometrie(); }   // l'étang a changé de taille ou de forme : nouvelle grille
+        if (geometrieDe !== monde.rayon + ':' + (monde.forme || 'etang') + ':' + monde.graine) { configurerGeometrie(); }   // l'étang a changé de taille, de forme ou de graine de forme : nouvelle grille
         lireSources();
         calculerProximite();
         remplirGrille(biotope === MILIEU_DEFAUT ? null : ciblesDe(biotope));

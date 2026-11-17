@@ -107,10 +107,12 @@ export function run() {
     checkClose('la somme des surfaces est celle de la grille', totalAires,
         S.grille.reduce((t, k) => t + (k ? 1 : 0), 0) * S.cellule * S.cellule, 1e-6);
     // Cohérence avec le relief et les plantes.
-    const centresFosses = [[-28, -95], [30, -53], [4, -123]];
+    // ATTENDU MODIFIÉ (formes tirées d'une graine) : les centres d'origine (-28, -95), (30, -53), (4, -123) et du bassin (0, -71)
+    // valaient pour le contour d'origine ; les fosses et le centre suivent maintenant le contour de la graine.
+    const centresFosses = G().getEtangInfo().fosses.map(function (f) { return [f.x, f.z]; });
     checkEqual('le fond de chaque fosse est de la vase',
         centresFosses.every(([x, z]) => S.substratEn(x, z) === 'vase'), true);
-    checkEqual('le centre du bassin est de la vase', S.substratEn(0, -71), 'vase');
+    checkEqual('le centre du bassin est de la vase', S.substratEn(G().getPondCenter().x, G().getPondCenter().z), 'vase');
     const rochesPres = S.rectsCarte().filter(r => r.substrat === 'roche').every(function (r) {
         return centresFosses.some(([x, z], i) => {
             const rayon = [22, 18, 16][i];
