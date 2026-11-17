@@ -5,7 +5,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=242';
+import { etat } from './etat.js?v=243';
 
 export function creerBoucle(deps) {
     const {

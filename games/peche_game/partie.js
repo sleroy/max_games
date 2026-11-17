@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=242';
+import { etat } from './etat.js?v=243';
 
 // Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
 export function majChoixRadio(radios, valeur) {
@@ -356,7 +356,7 @@ export function creerPartie(deps) {
             item.mesh.material.dispose();
         });
         ripples.length = 0;
-        if (etat.chum) { scene.remove(etat.chum.group); etat.chum = null; }
+        etat.viderChums();
         if (etat.ragondin) { effrayerRagondin(); }
         etat.ragondinHits = 0;
         etat.ragondinVolTimer = 0;

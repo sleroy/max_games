@@ -147,10 +147,10 @@ export function run() {
     G().setFeedMode(true);
     G().startFeedCharge({ x: 0, y: 0, z: -25 });
     G().releaseFeed();
-    check('le nuage de miettes apparaît', stepUntil(() => G().getChum() !== null, 5),
+    check('le nuage de miettes apparaît', stepUntil(() => G().getChums().length === 1, 5),
         G().getFeedState());
     stepFor(4);
-    const nuage = G().getChum();
+    const nuage = G().getChums()[0];
     check('le nuage a coulé à la profondeur de la ligne', nuage.y < -2.5,
         'hauteur du nuage ' + nuage.y.toFixed(2));
     G().setFeedMode(false);

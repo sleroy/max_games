@@ -25,7 +25,7 @@ const MODULES = [
 const PLAFOND_MODULE = 800;      // lignes max par module
 // CLIQUET : plafond de script.js. Il ne peut que BAISSER. À ajuster à la baisse
 // après chaque extraction réussie (c'est ce qui empêche le fichier de regonfler).
-const PLAFOND_SCRIPT = 3075;   // 3075 avec les tailles d'étang (v239 : la taille du monde vit dans tailleEtang.js ; 8 lignes de commentaires vides retirées en fin de fichier) ; 3077 avec les biotopes (v233) : majChoixRadio est passé dans partie.js ; 3075 en v197 (choix de technique/difficulté en boutons radio, +12) ; 3063 en v197 (choix de difficulté sur l'accueil, +6 sur le câblage densité v197) ; 3057 en v197 (densité de poissons par difficulté) ; 3042 en v195 (menus + radar) ; 3039 en v192 (menus) ; 3031 en v193 (radar) ; 3019 en v189 ; 3011 en v186 (physique) ; 3006 en v185 (graine variable) ; 2971 en v180
+const PLAFOND_SCRIPT = 3068;   // 3068 avec les amorces multiples (v240 : le nuage unique sort de script.js, getChums lit etat.chums) ; 3075 avec les tailles d'étang (v239 : la taille du monde vit dans tailleEtang.js ; 8 lignes de commentaires vides retirées en fin de fichier) ; 3077 avec les biotopes (v233) : majChoixRadio est passé dans partie.js ; 3075 en v197 (choix de technique/difficulté en boutons radio, +12) ; 3063 en v197 (choix de difficulté sur l'accueil, +6 sur le câblage densité v197) ; 3057 en v197 (densité de poissons par difficulté) ; 3042 en v195 (menus + radar) ; 3039 en v192 (menus) ; 3031 en v193 (radar) ; 3019 en v189 ; 3011 en v186 (physique) ; 3006 en v185 (graine variable) ; 2971 en v180
 
 function lignes(fichier) {
     return fs.readFileSync(path.join(DOSSIER_JEU, fichier), 'utf8').split('\n').length;

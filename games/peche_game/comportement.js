@@ -7,10 +7,10 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=242';
-import { etat } from './etat.js?v=242';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=242';
-import { heureDeJeu } from './physique.js?v=242';
+import { COMPORTEMENTS } from './especes.js?v=243';
+import { etat } from './etat.js?v=243';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=243';
+import { heureDeJeu } from './physique.js?v=243';
 
 export function creerComportement(deps) {
     const {
@@ -262,6 +262,24 @@ export function creerComportement(deps) {
         });
     }
 
+    // Le nuage d'amorce qui attire CE poisson : le plus proche (distance au centre) parmi ceux qui
+    // sont visibles (force > 0), dont la zone d'attraction le couvre et dont la couche d'eau est la
+    // sienne (±1,6 u). Renvoie null si aucun. SEULE règle de sélection : elle sert à tout le bloc.
+    function nuageQuiAttire(fish, data) {
+        let choisi = null;
+        let dMin = Infinity;
+        etat.chums.forEach(function (nuage) {
+            if (nuage.strength <= 0) { return; }
+            const cd = Math.hypot(nuage.position.x - fish.position.x, nuage.position.z - fish.position.z);
+            const detect = nuage.detect || nuage.radius * 3;      // où le poisson la sent
+            if (cd < detect && cd > 0.001 && Math.abs(data.depth - nuage.position.y) <= 1.6 && cd < dMin) {
+                choisi = nuage;
+                dMin = cd;
+            }
+        });
+        return choisi;
+    }
+
     function updateFish(dt, time) {
         etat.baitInterest = false;
         majGroupes();
@@ -308,76 +326,72 @@ export function creerComportement(deps) {
             }
             data.targeting = false;
             data.attire = false;
-            // L'amorce attire les poissons vers la SPHÈRE de miettes (§17.4).
-            if (etat.chum && etat.chum.strength > 0) {
-                const R = etat.chum.radius;                       // rayon de la sphère (6 u)
-                const detect = etat.chum.detect || R * 3;          // où le poisson la sent
-                const cx = etat.chum.position.x - fish.position.x;
-                const cz = etat.chum.position.z - fish.position.z;
-                const cd = Math.hypot(cx, cz);                     // distance au CENTRE
-                // L'amorçage n'attire que les poissons de SA couche d'eau : les autres l'ignorent et nagent
-                // normalement (un `return` ici les figeait pour toute la durée du nuage, 60 s).
-                if (cd < detect && cd > 0.001 && Math.abs(data.depth - etat.chum.position.y) <= 1.6) {
-                    data.attire = true;
-                    // HORS de la sphère : on y va. DEDANS : on FOUILLE — le poisson tourne
-                    // dans le nuage, et vise l'hameçon s'il est dans la sphère ET qu'il le
-                    // VOIT (portée de vue de son espèce, déjà réaliste et réduite la nuit).
-                    let cible = etat.chum.position;
-                    if (cd <= R) {
-                        const t = time || 0;
-                        if (!data.chumCible || t >= data.chumCible.t) {
-                            const comp = COMPORTEMENTS[data.especeId] || {};
-                            const vue = Math.min(R, comp.vue || 5);
-                            const fl = floatGroup.position;
-                            const dHookCentre = Math.hypot(fl.x - etat.chum.position.x, fl.z - etat.chum.position.z);
-                            const hookDansSph = dHookCentre <= R;
-                            const voit = hookDansSph
-                                && Math.hypot(fl.x - fish.position.x, fl.z - fish.position.z) <= vue;
-                            // Priorité dégressive : plein au cœur (≤ 2 u), nul au bord (R).
-                            const p = Math.max(0, Math.min(1, (R - dHookCentre) / Math.max(0.001, R - 2)));
-                            if (voit && comportementRand() < p * 0.5) {
-                                data.chumCible = { x: fl.x, y: etat.HOOK_DEPTH, z: fl.z, t: t + 2.5 };
-                            } else {
-                                const a = comportementRand() * Math.PI * 2;
-                                const r = Math.sqrt(comportementRand()) * R * 0.9;
-                                data.chumCible = {
-                                    x: etat.chum.position.x + Math.cos(a) * r,
-                                    y: etat.chum.position.y + (comportementRand() * 2 - 1) * 1.2,
-                                    z: etat.chum.position.z + Math.sin(a) * r,
-                                    t: t + 2 + comportementRand() * 2
-                                };
-                            }
+            // L'amorce attire les poissons vers la SPHÈRE de miettes (§17.4) : celle du nuage le plus proche
+            // qui l'attire (plusieurs nuages peuvent coexister).
+            const nuage = nuageQuiAttire(fish, data);
+            if (nuage) {
+                const R = nuage.radius;                           // rayon de la sphère (6 u)
+                const cd = Math.hypot(nuage.position.x - fish.position.x, nuage.position.z - fish.position.z);
+                data.attire = true;
+                // HORS de la sphère : on y va. DEDANS : on FOUILLE — le poisson tourne
+                // dans le nuage, et vise l'hameçon s'il est dans la sphère ET qu'il le
+                // VOIT (portée de vue de son espèce, déjà réaliste et réduite la nuit).
+                let cible = nuage.position;
+                if (cd <= R) {
+                    const t = time || 0;
+                    if (!data.chumCible || data.chumCible.nuage !== nuage || t >= data.chumCible.t) {
+                        const comp = COMPORTEMENTS[data.especeId] || {};
+                        const vue = Math.min(R, comp.vue || 5);
+                        const fl = floatGroup.position;
+                        const dHookCentre = Math.hypot(fl.x - nuage.position.x, fl.z - nuage.position.z);
+                        const hookDansSph = dHookCentre <= R;
+                        const voit = hookDansSph
+                            && Math.hypot(fl.x - fish.position.x, fl.z - fish.position.z) <= vue;
+                        // Priorité dégressive : plein au cœur (≤ 2 u), nul au bord (R).
+                        const p = Math.max(0, Math.min(1, (R - dHookCentre) / Math.max(0.001, R - 2)));
+                        if (voit && comportementRand() < p * 0.5) {
+                            data.chumCible = { x: fl.x, y: etat.HOOK_DEPTH, z: fl.z, t: t + 2.5, nuage: nuage };
+                        } else {
+                            const a = comportementRand() * Math.PI * 2;
+                            const r = Math.sqrt(comportementRand()) * R * 0.9;
+                            data.chumCible = {
+                                x: nuage.position.x + Math.cos(a) * r,
+                                y: nuage.position.y + (comportementRand() * 2 - 1) * 1.2,
+                                z: nuage.position.z + Math.sin(a) * r,
+                                t: t + 2 + comportementRand() * 2,
+                                nuage: nuage
+                            };
                         }
-                        cible = data.chumCible;
                     }
-                    // Un poisson ne quitte JAMAIS sa tranche d'eau : on borne la
-                    // profondeur visée à sa zone (rotengle et brème restaient sinon
-                    // coincés sous la surface en fouillant le nuage).
-                    const zoneEsp = data.profondeurZone;
-                    let profCible = cible.y;
-                    if (zoneEsp && zoneEsp.length === 2) {
-                        profCible = Math.max(zoneEsp[0], Math.min(zoneEsp[1], profCible));
-                    }
-                    const tx = cible.x - fish.position.x;
-                    const tz = cible.z - fish.position.z;
-                    const td = Math.hypot(tx, tz) || 1;
-                    const accel = CHUM_ATTRACT_ACCEL * etat.chum.strength * dt;
-                    data.vx += (tx / td) * accel;
-                    data.vz += (tz / td) * accel;
-                    // Le poisson descend vers sa cible (nuage ou hameçon), dans SA tranche.
-                    data.depth += (profCible - data.depth) * Math.min(1, dt * 1.5);
-                    // Tout près de sa cible, il ralentit et picore.
-                    if (td < 0.6) {
-                        data.vx *= 0.94;
-                        data.vz *= 0.94;
-                    }
-                    // Vitesse bornée pour rester crédible.
-                    const sp = Math.hypot(data.vx, data.vz);
-                    const maxSp = 4.5;
-                    if (sp > maxSp) {
-                        data.vx = (data.vx / sp) * maxSp;
-                        data.vz = (data.vz / sp) * maxSp;
-                    }
+                    cible = data.chumCible;
+                }
+                // Un poisson ne quitte JAMAIS sa tranche d'eau : on borne la
+                // profondeur visée à sa zone (rotengle et brème restaient sinon
+                // coincés sous la surface en fouillant le nuage).
+                const zoneEsp = data.profondeurZone;
+                let profCible = cible.y;
+                if (zoneEsp && zoneEsp.length === 2) {
+                    profCible = Math.max(zoneEsp[0], Math.min(zoneEsp[1], profCible));
+                }
+                const tx = cible.x - fish.position.x;
+                const tz = cible.z - fish.position.z;
+                const td = Math.hypot(tx, tz) || 1;
+                const accel = CHUM_ATTRACT_ACCEL * nuage.strength * dt;
+                data.vx += (tx / td) * accel;
+                data.vz += (tz / td) * accel;
+                // Le poisson descend vers sa cible (nuage ou hameçon), dans SA tranche.
+                data.depth += (profCible - data.depth) * Math.min(1, dt * 1.5);
+                // Tout près de sa cible, il ralentit et picore.
+                if (td < 0.6) {
+                    data.vx *= 0.94;
+                    data.vz *= 0.94;
+                }
+                // Vitesse bornée pour rester crédible.
+                const sp = Math.hypot(data.vx, data.vz);
+                const maxSp = 4.5;
+                if (sp > maxSp) {
+                    data.vx = (data.vx / sp) * maxSp;
+                    data.vz = (data.vz / sp) * maxSp;
                 }
             }
             // Un poisson qui passe près du bouchon vient renifler l'hameçon : il s'en

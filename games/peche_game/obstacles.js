@@ -16,7 +16,7 @@
 // Tout est dessiné en code (géométrie + textures canvas) : aucune image, aucune licence.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORME_DEFAUT, angleSurForme, angleDepuisForme, pointAuBord } from './dimensions.js?v=242';
+import { FORME_DEFAUT, angleSurForme, angleDepuisForme, pointAuBord } from './dimensions.js?v=243';
 
 export const RAYON_BARQUE = 1.5;     // rayon de la coque pour les collisions
 export const MARGE_ACCROCHE = 0.8;   // l'hameçon se coince à moins de 0,8 d'un obstacle

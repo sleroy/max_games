@@ -14,7 +14,7 @@ export function run() {
     clearLilyPads();
     checkEqual('amorçage inactif au départ', G().isFeedMode(), false);
     checkEqual('jauge de puissance cachée', el('feedGauge').classList.contains('active'), false);
-    checkEqual('pas de nuage de miettes au départ', G().getChum(), null);
+    checkEqual('pas de nuage de miettes au départ', G().getChums().length, 0);
 
     // Bouton « Nourrir » : on arme le mode amorçage.
     fire('feedButton', 'click');
@@ -54,15 +54,15 @@ export function run() {
         G().getFeedState());
     checkEqual('la boule n’est plus visible', G().getFeedBall().visible, false);
     const landing = G().getFeedLanding();
-    const chum = G().getChum();
-    check('un nuage de miettes apparaît à l’atterrissage', !!chum);
+    const chum = G().getChums()[0];
+    check('un nuage de miettes apparaît à l’atterrissage', G().getChums().length === 1 && !!chum);
     checkClose('le nuage est au point de chute',
         Math.hypot(chum.x - landing.x, chum.z - landing.z), 0, 0.5);
     checkEqual('le mode amorçage se désarme après le lancer', G().isFeedMode(), false);
 
     group('33) Le nuage attire les poissons et dérive doucement');
     const C = G().getPondCenter();
-    const chum0 = G().getChum();
+    const chum0 = G().getChums()[0];
     // On place un poisson à 15 unités du nuage, du côté du centre (dans l'étang).
     let dx = C.x - chum0.x;
     let dz = C.z - chum0.z;
@@ -80,7 +80,7 @@ export function run() {
     const before = Math.hypot(fish.position.x - chum0.x, fish.position.z - chum0.z);
     // Un poisson de fond (tanche…) n'est dans la couche du nuage qu'une fois celui-ci descendu : on lui laisse 8 s.
     stepFor(8);
-    const now = G().getChum();
+    const now = G().getChums()[0];
     const after = Math.hypot(fish.position.x - now.x, fish.position.z - now.z);
     check('le poisson se rapproche du nuage', after < before - 1,
         before.toFixed(1) + ' -> ' + after.toFixed(1) + ' unités');
@@ -88,14 +88,14 @@ export function run() {
 
     // Dérive : le nuage ne s'éloigne que très lentement de son point de chute.
     stepFor(4);
-    const later = G().getChum();
+    const later = G().getChums()[0];
     const drift = Math.hypot(later.x - chum0.x, later.z - chum0.z);
     check('le nuage ne dérive que doucement', drift < 6, drift.toFixed(2) + ' unités');
 
     group('34) Le nuage de miettes finit par se dissiper');
     // §17.4 : la durée de vie du nuage est passée de 16 à 60 s (zone de fouille).
     check('le nuage disparaît après sa durée de vie',
-        stepUntil(() => G().getChum() === null, 65), G().getChum());
+        stepUntil(() => G().getChums().length === 0, 65), String(G().getChums().length));
 
     group('35) On peut amorcer MÊME avec la ligne à l’eau');
     resetToIdle();
