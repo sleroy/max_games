@@ -16,13 +16,13 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=243';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=243';
-import { angleParSurface } from './dimensions.js?v=243';
+} from './especes.js?v=244';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=244';
+import { angleParSurface } from './dimensions.js?v=244';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=243';
+} from './milieux.js?v=244';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -71,9 +71,10 @@ export function creerPoissons(deps) {
     //  - FISH_COUNT n'est plus que le PLAFOND de confort technique (animation, bancs,
     //    ordinateur modeste ou téléphone).
     //  - Les solitaires (silure, brochet, sandre, black-bass, truite, anguille) restent
-    //    rares : au plus 2 de chaque, 1 seul silure. Les bancs portent l'essentiel.
+    //    rares : leur PART du biotope est faible (1 % pour le silure), donc leur nombre
+    //    suit la surface et la densité, pas un compte fixe.
     // ---------------------------------------------------------------------------
-    const FISH_COUNT = PLAFOND_POPULATION;       // plafond technique (v197 : 64 -> 240, densite par difficulte)
+    const FISH_COUNT = PLAFOND_POPULATION;       // plafond technique (v197 : 64 -> 240 -> 1000, densite par difficulte)
     const BIOMASSE_MIN_KG_HA = 100;              // bornes réalistes (kg / ha)
     const BIOMASSE_MAX_KG_HA = 300;
     const ESPECES_MIN = 10;                      // diversité minimale de l'étang de plaine
@@ -145,7 +146,21 @@ export function creerPoissons(deps) {
         return creerModelePoisson(size, power, aggression, form, espece);
     }
 
-    function randomFishPosition() {
+    // ---------------------------------------------------------------------------
+    // PETITS POISSONS DE BORD : ils longent la rive, là où le pêcheur les atteint.
+    // C'est la règle qui rend un grand plan d'eau pêchable : répartis uniformément,
+    // 950 poissons sur 6,2 ha laissent l'hameçon presque toujours seul. Un gardon,
+    // une ablette ou un goujon vivent dans les quelques mètres qui bordent la berge.
+    // L'espèce est marquée `bord: true` dans COMPORTEMENTS (especes.js).
+    // ---------------------------------------------------------------------------
+    const BANDE_BORD = 15;          // unités (7,5 m) : largeur de la bande de rive
+
+    function estEspeceDeBord(especeId) {
+        const comp = COMPORTEMENTS[especeId];
+        return !!(comp && comp.bord);
+    }
+
+    function randomFishPosition(auBord) {
         // Étang : angle uniforme (monde d'origine). Canal, lac, rivière : angle réparti selon l'aire, sinon tout
         // s'entasserait au milieu d'un plan d'eau allongé (angleParSurface rend `u × 2π` pour l'étang).
         const angle = angleParSurface(rand(), monde.forme);
@@ -153,7 +168,13 @@ export function creerPoissons(deps) {
         // Racine carrée : répartition uniforme sur la SURFACE (un tirage linéaire du
         // rayon entassait les poissons au centre, ce qui se voit dans un grand étang).
         // La marge au bord (12) suit l'échelle sans dépasser 1 : un petit étang garde des poissons sur toute sa surface.
-        const r = Math.sqrt(rand()) * Math.max(1, rayonEtang(angle) - 12 * Math.min(1, monde.echelle));
+        const rayonLocal = Math.max(1, rayonEtang(angle) - 12 * Math.min(1, monde.echelle));
+        // Poisson de bord : u² tasse les positions contre la rive (la moitié dans le
+        // tiers extérieur de la bande). La bande est bornée à 45 % du rayon local pour
+        // qu'un petit étang garde des poissons sur toute sa surface.
+        const bande = Math.min(rayonLocal * 0.45, BANDE_BORD);
+        const u = rand();
+        const r = auBord ? rayonLocal - bande * u * u : Math.sqrt(u) * rayonLocal;
         return new THREE.Vector3(
             POND_CENTER.x + Math.cos(angle) * r,
             -2.0,
@@ -172,7 +193,7 @@ export function creerPoissons(deps) {
     function positionPourEspece(especeId) {
         // randomFishPosition() est TOUJOURS appelée (mêmes tirages rand() qu'avant) ;
         // les poissons de fosse remplacent ensuite sa position.
-        const position = randomFishPosition();
+        const position = randomFishPosition(estEspeceDeBord(especeId));
         return ESPECES_DE_FOSSE.indexOf(especeId) >= 0 ? positionDansFosse() : position;
     }
 
@@ -331,6 +352,11 @@ export function creerPoissons(deps) {
         // minuscule) ; pour la plaine, f = 1.
         fish.userData.homeRadius = (comp ? comp.domaine * (0.85 + tProf * 0.3)
             : 10 + tProf * 12) * monde.echelle;                     // zone de vie propre à l'espèce
+        // Un petit poisson de bord ne s'éloigne pas de la berge : son domaine est borné à
+        // la bande de rive, sinon il se diluerait dans le large et l'hameçon resterait seul.
+        if (estEspeceDeBord(espece.id)) {
+            fish.userData.homeRadius = Math.min(fish.userData.homeRadius, BANDE_BORD);
+        }
         fish.userData.power = power;
         fish.userData.aggression = aggression;
         fish.userData.type = espece.form;
@@ -451,11 +477,35 @@ export function creerPoissons(deps) {
         fishes.length = 0;
     }
 
+    // Un poisson de BORD habite la bande de rive. Les obstacles puis les substrats installent
+    // les zones de vie au large (un gardon se retrouvait à 70 unités de la berge) : on le
+    // RAMÈNE dans la bande, dans sa direction. Son fond préféré est conservé
+    // (`substratHabitat`) ; seule sa zone de vie revient au bord. Générateur LOCAL : le
+    // hasard du monde n'est pas décalé.
+    function rappelerAuBord(liste) {
+        const marge = 12 * Math.min(1, monde.echelle);
+        liste.forEach(function (f) {
+            const d = f.userData;
+            if (!estEspeceDeBord(d.especeId) || d.hooked || !Number.isFinite(d.homeX)) { return; }
+            const dx = d.homeX - POND_CENTER.x;
+            const dz = d.homeZ - POND_CENTER.z;
+            const angle = Math.atan2(dz, dx);
+            const rayonLocal = Math.max(1, rayonEtang(angle) - marge);
+            const bande = Math.min(rayonLocal * 0.45, BANDE_BORD);
+            const cible = rayonLocal - bande * comportementRand() * comportementRand();
+            if (Math.hypot(dx, dz) >= cible) { return; }      // déjà plus près de la rive que la cible
+            d.homeX = POND_CENTER.x + Math.cos(angle) * cible;
+            d.homeZ = POND_CENTER.z + Math.sin(angle) * cible;
+            f.position.x = d.homeX;
+            f.position.z = d.homeZ;
+        });
+    }
+
     // Peuple l'étang jusqu'à POPULATION_CIBLE poissons. Pour la plaine (l'étang d'origine), la biomasse
     // est vérifiée une fois les poissons faits : si elle sort de 100–300 kg/ha, on recommence les
     // tailles (au plus 12 fois ; le résultat reste reproductible). Les autres biotopes sont des
     // données d'équilibrage voulues (une rivière à silures dépasse 300 kg/ha) : un seul tirage,
-    // sans refaire 240 poissons en 3D.
+    // sans refaire toute la population en 3D.
     function peuplerEtang() {
         const essais = milieuCourant.id === MILIEU_DEFAUT ? 12 : 0;
         let plan = planifierComposition();
@@ -471,6 +521,7 @@ export function creerPoissons(deps) {
     peuplerEtang();
     peuplement = false;
     installerHabitat(fishes);
+    rappelerAuBord(fishes);
 
     // Change de biotope : quotas, taille maximale et population cible suivent (sans repeupler).
     function setMilieu(milieu) {
@@ -487,6 +538,7 @@ export function creerPoissons(deps) {
         peuplerEtang();
         peuplement = false;
         installerHabitat(fishes);
+        rappelerAuBord(fishes);
     }
 
     function respawnFish(fish) {

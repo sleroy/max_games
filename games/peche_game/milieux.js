@@ -17,13 +17,18 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=243';
-import { etat } from './etat.js?v=243';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=243';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=244';
+import { etat } from './etat.js?v=244';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=244';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
-export const PLAFOND_POPULATION = 240;      // plafond technique (animation, bancs, téléphone)
+// Plafond TECHNIQUE, pas une règle écologique : 240 était un confort d'animation. Un grand
+// plan d'eau y perdait toute sa densité (240 poissons sur 6,2 ha = 39/ha, cinq fois moins
+// que l'étang de plaine) : le joueur pêchait dans un désert. Le plafond ne sert plus qu'à
+// protéger les machines modestes ; ce sont la surface et la densité qui décident.
+// Voir aussi CULLING dans comportement.js : seuls les poissons à portée du pêcheur sont simulés.
+export const PLAFOND_POPULATION = 1000;
 export const SURFACE_REFERENCE_HA = surfaceHectares(RAYON_REFERENCE);   // l'étang de plaine (≈ 0,64 ha) : facteur de taille 1
 export const PROFONDEUR_REFERENCE = 8.2;    // idem (unités : 2 = 1 m)
 
@@ -87,8 +92,8 @@ export const MILIEUX = [
     {
         id: 'riviere', nom: 'Grande rivière (silures)', icone: '🌊',
         resume: 'Eau large et profonde : carpes, sandres et gros silures.',
-        // Silure à 1 % : à 240 poissons, cela fait 2 individus, pas 19 (un grand prédateur ne se
-        // compte pas en dizaines dans un plan d'eau de cette taille).
+        // Silure à 1 % : la part est voulue (un grand prédateur ne se compte pas en dizaines dans
+        // un plan d'eau de cette taille, même dans une grande rivière où il est abondant).
         parts: parts([24, 0, 18, 0, 11, 0, 10, 0, 6, 8, 6, 10, 0, 0, 6, 1]),
         decor: { arbres: 25, nenuphars: 10, roseaux: 50, rochers: 20 },
         fonds: { vase: 0.30, herbier: 0.10, sable: 0.25, gravier: 0.20, roche: 0.15 },

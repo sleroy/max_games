@@ -13,3 +13,11 @@
 // Contrat (docs/modules.md) : c'est le SEUL objet partagé autorisé.
 // ---------------------------------------------------------------------------
 export const etat = {};
+
+// ---------------------------------------------------------------------------
+// CULLING (culling.js) : ne simuler que les poissons à portée du pêcheur.
+// Vrai en jeu (c'est ce qui rend les grands plans d'eau peuplés tenables).
+// Les tests de COMPORTEMENT le désactivent pour observer un poisson isolé hors
+// de portée (harnais) ; tests/scenario-densite.mjs le rallume et le vérifie.
+// ---------------------------------------------------------------------------
+etat.cullingActif = true;

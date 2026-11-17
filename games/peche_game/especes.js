@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------
 // especes.js — DONNÉES des espèces, styles de combat, silhouettes et touches (extraites de script.js).
 // ---------------------------------------------------------------------------
-import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=243';
-import { PROFIL_CHEVESNE, ANATOMIE_CHEVESNE, ROBE_CHEVESNE } from './chevesne.js?v=243';
-import { PROFIL_ROTENGLE, ANATOMIE_ROTENGLE, ROBE_ROTENGLE } from './rotengle.js?v=243';
-import { PROFIL_ABLETTE, ANATOMIE_ABLETTE, ROBE_ABLETTE } from './ablette.js?v=243';
-import { PROFIL_GOUJON, ANATOMIE_GOUJON, ROBE_GOUJON } from './goujon.js?v=243';
-import { PROFIL_CARASSIN, ANATOMIE_CARASSIN, ROBE_CARASSIN } from './carassin.js?v=243';
+import { PROFIL_BLACK_BASS, ANATOMIE_BLACK_BASS, ROBE_BLACK_BASS } from './blackBass.js?v=244';
+import { PROFIL_CHEVESNE, ANATOMIE_CHEVESNE, ROBE_CHEVESNE } from './chevesne.js?v=244';
+import { PROFIL_ROTENGLE, ANATOMIE_ROTENGLE, ROBE_ROTENGLE } from './rotengle.js?v=244';
+import { PROFIL_ABLETTE, ANATOMIE_ABLETTE, ROBE_ABLETTE } from './ablette.js?v=244';
+import { PROFIL_GOUJON, ANATOMIE_GOUJON, ROBE_GOUJON } from './goujon.js?v=244';
+import { PROFIL_CARASSIN, ANATOMIE_CARASSIN, ROBE_CARASSIN } from './carassin.js?v=244';
 
 // Tailles (cm) : min = juvénile pêchable, max = grand sujet (Wikipédia FR).
 export const SPECIES = [
@@ -172,16 +172,17 @@ export function poidsKilos(espece, longueurCm) {
 //               Sa zone de vie (homeX/homeZ) est installée sur l'un d'eux (substrats.js).
 //   carnassier: (les mêmes que CARNASSIERS dans poissons.js) reste actif en eau froide (< 8 °C) : la touche s'allonge de 30 % au plus au lieu de 150 % (physique.js).
 //   fosse     : vrai = refuge des grandes fosses (elle ne quitte pas les fosses).
+//   bord      : vrai = PETIT POISSON DE BORD : il vit dans la bande de rive (poissons.js, BANDE_BORD).
 // ---------------------------------------------------------------------------
 export const COMPORTEMENTS = {
-    gardon:   { couche: 'mi-eau',  banc: [4, 6], cohesion: 0.9, croisiere: 1.3, pointe: 3.6, virage: 1.6, domaine: 14, vue: 6.0, humeur: 'errant', substrats: ['sable', 'herbier'] },
-    rotengle: { couche: 'surface', banc: [3, 5], cohesion: 0.8, croisiere: 1.2, pointe: 3.4, virage: 1.5, domaine: 12, vue: 6.0, humeur: 'errant', substrats: ['herbier'] },
-    ablette:  { couche: 'surface', banc: [5, 8], cohesion: 1.0, croisiere: 2.2, pointe: 4.8, virage: 2.4, domaine: 18, vue: 5.5, humeur: 'errant', substrats: ['sable'] },
-    goujon:   { couche: 'fond',    banc: [3, 5], cohesion: 0.8, croisiere: 0.8, pointe: 3.0, virage: 1.8, domaine: 8,  vue: 4.0, humeur: 'fouille', substrats: ['sable'] },
+    gardon:   { couche: 'mi-eau',  banc: [4, 6], cohesion: 0.9, croisiere: 1.3, pointe: 3.6, virage: 1.6, domaine: 14, vue: 6.0, humeur: 'errant', substrats: ['sable', 'herbier'], bord: true },
+    rotengle: { couche: 'surface', banc: [3, 5], cohesion: 0.8, croisiere: 1.2, pointe: 3.4, virage: 1.5, domaine: 12, vue: 6.0, humeur: 'errant', substrats: ['herbier'], bord: true },
+    ablette:  { couche: 'surface', banc: [5, 8], cohesion: 1.0, croisiere: 2.2, pointe: 4.8, virage: 2.4, domaine: 18, vue: 5.5, humeur: 'errant', substrats: ['sable'], bord: true },
+    goujon:   { couche: 'fond',    banc: [3, 5], cohesion: 0.8, croisiere: 0.8, pointe: 3.0, virage: 1.8, domaine: 8,  vue: 4.0, humeur: 'fouille', substrats: ['sable'], bord: true },
     breme:    { couche: 'fond',    banc: [3, 5], cohesion: 0.7, croisiere: 1.0, pointe: 3.0, virage: 1.0, domaine: 20, vue: 4.5, humeur: 'fouille', substrats: ['vase'] },
-    tanche:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 2.6, virage: 0.9, domaine: 9,  vue: 3.5, humeur: 'fouille', nocturne: true, substrats: ['vase'] },
+    tanche:   { couche: 'fond',    banc: [1, 1], cohesion: 0,   croisiere: 0.5, pointe: 2.6, virage: 0.9, domaine: 9,  vue: 3.5, humeur: 'fouille', nocturne: true, substrats: ['vase'], bord: true },
     carpe:    { couche: 'fond',    banc: [1, 3], cohesion: 0.5, croisiere: 0.9, pointe: 4.0, virage: 0.9, domaine: 16, vue: 4.5, humeur: 'fouille', substrats: ['vase'] },
-    carassin: { couche: 'fond',    banc: [2, 4], cohesion: 0.6, croisiere: 0.8, pointe: 3.0, virage: 1.1, domaine: 10, vue: 4.0, humeur: 'fouille', substrats: ['vase'] },
+    carassin: { couche: 'fond',    banc: [2, 4], cohesion: 0.6, croisiere: 0.8, pointe: 3.0, virage: 1.1, domaine: 10, vue: 4.0, humeur: 'fouille', substrats: ['vase'], bord: true },
     perche:   { couche: 'mi-eau',  banc: [3, 5], cohesion: 0.9, croisiere: 1.5, pointe: 5.0, virage: 1.7, domaine: 12, vue: 7.0, humeur: 'errant', carnassier: true, substrats: ['gravier', 'roche'] },
     chevesne: { couche: 'mi-eau',  banc: [2, 4], cohesion: 0.6, croisiere: 1.6, pointe: 5.0, virage: 1.4, domaine: 18, vue: 6.5, humeur: 'errant', substrats: ['gravier'] },
     brochet:  { couche: 'mi-eau',  banc: [1, 1], cohesion: 0,   croisiere: 0.4, pointe: 8.5, virage: 0.8, domaine: 7,  vue: 8.0, humeur: 'embuscade', carnassier: true, substrats: ['herbier'] },

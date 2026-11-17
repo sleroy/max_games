@@ -36,6 +36,7 @@ import scenarioOndulations from './scenario-ondulations.mjs';
 import scenarioLancer from './scenario-lancer.mjs';
 import scenarioJouer from './scenario-jouer.mjs';
 import { run as scenarioComportement } from './scenario-comportement.mjs';
+import { run as scenarioDensite } from './scenario-densite.mjs';
 import scenarioPetitEcran from './scenario-petit-ecran.mjs';
 import scenarioMessages from './scenario-messages.mjs';
 import scenarioCarnassier from './scenario-carnassier.mjs';
@@ -210,6 +211,8 @@ try {
     await scenarioApercu();     // aperçu 3D d'un poisson (v203) : cache, repli sans WebGL, branchements
     debutScenario();
     scenarioRadar();            // cheat « radar » (§17.3) : carte 2D des poissons
+    debutScenario();
+    scenarioDensite();          // densité : petits poissons de bord, culling des poissons hors de portée
     debutScenario();
     scenarioCombatMode();       // §17.7 : combat identique en mode enfant, aides de détection gardées (en dernier : ses prises modifient le carnet)
 } catch (error) {

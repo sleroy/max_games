@@ -317,6 +317,14 @@ Fonctionne dans Firefox et Chrome (WebGL requis).
   320 × 180 une image sur deux. Sur mobile, l’eau conserve son reflet du ciel.
 - **LOD** : les petits détails des poissons disparaissent au loin. Les poissons
   visibles se courbent pendant la nage et la remontée.
+- **Population réelle** : le nombre de poissons suit la SURFACE du biotope
+  (≈ 180 poissons/ha en Normal, plafond technique de 1000) — **950 dans la grande
+  rivière**, 323 dans le lac de montagne, 115 dans l'étang de plaine. Les **petits
+  poissons de bord** (gardon, rotengle, ablette, goujon, carassin, tanche) vivent dans
+  les quelques mètres qui longent la rive (bande de 7,5 m), là où le pêcheur du bord les
+  atteint. Pour ne pas payer ce monde en CPU, **seuls les poissons qui peuvent atteindre
+  l'hameçon sont simulés** (`culling.js`) : un poisson hors de portée du lancer et hors
+  de son domaine vital est gelé, sans nage ni bulles.
 - **Textures GPU (essai)** : ajoutez `?textures=ktx2` à l’URL pour essayer les
   cartes de berge compressées. Les JPEG servent de repli si le GPU, le worker
   ou le transcodage ne sont pas disponibles.
