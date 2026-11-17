@@ -311,6 +311,7 @@ MATRICE_CSV=docs/matrice-touche.csv node games/peche_game/tests/run.mjs   # rég
 |---|---|
 | `script.js` | orchestrateur 3D (three.js), boucle de jeu, UI — **en cours de découpage** |
 | `milieux.js` | **biotopes d'étang** (plaine, canal, carnassiers, montagne, forêt, rivière) : parts de population, décor, fonds, eau, taille maximale **et rayon de l'étang** (12 / 45 / 70 / 90 / 180 / 280 unités ; la surface se déduit de la géométrie) ; données et fonctions pures, `creerMilieux` applique le choix de l'accueil (taille d'abord) |
+| `culling.js` | **quels poissons simuler** : `poissonAAttendre(data)` — vrai si le pêcheur peut poser l'esche dans le domaine du poisson, ou si le bouchon y est déjà ; sinon `comportement.js` gèle le poisson (ni nage, ni bulles). Rend tenables les grands plans d'eau très peuplés (950 poissons en rivière, ~20 % simulés) |
 | `dimensions.js` | **dimensions d'un étang, fonctions pures** : **profils de forme** (`FORMES` : étang, lac, canal, rivière), harmoniques du contour, `extents`, surface (une seule vérité), échelle f = rayon / 90, portées du lancer et de l'amorce, échelles d'ambiance (brume, ciel, caméra) |
 | `tailleEtang.js` | le monde suit la taille de l'étang : maillages de l'eau, du fond et de la rive, brume, ciel et `camera.far` (au plus grand extent), carte de placement, **partie redémarrée** et pêcheur remis au poste sud |
 | `decor.js` | décor de l'étang : arbres, roseaux, rochers, nénuphars (rend `lilyPads`), comptes et style selon le biotope et sa taille (× f) |

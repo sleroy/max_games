@@ -16,8 +16,8 @@ import path from 'node:path';
 import { SPECIES, COMPORTEMENTS } from '../especes.js';
 import {
     MILIEUX, IDS_MILIEUX, MILIEU_DEFAUT, milieuParId, partsEspeces, especesPresentes, quotasEspeces,
-    capacite, facteurTaille, facteurTailleDe, tailleMaxEspece, densitesDecor, partsSubstrats, eauDe,
-    ouTrouver, texteOuTrouver
+    capacite, PLAFOND_POPULATION, facteurTaille, facteurTailleDe, tailleMaxEspece, densitesDecor, partsSubstrats, eauDe,
+    ouTrouver, texteOuTrouver, surfaceHaDe
 } from '../milieux.js';
 import { chargerCarnet, lireRecords } from '../carnet.js';
 import { GAME_DIR, group, check, checkEqual, checkClose, G, el, fire, moduleCopie } from './harness.mjs';
@@ -66,10 +66,14 @@ export async function run() {
     check('le silure vit en rivière et dans l’étang à carnassiers seulement',
         presente('riviere', 'silure') && presente('carnassiers', 'silure')
         && MILIEUX.every(function (m) { return ['riviere', 'carnassiers'].indexOf(m.id) >= 0 || !presente(m, 'silure'); }));
-    // Un grand prédateur ne se compte pas en dizaines : 8 % de 240 poissons faisaient 19 silures.
+    // Un grand prédateur ne se compte pas en dizaines par étang de référence : la part de 1 %
+    // donne 2 silures pour l'étang de plaine (0,64 ha), soit ≈ 1,6 par hectare. Le plafond suit
+    // donc la SURFACE (un grand plan d'eau porte plus de silures qu'une mare), pas un compte fixe.
     MILIEUX.filter(function (m) { return presente(m, 'silure'); }).forEach(function (m) {
         const n = quotasEspeces(m, capacite(m)).quotas.silure;
-        check(m.id + ' : au plus 2 silures (grand prédateur)', n >= 1 && n <= 2, String(n));
+        const plafond = Math.max(2, Math.ceil(1.6 * surfaceHaDe(m)));
+        check(m.id + ' : silure ≤ 2 par étang de référence (≈ 1,6/ha)', n >= 1 && n <= plafond,
+            String(n) + ' sur ' + surfaceHaDe(m).toFixed(2) + ' ha (plafond ' + plafond + ')');
     });
     check('pas de carpe dans le canal', !presente('canal', 'carpe'));
     check('« Où la trouver » : la truite n’est que en montagne', texteOuTrouver('truite') === 'Lac de montagne',
@@ -105,7 +109,11 @@ export async function run() {
     }, 0);
     checkEqual('N trop petit : il remonte à la somme des minimums de banc', minuscule.total, sommeMin);
     checkEqual('population de la plaine en mode normal : 115 poissons', capacite('plaine'), 115);
-    check('rivière : plafonnée à 240', capacite('riviere') === 240, String(capacite('riviere')));
+    // La rivière n'est plus bridée par un plafond de confort : 6,208 ha × 90/ha × 0,85 × 2 = 950.
+    // Avant : 240 poissons (39/ha, cinq fois moins que la plaine) — un désert pour le pêcheur.
+    checkEqual('rivière : la surface décide (950 poissons, 153/ha)', capacite('riviere'), 950,
+        String(capacite('riviere')));
+    check('aucun biotope ne dépasse le plafond technique', MILIEUX.every(function (m) { return capacite(m) <= PLAFOND_POPULATION; }));
 
     // --- 3) Les tailles ---------------------------------------------------------------------
     checkClose('plaine : facteur de taille 1', facteurTaille('plaine'), 1, 1e-9);

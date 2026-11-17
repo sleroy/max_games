@@ -162,9 +162,16 @@ export function run() {
     checkEqual('un poisson installé n’a jamais d’obstacle', installes.every(f => f.userData.obstacleId === undefined), true);
     check('chacun vit sur un substrat voulu par son espèce',
         installes.every(f => COMPORTEMENTS[f.userData.especeId].substrats.indexOf(f.userData.substratHabitat) >= 0));
-    const surPlace = installes.filter(f => S.substratEn(f.userData.homeX, f.userData.homeZ) === f.userData.substratHabitat);
-    check('sa zone de vie est bien sur ce substrat (≥ 70 %)', surPlace.length >= 0.7 * installes.length,
-        surPlace.length + ' / ' + installes.length);
+    // Un PETIT POISSON DE BORD (gardon, ablette…) garde la RIVE comme zone de vie : poissons.js
+    // le ramène dans la bande côtière (rappelerAuBord), son fond préféré restant noté dans
+    // `substratHabitat` pour la légende et la matrice. La garantie « zone de vie SUR son
+    // substrat » porte donc sur les autres espèces ; la rive des poissons de bord est
+    // vérifiée par tests/scenario-densite.mjs.
+    const installesHorsBord = installes.filter(f => !COMPORTEMENTS[f.userData.especeId].bord);
+    const surPlace = installesHorsBord.filter(f => S.substratEn(f.userData.homeX, f.userData.homeZ) === f.userData.substratHabitat);
+    check('sa zone de vie est bien sur ce substrat (≥ 70 %, hors poissons de bord)',
+        surPlace.length >= 0.7 * installesHorsBord.length,
+        surPlace.length + ' / ' + installesHorsBord.length);
 
     // --- 4) Attraction MESURÉE sur une simulation ------------------------------------
     // La mesure ne doit pas dépendre de l'aléatoire consommé par les scénarios

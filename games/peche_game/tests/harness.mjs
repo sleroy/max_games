@@ -66,6 +66,7 @@ const FILES = {
     lancerPoisson: path.join(GAME_DIR, 'lancerPoisson.js'),
     bateau: path.join(GAME_DIR, 'bateau.js'),
     comportement: path.join(GAME_DIR, 'comportement.js'),
+    culling: path.join(GAME_DIR, 'culling.js'),
     obstacles: path.join(GAME_DIR, 'obstacles.js'),
     three: path.join(GAME_DIR, 'assets', 'three.module.js'),
     stub: path.join(HERE, 'three-stub.mjs')
@@ -476,6 +477,7 @@ export async function loadGame() {
     fs.copyFileSync(FILES.lancerPoisson, path.join(tmpDir, 'lancerPoisson.js'));
     fs.copyFileSync(FILES.bateau, path.join(tmpDir, 'bateau.js'));
     fs.copyFileSync(FILES.comportement, path.join(tmpDir, 'comportement.js'));
+    fs.copyFileSync(FILES.culling, path.join(tmpDir, 'culling.js'));
     fs.copyFileSync(FILES.obstacles, path.join(tmpDir, 'obstacles.js'));
     fs.copyFileSync(path.join(GAME_DIR, 'portraits.js'), path.join(tmpDir, 'portraits.js'));
     // Tout autre module du dossier (substrats.js, esches.js…) est copié aussi : la liste
@@ -513,6 +515,10 @@ export async function loadGame() {
     game.setTechnique('bouchon');  // les tests historiques pêchent au bouchon
     game.setRagondinAuto(false);  // le ragondin ne surgit pas dans les tests
     game.etat.eschesActives = false;   // §15.2 : sans esche, tout poisson mord (les tests historiques) ; scenario-esches l'active
+    // Culling (culling.js) : les scénarios de COMPORTEMENT placent des poissons hors de portée
+    // du pêcheur (fosse, nuage d'amorce, thermocline) et observent leur nage : on simule donc
+    // tous les poissons, comme avant cette optimisation. tests/scenario-culling.mjs le rallume.
+    game.etat.cullingActif = false;
     return game;
 }
 

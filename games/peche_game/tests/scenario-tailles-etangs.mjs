@@ -13,7 +13,7 @@
 // Le monde est laissé en plaine à la fin.
 // ---------------------------------------------------------------------------
 import {
-    MILIEUX, IDS_MILIEUX, milieuParId, surfaceHaDe, capacite, quotasEspeces, densitesDecor, styleDecor,
+    MILIEUX, IDS_MILIEUX, milieuParId, surfaceHaDe, capacite, PLAFOND_POPULATION, quotasEspeces, densitesDecor, styleDecor,
     echelleMilieu, facteurTaille, formeDe
 } from '../milieux.js';
 import {
@@ -139,9 +139,9 @@ export async function run() {
         // Une seule vérité pour la surface
         checkClose(id + ' : surface géométrique = surface du biotope (une seule vérité)', info.surfaceHa, surfaceHaDe(m), 1e-12);
         checkClose(id + ' : surface = surface d’un contour de ce rayon (aire intégrée)', info.surfaceHa * 4 * 10000, surfaceUnites(m.rayon), 1e-6 * surfaceUnites(m.rayon));
-        const cibleAttendue = quotasEspeces(m, Math.min(240, Math.round(info.surfaceHa * 90 * m.densite * 2))).total;
+        const cibleAttendue = quotasEspeces(m, Math.min(PLAFOND_POPULATION, Math.round(info.surfaceHa * 90 * m.densite * 2))).total;
         checkEqual(id + ' : population cible calculée d’après la surface RÉELLE', G().getPopulation().cible, cibleAttendue);
-        checkEqual(id + ' : capacité = surface réelle × 90 /ha × densité × 2 (plafond 240)', capacite(m), Math.min(240, Math.round(info.surfaceHa * 90 * m.densite * 2)));
+        checkEqual(id + ' : capacité = surface réelle × 90 /ha × densité × 2 (plafond technique)', capacite(m), Math.min(PLAFOND_POPULATION, Math.round(info.surfaceHa * 90 * m.densite * 2)));
         checkClose(id + ' : biomasse et densité lisent la même surface', G().getPopulation().surfaceHa, info.surfaceHa, 1e-12);
         check(id + ' : facteur de taille borné [0,5 ; 1,2] et calculé sur la surface réelle',
             facteurTaille(m) >= 0.5 && facteurTaille(m) <= 1.2);
@@ -247,7 +247,11 @@ export async function run() {
         }));
         check(id + ' : territoires × f (homeRadius ≤ domaine × 1,15 × f)', G().fishes.every(function (p) {
             const dom = p.userData.comp ? p.userData.comp.domaine : 22;
-            return p.userData.homeRadius <= dom * 1.15 * f + 1e-9 && p.userData.homeRadius >= dom * 0.85 * f - 1e-9;
+            // Un PETIT POISSON DE BORD (gardon, ablette…) est borné à la bande de rive :
+            // son domaine ne peut pas descendre sous le plancher × f sans cette règle.
+            const bord = !!(p.userData.comp && p.userData.comp.bord);
+            const plancher = bord ? 1 : dom * 0.85 * f - 1e-9;
+            return p.userData.homeRadius <= dom * 1.15 * f + 1e-9 && p.userData.homeRadius >= plancher;
         }));
         vus[id] = { arbres: D.arbres.length, roseaux: D.roseaux.length, rochers: D.rochers.length, nenuphars: G().lilyPads.length, d: d };
     });

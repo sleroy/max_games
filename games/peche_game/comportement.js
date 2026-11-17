@@ -7,10 +7,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=243';
-import { etat } from './etat.js?v=243';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=243';
-import { heureDeJeu } from './physique.js?v=243';
+import { COMPORTEMENTS } from './especes.js?v=244';
+import { etat } from './etat.js?v=244';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=244';
+import { heureDeJeu } from './physique.js?v=244';
+import { creerCulling } from './culling.js?v=244';
 
 export function creerComportement(deps) {
     const {
@@ -26,6 +27,10 @@ export function creerComportement(deps) {
     } = deps;
     // Marges au bord (évitement, rebond) : celles d'origine dans la plaine, réduites dans un petit étang (échelle f < 1).
     function margeBord(unites) { return unites * Math.min(1, monde ? monde.echelle : 1); }
+
+    // CULLING (culling.js) : seuls les poissons qui peuvent atteindre l'hameçon sont simulés.
+    // Les autres sont gelés — leur CPU revient aux poissons à portée (voir culling.js).
+    const culling = creerCulling({ angler: angler, floatGroup: floatGroup, monde: monde });
 
     // MODE FACILE (enfant) : les poissons repèrent l'hameçon de très loin et
     // nagent droit dessus, quelle que soit leur zone de vie ou leur couche d'eau.
@@ -288,6 +293,13 @@ export function creerComportement(deps) {
             if (fish === etat.heldFish) {
                 animateFishMesh(data, time * 15 + data.phase, 0.08);
                 return; // le poisson en main est posé par le joueur
+            }
+            // CULLING : hors de portée, le poisson est gelé (voir culling.js).
+            // Un poisson ferré ou qui mord reste toujours simulé, même si le pêcheur s'éloigne.
+            if (etat.cullingActif !== false && !data.hooked && !data.biting && !culling.poissonAAttendre(data)) {
+                fish.visible = false;
+                data.details.visible = false;
+                return;
             }
             data.details.visible = fish.position.distanceToSquared(camera.position) < 1089;
             if (data.biting) {
