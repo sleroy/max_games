@@ -1,67 +1,67 @@
 import * as THREE from 'three';
-// Le « ?v=246 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=247 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=246';
-import { creerJeuDemelage } from './demelage.js?v=246';
-import { creerModeQuiver } from './quiver.js?v=246';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=246';
+import { SoundEngine } from './sound.js?v=247';
+import { creerJeuDemelage } from './demelage.js?v=247';
+import { creerModeQuiver } from './quiver.js?v=247';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=247';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=246';
-import { creerPoissons } from './poissons.js?v=246';
-import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=246';
+import { dessinerPortrait } from './portraits.js?v=247';
+import { creerPoissons } from './poissons.js?v=247';
+import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=247';
 import { POND_CENTER, RIVE_Y, rayonEtang, monde, setRayonMonde,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=246';
-import { creerTailleEtang } from './tailleEtang.js?v=246';
-import { creerDecor } from './decor.js?v=246';
-import { creerObstacles } from './obstacles.js?v=246';
-import { creerSubstrats } from './substrats.js?v=246';
-import { creerEsches } from './esches.js?v=246';
-import { ligneQuiver } from './chanceTouche.js?v=246';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=246';
-import { creerBourriche } from './bourriche.js?v=246';
-import { creerOndulations } from './ondulations.js?v=246';
-import { creerMessages } from './messages.js?v=246';
-import { creerSplashes } from './splashes.js?v=246';
-import { creerCombat } from './combat.js?v=246';
-import { creerComportement } from './comportement.js?v=246';
-import { creerBateau } from './bateau.js?v=246';
-import { creerLancerPoisson } from './lancerPoisson.js?v=246';
-import { creerCarnetUI } from './carnetUI.js?v=246';
-import { creerBoutique } from './boutique.js?v=246';
-import { creerMenus } from './menus.js?v=246';
-import { creerFiches } from './fiches.js?v=246';
-import { creerLancerCanne } from './lancerCanne.js?v=246';
-import { creerLancer } from './lancer.js?v=246';
-import { creerAmorcage } from './amorcage.js?v=246';
-import { creerFrein } from './frein.js?v=246';
-import { creerLigne } from './ligne.js?v=246';
-import { creerBouchons } from './bouchons.js?v=246';
-import { creerPlacement } from './placement.js?v=246';
-import { creerMeteo } from './meteo.js?v=246';
-import { creerPhysique } from './physique.js?v=246';
-import { creerVie } from './vie.js?v=246';
-import { creerSonar } from './sonar.js?v=246';
-import { creerStocks } from './stocks.js?v=246';
-import { creerJournal } from './journal.js?v=246';
-import { creerTouches } from './touches.js?v=246';
-import { creerCycleLigne } from './cycleLigne.js?v=246';
-import { creerAccrochage } from './accrochage.js?v=246';
-import { creerAmbiance } from './ambiance.js?v=246';
-import { creerEntrees } from './entrees.js?v=246';
-import { creerRadar } from './radar.js?v=246';
-import { creerCheat } from './cheat.js?v=246';
-import { creerBoucle } from './boucle.js?v=246';
-import { creerPartie, majChoixRadio } from './partie.js?v=246';
-import { creerPecheur } from './pecheur.js?v=246';
-import { creerRendu } from './rendu.js?v=246';
-import { etat } from './etat.js?v=246';
-import { lireDom } from './dom.js?v=246';
-import { creerCamera } from './camera.js?v=246';
-import { creerCiel } from './ciel.js?v=246';
-import { creerManivelle } from './manivelle.js?v=246';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=247';
+import { creerTailleEtang } from './tailleEtang.js?v=247';
+import { creerDecor } from './decor.js?v=247';
+import { creerObstacles } from './obstacles.js?v=247';
+import { creerSubstrats } from './substrats.js?v=247';
+import { creerEsches } from './esches.js?v=247';
+import { ligneQuiver } from './chanceTouche.js?v=247';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=247';
+import { creerBourriche } from './bourriche.js?v=247';
+import { creerOndulations } from './ondulations.js?v=247';
+import { creerMessages } from './messages.js?v=247';
+import { creerSplashes } from './splashes.js?v=247';
+import { creerCombat } from './combat.js?v=247';
+import { creerComportement } from './comportement.js?v=247';
+import { creerBateau } from './bateau.js?v=247';
+import { creerLancerPoisson } from './lancerPoisson.js?v=247';
+import { creerCarnetUI } from './carnetUI.js?v=247';
+import { creerBoutique } from './boutique.js?v=247';
+import { creerMenus } from './menus.js?v=247';
+import { creerFiches } from './fiches.js?v=247';
+import { creerLancerCanne } from './lancerCanne.js?v=247';
+import { creerLancer } from './lancer.js?v=247';
+import { creerAmorcage } from './amorcage.js?v=247';
+import { creerFrein } from './frein.js?v=247';
+import { creerLigne } from './ligne.js?v=247';
+import { creerBouchons } from './bouchons.js?v=247';
+import { creerPlacement } from './placement.js?v=247';
+import { creerMeteo } from './meteo.js?v=247';
+import { creerPhysique } from './physique.js?v=247';
+import { creerVie } from './vie.js?v=247';
+import { creerSonar } from './sonar.js?v=247';
+import { creerStocks } from './stocks.js?v=247';
+import { creerJournal } from './journal.js?v=247';
+import { creerTouches } from './touches.js?v=247';
+import { creerCycleLigne } from './cycleLigne.js?v=247';
+import { creerAccrochage } from './accrochage.js?v=247';
+import { creerAmbiance } from './ambiance.js?v=247';
+import { creerEntrees } from './entrees.js?v=247';
+import { creerRadar, RADAR_PRIX } from './radar.js?v=247';
+import { creerCheat } from './cheat.js?v=247';
+import { creerBoucle } from './boucle.js?v=247';
+import { creerPartie, majChoixRadio } from './partie.js?v=247';
+import { creerPecheur } from './pecheur.js?v=247';
+import { creerRendu } from './rendu.js?v=247';
+import { etat } from './etat.js?v=247';
+import { lireDom } from './dom.js?v=247';
+import { creerCamera } from './camera.js?v=247';
+import { creerCiel } from './ciel.js?v=247';
+import { creerManivelle } from './manivelle.js?v=247';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -293,8 +293,8 @@ const { canvas, scoreDisplay, fishButton, statusDisplay, strugglePanel, struggle
     lineSelect, feedButton, depthPanel, quickFeedButton, quickFeedCount, feedGauge, feedGaugeFill,
     feedGaugeTarget, journalButton, journalPanel, journalStats, journalList, journalClose, difficultySelect,
     bigTextToggle, calmToggle, effectsToggle, bourricheLabel, xpLabel, xpTop, depthLabel, depthMinus,
-    depthPlus, lignesLabel, gameOver, gameOverScore, gameOverTitle, gameOverText, playerName, saveScore,
-    saveAndMenu, backToMenu, restartGame, showRanking, rankingButton, classement, rankingTabs, rankingList,
+    depthPlus, lignesLabel, gameOver, gameOverScore, gameOverTitle, gameOverText, playerName,
+    saveAndMenu, backToMenu, restartGame, rankingButton, classement, rankingTabs, rankingList,
     closeRanking, accueil, playButton, accueilClassement, endGameButton, modalBackdrop, tangleGame,
     tangleCanvas, tangleTimer, tangleProgress, tangleMessage, tangleGiveUp, ragondinAlert,
     accueilTechniqueRadios, accueilDifficulteRadios, accueilMilieuRadios, quiverPanel, quiverCanvas,
@@ -1367,7 +1367,10 @@ const {
     selectionnerFilDisponible, lineSelect, TYPES_DE_FIL, stockFil, majAmorce, boutique,
     RECHARGES, stockAmorce, TAILLE_LOT, sonarButton, boatButton, SONAR_PRICE, BATEAU_PRIX,
     ficheTouches, TOUCHES, acheterRecharge, sound, acheterSonar, acheterBateau, statusDisplay,
-    ensureSound, setScion, acheterScion, trouverScion
+    ensureSound, setScion, acheterScion, trouverScion,
+    // Radar à poissons (radar.js, créé plus bas) : appelé seulement au clic, donc après sa création.
+    acheterRadar: function () { return radar.acheter(); },
+    radarButton: document.getElementById('radarButton'), RADAR_PRIX
 });
 
 // Menus déroulants de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel (bouchons ou scions).
@@ -1724,7 +1727,10 @@ const radar = creerRadar({
     fishes, angler, floatGroup, substrats, POND_CENTER, rayonEtang, monde, SPECIES, COMPORTEMENTS,
     panneau: document.getElementById('radarPanel'),
     fondEl: document.getElementById('radarFond'),
-    vivantEl: document.getElementById('radarVivant')
+    vivantEl: document.getElementById('radarVivant'),
+    infoEl: document.getElementById('radarInfo'),
+    bouton: document.getElementById('radarButton'),
+    saveJournal, renderJournal, fermerOutils
 });
 
 const {
@@ -1887,7 +1893,7 @@ const {
     rodTip, angler, rodPivot, setFeedMode, floatingTexts, scene, missRings, ripples,
     effrayerRagondin, ragondinAlert, scoreDisplay, resetCameraView, pauseButton, renderJournal,
     majCoupeProfondeur, updateToolDock, updateCrankVisibility, updateLine, stockAmorce,
-    saveScore, showRanking, rankingButton, closeRanking, restartGame, saveAndMenu, backToMenu,
+    rankingButton, closeRanking, restartGame, saveAndMenu, backToMenu,
     endGameButton, ensureSound, playButton, accueilClassement,
     accueilTechniqueRadios, setTechnique, accueilDifficulteRadios, setDifficulty, accueilMilieuRadios, setMilieu: milieux.choisir
 });
@@ -2110,6 +2116,11 @@ window.__game = {
     // Remet le sonar « jamais acheté » : les scénarios qui l'ACHÈTENT ont
     // besoin d'un carnet neuf (un scénario antérieur peut l'avoir acheté
     // et posé, ce qui polluerait pings et ondes).
+    // Remet le radar « jamais acheté » (scénarios d'achat).
+    reinitialiserRadar: function () {
+        journal.radar = false;
+        radar.fermer();
+    },
     reinitialiserSonar: function () {
         journal.sonar = false;
         rangerSonar();
@@ -2471,7 +2482,8 @@ window.__game = {
         return {
             total: journal.total, totalWeight: journal.totalWeight,
             best: journal.best, last: journal.last.slice(),
-            especes: Object.assign({}, journal.especes)
+            especes: Object.assign({}, journal.especes),
+            radar: journal.radar === true
         };
     },
     // Espèces disponibles (longueurs/poids réalistes calculés).

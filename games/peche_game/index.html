@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jeu de Pêche — 3D</title>
-    <link rel="stylesheet" href="style.css?v=246">
+    <link rel="stylesheet" href="style.css?v=247">
 </head>
 <body>
     <div class="game-wrap">
@@ -94,6 +94,7 @@
                     <button class="journal-button" id="journalButton">📖 Carnet</button>
                     <button class="journal-button" id="rankingButton">🏆 Classement</button>
                     <button id="sonarButton" hidden aria-pressed="false">📡 Poser le sonar</button>
+                    <button id="radarButton" hidden aria-pressed="false" aria-controls="radarPanel">🗺️ Radar</button>
                     <button class="end-game-button" id="endGameButton">🏁 Terminer</button>
                 </div>
                 <div class="stats-strip" id="statsStrip">
@@ -112,6 +113,7 @@
                     <g id="radarFond"></g>
                     <g id="radarVivant"></g>
                 </svg>
+                <div class="radar-info" id="radarInfo" aria-live="off"></div>
             </div>
             <div class="camera-controls" id="cameraControls" hidden role="group" aria-label="Commandes de la caméra">
                 <div class="camera-turn">
@@ -232,11 +234,12 @@
                 <div class="overlay-score" id="gameOverScore"></div>
                 <label class="overlay-label" for="playerName">Ton nom :</label>
                 <input class="overlay-input" id="playerName" maxlength="12" placeholder="Ton prénom">
-                <button class="feed-button" id="saveScore">Enregistrer au classement</button>
-                <button class="feed-button" id="saveAndMenu">✅ Enregistrer et revenir à l’accueil</button>
-                <button class="journal-button" id="showRanking">🏆 Voir le classement</button>
-                <button class="journal-button" id="restartGame">🔁 Rejouer</button>
-                <button class="journal-button" id="backToMenu">🏠 Accueil (sans enregistrer)</button>
+                <!-- Trois choix seulement (le classement reste dans le menu et sur l'accueil). -->
+                <button class="feed-button" id="saveAndMenu">✅ Enregistrer</button>
+                <div class="overlay-actions">
+                    <button class="journal-button" id="restartGame">🔁 Rejouer</button>
+                    <button class="journal-button" id="backToMenu">🏠 Accueil</button>
+                </div>
             </div>
             <div class="overlay-panel" id="classement" role="dialog" aria-modal="true"
                 aria-labelledby="classementTitre">
@@ -437,6 +440,6 @@
         }
     }
     </script>
-    <script type="module" src="script.js?v=246"></script>
+    <script type="module" src="script.js?v=247"></script>
 </body>
 </html>

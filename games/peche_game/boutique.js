@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=246';
+import { etat } from './etat.js?v=247';
 
 export function creerBoutique(deps) {
     const {
@@ -13,7 +13,8 @@ export function creerBoutique(deps) {
         scionPossede, selectionnerFilDisponible, lineSelect, TYPES_DE_FIL, stockFil, majAmorce,
         boutique, RECHARGES, stockAmorce, TAILLE_LOT, sonarButton, boatButton, SONAR_PRICE,
         BATEAU_PRIX, ficheTouches, TOUCHES, acheterRecharge, sound, acheterSonar, acheterBateau,
-        statusDisplay, ensureSound, setScion, acheterScion, trouverScion
+        statusDisplay, ensureSound, setScion, acheterScion, trouverScion,
+        acheterRadar, radarButton, RADAR_PRIX
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -178,6 +179,8 @@ export function creerBoutique(deps) {
         sonarButton.hidden = !owned;
         const bateauPossede = journal.bateau;
         if (boatButton) { boatButton.hidden = !bateauPossede; }
+        const radarPossede = journal.radar === true;
+        if (radarButton) { radarButton.hidden = !radarPossede; }
         html += '<div class="shop-item' + (owned ? ' owned' : '') + '">'
             + '<div class="shop-name">📡 Sonar flottant</div>'
             + '<div class="shop-desc">Repère les poissons à 12 m autour du sonar. Pose-le depuis le menu.</div>'
@@ -193,6 +196,14 @@ export function creerBoutique(deps) {
             + (bateauPossede ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
                 : '<button class="shop-btn buy" data-id="bateau" data-action="acheter"'
                     + (journal.experience < BATEAU_PRIX ? ' disabled' : '') + '>Acheter · ' + BATEAU_PRIX + ' XP</button>')
+            + '</div>';
+        html += '<div class="shop-item' + (radarPossede ? ' owned' : '') + '">'
+            + '<div class="shop-name">🗺️ Radar à poissons</div>'
+            + '<div class="shop-desc">Montre tout l’étang vu de dessus, avec chaque poisson et les coins '
+                + 'où il y en a le plus (en orange). Le bouton « Radar » apparaît dans le menu.</div>'
+            + (radarPossede ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
+                : '<button class="shop-btn buy" data-id="radar" data-action="acheter"'
+                    + (journal.experience < RADAR_PRIX ? ' disabled' : '') + '>Acheter · ' + RADAR_PRIX + ' XP</button>')
             + '</div></div>';
         boutique.innerHTML = html;
     }
@@ -235,6 +246,15 @@ export function creerBoutique(deps) {
         }
         if (id === 'sonar' && cible.dataset.action === 'acheter') {
             if (acheterSonar()) { sound.playPiece(); }
+            return;
+        }
+        if (id === 'radar' && cible.dataset.action === 'acheter') {
+            if (acheterRadar && acheterRadar()) {
+                sound.playPiece();
+                statusDisplay.textContent = '🗺️ Radar acheté ! Ouvre le menu et touche « Radar ».';
+            } else {
+                statusDisplay.textContent = 'Pas assez d’expérience pour le radar.';
+            }
             return;
         }
         if (id === 'bateau' && cible.dataset.action === 'acheter') {

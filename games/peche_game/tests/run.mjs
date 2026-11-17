@@ -50,6 +50,7 @@ import scenarioPortraits from './scenario-portraits.mjs';
 import scenarioModules from './scenario-modules.mjs';
 import scenarioCheat from './scenario-cheat.mjs';
 import { run as scenarioRadar } from './scenario-radar.mjs';
+import { run as scenarioRadarAchat } from './scenario-radar-achat.mjs';
 import { run as scenarioSonar } from './scenario-sonar.mjs';
 import scenarioGrandEtang from './scenario-grand-etang.mjs';
 import { run as scenarioObstacles } from './scenario-obstacles.mjs';
@@ -214,6 +215,7 @@ try {
     await scenarioApercu();     // aperçu 3D d'un poisson (v203) : cache, repli sans WebGL, branchements
     debutScenario();
     scenarioRadar();            // cheat « radar » (§17.3) : carte 2D des poissons
+    scenarioRadarAchat();       // radar acheté en boutique + densité ; fin de partie à 3 boutons
     debutScenario();
     scenarioDensite();          // densité : petits poissons de bord, culling des poissons hors de portée
     debutScenario();

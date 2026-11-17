@@ -1,6 +1,10 @@
 // ---------------------------------------------------------------------------
-// radar.js — CHEAT « radar » : carte 2D superposée au jeu, avec TOUS les poissons
-// qui nagent (idées.md §17.3). Un mot secret (cheat.js) l'affiche / le masque.
+// radar.js — RADAR À POISSONS : carte 2D superposée au jeu, avec TOUS les poissons
+// qui nagent (idées.md §17.3). Deux façons de l'ouvrir :
+//  - le mot secret « radar » (cheat.js), pour le débogage ;
+//  - le bouton 🗺️ Radar du menu, une fois le radar ACHETÉ en boutique (RADAR_PRIX XP).
+// Il sert aussi à vérifier la DENSITÉ : grille de chaleur (poissons par case) et
+// ligne d'infos (nombre de poissons, poissons/ha, kg/ha).
 //
 // Contenu de la carte :
 //  - fond : contour de l'étang + 5 zones de substrat (mêmes données que la carte du
@@ -17,7 +21,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=246';
+import { etat } from './etat.js?v=247';
 
 // 16 couleurs bien distinctes (une par espèce, dans l'ordre de SPECIES).
 const PALETTE = [
@@ -32,11 +36,13 @@ const PERIODE = 0.1;          // s entre deux rafraîchissements (~10 Hz)
 const RAYON_MIN = 1.4;        // rayon d'un point, en unités du viewBox
 const RAYON_MAX = 5.5;
 const RAYON_PAR_CM = 0.04;
+const CASE = 10;              // côté d'une case de la grille de densité (unités du viewBox)
+export const RADAR_PRIX = 250;   // prix en XP du radar à poissons (boutique)
 
 export function creerRadar(deps) {
     const {
         fishes, angler, floatGroup, panneau, fondEl, vivantEl, substrats, POND_CENTER, rayonEtang,
-        monde, SPECIES, COMPORTEMENTS
+        monde, SPECIES, COMPORTEMENTS, infoEl, bouton, saveJournal, renderJournal, fermerOutils
     } = deps;
 
     // Échelle : le cadre (demi-hauteur 58) contient le plus grand rayon du contour + la couronne
@@ -118,6 +124,38 @@ export function creerRadar(deps) {
         };
     }
 
+    // --- Densité : poissons par case de la carte, et totaux par hectare ----------------------
+    let derniereDensite = null;
+    function densiteDe(points) {
+        const colonnes = Math.ceil(LARGEUR / CASE);
+        const lignes = Math.ceil(HAUTEUR / CASE);
+        const grille = new Array(colonnes * lignes).fill(0);
+        points.forEach(function (p) {
+            const c = Math.floor(p.x / CASE);
+            const l = Math.floor(p.y / CASE);
+            if (c >= 0 && c < colonnes && l >= 0 && l < lignes) { grille[l * colonnes + c] += 1; }
+        });
+        const biomasse = fishes.reduce(function (total, f) { return total + (f.userData.weight || 0); }, 0);
+        const surface = monde.surfaceHa > 0 ? monde.surfaceHa : 0;
+        return {
+            total: fishes.length,
+            biomasseKg: biomasse,
+            surfaceHa: surface,
+            parHa: surface > 0 ? fishes.length / surface : 0,
+            kgParHa: surface > 0 ? biomasse / surface : 0,
+            colonnes: colonnes, lignes: lignes, grille: grille,
+            max: grille.reduce(function (m, n) { return Math.max(m, n); }, 0)
+        };
+    }
+
+    function arrondi(n) { return n >= 100 ? String(Math.round(n)) : n.toFixed(1).replace('.', ','); }
+
+    function texteInfo(d) {
+        return '🐟 ' + d.total + (d.total > 1 ? ' poissons' : ' poisson')
+            + ' · ' + arrondi(d.parHa) + ' /ha · ' + arrondi(d.kgParHa) + ' kg/ha'
+            + ' · case la + pleine : ' + d.max;
+    }
+
     // --- Dessin ----------------------------------------------------------------------------
     function contour() {
         let d = '';
@@ -166,6 +204,17 @@ export function creerRadar(deps) {
 
     function dessiner() {
         let svg = '';
+        // Grille de chaleur (sous les poissons) : plus une case est orange, plus elle a de poissons.
+        const d = derniereDensite;
+        if (d && d.max > 0) {
+            d.grille.forEach(function (n, i) {
+                if (n === 0) { return; }
+                const x = (i % d.colonnes) * CASE;
+                const y = Math.floor(i / d.colonnes) * CASE;
+                svg += '<rect class="radar-densite" data-n="' + n + '" x="' + x + '" y="' + y + '" width="' + CASE
+                    + '" height="' + CASE + '" fill="#ff8c1a" fill-opacity="' + (0.08 + 0.42 * n / d.max).toFixed(2) + '"/>';
+            });
+        }
         derniersPoints.forEach(function (p) {
             svg += '<circle class="radar-zone" cx="' + p.maisonX.toFixed(1) + '" cy="' + p.maisonY.toFixed(1)
                 + '" r="' + p.maisonRayon.toFixed(1) + '" fill="none" stroke="' + p.couleur
@@ -202,19 +251,30 @@ export function creerRadar(deps) {
         majEchelle();
         derniersPoints = fishes.map(pointDe);
         dernierPecheur = pecheurDe();
+        derniereDensite = densiteDe(derniersPoints);
         dessiner();
+        if (infoEl) { infoEl.textContent = texteInfo(derniereDensite); }
         misesAJour += 1;
     }
 
     // --- API -------------------------------------------------------------------------------
+    function majBouton() {
+        if (!bouton) { return; }
+        bouton.hidden = !(etat.journal && etat.journal.radar);
+        bouton.setAttribute('aria-pressed', String(actif));
+        bouton.textContent = actif ? '🗺️ Ranger le radar' : '🗺️ Radar';
+    }
+
     function fermer() {
         actif = false;
         panneau.hidden = true;
+        majBouton();
     }
 
     function basculer() {
         if (actif) { fermer(); return false; }
         actif = true;
+        majBouton();
         if (!fondDessine) { dessinerFond(); }
         panneau.hidden = false;
         attente = 0;
@@ -231,12 +291,34 @@ export function creerRadar(deps) {
         rafraichir();
     }
 
+    // Achat en boutique (une seule fois, pour toujours). Renvoie true si réussi.
+    function acheter() {
+        const journal = etat.journal;
+        if (!journal || journal.radar || journal.experience < RADAR_PRIX) { return false; }
+        journal.experience -= RADAR_PRIX;
+        journal.radar = true;
+        if (saveJournal) { saveJournal(); }
+        if (renderJournal) { renderJournal(); }
+        majBouton();
+        return true;
+    }
+
+    if (bouton) {
+        bouton.addEventListener('click', function () {
+            if (!etat.journal || !etat.journal.radar) { return; }
+            basculer();
+            if (fermerOutils) { fermerOutils(); }   // sur petit écran, le menu ouvert cacherait la carte
+        });
+    }
+
     return {
         basculer, estActif: function () { return actif; }, maj, fermer,
         // Lecture seule (tests) : le modèle du dernier dessin, et le nombre de mises à jour du DOM.
         points: function () { return derniersPoints; },
         pecheur: function () { return dernierPecheur; },
         misesAJour: function () { return misesAJour; },
+        densite: function () { return derniereDensite; },
+        acheter, majBouton,
         couleurDe, rayonDe
     };
 }

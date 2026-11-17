@@ -1786,6 +1786,16 @@ body.calm .struggle-marker {
     border-radius: 10px;
 }
 
+/* Fin de partie : « Rejouer » et « Accueil » côte à côte, sous le gros bouton « Enregistrer ». */
+.overlay-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.overlay-actions > button {
+    flex: 1;
+}
+
 .overlay-list {
     text-align: left;
     font-size: 0.85rem;
@@ -2214,6 +2224,19 @@ body.calm .struggle-marker {
     height: auto;
     aspect-ratio: 200 / 120;
     border-radius: 7px;
+}
+
+/* Ligne d'infos du radar : nombre de poissons et densité (kg/ha, poissons/ha). */
+.radar-info {
+    padding: 3px 4px 1px;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: #eaf6ff;
+    text-align: left;
+}
+
+.radar-info:empty {
+    display: none;
 }
 
 /* Le sonar occupe déjà le coin : le radar se range juste dessous. */

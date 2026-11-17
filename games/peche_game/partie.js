@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=246';
+import { etat } from './etat.js?v=247';
 
 // Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
 export function majChoixRadio(radios, valeur) {
@@ -24,7 +24,7 @@ export function creerPartie(deps) {
         castTarget, rodGroup, rodTipVisual, rodTip, angler, rodPivot, setFeedMode, floatingTexts,
         scene, missRings, ripples, effrayerRagondin, ragondinAlert, scoreDisplay,
         resetCameraView, pauseButton, renderJournal, majCoupeProfondeur, updateToolDock,
-        updateCrankVisibility, updateLine, stockAmorce, saveScore, showRanking, rankingButton,
+        updateCrankVisibility, updateLine, stockAmorce, rankingButton,
         closeRanking, restartGame, saveAndMenu, backToMenu, endGameButton, ensureSound,
         playButton, accueilClassement, accueilTechniqueRadios, setTechnique,
         accueilDifficulteRadios, setDifficulty, accueilMilieuRadios, setMilieu
@@ -408,14 +408,6 @@ export function creerPartie(deps) {
     }
 
     // --- Boutons du panneau de fin de partie et du classement ---
-    if (saveScore) {
-        saveScore.addEventListener('click', function () {
-            enregistrerClassement(playerName ? playerName.value : '');
-            if (gameOver) { gameOver.classList.remove('active'); }
-            ouvrirClassement();
-        });
-    }
-    if (showRanking) { showRanking.addEventListener('click', ouvrirClassement); }
     if (rankingButton) { rankingButton.addEventListener('click', ouvrirClassement); }
     if (closeRanking) { closeRanking.addEventListener('click', fermerClassement); }
     if (restartGame) { restartGame.addEventListener('click', recommencerPartie); }

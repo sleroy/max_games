@@ -6,7 +6,7 @@
 // et garde les mêmes noms. Ajouter un élément : une ligne ici + le nom dans la
 // déstructuration de script.js.
 // ---------------------------------------------------------------------------
-import { IDS_MILIEUX } from './milieux.js?v=246';
+import { IDS_MILIEUX } from './milieux.js?v=247';
 
 export function lireDom() {
     return {
@@ -55,11 +55,9 @@ export function lireDom() {
         gameOverTitle: document.getElementById('gameOverTitle'),
         gameOverText: document.getElementById('gameOverText'),
         playerName: document.getElementById('playerName'),
-        saveScore: document.getElementById('saveScore'),
         saveAndMenu: document.getElementById('saveAndMenu'),
         backToMenu: document.getElementById('backToMenu'),
         restartGame: document.getElementById('restartGame'),
-        showRanking: document.getElementById('showRanking'),
         rankingButton: document.getElementById('rankingButton'),
         classement: document.getElementById('classement'),
         rankingTabs: document.getElementById('rankingTabs'),
