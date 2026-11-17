@@ -12,7 +12,7 @@
 //
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=255';
+import { etat } from './etat.js?v=256';
 
 export const SONDE_PRIX = 120;
 const PERIODE_TEXTE = 0.12;   // s entre deux lectures du fond

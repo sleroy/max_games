@@ -28,7 +28,7 @@ import {
     RAYON_REFERENCE, HARMONIQUES, VARIATION_CONTOUR, FORME_DEFAUT, formeConnue, rayonContour, surfaceUnites,
     surfaceHectares, echelleDeRayon, echelleExtent, echelleAxes, echelleAmbiance, extents, porteeLancer, porteeAmorce,
     pointAuBord, facteurProfondeur
-} from './dimensions.js?v=255';
+} from './dimensions.js?v=256';
 
 // Centre de l'étang DE RÉFÉRENCE (la plaine) : le monde entier est bâti autour de ce point.
 // v173 : l'étang passe de 55 à 90 de rayon. Le centre recule de (0, -40) à (0, -71)
@@ -290,7 +290,9 @@ export function fondY(x, z) {
 // Le jeu (comportement.js) et le schéma de coupe (ligne.js) appellent cette seule
 // fonction : ils ne peuvent plus se contredire. Au quiver, l'hameçon est posé EN
 // APPUI sur le fond par construction (`auFond`) : jamais dans la vase.
-export const MARGE_VASE = 0.5;   // l'hameçon touche la vase à moins de 0,5 unité du fond
+// Marge 0,2 unité (10 cm ; 0,5 avant, soit 25 cm). Demande du joueur (2026-11-17) : hameçon à 0,3 m, fond à
+// 0,5 m, et pourtant « accroché dans la vase » — dans 50 cm d'eau, 25 cm de marge, c'était la moitié de la hauteur.
+export const MARGE_VASE = 0.2;   // l'hameçon touche la vase à moins de 0,2 unité (10 cm) du fond
 export function verdictFond(x, z, profondeurLigne, auFond) {
     const profondeurEau = profondeurLocale(x, z);
     return {

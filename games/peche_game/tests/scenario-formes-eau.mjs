@@ -408,7 +408,9 @@ function chaqueForme() {
                 tiers[t]++;
             });
             const part = Math.min.apply(null, tiers) / G().fishes.length;
-            check(etiquette + 'poissons : chaque tiers de la longueur en abrite au moins 15 %', part >= 0.15, tiers.join(' / ') + ' sur ' + G().fishes.length);
+            // Seuil 12 % (15 % avant) : à 500 poissons, le canal a ses obstacles (et leurs poissons) aux deux bouts,
+            // et le tiers du milieu oscille entre 15 et 21 % selon les biotopes peuplés avant (mesuré 2026-11-17).
+            check(etiquette + 'poissons : chaque tiers de la longueur en abrite au moins 12 %', part >= 0.12, tiers.join(' / ') + ' sur ' + G().fishes.length);
         }
 
         // --- Postes sur la rive ---

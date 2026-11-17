@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat, moulinetLibre } from './etat.js?v=255';
+import { etat, moulinetLibre } from './etat.js?v=256';
 
 export function creerEntrees(deps) {
     const {

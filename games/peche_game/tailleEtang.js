@@ -22,11 +22,11 @@
 // `environnement.js` (le module du monde lui-même).
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=255';
-import { monde, POND_CENTER, RIVE_Y, makeWaterGeometry, makeShoreGeometry, makeFondGeometry } from './environnement.js?v=255';
+import { etat } from './etat.js?v=256';
+import { monde, POND_CENTER, RIVE_Y, makeWaterGeometry, makeShoreGeometry, makeFondGeometry } from './environnement.js?v=256';
 import {
     FORME_DEFAUT, echelleAmbiance, BRUME_REFERENCE, CIEL_REFERENCE, CAMERA_FAR_REFERENCE, RIVE_EXTERIEURE_REFERENCE
-} from './dimensions.js?v=255';
+} from './dimensions.js?v=256';
 
 // Résolution du maillage d'eau dans la plaine : un pas de ≈ 2,5 unités entre anneaux et ≈ 5 entre rayons.
 const EAU_ANNEAUX_REFERENCE = 40;

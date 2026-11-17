@@ -2,11 +2,11 @@
 // matrice.js — page de visualisation de la matrice des touches (matrice.html).
 // Aucune règle ici : tout vient de chanceTouche.js (le jeu) et de matriceTouche.js (le test).
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=255';
-import { ESCHES } from './esches.js?v=255';
-import { SUBSTRATS } from './substrats.js?v=255';
-import { evaluerTouche, RAISONS } from './chanceTouche.js?v=255';
-import { verifierRegles, verifierTousMilieux, aSurveiller, taillesDe, nomEsche, ESCHES_MATRICE } from './matriceTouche.js?v=255';
+import { SPECIES } from './especes.js?v=256';
+import { ESCHES } from './esches.js?v=256';
+import { SUBSTRATS } from './substrats.js?v=256';
+import { evaluerTouche, RAISONS } from './chanceTouche.js?v=256';
+import { verifierRegles, verifierTousMilieux, aSurveiller, taillesDe, nomEsche, ESCHES_MATRICE } from './matriceTouche.js?v=256';
 
 const LETTRE = { accroche: 'A', couche: 'C', esche: 'E', taille: 'T' };
 const EAUX_FINES = [];       // profondeur d'eau, 0,5 → 4,25 m (unités : 1 → 8,5)

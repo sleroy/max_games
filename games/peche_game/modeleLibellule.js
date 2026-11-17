@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import {
     textureAileLibellule, textureAbdomenLibellule
-} from './texturesVie.js?v=255';
+} from './texturesVie.js?v=256';
 
 export const LIBELLULES = {
     azur: {

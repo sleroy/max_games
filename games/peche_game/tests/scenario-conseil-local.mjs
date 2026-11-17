@@ -10,6 +10,7 @@ import { group, check, checkEqual, G, moduleCopie, state, stepFor, resetToIdle, 
 const NOMS = SPECIES.map(s => s.nom.toLowerCase());
 
 export async function run() {
+    const { MARGE_VASE } = await import(moduleCopie('environnement.js'));   // copie avec le stub three
     group('Conseil pour cet endroit quand rien ne mord (conseilLocal.js)');
     const L = await import(moduleCopie('conseilLocal.js'));
     const C = await import(moduleCopie('chanceTouche.js'));
@@ -59,7 +60,8 @@ export async function run() {
         profondeurLigne: r.ligne }, ici)).chance, 0); }
     const dansVase = L.recommander(Object.assign({ poissons: [{ especeId: 'carpe', longueurCm: 60, profondeur: -4.05 }], mode: 'facile', escheActuelle: 'ver',
         ligneActuelle: 2.1 }, ici, { profondeurEau: 4.5 }));
-    check('une carpe au fond : le conseil reste au-dessus de la vase', dansVase.ligne <= 4.5 - 0.55 + 1e-9, dansVase.ligne);
+    // Au-dessus de la marge de vase (MARGE_VASE, 0,2 depuis v256), avec 5 cm de jeu.
+    check('une carpe au fond : le conseil reste au-dessus de la vase', dansVase.ligne <= 4.5 - MARGE_VASE - 0.05 + 1e-9, dansVase.ligne);
     // La profondeur conseillée ne descend JAMAIS sous le fond : une ligne plus longue ne creuse rien.
     const profond = L.recommander({ poissons: [{ especeId: 'perche', longueurCm: 25, profondeur: -2.2 }], profondeurEau: 2.4,
         substrat: 'roche', bornes: [0.6, 9], mode: 'normal', escheActuelle: 'mais', ligneActuelle: 2.5, temperature: 15, heure: 12 });
