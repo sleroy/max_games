@@ -7,11 +7,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=244';
-import { etat } from './etat.js?v=244';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=244';
-import { heureDeJeu } from './physique.js?v=244';
-import { creerCulling } from './culling.js?v=244';
+import { COMPORTEMENTS } from './especes.js?v=245';
+import { etat } from './etat.js?v=245';
+import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=245';
+import { heureDeJeu } from './physique.js?v=245';
+import { creerCulling } from './culling.js?v=245';
 
 export function creerComportement(deps) {
     const {
@@ -99,15 +99,10 @@ export function creerComportement(deps) {
     const REMOUS_GAIN = 10;           // intensité gagnée par tour de manivelle (1 tour = 1 geste franc)
     const GESTE_RAPPEL_TOURS = 0.3;   // au-delà (cumulé sur un même geste), on ramène la ligne
     const GESTE_PAUSE = 0.5;          // secondes sans manivelle : le geste est terminé
-    etat.remous = 0;
+    etat.remous = 0; etat.sillage = 0;
     etat.moulinetGeste = 0;
     etat.moulinetRepos = 0;
     etat.remousRond = 0;
-
-    // Distance à laquelle CE poisson sent le remous en ce moment (0 = rien) : chanceTouche.js.
-    function rayonRemous(data) {
-        return rayonRemousPur(etat.remous, data.aggression, data.comp && data.comp.humeur);
-    }
 
     // Appelé à chaque image bouchon à l'eau, avec les tours de manivelle de l'image.
     // Renvoie true quand le geste est franc : il faut ramener la ligne.
@@ -336,8 +331,7 @@ export function creerComportement(deps) {
                 }
                 return;
             }
-            data.targeting = false;
-            data.attire = false;
+            data.targeting = false; data.attire = false; if (data.plouf > 0) { data.plouf = Math.max(0, data.plouf - dt / PLOUF_DUREE); }
             // L'amorce attire les poissons vers la SPHÈRE de miettes (§17.4) : celle du nuage le plus proche
             // qui l'attire (plusieurs nuages peuvent coexister).
             const nuage = nuageQuiAttire(fish, data);
@@ -431,9 +425,9 @@ export function creerComportement(deps) {
                     ? bd < MODE_FACILE_RAYON && !etat.escheSansEspoir(data)
                     : !refus && bd < rayonVueEspece(data) && zoneOk && !etat.hameconDansLaVase
                         && (bd < 2.2 || dansChampDeVision(data, bx, bz, bd)) && !etat.escheSansEspoir(data);
-                // Remous d'un petit coup de moulinet : il ravive l'intérêt d'un poisson tout proche (même dans
-                // son dos), sans le sortir de sa zone de vie ni de sa couche d'eau (seul `vu` change sa profondeur).
-                const senti = !vu && !refus && zoneOk && etat.floatState === 'inWater' && bd < rayonRemous(data)
+                // Bruits de la ligne (remous, plouf, sillage) : un poisson tout proche s'y intéresse, même dans son dos.
+                const senti = !vu && !refus && zoneOk && (etat.floatState === 'inWater' || etat.floatState === 'reeling')
+                    && bd < attireParBruit(etat.remous, data.plouf, etat.sillage, data.aggression, data.comp && data.comp.humeur)
                     && !etat.hameconDansLaVase && !etat.escheSansEspoir(data);   // vase, esche immangeable : il ignore
                 if (vu || senti) {
                     etat.patienceEsche(data, dt);   // trop longtemps sans mordre : il se lasse (esches.js)
@@ -559,7 +553,7 @@ export function creerComportement(deps) {
     function updateFloat(dt, time) {
         if (etat.floatState !== 'inWater') {
             etat.remous = 0;            // pas de remous en combat, accrochage, emmêlement…
-            etat.moulinetGeste = 0;
+            etat.moulinetGeste = 0; if (etat.floatState !== 'reeling') { etat.sillage = 0; }   // le sillage ne survit pas au lancer
         }
         if (etat.floatState === 'flying') {
             etat.castT += dt / CAST_DURATION;
@@ -570,6 +564,8 @@ export function creerComportement(deps) {
                 floatGroup.position.copy(castTarget);
                 spawnRipple(castTarget);
                 sound.splash();
+                fishes.forEach(f => { const d = f.userData;
+                    if (!d.hooked && !d.biting && Math.hypot(f.position.x - castTarget.x, f.position.z - castTarget.z) < PLOUF_RAYON) { d.plouf = 1; } });
                 const accroc = isSnagged(castTarget);
                 if (accroc) {
                     startSnag(accroc === true ? undefined : accroc);   // nénuphar, ou obstacle
@@ -738,6 +734,7 @@ export function creerComportement(deps) {
             // complet ramène REEL_PER_TURN unités (≈ 1 m). Si le joueur s'arrête,
             // la ligne reste exactement où elle est : il peut pêcher sur place,
             // puis reprendre la remontée (ou continuer jusqu'à la berge).
+            etat.sillage = Math.max(0, etat.sillage - dt / SILLAGE_DUREE);
             const tours = consumeCrankTurns();
             const step = tours * REEL_PER_TURN;
             // Le poisson est ramené jusqu'aux pieds du pêcheur.
@@ -751,6 +748,7 @@ export function creerComportement(deps) {
                 floatGroup.position.x += (dx / distXZ) * move;
                 floatGroup.position.z += (dz / distXZ) * move;
                 floatGroup.position.y = 0.1 + Math.sin(time * 6) * 0.03;
+                etat.sillage = Math.min(1, etat.sillage + move * SILLAGE_GAIN);
                 if (etat.hookedFish) {
                     etat.hookedFish.position.x = floatGroup.position.x;
                     etat.hookedFish.position.z = floatGroup.position.z;

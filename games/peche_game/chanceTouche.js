@@ -17,15 +17,18 @@
 // `evaluerTouche(contexte)` combine le tout pour UN poisson et UNE situation et dit pourquoi il ne
 // mord pas (`raison`). C'est ce qu'exploite la matrice de tests (tests/scenario-matrice-touche.mjs).
 // ---------------------------------------------------------------------------
-import { COMPORTEMENTS, SPECIES } from './especes.js?v=244';
-import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=244';
-import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=244';
-import { hameconSurSubstrat } from './substrats.js?v=244';
-import { MARGE_VASE } from './environnement.js?v=244';
+import { COMPORTEMENTS, SPECIES } from './especes.js?v=245';
+import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=245';
+import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=245';
+import { hameconSurSubstrat } from './substrats.js?v=245';
+import { MARGE_VASE } from './environnement.js?v=245';
 
 export const RAYON_VUE_DEFAUT = 7;        // unités : poisson sans fiche de comportement
 export const RAYON_VUE_FACILE = 26;       // mode facile : aimant à poissons
 export const REMOUS_RAYON = 3;            // unités, à pleine intensité et sensibilité 1
+export const PLOUF_RAYON = 7;             // unités : le plouf du bouchon à l'arrivée
+export const SILLAGE_RAYON = 6;           // unités : la ligne qui avance au moulinet
+export const PLOUF_DUREE = 2.5, SILLAGE_DUREE = 1.5, SILLAGE_GAIN = 10;   // plouf d'arrivée, sillage de la remontée
 export const MARGE_FOND_NAGE = 0.45;      // un poisson de fond nage à 0,45 unité du relief
 export const ECART_LIGNE_QUIVER = 0.55;   // au quiver, l'hameçon est posé juste au-dessus de la vase
 
@@ -49,8 +52,18 @@ export function sensibiliteRemous(aggression, humeur) {
     const ardeur = Math.min(1.2, Math.max(0.5, aggression || 0.8));
     return Math.min(1.3, ardeur * (humeur === 'embuscade' ? 1.25 : 1));
 }
+// Bruit de la ligne : même décroissance pour le remous, le plouf d'arrivée et le sillage.
+export function rayonBruit(rayonMax, intensite, aggression, humeur) {
+    return intensite > 0 ? rayonMax * intensite * sensibiliteRemous(aggression, humeur) : 0;
+}
 export function rayonRemous(remous, aggression, humeur) {
-    return remous > 0 ? REMOUS_RAYON * remous * sensibiliteRemous(aggression, humeur) : 0;
+    return rayonBruit(REMOUS_RAYON, remous, aggression, humeur);
+}
+// Le plus fort des trois bruits : c'est lui qui décide si un poisson tout proche s'intéresse.
+export function attireParBruit(remous, plouf, sillage, aggression, humeur) {
+    return Math.max(rayonBruit(REMOUS_RAYON, remous, aggression, humeur),
+        rayonBruit(PLOUF_RAYON, plouf, aggression, humeur),
+        rayonBruit(SILLAGE_RAYON, sillage, aggression, humeur));
 }
 
 // 2. L'hameçon (hauteur hookY < 0) est-il dans la couche de l'espèce ? Un poisson « de fond » mord si

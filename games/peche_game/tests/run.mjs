@@ -55,6 +55,7 @@ import scenarioGrandEtang from './scenario-grand-etang.mjs';
 import { run as scenarioObstacles } from './scenario-obstacles.mjs';
 import { run as scenarioFond } from './scenario-fond.mjs';
 import { run as scenarioDandine } from './scenario-dandine.mjs';
+import { run as scenarioAttractionLigne } from './scenario-attraction-ligne.mjs';
 import { run as scenarioSubstrats } from './scenario-substrats.mjs';
 import { run as scenarioEsches } from './scenario-esches.mjs';
 import { run as scenarioPerteEsche } from './scenario-perte-esche.mjs';
@@ -173,6 +174,8 @@ try {
     scenarioFond();             // fond sous le bouchon (v180) : un seul verdict, dérive comprise
     debutScenario();
     scenarioDandine();          // petit coup de moulinet (v181) : remous, rayon 3, décroissance, plafond
+    debutScenario();
+    scenarioAttractionLigne();  // la ligne qui bouge (plouf d'arrivée, sillage de la remontée) attire les poissons
     debutScenario();
     scenarioSubstrats();        // types de fond (v183) : répartition, habitat, risques, carte, widget
     debutScenario();
