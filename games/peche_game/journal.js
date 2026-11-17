@@ -4,8 +4,8 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=252';
-import { texteMilieu } from './milieux.js?v=252';
+import { etat } from './etat.js?v=253';
+import { texteMilieu } from './milieux.js?v=253';
 
 export function creerJournal(deps) {
     const {

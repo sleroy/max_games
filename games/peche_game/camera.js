@@ -7,7 +7,7 @@
 // le reste est injecté par `deps`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=252';
+import { etat } from './etat.js?v=253';
 
 export function creerCamera(deps) {
     const {

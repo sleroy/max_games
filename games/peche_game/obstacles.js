@@ -16,7 +16,7 @@
 // Tout est dessiné en code (géométrie + textures canvas) : aucune image, aucune licence.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { FORME_DEFAUT, angleSurForme, angleDepuisForme, pointAuBord } from './dimensions.js?v=252';
+import { FORME_DEFAUT, angleSurForme, angleDepuisForme, pointAuBord } from './dimensions.js?v=253';
 
 export const RAYON_BARQUE = 1.5;     // rayon de la coque pour les collisions
 export const MARGE_ACCROCHE = 0.8;   // l'hameçon se coince à moins de 0,8 d'un obstacle
@@ -682,11 +682,19 @@ export function creerObstacles(deps) {
     const tours = {};
     const stats = { poissons: 0, parObstacle: {} };
 
-    function choisirObstacle(especeId, garanti) {
+    // Un obstacle n'abrite qu'un nombre limité de poissons : dans un plan d'eau très peuplé (canal,
+    // rivière), sinon, tous les poissons d'obstacle s'entasseraient sur quelques souches et le reste
+    // de l'eau paraîtrait vide. Un obstacle plein passe la main au suivant ; tous pleins : pas d'attraction.
+    const PLACES_OBSTACLE = 12;
+    function choisirObstacle(especeId, garanti, occupation) {
         const cibles = parEspece[especeId];
         if (!cibles || (!garanti && hasardAttire() >= PROBA_ATTIRANCE)) { return null; }
         tours[especeId] = ((tours[especeId] === undefined ? -1 : tours[especeId]) + 1) % cibles.length;
-        return cibles[tours[especeId]];
+        for (let k = 0; k < cibles.length; k++) {
+            const o = cibles[(tours[especeId] + k) % cibles.length];
+            if ((occupation[o.id] || 0) < PLACES_OBSTACLE) { return o; }
+        }
+        return null;
     }
 
     // Au peuplement (plusieurs poissons), le premier banc ou poisson de chaque espèce est TOUJOURS
@@ -694,12 +702,13 @@ export function creerObstacles(deps) {
     function attirer(poissons) {
         const groupes = {};
         const vues = {};
+        const occupation = {};   // poissons déjà installés sur chaque obstacle (ce peuplement)
         poissons.forEach(function (fish) {
             const d = fish.userData;
             if (!parEspece[d.especeId] || d.hooked) { return; }
             let choix = d.groupeId !== undefined ? groupes[d.groupeId] : undefined;
             if (choix === undefined) {
-                const obstacle = choisirObstacle(d.especeId, poissons.length > 1 && !vues[d.especeId]);
+                const obstacle = choisirObstacle(d.especeId, poissons.length > 1 && !vues[d.especeId], occupation);
                 vues[d.especeId] = true;
                 const a = hasardAttire() * Math.PI * 2;
                 const r = hasardAttire() * 2.5;
@@ -715,6 +724,7 @@ export function creerObstacles(deps) {
             d.homeX = choix.x;
             d.homeZ = choix.z;
             d.obstacleId = choix.obstacle.id;
+            occupation[choix.obstacle.id] = (occupation[choix.obstacle.id] || 0) + 1;
             const fond = fondY(fish.position.x, fish.position.z);
             d.depth = d.couche === 'fond' ? fond + 0.45 : Math.max(d.depth, fond + 0.35);
             fish.position.y = d.depth - d.topOffset;

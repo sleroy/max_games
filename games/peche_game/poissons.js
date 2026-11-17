@@ -16,13 +16,13 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=252';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=252';
-import { angleParSurface } from './dimensions.js?v=252';
+} from './especes.js?v=253';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=253';
+import { angleParSurface } from './dimensions.js?v=253';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=252';
+} from './milieux.js?v=253';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;
@@ -53,6 +53,22 @@ export function creerPoissons(deps) {
             // garantit quelques poissons à portée de lancer de chaque poste.
             substrats.garantirPecheDuBord(poissons);
         }
+        poissons.forEach(rentrerDansLEau);
+    }
+    // Un banc posé près de la rive (canal étroit) peut écarter un poisson hors de l'eau : on le
+    // ramène sur le même rayon, à 1 unité de la berge, et il reste au-dessus du fond.
+    function rentrerDansLEau(fish) {
+        const dx = fish.position.x - POND_CENTER.x;
+        const dz = fish.position.z - POND_CENTER.z;
+        const r = Math.hypot(dx, dz);
+        const bord = rayonEtang(Math.atan2(dz, dx)) - 1;
+        if (r < bord || r === 0) { return; }
+        fish.position.x = POND_CENTER.x + dx * bord / r;
+        fish.position.z = POND_CENTER.z + dz * bord / r;
+        const d = fish.userData;
+        const fond = fondY(fish.position.x, fish.position.z);
+        d.depth = d.couche === 'fond' ? fond + 0.45 : Math.max(d.depth, fond + 0.35);
+        fish.position.y = d.depth - d.topOffset;
     }
     let peuplement = true;   // vrai pendant le peuplement initial (les bancs sont attirés d'un bloc, après)
 

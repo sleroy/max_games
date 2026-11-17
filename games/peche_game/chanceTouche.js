@@ -17,11 +17,11 @@
 // `evaluerTouche(contexte)` combine le tout pour UN poisson et UNE situation et dit pourquoi il ne
 // mord pas (`raison`). C'est ce qu'exploite la matrice de tests (tests/scenario-matrice-touche.mjs).
 // ---------------------------------------------------------------------------
-import { COMPORTEMENTS, SPECIES } from './especes.js?v=252';
-import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=252';
-import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=252';
-import { hameconSurSubstrat } from './substrats.js?v=252';
-import { MARGE_VASE } from './environnement.js?v=252';
+import { COMPORTEMENTS, SPECIES } from './especes.js?v=253';
+import { efficaciteEsche, acceptationFacile, coucheHamecon, tropPetitPourEsche } from './esches.js?v=253';
+import { lumiere, facteurDelai, thermoclinePour, plancherSous, zoneSous, profondeurUtileSous } from './physique.js?v=253';
+import { hameconSurSubstrat } from './substrats.js?v=253';
+import { MARGE_VASE } from './environnement.js?v=253';
 
 export const RAYON_VUE_DEFAUT = 7;        // unités : poisson sans fiche de comportement
 export const RAYON_VUE_FACILE = 26;       // mode facile : aimant à poissons

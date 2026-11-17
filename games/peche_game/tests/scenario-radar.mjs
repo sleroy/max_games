@@ -202,6 +202,36 @@ function detailsDuRadar(radar) {
         radar.pecheur().bouchon.x, 100 + (flotteur.x - centre.x) * echelle, 0.001);
     checkClose('y du bouchon cohérent avec floatGroup.position',
         radar.pecheur().bouchon.y, 60 + (flotteur.z - centre.z) * echelle, 0.001);
+    // Le bouchon se repère d'un coup d'œil : halo et ligne pointillée jusqu'au pêcheur.
+    checkEqual('ligne à l\'eau : halo autour du bouchon', compter('radar-bouchon-halo'), 1);
+    checkEqual('ligne à l\'eau : ligne pêcheur → bouchon', compter('radar-ligne'), 1);
+    resetToIdle();
+    stepFor(0.15);
+    checkEqual('ligne au repos : ni halo ni ligne', compter('radar-bouchon-halo') + compter('radar-ligne'), 0);
+
+    // --- Boules d'amorce : chaque nuage vivant est sur la carte ----------------
+    G().etat.viderChums();
+    stepFor(0.15);
+    checkEqual('sans amorce : aucun nuage sur la carte', compter('radar-amorce'), 0);
+    G().etat.amorceDepartRestante = 20;
+    [[-20, -40], [20, -60]].forEach(function (cible) {
+        G().setFeedMode(true);
+        G().startFeedCharge({ x: cible[0], y: 0, z: cible[1] });
+        stepFor(0.3);
+        G().releaseFeed();
+        for (let i = 0; i < 100 && G().getFeedState() !== 'idle'; i++) { stepFor(0.05); }
+    });
+    stepFor(3);   // le nuage apparaît en fondu
+    const nuages = G().etat.chums;
+    checkEqual('deux amorces : deux nuages sur la carte', compter('radar-amorce'), nuages.length);
+    check('deux amorces lancées', nuages.length === 2, String(nuages.length));
+    check('chaque nuage est à sa place sur la carte', radar.amorces().length === nuages.length
+        && radar.amorces().every(function (a, i) {
+            return Math.abs(a.x - (100 + (nuages[i].position.x - centre.x) * echelle)) < 0.001
+                && Math.abs(a.y - (60 + (nuages[i].position.z - centre.z) * echelle)) < 0.001;
+        }));
+    G().etat.viderChums();
+    G().setFeedMode(false);
     resetToIdle();
 
     // --- Barque : pastille distincte à bord seulement ------------------------

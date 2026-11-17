@@ -17,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=252';
-import { etat } from './etat.js?v=252';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=252';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=253';
+import { etat } from './etat.js?v=253';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=253';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -60,7 +60,9 @@ export const MILIEUX = [
         decor: { arbres: 20, nenuphars: 10, roseaux: 90, rochers: 10 },
         fonds: { vase: 0.55, herbier: 0.20, sable: 0.15, gravier: 0.08, roche: 0.02 },
         eau: { shallow: 0x4a7a5c, deep: 0x122a20, sky: 0x9fb6a6 },
-        rayon: 45, forme: 'canal', profondeur: 5.0, densite: 1.0
+        // Densité forte (17,4) : le canal est étroit (≈ 0,16 ha) mais très peuplé ; Normal ≈ 500 poissons
+        // (demande du joueur 2026-11-17 : 29 poissons, c'était un désert).
+        rayon: 45, forme: 'canal', profondeur: 5.0, densite: 17.4
     },
     {
         id: 'carnassiers', nom: 'Étang à carnassiers', icone: '🦈',

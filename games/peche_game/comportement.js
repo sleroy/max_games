@@ -7,11 +7,11 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=252';
-import { etat } from './etat.js?v=252';
-import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=252';
-import { heureDeJeu } from './physique.js?v=252';
-import { creerCulling } from './culling.js?v=252';
+import { COMPORTEMENTS } from './especes.js?v=253';
+import { etat } from './etat.js?v=253';
+import { rayonVue, dansCouche, profondeurHamecon, RAYON_VUE_FACILE, attireParBruit, PLOUF_RAYON, PLOUF_DUREE, SILLAGE_DUREE, SILLAGE_GAIN } from './chanceTouche.js?v=253';
+import { heureDeJeu } from './physique.js?v=253';
+import { creerCulling } from './culling.js?v=253';
 
 export function creerComportement(deps) {
     etat.ancreBouchon = null;   // centre de la dérive si la ligne a été RAMENÉE (sinon : point du lancer)

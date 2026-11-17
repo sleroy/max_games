@@ -21,7 +21,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=252';
+import { etat } from './etat.js?v=253';
 
 // 16 couleurs bien distinctes (une par espèce, dans l'ordre de SPECIES).
 const PALETTE = [
@@ -62,6 +62,7 @@ export function creerRadar(deps) {
     let misesAJour = 0;
     let derniersPoints = [];
     let dernierPecheur = null;
+    let derniersAmorces = [];
 
     // --- Modèle : couleur et rayon ---------------------------------------------------------
     // Couleur stable par espèce : rang de l'espèce dans SPECIES (jamais l'ordre des poissons).
@@ -239,6 +240,14 @@ export function creerRadar(deps) {
                     + '" height="' + CASE + '" fill="#ff8c1a" fill-opacity="' + (0.08 + 0.42 * n / d.max).toFixed(2) + '"/>';
             });
         }
+        // Nuages d'amorce (boules lancées) : disque d'attraction + point central beige.
+        derniersAmorces.forEach(function (a) {
+            svg += '<circle class="radar-amorce-zone" cx="' + a.x.toFixed(1) + '" cy="' + a.y.toFixed(1)
+                + '" r="' + a.rayon.toFixed(1) + '" fill="#e8c46a" fill-opacity="' + (0.12 + 0.18 * a.force).toFixed(2)
+                + '" stroke="#e8c46a" stroke-width="0.5" stroke-dasharray="2 1.5"/>';
+            svg += '<circle class="radar-amorce" cx="' + a.x.toFixed(1) + '" cy="' + a.y.toFixed(1)
+                + '" r="1.8" fill="#cdb56f" stroke="#5a4310" stroke-width="0.8"/>';
+        });
         derniersPoints.forEach(function (p) {
             svg += '<circle class="radar-zone" cx="' + p.maisonX.toFixed(1) + '" cy="' + p.maisonY.toFixed(1)
                 + '" r="' + p.maisonRayon.toFixed(1) + '" fill="none" stroke="' + p.couleur
@@ -260,12 +269,19 @@ export function creerRadar(deps) {
                 + ' transform="rotate(' + (j.cap * 180 / Math.PI).toFixed(0) + ' ' + j.bateauX.toFixed(1) + ' '
                 + j.bateauY.toFixed(1) + ')"/>';
         }
-        if (j.bouchon) {
-            svg += '<circle class="radar-bouchon" cx="' + j.bouchon.x.toFixed(1) + '" cy="' + j.bouchon.y.toFixed(1)
-                + '" r="1.9" fill="#fffbe0" stroke="#ff5a3c" stroke-width="0.9"/>';
-        }
+        // Le pêcheur d'abord, puis le bouchon PAR-DESSUS : visible même au-dessus d'un poisson ou du pêcheur.
         svg += '<polygon class="radar-pecheur" points="' + triangle(j)
             + '" fill="#f2f2f2" stroke="#222222" stroke-width="0.8" stroke-linejoin="round"/>';
+        if (j.bouchon) {
+            const bx = j.bouchon.x.toFixed(1);
+            const by = j.bouchon.y.toFixed(1);
+            svg += '<line class="radar-ligne" x1="' + j.x.toFixed(1) + '" y1="' + j.y.toFixed(1) + '" x2="' + bx + '" y2="' + by
+                + '" stroke="#ff5a3c" stroke-width="0.5" stroke-dasharray="1.5 1" stroke-opacity="0.8"/>';
+            svg += '<circle class="radar-bouchon-halo" cx="' + bx + '" cy="' + by
+                + '" r="5" fill="none" stroke="#ff5a3c" stroke-width="0.8" stroke-opacity="0.9"/>';
+            svg += '<circle class="radar-bouchon" cx="' + bx + '" cy="' + by
+                + '" r="2.4" fill="#fffbe0" stroke="#ff5a3c" stroke-width="1.2"/>';
+        }
         vivantEl.innerHTML = svg;
     }
 
@@ -276,6 +292,9 @@ export function creerRadar(deps) {
         majEchelle();
         derniersPoints = fishes.map(pointDe);
         dernierPecheur = pecheurDe();
+        derniersAmorces = (etat.chums || []).filter(function (n) { return n.strength > 0; }).map(function (n) {
+            return { x: mx(n.position.x), y: mz(n.position.z), rayon: 6 * ech, force: Math.min(1, n.strength) };
+        });
         derniereDensite = densiteDe(derniersPoints);
         dessiner();
         if (infoEl) { infoEl.textContent = texteInfo(derniereDensite); }
@@ -341,6 +360,7 @@ export function creerRadar(deps) {
         // Lecture seule (tests) : le modèle du dernier dessin, et le nombre de mises à jour du DOM.
         points: function () { return derniersPoints; },
         pecheur: function () { return dernierPecheur; },
+        amorces: function () { return derniersAmorces; },
         misesAJour: function () { return misesAJour; },
         densite: function () { return derniereDensite; },
         acheter, majBouton,
