@@ -519,6 +519,7 @@ export async function loadGame() {
     // du pêcheur (fosse, nuage d'amorce, thermocline) et observent leur nage : on simule donc
     // tous les poissons, comme avant cette optimisation. tests/scenario-culling.mjs le rallume.
     game.etat.cullingActif = false;
+    game.etat.chassesActives = false;   // chasse.js : pas de chasse spontanée (scenario-chasse les déclenche)
     return game;
 }
 

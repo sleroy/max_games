@@ -5,8 +5,8 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat } from './etat.js?v=250';
-import { coucheHamecon } from './esches.js?v=250';
+import { etat } from './etat.js?v=251';
+import { coucheHamecon } from './esches.js?v=251';
 
 export function creerLigne(deps) {
     const {
@@ -76,6 +76,7 @@ export function creerLigne(deps) {
         etat.floatStick.material.opacity = opacity;
         hookLine.material.opacity = opacity;
         hook.material.opacity = opacity;
+        if (etat.escheVisuelle) { etat.escheVisuelle.setOpacite(opacity); }
     }
     // Profondeur de la LIGNE : distance entre le bouchon et l'hameçon, en UNITÉS
     // (2 unités ≈ 1 m). Le joueur la règle avec − / + ; elle est bornée par le type
@@ -194,6 +195,6 @@ export function creerLigne(deps) {
 
     return {
         setFloatOpacity, bornesProfondeur, appliquerProfondeurVisuelle, majEtiquetteProfondeur,
-        updateDepthButtons, setProfondeur, majCoupeProfondeur
+        updateDepthButtons, setProfondeur, majCoupeProfondeur, hook
     };
 }

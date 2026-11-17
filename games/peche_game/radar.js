@@ -21,7 +21,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=250';
+import { etat } from './etat.js?v=251';
 
 // 16 couleurs bien distinctes (une par espèce, dans l'ordre de SPECIES).
 const PALETTE = [
@@ -126,6 +126,7 @@ export function creerRadar(deps) {
 
     // --- Densité : poissons par case de la carte, et totaux par hectare ----------------------
     let derniereDensite = null;
+    let echellePoints = 1;   // taille AFFICHÉE des points (le modèle garde le rayon ∝ longueur)
     function densiteDe(points) {
         const colonnes = Math.ceil(LARGEUR / CASE);
         const lignes = Math.ceil(HAUTEUR / CASE);
@@ -195,6 +196,8 @@ export function creerRadar(deps) {
         const bord = contour();
         // Cadrage serré sur l'étang (le viewBox suit son contour) : sur grand écran, l'étang remplit la carte.
         const cadre = cadreEtang();
+        // Carte cadrée = carte agrandie : les points rapetissent d'autant (sinon ils couvrent l'étang).
+        echellePoints = Math.max(0.35, Math.min(1, cadre.w / LARGEUR) * 0.7);
         if (svgEl && svgEl.setAttribute) {
             svgEl.setAttribute('viewBox', cadre.x.toFixed(1) + ' ' + cadre.y.toFixed(1) + ' '
                 + cadre.w.toFixed(1) + ' ' + cadre.h.toFixed(1));
@@ -220,7 +223,7 @@ export function creerRadar(deps) {
         const sommet = function (avant, cote) {
             return (p.x + c * avant - s * cote).toFixed(1) + ',' + (p.y + s * avant + c * cote).toFixed(1);
         };
-        return sommet(6.5, 0) + ' ' + sommet(-4, 3.8) + ' ' + sommet(-4, -3.8);
+        return sommet(4.5, 0) + " " + sommet(-2.8, 2.6) + " " + sommet(-2.8, -2.6);
     }
 
     function dessiner() {
@@ -243,11 +246,12 @@ export function creerRadar(deps) {
         });
         derniersPoints.forEach(function (p) {
             svg += '<line class="radar-cap" x1="' + p.x.toFixed(1) + '" y1="' + p.y.toFixed(1)
-                + '" x2="' + p.queueX.toFixed(1) + '" y2="' + p.queueY.toFixed(1)
-                + '" stroke="' + p.couleur + '" stroke-width="1" stroke-linecap="round"/>';
+                + '" x2="' + (p.x + (p.queueX - p.x) * echellePoints).toFixed(1)
+                + '" y2="' + (p.y + (p.queueY - p.y) * echellePoints).toFixed(1)
+                + '" stroke="' + p.couleur + '" stroke-width="0.6" stroke-linecap="round"/>';
             svg += '<circle class="radar-poisson" data-espece="' + p.especeId + '" cx="' + p.x.toFixed(1)
-                + '" cy="' + p.y.toFixed(1) + '" r="' + p.rayon.toFixed(1) + '" fill="' + p.couleur
-                + '" stroke="#0b1d28" stroke-width="0.5"/>';
+                + '" cy="' + p.y.toFixed(1) + '" r="' + (p.rayon * echellePoints).toFixed(2) + '" fill="' + p.couleur
+                + '" stroke="#0b1d28" stroke-width="0.3"/>';
         });
         const j = dernierPecheur;
         if (j.bateau) {

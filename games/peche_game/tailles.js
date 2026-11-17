@@ -9,8 +9,8 @@
 // est exactement le maillage de l'étang. Chaque poisson est rendu une fois hors
 // écran (apercuPoisson.js), recadré au pixel près, puis affiché à sa longueur réelle.
 // ---------------------------------------------------------------------------
-import { SPECIES, poidsKilos } from './especes.js?v=250';
-import { creerApercuPoisson } from './apercuPoisson.js?v=250';
+import { SPECIES, poidsKilos } from './especes.js?v=251';
+import { creerApercuPoisson } from './apercuPoisson.js?v=251';
 
 const LARGEUR_RENDU = 1200;   // résolution interne d'un portrait (assez pour la loupe)
 const HAUTEUR_RENDU = 800;

@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=250';
+import { etat } from './etat.js?v=251';
 
 export function creerBoutique(deps) {
     const {
@@ -14,7 +14,7 @@ export function creerBoutique(deps) {
         boutique, RECHARGES, stockAmorce, TAILLE_LOT, sonarButton, boatButton, SONAR_PRICE,
         BATEAU_PRIX, ficheTouches, TOUCHES, acheterRecharge, sound, acheterSonar, acheterBateau,
         statusDisplay, ensureSound, setScion, acheterScion, trouverScion,
-        acheterRadar, radarButton, RADAR_PRIX
+        acheterRadar, radarButton, RADAR_PRIX, acheterSonde, basculerSonde, SONDE_PRIX
     } = deps;
 
     // ---------------------------------------------------------------------------
@@ -204,6 +204,18 @@ export function creerBoutique(deps) {
             + (radarPossede ? '<button class="shop-btn equipped" disabled>✅ Acheté</button>'
                 : '<button class="shop-btn buy" data-id="radar" data-action="acheter"'
                     + (journal.experience < RADAR_PRIX ? ' disabled' : '') + '>Acheter · ' + RADAR_PRIX + ' XP</button>')
+            + '</div>';
+        const sondePossedee = journal.sonde === true;
+        const sondeEquipee = sondePossedee && journal.sondeEquipee !== false;
+        html += '<div class="shop-item' + (sondePossedee ? ' owned' : '') + '">'
+            + '<div class="shop-name">📏 Sonde</div>'
+            + '<div class="shop-desc">Affiche à côté du bouchon la profondeur et le type de fond. '
+                + 'Ramène la ligne doucement : tu découvres les fosses et les bords de l’étang.</div>'
+            + (sondePossedee
+                ? '<button class="shop-btn' + (sondeEquipee ? ' equipped' : '') + '" data-id="sonde" data-action="basculer-sonde">'
+                    + (sondeEquipee ? '✅ Équipée · retirer' : 'Équiper') + '</button>'
+                : '<button class="shop-btn buy" data-id="sonde" data-action="acheter"'
+                    + (journal.experience < SONDE_PRIX ? ' disabled' : '') + '>Acheter · ' + SONDE_PRIX + ' XP</button>')
             + '</div></div>';
         boutique.innerHTML = html;
     }
@@ -246,6 +258,21 @@ export function creerBoutique(deps) {
         }
         if (id === 'sonar' && cible.dataset.action === 'acheter') {
             if (acheterSonar()) { sound.playPiece(); }
+            return;
+        }
+        if (id === 'sonde' && cible.dataset.action === 'acheter') {
+            if (acheterSonde && acheterSonde()) {
+                sound.playPiece();
+                statusDisplay.textContent = '📏 Sonde achetée et équipée : lance, puis regarde à côté du bouchon.';
+            } else {
+                statusDisplay.textContent = 'Pas assez d’expérience pour la sonde.';
+            }
+            return;
+        }
+        if (id === 'sonde' && cible.dataset.action === 'basculer-sonde') {
+            if (basculerSonde) {
+                statusDisplay.textContent = basculerSonde() ? '📏 Sonde équipée.' : 'Sonde rangée.';
+            }
             return;
         }
         if (id === 'radar' && cible.dataset.action === 'acheter') {

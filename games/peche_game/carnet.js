@@ -3,7 +3,7 @@
 // Reçoit l'objet `journal` de l'orchestrateur et le migre ; le rendu et le jeu
 // restent dans script.js. Aucun accès direct au DOM ici.
 // ---------------------------------------------------------------------------
-import { milieuParId, IDS_MILIEUX } from './milieux.js?v=250';
+import { milieuParId, IDS_MILIEUX } from './milieux.js?v=251';
 
 export function chargerCarnet(options) {
     const opts = options || {};
@@ -42,6 +42,8 @@ export function chargerCarnet(options) {
         data.sonar = saved.sonar === true;
         data.bateau = saved.bateau === true;
         data.radar = saved.radar === true;
+        data.sonde = saved.sonde === true;
+        data.sondeEquipee = saved.sondeEquipee !== false;
         if (data.recharges) {
             for (const id of Object.keys(data.recharges)) {
                 const nombre = saved.recharges?.[id];

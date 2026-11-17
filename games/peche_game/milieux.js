@@ -17,9 +17,9 @@
 // Fonctions PURES (aucun `rand()`, aucun accès au DOM) : testables sans navigateur. Le système
 // `creerMilieux(deps)` en bas du fichier applique le choix au monde et le persiste dans le carnet.
 // ---------------------------------------------------------------------------
-import { SPECIES, COMPORTEMENTS } from './especes.js?v=250';
-import { etat } from './etat.js?v=250';
-import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=250';
+import { SPECIES, COMPORTEMENTS } from './especes.js?v=251';
+import { etat } from './etat.js?v=251';
+import { RAYON_REFERENCE, FORME_DEFAUT, surfaceHectares, echelleDeRayon } from './dimensions.js?v=251';
 
 export const MILIEU_DEFAUT = 'plaine';
 export const DENSITE_PAR_HECTARE = 90;      // poissons / ha (base ; × densité du biotope × difficulté)
@@ -64,12 +64,15 @@ export const MILIEUX = [
     },
     {
         id: 'carnassiers', nom: 'Étang à carnassiers', icone: '🦈',
-        resume: 'Herbiers et nénuphars : brochets, sandres et black-bass.',
-        parts: parts([23, 10, 14, 0, 0, 0, 0, 0, 14, 6, 12, 10, 10, 0, 0, 1]),
+        resume: 'Herbiers et nénuphars : brochets, sandres et black-bass, et des bancs de petits poissons blancs à chasser.',
+        // Les carnassiers ont de quoi manger : 70 % de poissons blancs (ablettes, gardons, rotengles,
+        // goujons, carassins), et une densité forte (1,6). Les carnassiers gardent à peu près le même
+        // nombre qu'avant (17 % × 1,6 ≈ 33 % × 0,9) ; les proies sont ≈ 2,4 fois plus nombreuses.
+        parts: parts([24, 10, 24, 8, 0, 0, 0, 4, 10, 3, 7, 5, 4, 0, 0, 1]),
         decor: { arbres: 20, nenuphars: 60, roseaux: 90, rochers: 15 },
         fonds: { vase: 0.30, herbier: 0.35, sable: 0.15, gravier: 0.12, roche: 0.08 },
         eau: { shallow: 0x35584f, deep: 0x081a18, sky: 0x8fa8a0 },
-        rayon: 70, forme: 'etang', profondeur: 7.0, densite: 0.9
+        rayon: 70, forme: 'etang', profondeur: 7.0, densite: 1.6
     },
     {
         id: 'montagne', nom: 'Lac de montagne', icone: '🏔️',

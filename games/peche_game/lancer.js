@@ -21,7 +21,7 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { etat, moulinetLibre } from './etat.js?v=250';
+import { etat, moulinetLibre } from './etat.js?v=251';
 
 export function creerLancer(deps) {
     const {

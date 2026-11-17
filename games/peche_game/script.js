@@ -1,67 +1,70 @@
 import * as THREE from 'three';
-// Le « ?v=250 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=251 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=250';
-import { creerJeuDemelage } from './demelage.js?v=250';
-import { creerModeQuiver } from './quiver.js?v=250';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=250';
+import { SoundEngine } from './sound.js?v=251';
+import { creerJeuDemelage } from './demelage.js?v=251';
+import { creerModeQuiver } from './quiver.js?v=251';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=251';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=250';
-import { creerPoissons } from './poissons.js?v=250';
-import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=250';
+import { dessinerPortrait } from './portraits.js?v=251';
+import { creerPoissons } from './poissons.js?v=251';
+import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=251';
 import { POND_CENTER, RIVE_Y, rayonEtang, monde, setRayonMonde,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=250';
-import { creerTailleEtang } from './tailleEtang.js?v=250';
-import { creerDecor } from './decor.js?v=250';
-import { creerObstacles } from './obstacles.js?v=250';
-import { creerSubstrats } from './substrats.js?v=250';
-import { creerEsches } from './esches.js?v=250';
-import { ligneQuiver } from './chanceTouche.js?v=250';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=250';
-import { creerBourriche } from './bourriche.js?v=250';
-import { creerOndulations } from './ondulations.js?v=250';
-import { creerMessages } from './messages.js?v=250';
-import { creerSplashes } from './splashes.js?v=250';
-import { creerCombat } from './combat.js?v=250';
-import { creerComportement } from './comportement.js?v=250';
-import { creerBateau } from './bateau.js?v=250';
-import { creerLancerPoisson } from './lancerPoisson.js?v=250';
-import { creerCarnetUI } from './carnetUI.js?v=250';
-import { creerBoutique } from './boutique.js?v=250';
-import { creerMenus } from './menus.js?v=250';
-import { creerFiches } from './fiches.js?v=250';
-import { creerLancerCanne } from './lancerCanne.js?v=250';
-import { creerLancer } from './lancer.js?v=250';
-import { creerAmorcage } from './amorcage.js?v=250';
-import { creerFrein } from './frein.js?v=250';
-import { creerLigne } from './ligne.js?v=250';
-import { creerBouchons } from './bouchons.js?v=250';
-import { creerPlacement } from './placement.js?v=250';
-import { creerMeteo } from './meteo.js?v=250';
-import { creerPhysique } from './physique.js?v=250';
-import { creerVie } from './vie.js?v=250';
-import { creerSonar } from './sonar.js?v=250';
-import { creerStocks } from './stocks.js?v=250';
-import { creerJournal } from './journal.js?v=250';
-import { creerTouches } from './touches.js?v=250';
-import { creerCycleLigne } from './cycleLigne.js?v=250';
-import { creerAccrochage } from './accrochage.js?v=250';
-import { creerAmbiance } from './ambiance.js?v=250';
-import { creerEntrees } from './entrees.js?v=250';
-import { creerRadar, RADAR_PRIX } from './radar.js?v=250';
-import { creerCheat } from './cheat.js?v=250';
-import { creerBoucle } from './boucle.js?v=250';
-import { creerPartie, majChoixRadio } from './partie.js?v=250';
-import { creerPecheur } from './pecheur.js?v=250';
-import { creerRendu } from './rendu.js?v=250';
-import { etat } from './etat.js?v=250';
-import { lireDom } from './dom.js?v=250';
-import { creerCamera } from './camera.js?v=250';
-import { creerCiel } from './ciel.js?v=250';
-import { creerManivelle } from './manivelle.js?v=250';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=251';
+import { creerTailleEtang } from './tailleEtang.js?v=251';
+import { creerDecor } from './decor.js?v=251';
+import { creerObstacles } from './obstacles.js?v=251';
+import { creerSubstrats } from './substrats.js?v=251';
+import { creerEsches } from './esches.js?v=251';
+import { ligneQuiver } from './chanceTouche.js?v=251';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=251';
+import { creerBourriche } from './bourriche.js?v=251';
+import { creerOndulations } from './ondulations.js?v=251';
+import { creerMessages } from './messages.js?v=251';
+import { creerSplashes } from './splashes.js?v=251';
+import { creerCombat } from './combat.js?v=251';
+import { creerComportement } from './comportement.js?v=251';
+import { creerBateau } from './bateau.js?v=251';
+import { creerLancerPoisson } from './lancerPoisson.js?v=251';
+import { creerCarnetUI } from './carnetUI.js?v=251';
+import { creerBoutique } from './boutique.js?v=251';
+import { creerMenus } from './menus.js?v=251';
+import { creerFiches } from './fiches.js?v=251';
+import { creerLancerCanne } from './lancerCanne.js?v=251';
+import { creerLancer } from './lancer.js?v=251';
+import { creerAmorcage } from './amorcage.js?v=251';
+import { creerFrein } from './frein.js?v=251';
+import { creerLigne } from './ligne.js?v=251';
+import { creerBouchons } from './bouchons.js?v=251';
+import { creerPlacement } from './placement.js?v=251';
+import { creerMeteo } from './meteo.js?v=251';
+import { creerPhysique } from './physique.js?v=251';
+import { creerVie } from './vie.js?v=251';
+import { creerSonar } from './sonar.js?v=251';
+import { creerStocks } from './stocks.js?v=251';
+import { creerJournal } from './journal.js?v=251';
+import { creerTouches } from './touches.js?v=251';
+import { creerCycleLigne } from './cycleLigne.js?v=251';
+import { creerAccrochage } from './accrochage.js?v=251';
+import { creerAmbiance } from './ambiance.js?v=251';
+import { creerEntrees } from './entrees.js?v=251';
+import { creerRadar, RADAR_PRIX } from './radar.js?v=251';
+import { creerSonde, SONDE_PRIX } from './sonde.js?v=251';
+import { creerEscheVisuelle } from './escheVisuelle.js?v=251';
+import { creerChasse } from './chasse.js?v=251';
+import { creerCheat } from './cheat.js?v=251';
+import { creerBoucle } from './boucle.js?v=251';
+import { creerPartie, majChoixRadio } from './partie.js?v=251';
+import { creerPecheur } from './pecheur.js?v=251';
+import { creerRendu } from './rendu.js?v=251';
+import { etat } from './etat.js?v=251';
+import { lireDom } from './dom.js?v=251';
+import { creerCamera } from './camera.js?v=251';
+import { creerCiel } from './ciel.js?v=251';
+import { creerManivelle } from './manivelle.js?v=251';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -1141,7 +1144,7 @@ let HOOK_DEPTH;
 let floatState;
 const {
     setFloatOpacity, bornesProfondeur, appliquerProfondeurVisuelle, majEtiquetteProfondeur,
-    updateDepthButtons, setProfondeur, majCoupeProfondeur
+    updateDepthButtons, setProfondeur, majCoupeProfondeur, hook
 } = creerLigne({
     scene, flotteurCourant: (...args) => flotteurCourant(...args), depthLabel, nombreMetres, depthMinus, depthPlus, verdictFond,
     coupe: {
@@ -1370,7 +1373,10 @@ const {
     ensureSound, setScion, acheterScion, trouverScion,
     // Radar à poissons (radar.js, créé plus bas) : appelé seulement au clic, donc après sa création.
     acheterRadar: function () { return radar.acheter(); },
-    radarButton: document.getElementById('radarButton'), RADAR_PRIX
+    radarButton: document.getElementById('radarButton'), RADAR_PRIX,
+    // Sonde (sonde.js, créée plus bas) : appelée seulement au clic.
+    acheterSonde: function () { return sonde.acheter(); },
+    basculerSonde: function () { return sonde.basculer(); }, SONDE_PRIX
 });
 
 // Menus déroulants de la barre du haut (v192) : 🪱 Esche et 🎈 Matériel (bouchons ou scions).
@@ -1723,6 +1729,19 @@ creerEntrees({
 });
 
 // Cheat « radar » (§17.3) : carte 2D des poissons, pilotée par le mot secret de cheat.js.
+// Sonde (boutique) : profondeur et type de fond à côté du bouchon.
+const sonde = creerSonde({
+    camera, canvas, floatGroup, verdictFond, nombreMetres, saveJournal, renderJournal,
+    element: document.getElementById('sondeLabel')
+});
+// Chasses des carnassiers : remous, proies qui remontent et sautent (heure, météo, eau).
+const chasse = creerChasse({
+    fishes, angler, spawnRipple, spawnSplash, sound, weatherName, monde, POND_CENTER, rayonEtang,
+    temperatureEau: () => physique.crochets.getTemperatureEau()
+});
+// L'esche équipée se voit en 3D sur l'hameçon.
+etat.escheVisuelle = creerEscheVisuelle({ hook });
+
 const radar = creerRadar({
     fishes, angler, floatGroup, substrats, POND_CENTER, rayonEtang, monde, SPECIES, COMPORTEMENTS,
     panneau: document.getElementById('radarPanel'),
@@ -1842,6 +1861,9 @@ function animate() {
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
         radar.maj(dt);
+        sonde.maj(dt);
+        chasse.maj(dt);
+        etat.escheVisuelle.maj();
     }
     updateCrankVisibility();
     majPadBateau();
@@ -2310,6 +2332,10 @@ window.__game = {
     // Cheat « poisson » — exposé pour les tests.
     cheatTouche: cheatTouche,
     radar: radar,
+    sonde: sonde,
+    verdictFond: verdictFond,
+    chasse: chasse,
+    reinitialiserSonde: function () { journal.sonde = false; journal.sondeEquipee = true; },
     getCapaciteBouchon: function () { return capaciteBouchon(); },
     isBiteViewActive: function () { return biteViewActive; },
     getCameraMode: function () { return cameraMode; },
@@ -2621,6 +2647,9 @@ window.__game = {
         if (jeuDemelage) { jeuDemelage.update(dt); }
         updateLine();
         radar.maj(dt);
+        sonde.maj(dt);
+        chasse.maj(dt);
+        etat.escheVisuelle.maj();
         updateToolDock();
         majPadBateau();
     }

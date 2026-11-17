@@ -16,9 +16,9 @@
 // `recommander` est PUR (testable sans jeu) ; `creerConseilLocal` le déclenche et le confie à l'avion (avion.js).
 // ⚠ Aucun `rand()`.
 // ---------------------------------------------------------------------------
-import { SPECIES } from './especes.js?v=250';
-import { ESCHES } from './esches.js?v=250';
-import { evaluerTouche, ligneQuiver, ligneIdeale } from './chanceTouche.js?v=250';
+import { SPECIES } from './especes.js?v=251';
+import { ESCHES } from './esches.js?v=251';
+import { evaluerTouche, ligneQuiver, ligneIdeale } from './chanceTouche.js?v=251';
 
 export const DELAI = { facile: 30, normal: 60 };   // secondes sans touche (pas d'entrée : jamais, mode Dur)
 export const RAYON = 10;                            // unités (5 m) autour du bouchon

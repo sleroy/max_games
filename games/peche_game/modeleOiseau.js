@@ -18,7 +18,7 @@
 // que vie.js ne s'occupe que du vol.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { texturePlumage } from './texturesVie.js?v=250';
+import { texturePlumage } from './texturesVie.js?v=251';
 
 export const OISEAUX = {
     corneille: {
