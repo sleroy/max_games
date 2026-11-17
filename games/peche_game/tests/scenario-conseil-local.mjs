@@ -27,7 +27,7 @@ export async function run() {
     check('4 gardons et 1 carpe : une esche de gardon l’emporte (ils sont plus nombreux)', ['pain', 'ver'].indexOf(f.esche) >= 0, f.esche);
     check('… dans la couche du gardon (≤ 1,6 m)', f.ligne <= 3.2, f.ligne);
     checkEqual('facile : les espèces sont nommées', f.lignes[0], 'Ici : 4 gardons, 1 carpe');
-    check('facile : le réglage est donné, au décimètre', /^Essaie .* à \d+(,\d)? m$/.test(f.lignes[1]), f.lignes[1]);
+    check('facile : la profondeur ET l’esche sont donnés, au décimètre', /^Pêche à \d+(,\d)? m · \S/.test(f.lignes[1]), f.lignes[1]);
     // Le conseil est vrai : il fait mieux que le réglage du joueur (mesuré avec la règle unique).
     const touches = (esche, ligne) => banc.reduce((t, p) => t + C.evaluerTouche(Object.assign({ especeId: p.especeId, longueurCm: p.longueurCm,
         esche: esche, profondeurLigne: ligne }, ici)).chance, 0);
@@ -48,7 +48,7 @@ export async function run() {
     const m = L.recommander(Object.assign({ poissons: etages, mode: 'facile', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
     check('la profondeur conseillée est la moyenne des poissons (≈ 2,2 unités)', m.source === 'moyenne' && Math.abs(m.ligne - 2.2) <= 0.13,
         m.source + ' ' + m.ligne);
-    check('… et le message le dit', /vers 1,1 m$/.test(m.lignes[0]) && /à 1,1 m$/.test(m.lignes[1]), m.lignes.join(' | '));
+    check('… et le message le dit', /vers 1,1 m$/.test(m.lignes[0]) && /^Pêche à 1,1 m · /.test(m.lignes[1]), m.lignes.join(' | '));
     const mn = L.recommander(Object.assign({ poissons: etages, mode: 'normal', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
     checkEqual('normal : « c’est là que nagent les poissons »', mn.lignes[1], 'c’est là que nagent les poissons !');
     // Poissons trop étagés : la moyenne tomberait où rien ne mord → on retombe sur le milieu de la zone qui mord.
@@ -60,8 +60,18 @@ export async function run() {
     const dansVase = L.recommander(Object.assign({ poissons: [{ especeId: 'carpe', longueurCm: 60, profondeur: -4.05 }], mode: 'facile', escheActuelle: 'ver',
         ligneActuelle: 2.1 }, ici, { profondeurEau: 4.5 }));
     check('une carpe au fond : le conseil reste au-dessus de la vase', dansVase.ligne <= 4.5 - 0.55 + 1e-9, dansVase.ligne);
+    // La profondeur conseillée ne descend JAMAIS sous le fond : une ligne plus longue ne creuse rien.
+    const profond = L.recommander({ poissons: [{ especeId: 'perche', longueurCm: 25, profondeur: -2.2 }], profondeurEau: 2.4,
+        substrat: 'roche', bornes: [0.6, 9], mode: 'normal', escheActuelle: 'mais', ligneActuelle: 2.5, temperature: 15, heure: 12 });
+    check('le conseil ne descend pas sous le fond (ligne ≤ profondeur d’eau)', profond.ligne <= 2.4 + 1e-9, profond.ligne);
+    // La profondeur est celle des poissons RÉELLEMENT détectés, même quand le « plateau » serait plus haut.
+    const detectes = [{ especeId: 'gardon', longueurCm: 25, profondeur: -1.5 }, { especeId: 'gardon', longueurCm: 25, profondeur: -1.7 }];
+    const d2 = L.recommander(Object.assign({ poissons: detectes, mode: 'normal', escheActuelle: 'mais', ligneActuelle: 0.6 }, ici));
+    check('la profondeur suit les poissons détectés (≈ 1,6 unité)', d2.source === 'moyenne' && Math.abs(d2.ligne - 1.6) <= 0.13,
+        d2.source + ' ' + d2.ligne);
+    check('… et la ligne conseillée n’est jamais muette', touches2(d2, detectes) > 0, d2.ligne);
     const n = L.recommander(Object.assign({ poissons: banc, mode: 'normal', escheActuelle: 'mais', ligneActuelle: 3.25 }, ici));
-    check('normal : c’est Papa qui conseille', n.lignes[0].indexOf('Papa : essaie') === 0, n.lignes[0]);
+    check('normal : c’est Papa qui conseille', n.lignes[0].indexOf('Papa : pêche à ') === 0, n.lignes[0]);
     check('normal : aucune espèce n’est dévoilée', NOMS.every(nom => n.lignes.join(' ').toLowerCase().indexOf(nom) < 0), n.lignes.join(' | '));
     const bon = L.recommander(Object.assign({ poissons: banc, mode: 'normal', escheActuelle: f.esche, ligneActuelle: f.ligne }, ici));
     checkEqual('déjà le bon réglage : « patience »', bon.cas, 'bon');
@@ -72,9 +82,10 @@ export async function run() {
     const fond = L.recommander({ poissons: [{ especeId: 'carpe', longueurCm: 60 }], profondeurEau: 6, substrat: 'sable', bornes: [0.6, 2.6],
         mode: 'facile', escheActuelle: 'ver', ligneActuelle: 2.5, temperature: 15, heure: 12 });
     check('carpe au fond hors de portée du bouchon : il faut un bouchon plus long', fond.cas === 'changer' && fond.bouchonPlusLong
-        && fond.ligne > 2.6 && /bouchon plus long/.test(fond.lignes[1]), fond.cas + ' ' + fond.lignes.join(' | '));
+        && fond.ligne > 2.6 && /bouchon plus long/.test(fond.lignes.join(' ')), fond.cas + ' ' + fond.lignes.join(' | '));
     const q = L.recommander(Object.assign({ poissons: banc.slice(4), mode: 'facile', quiver: true, escheActuelle: 'ver' }, ici));
     check('au quiver : on ne parle que de l’esche (hameçon posé au fond)', q.esche === 'mais' && /au fond/.test(q.lignes[1]), q.lignes.join(' | '));
+    check('au quiver : le conseil donne la profondeur RÉELLE de l’hameçon', /au fond, \d+(,\d)? m/.test(q.lignes[1]), q.lignes[1]);
     check('chaque message tient sur 2 lignes courtes (≤ 45 caractères)', [personne, f, n, bon, fond, q].every(r => r.lignes.length === 2
         && r.lignes.every(l => [...l].length <= 45)), [personne, f, n, bon, fond, q].map(r => r.lignes.join(' / ')).join(' ‖ '));
 

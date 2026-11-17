@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { etat } from './etat.js?v=243';
 import { creerAvion } from './avion.js?v=243';
-import { creerConseilLocal } from './conseilLocal.js?v=243';
+import { creerConseilLocal } from './conseilLocal.js?v=244';
 import { heureDeJeu } from './physique.js?v=243';
 import { especesPresentes } from './milieux.js?v=243';
 
