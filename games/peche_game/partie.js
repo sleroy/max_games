@@ -4,7 +4,7 @@
 // L'état partagé passe par etat.js ; le reste est injecté par `deps`.
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
-import { etat } from './etat.js?v=243';
+import { etat } from './etat.js?v=245';
 
 // Coche le bon bouton d'un groupe de l'accueil (sans dropdown).
 export function majChoixRadio(radios, valeur) {
