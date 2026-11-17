@@ -390,10 +390,12 @@ function chaqueForme() {
         check(etiquette + 'rayons des fosses × f, profondeurs supplémentaires inchangées', info.fosses.every(function (fosse, i) {
             return Math.abs(fosse.rayon - [22, 18, 16][i] * m.rayon / 90) < 1e-9 && fosse.plus === [3.6, 3.3, 3.8][i];
         }));
-        check(etiquette + 'profondeur max ≤ 8,2 et > 7,5 (la ligne descend à 7)', info.profondeurMax <= 8.2 && info.profondeurMax > 7.5, String(info.profondeurMax));
-        checkClose(etiquette + 'profondeur max proche de celle de la plaine (fraction d / rayon local conservée)', info.profondeurMax, profondeurPlaine, 0.08);
+        check(etiquette + 'profondeur max ≤ 8,2 (la ligne descend à 7)', info.profondeurMax <= 8.2 && info.profondeurMax > 0.5, String(info.profondeurMax));
+        // ATTENDU MODIFIÉ (profondeur selon la taille) : la profondeur suit facteurProfondeur(rayon).
+        checkClose(etiquette + 'profondeur max = celle de la plaine × facteur de profondeur', info.profondeurMax,
+            profondeurPlaine * monde.facteurProfondeur, 0.08);
         // Le fond reste dans l'ordre : profondeur nulle impossible, jamais plus profond que la fosse la plus creuse.
-        check(etiquette + 'relief : de 1,4 au bord à la profondeur max au plus profond', G().profondeurLocale(centre.x, centre.z) > 4.9
+        check(etiquette + 'relief : de la cuvette au plus profond', G().profondeurLocale(centre.x, centre.z) > 4.9 * monde.facteurProfondeur
             && G().profondeurLocale(centre.x, centre.z) <= info.profondeurMax + 1e-9);
 
         // --- Poissons dans l'eau, bien répartis (avant resetToIdle : le harnais range alors les poissons à l'écart) ---

@@ -160,13 +160,16 @@ export async function run() {
             }));
         check(id + ' : rayons des fosses × f', info.fosses.every(function (fosse, i) { return Math.abs(fosse.rayon - [22, 18, 16][i] * f) < 1e-9; }));
         check(id + ' : profondeur supplémentaire des fosses inchangée', info.fosses.every(function (fosse, i) { return fosse.plus === [3.6, 3.3, 3.8][i]; }));
-        check(id + ' : profondeur max ≤ 8,2 (la ligne descend à 7)', info.profondeurMax <= 8.2 && info.profondeurMax > 7.5, String(info.profondeurMax));
-        // ATTENDU MODIFIÉ (formes d'eau) : ±0,02 pour l'étang ; ±0,08 pour un autre profil (la cuvette y est anisotrope : la fosse
-        // garde sa fraction d / rayon local, mais pas la pente exacte autour d'elle).
-        checkClose(id + ' : même profondeur max à toutes les tailles', info.profondeurMax, origine.info.profondeurMax, etang ? 0.02 : 0.08);
+        check(id + ' : profondeur max ≤ 8,2 (la ligne descend à 7)', info.profondeurMax <= 8.2 && info.profondeurMax > 0.5, String(info.profondeurMax));
+        // ATTENDU MODIFIÉ (profondeur selon la taille) : un petit étang est moins profond qu'un grand lac.
+        // La profondeur suit facteurProfondeur(rayon) = rayon / 90 borné [0,35 ; 1] ; ±0,08 pour un autre profil
+        // (la cuvette y est anisotrope : la fosse garde sa fraction d / rayon local, mais pas la pente exacte).
+        checkClose(id + ' : profondeur max = celle de la plaine × facteur de profondeur', info.profondeurMax,
+            origine.info.profondeurMax * monde.facteurProfondeur, etang ? 0.02 : 0.08);
         checkClose(id + ' : cadre de la carte = rayon max + 8', info.rayonCadre, monde.rayonMax + 8, 1e-9);
         // La profondeur normalisée : au centre, même cuvette qu'ailleurs.
-        checkClose(id + ' : profondeur au centre de l’étang (cuvette) = 5', G().profondeurLocale(centre.x, centre.z), 5, 1e-9);
+        checkClose(id + ' : profondeur au centre de l’étang (cuvette) = 5 × facteur de profondeur',
+            G().profondeurLocale(centre.x, centre.z), 5 * monde.facteurProfondeur, 1e-9);
 
         // Ambiance
         check(id + ' : plan lointain de la caméra ≥ 4 × rayon max', monde.cameraFar >= 4 * monde.rayonMax, monde.cameraFar + ' ≥ ' + (4 * monde.rayonMax).toFixed(0));

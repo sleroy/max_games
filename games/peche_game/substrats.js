@@ -19,8 +19,8 @@
 // Contrat (docs/modules.md) : aucun accès aux globales de script.js ni à `window`.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=241';
-import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=241';
+import { COMPORTEMENTS } from './especes.js?v=242';
+import { MILIEU_DEFAUT, milieuParId, partsSubstrats } from './milieux.js?v=242';
 
 // Ordre = numéro de la grille (1 à 5) et ordre de la légende.
 export const SUBSTRATS = [

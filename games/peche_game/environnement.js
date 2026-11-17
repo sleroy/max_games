@@ -27,8 +27,8 @@ import * as THREE from 'three';
 import {
     RAYON_REFERENCE, HARMONIQUES, VARIATION_CONTOUR, FORME_DEFAUT, formeConnue, rayonContour, surfaceUnites,
     surfaceHectares, echelleDeRayon, echelleExtent, echelleAxes, echelleAmbiance, extents, porteeLancer, porteeAmorce,
-    pointAuBord
-} from './dimensions.js?v=241';
+    pointAuBord, facteurProfondeur
+} from './dimensions.js?v=242';
 
 // Centre de l'étang DE RÉFÉRENCE (la plaine) : le monde entier est bâti autour de ce point.
 // v173 : l'étang passe de 55 à 90 de rayon. Le centre recule de (0, -40) à (0, -71)
@@ -72,6 +72,8 @@ export const RAYON_ETANG_VARIATION = VARIATION_CONTOUR;
 // Rayon NOMINAL et FORME du monde actuel : 90 et `etang` (la plaine) tant qu'un autre biotope n'a pas été choisi.
 let rayonMonde = RAYON_REFERENCE;
 let formeMonde = FORME_DEFAUT;
+// Profondeur du monde : 1 pour la plaine, moins pour un petit étang, plus pour un grand lac (dimensions.js).
+let facteurProfondeurMonde = 1;
 
 // Rayon de l'étang dans la direction `angle` (radians, x = cos, z = sin). Le chemin de l'étang est celui d'origine
 // (mêmes opérations, même résultat au bit près) ; les autres profils passent par dimensions.js.
@@ -154,7 +156,7 @@ export function profondeurLocale(x, z) {
             prof += fosse.plus * (1 - (fd / fosse.rayon) * (fd / fosse.rayon));
         }
     });
-    return prof;
+    return prof * facteurProfondeurMonde;
 }
 
 // Profondeur MAXIMALE réelle de l'étang (le point le plus bas d'une fosse), mesurée à chaque changement
@@ -162,7 +164,7 @@ export function profondeurLocale(x, z) {
 // Le tout est déterministe. Les bouchons doivent descendre au moins jusque-là (voir bouchons.js).
 function mesurerProfondeurMax(echelle) {
     const pas = 0.5 * echelle;
-    let max = FOND_CENTRE;
+    let max = FOND_CENTRE * facteurProfondeurMonde;
     FOSSES.forEach(function (fosse) {
         for (let dx = -fosse.rayon; dx <= fosse.rayon; dx += pas) {
             for (let dz = -fosse.rayon; dz <= fosse.rayon; dz += pas) {
@@ -234,6 +236,7 @@ export function setRayonMonde(r, forme) {
     RAYON_ETANG_MAX = Math.max(ext.maxX, ext.maxZ);
     SURFACE_ETANG = surfaceUnites(rayon, profil);
     SURFACE_HA = surfaceHectares(rayon, profil);
+    facteurProfondeurMonde = facteurProfondeur(rayon);
     PROFONDEUR_MAX = mesurerProfondeurMax(f);
     RAYON_CADRE_CARTE = RAYON_ETANG_MAX + 8;
     DEMI_COTE_X = Math.ceil(ext.maxX + 4.5);
@@ -256,6 +259,7 @@ export const monde = {
     get surfaceEtang() { return SURFACE_ETANG; },
     get surfaceHa() { return SURFACE_HA; },
     get profondeurMax() { return PROFONDEUR_MAX; },
+    get facteurProfondeur() { return facteurProfondeurMonde; },
     get rayonCadre() { return RAYON_CADRE_CARTE; },
     get demiCoteFond() { return DEMI_COTE_FOND; },
     // Profil de forme et dimensions du RECTANGLE englobant : extents (plus grande distance au centre sur x et sur z)

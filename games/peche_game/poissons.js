@@ -16,13 +16,13 @@
 import * as THREE from 'three';
 import {
     SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, poidsKilos
-} from './especes.js?v=241';
-import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=241';
-import { angleParSurface } from './dimensions.js?v=241';
+} from './especes.js?v=242';
+import { creerModelePoisson, echellePourTaille } from './modelePoisson.js?v=242';
+import { angleParSurface } from './dimensions.js?v=242';
 import {
     MILIEU_DEFAUT, PLAFOND_POPULATION, milieuParId, partsEspeces, quotasEspeces,
     capacite, facteurTaille, tailleMaxEspece
-} from './milieux.js?v=241';
+} from './milieux.js?v=242';
 
 export function creerPoissons(deps) {
     const scene = deps.scene;

@@ -1,63 +1,63 @@
 import * as THREE from 'three';
-// Le « ?v=241 » est essentiel : sans lui, le navigateur peut resservir une
+// Le « ?v=242 » est essentiel : sans lui, le navigateur peut resservir une
 // VIEILLE copie de sound.js gardée en mémoire, et le jeu plante alors avec
 // « sound.setRain is not a function ». On numérote donc AUSSI les modules
 // importés (la version doit rester la même que celle de index.html).
-import { SoundEngine } from './sound.js?v=241';
-import { creerJeuDemelage } from './demelage.js?v=241';
-import { creerModeQuiver } from './quiver.js?v=241';
-import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=241';
+import { SoundEngine } from './sound.js?v=242';
+import { creerJeuDemelage } from './demelage.js?v=242';
+import { creerModeQuiver } from './quiver.js?v=242';
+import { SCIONS, SCIONS_DE_DEPART, SPECIES, COMPORTEMENTS, STYLES_COMBAT, STYLE_DEFAUT, FORMES, FORMES_PAR_TYPE, TOUCHES, TOUCHES_PAR_ID } from './especes.js?v=242';
 import { creerClassement } from './classement.js';
-import { dessinerPortrait } from './portraits.js?v=241';
-import { creerPoissons } from './poissons.js?v=241';
-import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=241';
+import { dessinerPortrait } from './portraits.js?v=242';
+import { creerPoissons } from './poissons.js?v=242';
+import { creerMilieux, IDS_MILIEUX } from './milieux.js?v=242';
 import { POND_CENTER, RIVE_Y, rayonEtang, monde, setRayonMonde,
     FOND_BORD, FOND_CENTRE, FOSSES, profondeurLocale, fondY, verdictFond as verdictFondBase, MARGE_VASE,
-    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=241';
-import { creerTailleEtang } from './tailleEtang.js?v=241';
-import { creerDecor } from './decor.js?v=241';
-import { creerObstacles } from './obstacles.js?v=241';
-import { creerSubstrats } from './substrats.js?v=241';
-import { creerEsches } from './esches.js?v=241';
-import { ligneQuiver } from './chanceTouche.js?v=241';
-import { chargerCarnet, sauverCarnet } from './carnet.js?v=241';
-import { creerBourriche } from './bourriche.js?v=241';
-import { creerOndulations } from './ondulations.js?v=241';
-import { creerMessages } from './messages.js?v=241';
-import { creerSplashes } from './splashes.js?v=241';
-import { creerCombat } from './combat.js?v=241';
-import { creerComportement } from './comportement.js?v=241';
-import { creerBateau } from './bateau.js?v=241';
-import { creerLancerPoisson } from './lancerPoisson.js?v=241';
-import { creerCarnetUI } from './carnetUI.js?v=241';
-import { creerBoutique } from './boutique.js?v=241';
-import { creerMenus } from './menus.js?v=241';
-import { creerFiches } from './fiches.js?v=241';
-import { creerLancerCanne } from './lancerCanne.js?v=241';
-import { creerLancer } from './lancer.js?v=241';
-import { creerAmorcage } from './amorcage.js?v=241';
-import { creerFrein } from './frein.js?v=241';
-import { creerLigne } from './ligne.js?v=241';
-import { creerBouchons } from './bouchons.js?v=241';
-import { creerPlacement } from './placement.js?v=241';
-import { creerMeteo } from './meteo.js?v=241';
-import { creerPhysique } from './physique.js?v=241';
-import { creerVie } from './vie.js?v=241';
-import { creerSonar } from './sonar.js?v=241';
-import { creerStocks } from './stocks.js?v=241';
-import { creerJournal } from './journal.js?v=241';
-import { creerTouches } from './touches.js?v=241';
-import { creerCycleLigne } from './cycleLigne.js?v=241';
-import { creerAccrochage } from './accrochage.js?v=241';
-import { creerAmbiance } from './ambiance.js?v=241';
-import { creerEntrees } from './entrees.js?v=241';
-import { creerRadar } from './radar.js?v=241';
-import { creerCheat } from './cheat.js?v=241';
-import { creerBoucle } from './boucle.js?v=241';
-import { creerPartie, majChoixRadio } from './partie.js?v=241';
-import { creerPecheur } from './pecheur.js?v=241';
-import { creerRendu } from './rendu.js?v=241';
-import { etat } from './etat.js?v=241';
+    ajouterFond, makeWaterGeometry, makeShoreGeometry } from './environnement.js?v=242';
+import { creerTailleEtang } from './tailleEtang.js?v=242';
+import { creerDecor } from './decor.js?v=242';
+import { creerObstacles } from './obstacles.js?v=242';
+import { creerSubstrats } from './substrats.js?v=242';
+import { creerEsches } from './esches.js?v=242';
+import { ligneQuiver } from './chanceTouche.js?v=242';
+import { chargerCarnet, sauverCarnet } from './carnet.js?v=242';
+import { creerBourriche } from './bourriche.js?v=242';
+import { creerOndulations } from './ondulations.js?v=242';
+import { creerMessages } from './messages.js?v=242';
+import { creerSplashes } from './splashes.js?v=242';
+import { creerCombat } from './combat.js?v=242';
+import { creerComportement } from './comportement.js?v=242';
+import { creerBateau } from './bateau.js?v=242';
+import { creerLancerPoisson } from './lancerPoisson.js?v=242';
+import { creerCarnetUI } from './carnetUI.js?v=242';
+import { creerBoutique } from './boutique.js?v=242';
+import { creerMenus } from './menus.js?v=242';
+import { creerFiches } from './fiches.js?v=242';
+import { creerLancerCanne } from './lancerCanne.js?v=242';
+import { creerLancer } from './lancer.js?v=242';
+import { creerAmorcage } from './amorcage.js?v=242';
+import { creerFrein } from './frein.js?v=242';
+import { creerLigne } from './ligne.js?v=242';
+import { creerBouchons } from './bouchons.js?v=242';
+import { creerPlacement } from './placement.js?v=242';
+import { creerMeteo } from './meteo.js?v=242';
+import { creerPhysique } from './physique.js?v=242';
+import { creerVie } from './vie.js?v=242';
+import { creerSonar } from './sonar.js?v=242';
+import { creerStocks } from './stocks.js?v=242';
+import { creerJournal } from './journal.js?v=242';
+import { creerTouches } from './touches.js?v=242';
+import { creerCycleLigne } from './cycleLigne.js?v=242';
+import { creerAccrochage } from './accrochage.js?v=242';
+import { creerAmbiance } from './ambiance.js?v=242';
+import { creerEntrees } from './entrees.js?v=242';
+import { creerRadar } from './radar.js?v=242';
+import { creerCheat } from './cheat.js?v=242';
+import { creerBoucle } from './boucle.js?v=242';
+import { creerPartie, majChoixRadio } from './partie.js?v=242';
+import { creerPecheur } from './pecheur.js?v=242';
+import { creerRendu } from './rendu.js?v=242';
+import { etat } from './etat.js?v=242';
 
 // ---------------------------------------------------------------------------
 // ÉTAT PARTAGÉ (voir etat.js) : accesseurs vers les variables `let` de ce
@@ -2455,7 +2455,7 @@ window.__game = {
     },
     // Taille de l'étang (tests) : géométrie du biotope, portées, ambiance (brume, ciel, plan lointain de la caméra).
     getMonde: function () {
-        return { rayon: monde.rayon, echelle: monde.echelle, rayonMax: monde.rayonMax, surfaceHa: monde.surfaceHa, porteeLancer: monde.porteeLancer,
+        return { rayon: monde.rayon, echelle: monde.echelle, rayonMax: monde.rayonMax, surfaceHa: monde.surfaceHa, porteeLancer: monde.porteeLancer, facteurProfondeur: monde.facteurProfondeur, profondeurMax: monde.profondeurMax,
             forme: monde.forme, maxX: monde.maxX, maxZ: monde.maxZ, demiCoteX: monde.demiCoteX, demiCoteZ: monde.demiCoteZ, echelleAmbiance: monde.echelleAmbiance, porteeAmorce: FEED_MAX_RANGE, cameraFar: camera.far, brume: { proche: scene.fog.near, loin: scene.fog.far },
             ciel: sky.geometry.parameters.radius, pasBateauMarge: BATEAU_PAS_MARGE, monde3D: CARTE_3D_MONDE };
     },

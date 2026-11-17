@@ -7,10 +7,10 @@
 // Seules les fonctions sont exportées.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { COMPORTEMENTS } from './especes.js?v=241';
-import { etat } from './etat.js?v=241';
-import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=241';
-import { heureDeJeu } from './physique.js?v=241';
+import { COMPORTEMENTS } from './especes.js?v=242';
+import { etat } from './etat.js?v=242';
+import { rayonVue, rayonRemous as rayonRemousPur, dansCouche, profondeurHamecon, RAYON_VUE_FACILE } from './chanceTouche.js?v=242';
+import { heureDeJeu } from './physique.js?v=242';
 
 export function creerComportement(deps) {
     const {

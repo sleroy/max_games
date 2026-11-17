@@ -227,6 +227,15 @@ export function echelleAxes(rayon, forme) {
 
 function borner(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+// ---------------------------------------------------------------------------
+// PROFONDEUR : un petit plan d'eau est moins profond qu'un grand lac, à forme de relief égale. La plaine
+// (rayon 90) garde exactement sa profondeur (facteur 1) ; un étang de forêt de 12 unités est à 0,35 (≈ 1,4 m
+// au plus profond), un canal à 0,5, une grande rivière à 1 (plafonnée : la ligne descend à 7 unités).
+// ---------------------------------------------------------------------------
+export function facteurProfondeur(rayon) {
+    return borner(rayon / RAYON_REFERENCE, 0.35, 1);
+}
+
 // Lancer de la canne : 52 unités dans la plaine. On ne lance pas 26 m dans un étang de 24 m, et on doit
 // atteindre le large d'un lac : la portée suit l'échelle (du plus grand extent), bornée à [20, 140].
 export const PORTEE_LANCER_REFERENCE = 52;
